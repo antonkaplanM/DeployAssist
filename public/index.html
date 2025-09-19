@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World - Node.js App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(214.3 31.8% 91.4%)",
+                        input: "hsl(214.3 31.8% 91.4%)",
+                        ring: "hsl(222.2 84% 4.9%)",
+                        background: "hsl(0 0% 100%)",
+                        foreground: "hsl(222.2 84% 4.9%)",
+                        primary: {
+                            DEFAULT: "hsl(222.2 47.4% 11.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        card: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .font-inter { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="font-inter bg-background text-foreground antialiased">
+    <div class="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 border-r bg-card text-card-foreground shadow-sm">
+            <div class="flex h-full flex-col">
+                <!-- Logo/Header -->
+                <div class="flex items-center gap-2 border-b px-6 py-4">
+                    <span class="text-2xl">🚀</span>
+                    <span class="font-semibold">Hello World</span>
+                </div>
+                
+                <!-- Navigation Menu -->
+                <nav class="flex-1 px-4 py-6">
+                    <div class="space-y-2">
+                        <button 
+                            id="nav-landing" 
+                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-accent text-accent-foreground"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                            </svg>
+                            Landing Page
+                        </button>
+                        
+                        <button 
+                            id="nav-analytics" 
+                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3v18h18"></path>
+                                <path d="m19 9-5 5-4-4-3 3"></path>
+                            </svg>
+                            Analytics
+                        </button>
+                        
+                        <button 
+                            id="nav-roadmap" 
+                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10,9 9,9 8,9"></polyline>
+                            </svg>
+                            Roadmap
+                        </button>
+                        
+                        <button 
+                            id="nav-settings" 
+                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2.18l.07 1.09c.04.37-.1.74-.4.98a6.05 6.05 0 0 0-1.14.66c-.33.2-.74.2-1.07 0l-.93-.54a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.93.54c.37.21.52.6.4.98a6.05 6.05 0 0 0 0 1.32c.12.38-.03.77-.4.98l-.93.54a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.93-.54c.33-.2.74-.2 1.07 0 .37.22.77.4 1.14.66.3.24.44.61.4.98l-.07 1.09A2 2 0 0 0 11.78 22h.44a2 2 0 0 0 2-2.18l-.07-1.09c-.04-.37.1-.74.4-.98.37-.26.77-.44 1.14-.66.33-.2.74-.2 1.07 0l.93.54a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.93-.54c-.37-.21-.52-.6-.4-.98a6.05 6.05 0 0 0 0-1.32c-.12-.38.03-.77.4-.98l.93-.54a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.93.54c-.33.2-.74.2-1.07 0a6.05 6.05 0 0 0-1.14-.66c-.3-.24-.44-.61-.4-.98l.07-1.09A2 2 0 0 0 12.22 2z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            Settings
+                        </button>
+                    </div>
+                </nav>
+                
+                <!-- Footer -->
+                <div class="border-t px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-muted-foreground">Node.js App</span>
+                        <button id="theme-toggle" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8">
+                            <span class="sr-only">Toggle theme</span>
+                            <svg class="h-3 w-3 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <path d="m12 2 0 2"></path>
+                                <path d="m12 20 0 2"></path>
+                                <path d="m4.93 4.93 1.41 1.41"></path>
+                                <path d="m17.66 17.66 1.41 1.41"></path>
+                                <path d="m2 12 2 0"></path>
+                                <path d="m20 12 2 0"></path>
+                                <path d="m6.34 17.66-1.41 1.41"></path>
+                                <path d="m19.07 4.93-1.41 1.41"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-auto">
+            <!-- Landing Page -->
+            <div id="page-landing" class="page-content">
+                <div class="container mx-auto px-4 py-8 max-w-4xl">
+                    <!-- Header -->
+                    <header class="text-center mb-12">
+                        <div class="flex items-center justify-center gap-3 mb-4">
+                            <span class="text-5xl animate-bounce">🚀</span>
+                            <h1 class="text-4xl md:text-6xl font-bold tracking-tight">Hello World</h1>
+                        </div>
+                        <p class="text-xl text-muted-foreground font-medium">A modern Node.js application built with shadcn/ui</p>
+                    </header>
+
+                    <!-- Main Content -->
+                    <section class="space-y-8">
+                        <!-- Greeting Card -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-8">
+                            <div class="text-center space-y-6">
+                                <div class="space-y-3">
+                                    <h2 id="greeting-text" class="text-3xl md:text-4xl font-semibold tracking-tight transition-all duration-300">Hello, World! 🌍</h2>
+                                    <p id="timestamp" class="text-sm text-muted-foreground"></p>
+                                </div>
+                                
+                                <div class="max-w-sm mx-auto">
+                                    <div class="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            id="name-input" 
+                                            placeholder="Enter your name..." 
+                                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1"
+                                        >
+                                        <button 
+                                            id="greet-btn" 
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                        >
+                                            Say Hello
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Features Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+                                <div class="text-center space-y-3">
+                                    <div class="text-4xl">⚡</div>
+                                    <h3 class="text-xl font-semibold">Fast</h3>
+                                    <p class="text-muted-foreground">Built with Express.js for lightning-fast responses</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+                                <div class="text-center space-y-3">
+                                    <div class="text-4xl">🎨</div>
+                                    <h3 class="text-xl font-semibold">Modern</h3>
+                                    <p class="text-muted-foreground">Clean design following shadcn/ui principles</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+                                <div class="text-center space-y-3">
+                                    <div class="text-4xl">📱</div>
+                                    <h3 class="text-xl font-semibold">Responsive</h3>
+                                    <p class="text-muted-foreground">Works perfectly on desktop, tablet, and mobile</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Components -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- API Status Card -->
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                                        <h3 class="text-lg font-semibold">API Status</h3>
+                                    </div>
+                                    <p class="text-muted-foreground">Server is running and responding to requests</p>
+                                    <div class="text-xs text-muted-foreground bg-muted p-2 rounded font-mono">
+                                        GET /api/greeting
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tech Stack Card -->
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                <div class="space-y-3">
+                                    <h3 class="text-lg font-semibold">Tech Stack</h3>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                            <span class="text-muted-foreground">Node.js & Express</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
+                                            <span class="text-muted-foreground">Tailwind CSS</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                                            <span class="text-muted-foreground">shadcn/ui Design</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Footer -->
+                    <footer class="text-center mt-12 pt-8 border-t">
+                        <p class="text-sm text-muted-foreground">
+                            &copy; 2025 Hello World App. Made with ❤️ and Node.js
+                        </p>
+                    </footer>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div id="page-analytics" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-6xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3v18h18"></path>
+                                <path d="m19 9-5 5-4-4-3 3"></path>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Analytics Dashboard</h1>
+                        </div>
+                        <p class="text-muted-foreground">Monitor account performance and product metrics</p>
+                    </header>
+
+                    <!-- Analytics Content -->
+                    <section class="space-y-6">
+                        <!-- Stats Overview -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-muted-foreground">Total Accounts</p>
+                                        <p class="text-2xl font-bold">0</p>
+                                    </div>
+                                    <div class="h-4 w-4 text-muted-foreground">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="m22 21-3-3m0 0a6 6 0 1 0-6-6 6 6 0 0 0 6 6Z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-muted-foreground">Total Products</p>
+                                        <p class="text-2xl font-bold">0</p>
+                                    </div>
+                                    <div class="h-4 w-4 text-muted-foreground">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m7.5 4.27 9 5.15"></path>
+                                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-muted-foreground">Avg Products/Account</p>
+                                        <p class="text-2xl font-bold">0</p>
+                                    </div>
+                                    <div class="h-4 w-4 text-muted-foreground">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"></polyline>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <h3 class="text-lg font-semibold">Account Overview</h3>
+                                <p class="text-sm text-muted-foreground">A comprehensive view of all accounts and their product counts</p>
+                            </div>
+                            
+                            <div class="p-6">
+                                <div class="overflow-hidden rounded-md border">
+                                    <table class="w-full caption-bottom text-sm">
+                                        <thead class="[&_tr]:border-b">
+                                            <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Account ID</th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Account Name</th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Number of Products</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="[&_tr:last-child]:border-0">
+                                            <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                                <td class="p-4 align-middle text-center text-muted-foreground" colspan="3">
+                                                    <div class="flex flex-col items-center gap-2 py-8">
+                                                        <svg class="h-8 w-8 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                                                            <line x1="16" x2="16" y1="2" y2="6"></line>
+                                                            <line x1="8" x2="8" y1="2" y2="6"></line>
+                                                            <line x1="3" x2="21" y1="10" y2="10"></line>
+                                                        </svg>
+                                                        <p class="text-sm">No data available</p>
+                                                        <p class="text-xs text-muted-foreground">Account information will appear here when data is loaded</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="page-settings" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-6xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2.18l.07 1.09c.04.37-.1.74-.4.98a6.05 6.05 0 0 0-1.14.66c-.33.2-.74.2-1.07 0l-.93-.54a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.93.54c.37.21.52.6.4.98a6.05 6.05 0 0 0 0 1.32c.12.38-.03.77-.4.98l-.93.54a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.93-.54c.33-.2.74-.2 1.07 0 .37.22.77.4 1.14.66.3.24.44.61.4.98l-.07 1.09A2 2 0 0 0 11.78 22h.44a2 2 0 0 0 2-2.18l-.07-1.09c-.04-.37.1-.74.4-.98.37-.26.77-.44 1.14-.66.33-.2.74-.2 1.07 0l.93.54a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.93-.54c-.37-.21-.52-.6-.4-.98a6.05 6.05 0 0 0 0-1.32c-.12-.38.03-.77.4-.98l.93-.54a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.93.54c-.33.2-.74.2-1.07 0a6.05 6.05 0 0 0-1.14-.66c-.3-.24-.44-.61-.4-.98l.07-1.09A2 2 0 0 0 12.22 2z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Settings</h1>
+                        </div>
+                        <p class="text-muted-foreground">Configure MCP servers and application settings</p>
+                    </header>
+
+                    <!-- Settings Content -->
+                    <section class="space-y-8">
+                        <!-- MCP Configuration Section -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">MCP Configuration</h3>
+                                        <p class="text-sm text-muted-foreground">Manage Model Context Protocol server connections</p>
+                                    </div>
+                                    <button 
+                                        id="add-mcp-service" 
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                    >
+                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M5 12h14"></path>
+                                            <path d="M12 5v14"></path>
+                                        </svg>
+                                        Add MCP Service
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="p-6">
+                                <!-- Current MCP Services -->
+                                <div id="mcp-services-list" class="space-y-4">
+                                    <!-- MCP services will be populated here -->
+                                </div>
+                                
+                                <!-- Add New MCP Service Form (Initially Hidden) -->
+                                <div id="add-mcp-form" class="hidden mt-6 p-4 border rounded-lg bg-muted">
+                                    <h4 class="text-md font-semibold mb-4">Add New MCP Service</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="mcp-name" class="text-sm font-medium text-foreground">Service Name</label>
+                                            <input 
+                                                type="text" 
+                                                id="mcp-name" 
+                                                placeholder="e.g., atlassian-mcp-server" 
+                                                class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label for="mcp-command" class="text-sm font-medium text-foreground">Command</label>
+                                            <input 
+                                                type="text" 
+                                                id="mcp-command" 
+                                                placeholder="e.g., npx" 
+                                                class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            >
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="mcp-args" class="text-sm font-medium text-foreground">Arguments (comma-separated)</label>
+                                            <input 
+                                                type="text" 
+                                                id="mcp-args" 
+                                                placeholder="e.g., -y, mcp-remote, https://mcp.atlassian.com/v1/sse" 
+                                                class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            >
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="mcp-env" class="text-sm font-medium text-foreground">Environment Variables (JSON format)</label>
+                                            <textarea 
+                                                id="mcp-env" 
+                                                rows="3" 
+                                                placeholder='{"MCP_TIMEOUT": "120000", "NODE_OPTIONS": "--max-old-space-size=4096"}' 
+                                                class="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 mt-4">
+                                        <button 
+                                            id="save-mcp-service" 
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
+                                        >
+                                            Save Service
+                                        </button>
+                                        <button 
+                                            id="cancel-mcp-service" 
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Web Connectivity Section -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Web Connectivity</h3>
+                                        <p class="text-sm text-muted-foreground">Test application's ability to reach external web resources</p>
+                                    </div>
+                                    <button 
+                                        id="test-web-connectivity" 
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                    >
+                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
+                                            <path d="M9.5 12.5 11 14l4-4"></path>
+                                        </svg>
+                                        Test Connectivity
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="p-6">
+                                <div id="connectivity-results" class="space-y-4">
+                                    <div class="text-center py-8 text-muted-foreground">
+                                        <svg class="h-12 w-12 mx-auto mb-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10-10 10S2 17.523 2 12z"></path>
+                                            <path d="M9.5 12.5 11 14l4-4"></path>
+                                        </svg>
+                                        <p>Click "Test Connectivity" to check web access</p>
+                                        <p class="text-sm">Tests connectivity to key external services</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Application Settings Section -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <h3 class="text-lg font-semibold">Application Settings</h3>
+                                <p class="text-sm text-muted-foreground">General application configuration options</p>
+                            </div>
+                            
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="space-y-0.5">
+                                            <label class="text-sm font-medium">Dark Mode</label>
+                                            <p class="text-xs text-muted-foreground">Toggle between light and dark theme</p>
+                                        </div>
+                                        <button id="settings-theme-toggle" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8">
+                                            <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="4"></circle>
+                                                <path d="m12 2 0 2"></path>
+                                                <path d="m12 20 0 2"></path>
+                                                <path d="m4.93 4.93 1.41 1.41"></path>
+                                                <path d="m17.66 17.66 1.41 1.41"></path>
+                                                <path d="m2 12 2 0"></path>
+                                                <path d="m20 12 2 0"></path>
+                                                <path d="m6.34 17.66-1.41 1.41"></path>
+                                                <path d="m19.07 4.93-1.41 1.41"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div class="space-y-0.5">
+                                            <label class="text-sm font-medium">Auto-refresh Roadmap</label>
+                                            <p class="text-xs text-muted-foreground">Automatically refresh roadmap data every 5 minutes</p>
+                                        </div>
+                                        <input type="checkbox" id="auto-refresh-toggle" class="rounded border-input">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Roadmap Page -->
+            <div id="page-roadmap" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10,9 9,9 8,9"></polyline>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Platform Roadmap</h1>
+                        </div>
+                        <p class="text-muted-foreground">Strategic initiatives to enhance the platform product</p>
+                    </header>
+
+                    <!-- Controls Section -->
+                    <section class="mb-6">
+                        <div class="flex flex-col gap-4">
+                            <!-- Assignee Input Section -->
+                            <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                <div class="flex flex-col sm:flex-row gap-3 flex-1">
+                                    <!-- Assignee Name Input -->
+                                    <div class="relative">
+                                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                        <input 
+                                            type="text" 
+                                            id="assignee-input" 
+                                            placeholder="Enter assignee name (e.g., Kevin Yu)..." 
+                                            value="Kevin Yu"
+                                            class="pl-10 flex h-10 w-full sm:w-[280px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                    </div>
+                                    
+                                    <!-- Load Button -->
+                                    <button 
+                                        id="load-initiatives" 
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                    >
+                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17,8 12,3 7,8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Load Initiatives
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Search and Filter Section -->
+                            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <!-- Search -->
+                                    <div class="relative">
+                                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <path d="m21 21-4.35-4.35"></path>
+                                        </svg>
+                                        <input 
+                                            type="text" 
+                                            id="roadmap-search" 
+                                            placeholder="Search initiatives..." 
+                                            class="pl-10 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                    </div>
+                                    
+                                    <!-- Status Filter -->
+                                    <select 
+                                        id="status-filter" 
+                                        class="flex h-10 w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    >
+                                        <option value="">All Statuses</option>
+                                        <option value="Open">Open</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Proposed">Proposed</option>
+                                        <option value="Committed">Committed</option>
+                                        <option value="Done">Done</option>
+                                        <option value="Closed">Closed</option>
+                                    </select>
+                                </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex gap-2">
+                                <button 
+                                    id="refresh-data" 
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                        <path d="M21 3v5h-5"></path>
+                                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                        <path d="M3 21v-5h5"></path>
+                                    </svg>
+                                    Refresh
+                                </button>
+                                <button 
+                                    id="export-roadmap" 
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7,10 12,15 17,10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Export
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Roadmap Table -->
+                    <section class="space-y-4">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 id="assignee-initiatives-title" class="text-lg font-semibold">Initiatives</h3>
+                                        <p id="assignee-initiatives-subtitle" class="text-sm text-muted-foreground">Enter an assignee name above to load their initiatives</p>
+                                    </div>
+                                    <div class="text-sm text-muted-foreground">
+                                        <span id="initiative-count">0</span> initiatives
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-0">
+                                <div class="overflow-x-auto">
+                                    <table id="roadmap-table" class="w-full">
+                                        <thead class="border-b">
+                                            <tr class="border-b transition-colors hover:bg-muted/50">
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="key">
+                                                    <div class="flex items-center gap-1">
+                                                        Key
+                                                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M7 15l5-5 5 5"></path>
+                                                            <path d="M7 9l5 5 5-5"></path>
+                                                        </svg>
+                                                    </div>
+                                                </th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="summary">
+                                                    <div class="flex items-center gap-1">
+                                                        Summary
+                                                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M7 15l5-5 5 5"></path>
+                                                            <path d="M7 9l5 5 5-5"></path>
+                                                        </svg>
+                                                    </div>
+                                                </th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="status">
+                                                    <div class="flex items-center gap-1">
+                                                        Status
+                                                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M7 15l5-5 5 5"></path>
+                                                            <path d="M7 9l5 5 5-5"></path>
+                                                        </svg>
+                                                    </div>
+                                                </th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="created">
+                                                    <div class="flex items-center gap-1">
+                                                        Created
+                                                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M7 15l5-5 5 5"></path>
+                                                            <path d="M7 9l5 5 5-5"></path>
+                                                        </svg>
+                                                    </div>
+                                                </th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="updated">
+                                                    <div class="flex items-center gap-1">
+                                                        Updated
+                                                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M7 15l5-5 5 5"></path>
+                                                            <path d="M7 9l5 5 5-5"></path>
+                                                        </svg>
+                                                    </div>
+                                                </th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="roadmap-tbody" class="[&_tr:last-child]:border-0">
+                                            <!-- Table rows will be populated by JavaScript -->
+                                            <tr class="border-b transition-colors hover:bg-muted/50">
+                                                <td class="p-4 align-middle text-center text-muted-foreground" colspan="6">
+                                                    <div class="flex flex-col items-center gap-2 py-8">
+                                                        <div class="loading-spinner"></div>
+                                                        <p class="text-sm">Loading initiatives...</p>
+                                                        <p class="text-xs text-muted-foreground">Connecting to Jira...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

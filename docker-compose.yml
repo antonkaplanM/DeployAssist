@@ -1,0 +1,24 @@
+services:
+  hello-world-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hello-world-nodejs:latest
+    container_name: hello-world-app
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "powershell", "-Command", "try { $response = Invoke-WebRequest -Uri 'http://localhost:8080/health' -UseBasicParsing -TimeoutSec 5; if ($response.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "com.docker.compose.project=hello-world-nodejs"
+      - "description=Hello World Node.js app with shadcn/ui design - Windows containers"
+    # Windows-specific configuration
+    platform: windows/amd64
