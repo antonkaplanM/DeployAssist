@@ -3,12 +3,31 @@ const path = require('path');
 const { spawn } = require('child_process');
 const https = require('https');
 
-// Atlassian API configuration
+// Environment variable validation
+function validateEnvironmentVariables() {
+    const required = ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN', 'ATLASSIAN_CLOUD_ID'];
+    const missing = required.filter(key => !process.env[key]);
+    
+    if (missing.length > 0) {
+        console.error('❌ Missing required environment variables:');
+        missing.forEach(key => console.error(`   - ${key}`));
+        console.error('\n📝 Please create a .env file with the required variables.');
+        console.error('📄 See env.example.txt for the template.');
+        console.error('\n🔗 Get your Atlassian API token from:');
+        console.error('   https://id.atlassian.com/manage-profile/security/api-tokens');
+        process.exit(1);
+    }
+}
+
+// Validate environment variables before starting
+validateEnvironmentVariables();
+
+// Atlassian API configuration - uses environment variables only
 const ATLASSIAN_CONFIG = {
-    email: process.env.ATLASSIAN_EMAIL || 'anton.kaplan@moodys.com', // Set ATLASSIAN_EMAIL environment variable or update this
-    apiToken: 
-    cloudId: 'a0376734-67ec-48a1-8aae-e02d48c422ae',
-    baseUrl: 'https://api.atlassian.com/ex/jira'
+    email: process.env.ATLASSIAN_EMAIL,
+    apiToken: process.env.ATLASSIAN_API_TOKEN,
+    cloudId: process.env.ATLASSIAN_CLOUD_ID,
+    baseUrl: process.env.ATLASSIAN_BASE_URL || 'https://api.atlassian.com/ex/jira'
 };
 
 const app = express();
