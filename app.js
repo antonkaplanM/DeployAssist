@@ -3,24 +3,11 @@ const path = require('path');
 const { spawn } = require('child_process');
 const https = require('https');
 
-// Environment variable validation
-function validateEnvironmentVariables() {
+// Environment variables helper
+function getMissingAtlassianEnvVars() {
     const required = ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN', 'ATLASSIAN_CLOUD_ID'];
-    const missing = required.filter(key => !process.env[key]);
-    
-    if (missing.length > 0) {
-        console.error('❌ Missing required environment variables:');
-        missing.forEach(key => console.error(`   - ${key}`));
-        console.error('\n📝 Please create a .env file with the required variables.');
-        console.error('📄 See env.example.txt for the template.');
-        console.error('\n🔗 Get your Atlassian API token from:');
-        console.error('   https://id.atlassian.com/manage-profile/security/api-tokens');
-        process.exit(1);
-    }
+    return required.filter(key => !process.env[key]);
 }
-
-// Validate environment variables before starting
-validateEnvironmentVariables();
 
 // Atlassian API configuration - uses environment variables only
 const ATLASSIAN_CONFIG = {
@@ -29,6 +16,14 @@ const ATLASSIAN_CONFIG = {
     cloudId: process.env.ATLASSIAN_CLOUD_ID,
     baseUrl: process.env.ATLASSIAN_BASE_URL || 'https://api.atlassian.com/ex/jira'
 };
+
+// Sanitize user-provided strings for safe use in JQL
+function sanitizeForJql(value) {
+    return String(value)
+        .replace(/["\\]/g, '\\$&') // escape quotes and backslashes
+        .replace(/[\r\n\t]/g, ' ')   // remove control characters
+        .trim();
+}
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -58,12 +53,7 @@ app.get('/api/greeting', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development'
-    });
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Jira initiatives API endpoint - now using direct Atlassian API
@@ -132,11 +122,24 @@ async function fetchJiraInitiativesDirectAPI(assigneeName = null) {
     try {
         console.log('🔗 Making direct call to Atlassian REST API...');
         
+        // Ensure required env vars are present before attempting API call
+        const missing = getMissingAtlassianEnvVars();
+        if (missing.length > 0) {
+            console.log('⚠️ Missing Atlassian env vars:', missing.join(', '));
+            return {
+                issues: [],
+                total: 0,
+                success: false,
+                error: `Missing environment variables: ${missing.join(', ')}`
+            };
+        }
+        
         // Build JQL query for assignee name
         let jqlQuery;
         if (assigneeName) {
             // Search by assignee display name with initiative and epic types
-            jqlQuery = `assignee in ("${assigneeName}") AND (issuetype = "Initiative" OR issuetype = "Epic" OR issuetype = "Story" OR issuetype = "Task")`;
+            const safeAssignee = sanitizeForJql(assigneeName);
+            jqlQuery = `assignee in ("${safeAssignee}") AND (issuetype = "Initiative" OR issuetype = "Epic" OR issuetype = "Story" OR issuetype = "Task")`;
         } else {
             // Fallback query
             jqlQuery = 'issuetype = "Initiative" OR issuetype = "Epic"';
@@ -602,10 +605,7 @@ function testWebResource(url, timeout = 5000) {
     });
 }
 
-// Test endpoint for health checks
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+// Removed duplicate /health endpoint
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
