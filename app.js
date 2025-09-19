@@ -6,7 +6,7 @@ const https = require('https');
 // Atlassian API configuration
 const ATLASSIAN_CONFIG = {
     email: process.env.ATLASSIAN_EMAIL || 'anton.kaplan@moodys.com', // Set ATLASSIAN_EMAIL environment variable or update this
-    apiToken: 'REDACTED',
+    apiToken: 
     cloudId: 'a0376734-67ec-48a1-8aae-e02d48c422ae',
     baseUrl: 'https://api.atlassian.com/ex/jira'
 };
