@@ -368,96 +368,11 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Settings</h1>
                         </div>
-                        <p class="text-muted-foreground">Configure MCP servers and application settings</p>
+                        <p class="text-muted-foreground">Configure application settings and preferences</p>
                     </header>
 
                     <!-- Settings Content -->
                     <section class="space-y-8">
-                        <!-- MCP Configuration Section -->
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6 border-b">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h3 class="text-lg font-semibold">MCP Configuration</h3>
-                                        <p class="text-sm text-muted-foreground">Manage Model Context Protocol server connections</p>
-                                    </div>
-                                    <button 
-                                        id="add-mcp-service" 
-                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                                    >
-                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M5 12h14"></path>
-                                            <path d="M12 5v14"></path>
-                                        </svg>
-                                        Add MCP Service
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="p-6">
-                                <!-- Current MCP Services -->
-                                <div id="mcp-services-list" class="space-y-4">
-                                    <!-- MCP services will be populated here -->
-                                </div>
-                                
-                                <!-- Add New MCP Service Form (Initially Hidden) -->
-                                <div id="add-mcp-form" class="hidden mt-6 p-4 border rounded-lg bg-muted">
-                                    <h4 class="text-md font-semibold mb-4">Add New MCP Service</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label for="mcp-name" class="text-sm font-medium text-foreground">Service Name</label>
-                                            <input 
-                                                type="text" 
-                                                id="mcp-name" 
-                                                placeholder="e.g., atlassian-mcp-server" 
-                                                class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                            >
-                                        </div>
-                                        <div>
-                                            <label for="mcp-command" class="text-sm font-medium text-foreground">Command</label>
-                                            <input 
-                                                type="text" 
-                                                id="mcp-command" 
-                                                placeholder="e.g., npx" 
-                                                class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                            >
-                                        </div>
-                                        <div class="md:col-span-2">
-                                            <label for="mcp-args" class="text-sm font-medium text-foreground">Arguments (comma-separated)</label>
-                                            <input 
-                                                type="text" 
-                                                id="mcp-args" 
-                                                placeholder="e.g., -y, mcp-remote, https://mcp.atlassian.com/v1/sse" 
-                                                class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                            >
-                                        </div>
-                                        <div class="md:col-span-2">
-                                            <label for="mcp-env" class="text-sm font-medium text-foreground">Environment Variables (JSON format)</label>
-                                            <textarea 
-                                                id="mcp-env" 
-                                                rows="3" 
-                                                placeholder='{"MCP_TIMEOUT": "120000", "NODE_OPTIONS": "--max-old-space-size=4096"}' 
-                                                class="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-                                            ></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2 mt-4">
-                                        <button 
-                                            id="save-mcp-service" 
-                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
-                                        >
-                                            Save Service
-                                        </button>
-                                        <button 
-                                            id="cancel-mcp-service" 
-                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Web Connectivity Section -->
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
