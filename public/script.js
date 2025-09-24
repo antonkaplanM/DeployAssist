@@ -6,19 +6,19 @@ const greetButton = document.getElementById('greet-btn');
 const themeToggle = document.getElementById('theme-toggle');
 
 // Navigation elements
-const navLanding = document.getElementById('nav-landing');
+const navDashboard = document.getElementById('nav-dashboard');
 const navAnalytics = document.getElementById('nav-analytics');
 const navRoadmap = document.getElementById('nav-roadmap');
 const navProvisioning = document.getElementById('nav-provisioning');
 const navSettings = document.getElementById('nav-settings');
-const pageLanding = document.getElementById('page-landing');
+const pageDashboard = document.getElementById('page-dashboard');
 const pageAnalytics = document.getElementById('page-analytics');
 const pageRoadmap = document.getElementById('page-roadmap');
 const pageProvisioning = document.getElementById('page-provisioning');
 const pageSettings = document.getElementById('page-settings');
 
 // Current page state
-let currentPage = 'landing';
+let currentPage = 'dashboard';
 
 
 // Roadmap data and state
@@ -941,8 +941,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize theme
     initializeTheme();
     
-    // Initialize navigation - restore saved page or default to landing
-    const savedPage = localStorage.getItem('currentPage') || 'landing';
+    // Initialize navigation - restore saved page or default to dashboard
+    const savedPage = localStorage.getItem('currentPage') || 'dashboard';
     showPage(savedPage);
     
     // Update timestamp
@@ -985,10 +985,10 @@ document.addEventListener('keydown', function(event) {
         toggleTheme();
     }
     
-    // Ctrl/Cmd + 1 to go to Landing page
+    // Ctrl/Cmd + 1 to go to Dashboard page
     if ((event.ctrlKey || event.metaKey) && event.key === '1') {
         event.preventDefault();
-        showPage('landing');
+        showPage('dashboard');
     }
     
     // Ctrl/Cmd + 2 to go to Analytics page
@@ -1003,8 +1003,8 @@ document.addEventListener('keydown', function(event) {
         showPage('roadmap');
     }
     
-    // Escape to clear input (only on landing page)
-    if (event.key === 'Escape' && currentPage === 'landing') {
+    // Escape to clear input (only on dashboard page)
+    if (event.key === 'Escape' && currentPage === 'dashboard') {
         if (nameInput) {
             nameInput.value = '';
             nameInput.focus();
@@ -1015,13 +1015,13 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'ArrowLeft' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         if (currentPage === 'analytics') {
-            showPage('landing');
+            showPage('dashboard');
         }
     }
     
     if (event.key === 'ArrowRight' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
-        if (currentPage === 'landing') {
+        if (currentPage === 'dashboard') {
             showPage('analytics');
         }
     }
@@ -1072,6 +1072,36 @@ function setupSettingsEventListeners() {
     if (testSalesforceButton) {
         testSalesforceButton.addEventListener('click', testSalesforceConnection);
     }
+
+    // Setup collapsible sections
+    setupCollapsibleSections();
+}
+
+// Setup collapsible sections functionality
+function setupCollapsibleSections() {
+    const sectionToggles = document.querySelectorAll('.settings-section-toggle');
+    
+    sectionToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const sectionName = this.getAttribute('data-section');
+            const content = document.getElementById(`${sectionName}-content`);
+            const chevron = this.querySelector('.section-chevron');
+            
+            if (content && chevron) {
+                const isHidden = content.classList.contains('hidden');
+                
+                if (isHidden) {
+                    // Expand section
+                    content.classList.remove('hidden');
+                    chevron.style.transform = 'rotate(180deg)';
+                } else {
+                    // Collapse section
+                    content.classList.add('hidden');
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+    });
 }
 
 

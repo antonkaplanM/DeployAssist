@@ -61,14 +61,16 @@
                 <nav class="flex-1 px-4 py-6">
                     <div class="space-y-2">
                         <button 
-                            id="nav-landing" 
+                            id="nav-dashboard" 
                             class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-accent text-accent-foreground"
                         >
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                                <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                                <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                                <rect width="7" height="5" x="3" y="16" rx="1"></rect>
                             </svg>
-                            Landing Page
+                            Dashboard
                         </button>
                         
                         <button 
@@ -146,16 +148,16 @@
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-auto">
-            <!-- Landing Page -->
-            <div id="page-landing" class="page-content">
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page-content">
                 <div class="container mx-auto px-4 py-8 max-w-4xl">
                     <!-- Header -->
                     <header class="text-center mb-12">
                         <div class="flex items-center justify-center gap-3 mb-4">
-                            <span class="text-5xl animate-bounce">🚀</span>
-                            <h1 class="text-4xl md:text-6xl font-bold tracking-tight">Hello World</h1>
+                            <span class="text-5xl animate-bounce">📊</span>
+                            <h1 class="text-4xl md:text-6xl font-bold tracking-tight">Dashboard</h1>
                         </div>
-                        <p class="text-xl text-muted-foreground font-medium">A modern Node.js application built with shadcn/ui</p>
+                        <p class="text-xl text-muted-foreground font-medium">Welcome to your application dashboard</p>
                     </header>
 
                     <!-- Main Content -->
@@ -560,15 +562,26 @@
 
                         <!-- Web Connectivity Section -->
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6 border-b">
+                            <button 
+                                class="settings-section-toggle w-full p-6 text-left hover:bg-muted/50 transition-colors"
+                                data-section="web-connectivity"
+                            >
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <h3 class="text-lg font-semibold">Web Connectivity</h3>
                                         <p class="text-sm text-muted-foreground">Test application's ability to reach external web resources</p>
                                     </div>
+                                    <svg class="section-chevron h-5 w-5 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                            
+                            <div id="web-connectivity-content" class="settings-section-content hidden">
+                                <div class="px-6 pb-4">
                                     <button 
                                         id="test-web-connectivity" 
-                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mb-4"
                                     >
                                         <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
@@ -576,18 +589,15 @@
                                         </svg>
                                         Test Connectivity
                                     </button>
-                                </div>
-                            </div>
-                            
-                            <div class="p-6">
-                                <div id="connectivity-results" class="space-y-4">
-                                    <div class="text-center py-8 text-muted-foreground">
-                                        <svg class="h-12 w-12 mx-auto mb-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10-10 10S2 17.523 2 12z"></path>
-                                            <path d="M9.5 12.5 11 14l4-4"></path>
-                                        </svg>
-                                        <p>Click "Test Connectivity" to check web access</p>
-                                        <p class="text-sm">Tests connectivity to key external services</p>
+                                    <div id="connectivity-results" class="space-y-4">
+                                        <div class="text-center py-8 text-muted-foreground">
+                                            <svg class="h-12 w-12 mx-auto mb-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10-10 10S2 17.523 2 12z"></path>
+                                                <path d="M9.5 12.5 11 14l4-4"></path>
+                                            </svg>
+                                            <p>Click "Test Connectivity" to check web access</p>
+                                            <p class="text-sm">Tests connectivity to key external services</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -595,15 +605,26 @@
 
                         <!-- Salesforce Connection Test Section -->
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6 border-b">
+                            <button 
+                                class="settings-section-toggle w-full p-6 text-left hover:bg-muted/50 transition-colors"
+                                data-section="salesforce-integration"
+                            >
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <h3 class="text-lg font-semibold">Salesforce Integration</h3>
                                         <p class="text-sm text-muted-foreground">Test and configure Salesforce OAuth authentication</p>
                                     </div>
+                                    <svg class="section-chevron h-5 w-5 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                            
+                            <div id="salesforce-integration-content" class="settings-section-content hidden">
+                                <div class="px-6 pb-4">
                                     <button 
                                         id="test-salesforce-connection" 
-                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mb-4"
                                     >
                                         <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
@@ -611,19 +632,16 @@
                                         </svg>
                                         Test Salesforce
                                     </button>
-                                </div>
-                            </div>
-                            
-                            <div class="p-6">
-                                <div id="salesforce-results" class="space-y-4">
-                                    <div class="text-center py-8 text-muted-foreground">
-                                        <svg class="h-12 w-12 mx-auto mb-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                            <circle cx="9" cy="7" r="4"></circle>
-                                            <path d="m22 2-5 10-3-3-5 10"></path>
-                                        </svg>
-                                        <p>Click "Test Salesforce" to check OAuth configuration</p>
-                                        <p class="text-sm">Tests authentication flow and API connectivity</p>
+                                    <div id="salesforce-results" class="space-y-4">
+                                        <div class="text-center py-8 text-muted-foreground">
+                                            <svg class="h-12 w-12 mx-auto mb-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="9" cy="7" r="4"></circle>
+                                                <path d="m22 2-5 10-3-3-5 10"></path>
+                                            </svg>
+                                            <p>Click "Test Salesforce" to check OAuth configuration</p>
+                                            <p class="text-sm">Tests authentication flow and API connectivity</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -631,39 +649,51 @@
 
                         <!-- Application Settings Section -->
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6 border-b">
-                                <h3 class="text-lg font-semibold">Application Settings</h3>
-                                <p class="text-sm text-muted-foreground">General application configuration options</p>
-                            </div>
-                            
-                            <div class="p-6">
-                                <div class="space-y-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="space-y-0.5">
-                                            <label class="text-sm font-medium">Dark Mode</label>
-                                            <p class="text-xs text-muted-foreground">Toggle between light and dark theme</p>
-                                        </div>
-                                        <button id="settings-theme-toggle" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8">
-                                            <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <circle cx="12" cy="12" r="4"></circle>
-                                                <path d="m12 2 0 2"></path>
-                                                <path d="m12 20 0 2"></path>
-                                                <path d="m4.93 4.93 1.41 1.41"></path>
-                                                <path d="m17.66 17.66 1.41 1.41"></path>
-                                                <path d="m2 12 2 0"></path>
-                                                <path d="m20 12 2 0"></path>
-                                                <path d="m6.34 17.66-1.41 1.41"></path>
-                                                <path d="m19.07 4.93-1.41 1.41"></path>
-                                            </svg>
-                                        </button>
+                            <button 
+                                class="settings-section-toggle w-full p-6 text-left hover:bg-muted/50 transition-colors"
+                                data-section="application-settings"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Application Settings</h3>
+                                        <p class="text-sm text-muted-foreground">General application configuration options</p>
                                     </div>
-                                    
-                                    <div class="flex items-center justify-between">
-                                        <div class="space-y-0.5">
-                                            <label class="text-sm font-medium">Auto-refresh Roadmap</label>
-                                            <p class="text-xs text-muted-foreground">Automatically refresh roadmap data every 5 minutes</p>
+                                    <svg class="section-chevron h-5 w-5 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                            
+                            <div id="application-settings-content" class="settings-section-content hidden">
+                                <div class="px-6 pb-6">
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <div class="space-y-0.5">
+                                                <label class="text-sm font-medium">Dark Mode</label>
+                                                <p class="text-xs text-muted-foreground">Toggle between light and dark theme</p>
+                                            </div>
+                                            <button id="settings-theme-toggle" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8">
+                                                <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <circle cx="12" cy="12" r="4"></circle>
+                                                    <path d="m12 2 0 2"></path>
+                                                    <path d="m12 20 0 2"></path>
+                                                    <path d="m4.93 4.93 1.41 1.41"></path>
+                                                    <path d="m17.66 17.66 1.41 1.41"></path>
+                                                    <path d="m2 12 2 0"></path>
+                                                    <path d="m20 12 2 0"></path>
+                                                    <path d="m6.34 17.66-1.41 1.41"></path>
+                                                    <path d="m19.07 4.93-1.41 1.41"></path>
+                                                </svg>
+                                            </button>
                                         </div>
-                                        <input type="checkbox" id="auto-refresh-toggle" class="rounded border-input">
+                                        
+                                        <div class="flex items-center justify-between">
+                                            <div class="space-y-0.5">
+                                                <label class="text-sm font-medium">Auto-refresh Roadmap</label>
+                                                <p class="text-xs text-muted-foreground">Automatically refresh roadmap data every 5 minutes</p>
+                                            </div>
+                                            <input type="checkbox" id="auto-refresh-toggle" class="rounded border-input">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
