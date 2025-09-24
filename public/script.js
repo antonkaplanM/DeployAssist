@@ -930,7 +930,7 @@ nameInput.addEventListener('input', validateInput);
 themeToggle.addEventListener('click', toggleTheme);
 
 // Navigation event listeners
-navLanding.addEventListener('click', handleNavigation);
+navDashboard.addEventListener('click', handleNavigation);
 navAnalytics.addEventListener('click', handleNavigation);
 navRoadmap.addEventListener('click', handleNavigation);
 navProvisioning.addEventListener('click', handleNavigation);
