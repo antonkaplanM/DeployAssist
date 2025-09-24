@@ -10,11 +10,14 @@ const navDashboard = document.getElementById('nav-dashboard');
 const navAnalytics = document.getElementById('nav-analytics');
 const navRoadmap = document.getElementById('nav-roadmap');
 const navProvisioning = document.getElementById('nav-provisioning');
+const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
+const navValidationRules = document.getElementById('nav-validation-rules');
 const navSettings = document.getElementById('nav-settings');
 const pageDashboard = document.getElementById('page-dashboard');
 const pageAnalytics = document.getElementById('page-analytics');
 const pageRoadmap = document.getElementById('page-roadmap');
 const pageProvisioning = document.getElementById('page-provisioning');
+const pageValidationRules = document.getElementById('page-validation-rules');
 const pageSettings = document.getElementById('page-settings');
 
 // Current page state
@@ -37,6 +40,10 @@ let provisioningPagination = {
     totalPages: 0,
     isLoading: false
 };
+
+// Validation state
+let validationResults = new Map(); // recordId -> validationResult
+let enabledValidationRules = [];
 
 // Type-ahead search state
 let currentSearchRequest = null;
@@ -114,6 +121,41 @@ function showPage(pageId) {
     // Save current page to localStorage
     localStorage.setItem('currentPage', pageId);
     
+    // Handle sub-navigation visibility
+    const provisioningSubnav = document.getElementById('provisioning-subnav');
+    if (pageId === 'provisioning' || pageId === 'validation-rules') {
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.remove('hidden');
+        }
+    } else {
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.add('hidden');
+        }
+    }
+    
+    // Update sub-navigation active states
+    const subNavItems = document.querySelectorAll('.sub-nav-item');
+    subNavItems.forEach(item => {
+        item.classList.remove('active');
+        item.classList.remove('bg-accent', 'text-accent-foreground');
+        item.classList.add('text-muted-foreground');
+    });
+    
+    // Handle sub-navigation for provisioning pages
+    if (pageId === 'provisioning') {
+        const provisioningMonitorNav = document.getElementById('nav-provisioning-monitor');
+        if (provisioningMonitorNav) {
+            provisioningMonitorNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            provisioningMonitorNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'validation-rules') {
+        const validationRulesNav = document.getElementById('nav-validation-rules');
+        if (validationRulesNav) {
+            validationRulesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            validationRulesNav.classList.remove('text-muted-foreground');
+        }
+    }
+    
     // Trigger page-specific initialization
     if (pageId === 'analytics') {
         initializeAnalytics();
@@ -126,11 +168,63 @@ function showPage(pageId) {
         }, 100);
     } else if (pageId === 'provisioning') {
         initializeProvisioning();
+    } else if (pageId === 'validation-rules') {
+        initializeValidationRules();
     } else if (pageId === 'roadmap') {
         initializeRoadmap();
     } else if (pageId === 'settings') {
         initializeSettings();
     }
+}
+
+// Handle provisioning main navigation (toggle sub-navigation)
+function handleProvisioningNavigation(event) {
+    event.preventDefault();
+    
+    const provisioningSubnav = document.getElementById('provisioning-subnav');
+    if (provisioningSubnav) {
+        const isHidden = provisioningSubnav.classList.contains('hidden');
+        if (isHidden) {
+            // Show sub-navigation and navigate to provisioning monitor
+            provisioningSubnav.classList.remove('hidden');
+            showPage('provisioning');
+        } else {
+            // If already visible, always navigate to provisioning monitor (don't collapse)
+            showPage('provisioning');
+        }
+    } else {
+        // Fallback to regular navigation
+        showPage('provisioning');
+    }
+}
+
+// Navigation handler for regular navigation items
+function handleNavigation(event) {
+    event.preventDefault();
+    
+    // Get the target page from the button ID
+    const targetPage = event.currentTarget;
+    if (!targetPage) return;
+    
+    let pageId = targetPage.id.replace('nav-', '');
+    
+    // Handle special mappings for sub-navigation items
+    if (pageId === 'provisioning-monitor') {
+        pageId = 'provisioning';
+        // Make sure sub-navigation is visible when navigating to monitor
+        const provisioningSubnav = document.getElementById('provisioning-subnav');
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.remove('hidden');
+        }
+    }
+    
+    showPage(pageId);
+    
+    // Add click effect
+    targetPage.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        targetPage.style.transform = '';
+    }, 150);
 }
 
 function initializeAnalytics() {
@@ -932,7 +1026,9 @@ themeToggle.addEventListener('click', toggleTheme);
 navDashboard.addEventListener('click', handleNavigation);
 navAnalytics.addEventListener('click', handleNavigation);
 navRoadmap.addEventListener('click', handleNavigation);
-navProvisioning.addEventListener('click', handleNavigation);
+navProvisioning.addEventListener('click', handleProvisioningNavigation);
+navProvisioningMonitor.addEventListener('click', handleNavigation);
+navValidationRules.addEventListener('click', handleNavigation);
 navSettings.addEventListener('click', handleNavigation);
 
 // Initialize the app
@@ -1972,12 +2068,7 @@ async function handleNextPage() {
     }
 }
 
-// Get products display for provisioning request
-function getProductsDisplay(request) {
-    // Simulate products display since we don't have real product data
-    const productCount = Math.floor(Math.random() * 5) + 1;
-    return `<div class="text-sm">${productCount} product${productCount > 1 ? 's' : ''}</div>`;
-}
+// Get products display for provisioning request - REMOVED DUPLICATE
 
 // Get status color classes
 function getStatusColor(status) {
@@ -2621,3 +2712,1131 @@ function debounce(func, wait) {
     };
 }
 
+
+
+// ===== VALIDATION RULES FUNCTIONALITY =====
+
+// Initialize Validation Rules page
+async function initializeValidationRules() {
+    console.log('Validation Rules page initialized');
+    
+    try {
+        // Load validation configuration
+        loadValidationRulesConfiguration();
+        
+        // Setup event listeners
+        setupValidationRulesEventListeners();
+        
+        // Load enabled rules
+        enabledValidationRules = getEnabledValidationRules();
+        
+        console.log(' Validation Rules page initialized successfully');
+    } catch (error) {
+        console.error(' Error initializing Validation Rules page:', error);
+    }
+}
+
+// Load and display validation rules configuration
+function loadValidationRulesConfiguration() {
+    const config = loadValidationConfig();
+    
+    // Update summary cards
+    const totalRulesElement = document.getElementById('total-rules-count');
+    const enabledRulesElement = document.getElementById('enabled-rules-count');
+    const lastUpdatedElement = document.getElementById('last-updated-time');
+    
+    if (totalRulesElement) {
+        totalRulesElement.textContent = config.rules.length;
+    }
+    
+    if (enabledRulesElement) {
+        const enabledCount = Object.values(config.enabledRules).filter(enabled => enabled).length;
+        enabledRulesElement.textContent = enabledCount;
+    }
+    
+    if (lastUpdatedElement) {
+        const lastUpdated = new Date(config.lastUpdated);
+        lastUpdatedElement.textContent = lastUpdated.toLocaleDateString() + ' ' + lastUpdated.toLocaleTimeString();
+    }
+    
+    // Render rules list
+    renderValidationRulesList(config);
+}
+
+// Toggle validation rule enabled state
+function toggleValidationRule(ruleId, enabled) {
+    updateRuleEnabledState(ruleId, enabled);
+    
+    // Reload configuration display
+    loadValidationRulesConfiguration();
+    
+    // Update enabled rules cache
+    enabledValidationRules = getEnabledValidationRules();
+    
+    console.log(`[VALIDATION] Rule ${ruleId} ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+// Setup event listeners for validation rules page
+function setupValidationRulesEventListeners() {
+    // Test validation button
+    const testBtn = document.getElementById('test-validation-btn');
+    if (testBtn) {
+        testBtn.addEventListener('click', testValidationRules);
+    }
+    
+    // Debug JSON button
+    const debugBtn = document.getElementById('debug-json-btn');
+    if (debugBtn) {
+        debugBtn.addEventListener('click', debugPayloadStructure);
+    }
+}
+
+// ===== PROVISIONING MONITOR CORE FUNCTIONS =====
+
+// Initialize Provisioning Monitor page with validation
+async function initializeProvisioning() {
+    console.log('Provisioning Monitor page initialized');
+    
+    // Set initial loading state
+    const countElement = document.getElementById('provisioning-count');
+    if (countElement) {
+        countElement.textContent = 'Loading...';
+        console.log(' Set initial loading text');
+    }
+    
+    try {
+        // Load enabled validation rules
+        enabledValidationRules = getEnabledValidationRules();
+        console.log('[VALIDATION] Loaded', enabledValidationRules.length, 'enabled validation rules');
+        
+        // Load filter options first
+        await loadProvisioningFilterOptions();
+        
+        // Load initial data
+        await loadProvisioningRequests();
+        
+        // Setup event listeners
+        setupProvisioningEventListeners();
+        
+    } catch (error) {
+        console.error(' Error during provisioning initialization:', error);
+        if (countElement) {
+            countElement.textContent = 'Error loading data';
+        }
+    }
+}
+
+// Load filter options for provisioning monitor
+async function loadProvisioningFilterOptions() {
+    try {
+        console.log('Loading provisioning filter options from Salesforce...');
+        
+        const response = await fetch('/api/provisioning/filter-options');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(' Filter options response:', data);
+        
+        if (data.success) {
+            // Populate Request Type filter
+            const requestTypeFilter = document.getElementById('provisioning-request-type-filter');
+            if (requestTypeFilter && data.requestTypes) {
+                const currentValue = requestTypeFilter.value;
+                requestTypeFilter.innerHTML = '<option value="">All Request Types</option>' + 
+                    data.requestTypes.map(type => 
+                        `<option value="${type}" ${type === currentValue ? 'selected' : ''}>${type}</option>`
+                    ).join('');
+            }
+            
+            // Populate Status filter
+            const statusFilter = document.getElementById('provisioning-status-filter');
+            if (statusFilter && data.statuses) {
+                const currentValue = statusFilter.value;
+                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+                    data.statuses.map(status => 
+                        `<option value="${status}" ${status === currentValue ? 'selected' : ''}>${status}</option>`
+                    ).join('');
+            }
+            
+            console.log(` Filter options loaded: ${data.requestTypes?.length || 0} request types, ${data.statuses?.length || 0} statuses`);
+        } else {
+            console.error('Failed to load filter options:', data.error);
+            // Fall back to default options on error
+            loadDefaultFilterOptions();
+        }
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+        // Fall back to default options on error
+        loadDefaultFilterOptions();
+    }
+}
+
+// Load default filter options as fallback
+function loadDefaultFilterOptions() {
+    console.log('Loading default filter options...');
+    
+    const requestTypeFilter = document.getElementById('provisioning-request-type-filter');
+    if (requestTypeFilter) {
+        requestTypeFilter.innerHTML = `
+            <option value="">All Request Types</option>
+            <option value="New Implementation">New Implementation</option>
+            <option value="Configuration">Configuration</option>
+            <option value="Training">Training</option>
+            <option value="Support">Support</option>
+        `;
+    }
+    
+    const statusFilter = document.getElementById('provisioning-status-filter');
+    if (statusFilter) {
+        statusFilter.innerHTML = `
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="On Hold">On Hold</option>
+        `;
+    }
+}
+
+// Render provisioning table with validation column
+function renderProvisioningTable(data) {
+    const tbody = document.getElementById('provisioning-table-body');
+    if (!tbody) return;
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="px-4 py-8 text-center">
+                    <div class="flex flex-col items-center gap-2">
+                        <svg class="h-12 w-12 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18V3H3z"></path>
+                            <path d="M8 8h8v8H8V8z"></path>
+                        </svg>
+                        <p class="text-sm text-muted-foreground">No provisioning requests found</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(request => `
+        <tr class="border-b hover:bg-muted/50">
+            <td class="px-4 py-3">
+                <div class="font-medium">${request.Name || 'N/A'}</div>
+                <div class="text-sm text-muted-foreground">${request.Id}</div>
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${request.Account__c || 'N/A'}</div>
+                ${request.Account_Site__c ? `<div class="text-xs text-muted-foreground">${request.Account_Site__c}</div>` : ''}
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${request.Request_Type_RI__c || 'N/A'}</div>
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${request.Deployment__c || 'N/A'}</div>
+            </td>
+            <td class="px-4 py-3">
+                ${getProductsDisplay(request)}
+            </td>
+            <td class="px-4 py-3 text-center">
+                ${renderValidationColumn(request)}
+            </td>
+            <td class="px-4 py-3">
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(request.Status__c)}">
+                    ${request.Status__c || 'Unknown'}
+                </span>
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${new Date(request.CreatedDate).toLocaleDateString()}</div>
+                <div class="text-xs text-muted-foreground">${new Date(request.CreatedDate).toLocaleTimeString()}</div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render validation column for a record
+function renderValidationColumn(record) {
+    const result = validationResults.get(record.Id);
+    
+    if (!result) {
+        // Default to Pass if no validation result
+        return `<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-800" title="All validation rules passed">Pass</span>`;
+    }
+    
+    const statusClass = result.overallStatus === 'PASS' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    const tooltip = ValidationEngine.getValidationTooltip(result);
+    
+    return `<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusClass}" title="${tooltip}">${result.overallStatus}</span>`;
+}
+
+// Process validation results for loaded records
+async function processValidationResults() {
+    if (!enabledValidationRules || enabledValidationRules.length === 0) {
+        console.log('[VALIDATION] No enabled rules, skipping validation');
+        return;
+    }
+    
+    console.log('[VALIDATION] Processing validation for', provisioningData.length, 'records');
+    
+    // Clear previous validation results
+    validationResults.clear();
+    
+    // Process each record
+    for (const record of provisioningData) {
+        try {
+            const result = ValidationEngine.validateRecord(record, enabledValidationRules);
+            validationResults.set(record.Id, result);
+            console.log(`[VALIDATION] Record ${record.Id}: ${result.overallStatus}`);
+        } catch (error) {
+            console.error(`[VALIDATION] Error validating record ${record.Id}:`, error);
+            // Default to PASS on validation errors
+            validationResults.set(record.Id, {
+                recordId: record.Id,
+                overallStatus: 'PASS',
+                ruleResults: [],
+                hasErrors: true,
+                validatedAt: new Date().toISOString()
+            });
+        }
+    }
+    
+    console.log(`[VALIDATION] Completed validation for ${validationResults.size} records`);
+}
+
+// Update provisioning count display
+function updateProvisioningCount() {
+    const countElement = document.getElementById('provisioning-count');
+    if (!countElement) {
+        console.error(' provisioning-count element not found');
+        return;
+    }
+    
+    const totalRecords = provisioningPagination.totalCount;
+    
+    console.log(' [COUNT] Updating provisioning count:', {
+        totalCount: totalRecords,
+        totalCountType: typeof totalRecords,
+        isUndefined: totalRecords === undefined,
+        isNull: totalRecords === null,
+        isNumber: typeof totalRecords === 'number',
+        fullPaginationState: provisioningPagination
+    });
+    
+    // Always make it visible and set the text
+    countElement.style.visibility = 'visible';
+    countElement.style.display = 'block';
+    
+    // More defensive checking
+    if (typeof totalRecords === 'number' && !isNaN(totalRecords) && totalRecords >= 0) {
+        if (totalRecords === 0) {
+            countElement.textContent = 'No requests found';
+        } else {
+            countElement.textContent = `${totalRecords} total requests`;
+        }
+        console.log(' [COUNT] Set valid count:', countElement.textContent);
+    } else {
+        console.warn(' [COUNT] Invalid totalRecords, showing loading:', totalRecords);
+        countElement.textContent = 'Loading...';
+    }
+}
+
+// Utility functions for table rendering
+function getStatusColor(status) {
+    switch (status?.toLowerCase()) {
+        case 'completed':
+            return 'bg-green-100 text-green-800';
+        case 'in progress':
+            return 'bg-blue-100 text-blue-800';
+        case 'pending':
+            return 'bg-yellow-100 text-yellow-800';
+        case 'on hold':
+            return 'bg-gray-100 text-gray-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getProductsDisplay(request) {
+    if (!request.Payload_Data__c) {
+        return '<span class="text-muted-foreground text-xs">No payload data</span>';
+    }
+    
+    try {
+        const payload = JSON.parse(request.Payload_Data__c);
+        
+        // Extract entitlements from the nested structure
+        const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
+        const modelEntitlements = entitlements.modelEntitlements || [];
+        const dataEntitlements = entitlements.dataEntitlements || [];
+        const appEntitlements = entitlements.appEntitlements || [];
+        
+        const totalCount = modelEntitlements.length + dataEntitlements.length + appEntitlements.length;
+        
+        if (totalCount === 0) {
+            return '<span class="text-muted-foreground text-xs">No entitlements</span>';
+        }
+        
+        // Create interactive summary with expandable groups
+        const groups = [];
+        
+        if (modelEntitlements.length > 0) {
+            groups.push(`
+                <button 
+                    class="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                    onclick="showProductGroup('${request.Id}', 'models', ${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')})"
+                >
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    ${modelEntitlements.length} Model${modelEntitlements.length > 1 ? 's' : ''}
+                </button>
+            `);
+        }
+        
+        if (dataEntitlements.length > 0) {
+            groups.push(`
+                <button 
+                    class="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                    onclick="showProductGroup('${request.Id}', 'data', ${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')})"
+                >
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                    </svg>
+                    ${dataEntitlements.length} Data
+                </button>
+            `);
+        }
+        
+        if (appEntitlements.length > 0) {
+            groups.push(`
+                <button 
+                    class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
+                    onclick="showProductGroup('${request.Id}', 'apps', ${JSON.stringify(appEntitlements).replace(/"/g, '&quot;')})"
+                >
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <path d="M22 6l-10 7L2 6"></path>
+                    </svg>
+                    ${appEntitlements.length} App${appEntitlements.length > 1 ? 's' : ''}
+                </button>
+            `);
+        }
+        
+        return `
+            <div class="space-y-1">
+                <div class="text-xs text-muted-foreground">${totalCount} total</div>
+                <div class="flex flex-wrap gap-1">
+                    ${groups.join('')}
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.warn('Error parsing payload data:', error);
+        return '<span class="text-muted-foreground text-xs">Invalid payload</span>';
+    }
+}
+
+// Render the list of validation rules
+function renderValidationRulesList(config) {
+    const container = document.getElementById('validation-rules-container');
+    if (!container) return;
+    
+    const rulesHtml = config.rules.map(rule => {
+        const isEnabled = config.enabledRules[rule.id] || false;
+        
+        return `
+            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <h3 class="font-semibold">${rule.name}</h3>
+                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${isEnabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                ${isEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <p class="text-sm text-muted-foreground mb-3">${rule.description}</p>
+                        <details class="text-sm">
+                            <summary class="cursor-pointer text-blue-600 hover:text-blue-800 mb-2">Show Details</summary>
+                            <div class="pl-4 border-l-2 border-blue-200">
+                                <p class="mb-2"><strong>Logic:</strong> ${rule.longDescription}</p>
+                                <p class="mb-1"><strong>Category:</strong> ${rule.category}</p>
+                                <p class="mb-1"><strong>Version:</strong> ${rule.version}</p>
+                                <p><strong>Created:</strong> ${rule.createdDate}</p>
+                            </div>
+                        </details>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                class="sr-only peer" 
+                                ${isEnabled ? 'checked' : ''}
+                                onchange="toggleValidationRule('${rule.id}', this.checked)"
+                            >
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = rulesHtml;
+}
+
+// Test validation rules against current provisioning data
+async function testValidationRules() {
+    const testBtn = document.getElementById('test-validation-btn');
+    const resultsSection = document.getElementById('test-results-section');
+    const resultsContent = document.getElementById('test-results-content');
+    
+    if (!testBtn || !resultsSection || !resultsContent) return;
+    
+    // Show loading state
+    testBtn.disabled = true;
+    testBtn.innerHTML = `
+        <div class="loading-spinner w-4 h-4 mr-2"></div>
+        Testing...
+    `;
+    
+    resultsSection.classList.remove('hidden');
+    resultsContent.innerHTML = `
+        <div class="flex items-center justify-center py-8">
+            <div class="loading-spinner w-6 h-6 mr-3"></div>
+            <span>Running validation tests...</span>
+        </div>
+    `;
+    
+    try {
+        // Get current provisioning data (if any)
+        if (!provisioningData || provisioningData.length === 0) {
+            resultsContent.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="h-12 w-12 text-yellow-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-muted-foreground">No provisioning data available for testing.</p>
+                    <p class="text-sm text-muted-foreground mt-2">Navigate to the Provisioning Monitor page and load some data first.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Run validation on current data
+        const testResults = [];
+        const enabledRules = getEnabledValidationRules();
+        
+        if (enabledRules.length === 0) {
+            resultsContent.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="h-12 w-12 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    <p class="text-muted-foreground">No validation rules are enabled.</p>
+                    <p class="text-sm text-muted-foreground mt-2">Enable some rules below to test validation.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        for (const record of provisioningData) {
+            const result = ValidationEngine.validateRecord(record, enabledRules);
+            testResults.push(result);
+        }
+        
+        // Display results
+        renderTestResults(testResults);
+        
+    } catch (error) {
+        console.error('Error testing validation rules:', error);
+        resultsContent.innerHTML = `
+            <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 class="font-medium text-destructive">Test Error</h4>
+                </div>
+                <p class="text-sm text-muted-foreground">Failed to run validation tests: ${error.message}</p>
+            </div>
+        `;
+    } finally {
+        // Restore button
+        testBtn.disabled = false;
+        testBtn.innerHTML = `
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 12 2 2 4-4"></path>
+                <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+            Test Rules
+        `;
+    }
+}
+
+// Render test results
+function renderTestResults(testResults) {
+    const resultsContent = document.getElementById('test-results-content');
+    if (!resultsContent) return;
+    
+    const passCount = testResults.filter(r => r.overallStatus === 'PASS').length;
+    const failCount = testResults.filter(r => r.overallStatus === 'FAIL').length;
+    
+    const summaryHtml = `
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">${testResults.length}</div>
+                <div class="text-sm text-blue-600">Total Records</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">${passCount}</div>
+                <div class="text-sm text-green-600">Passed</div>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded-lg">
+                <div class="text-2xl font-bold text-red-600">${failCount}</div>
+                <div class="text-sm text-red-600">Failed</div>
+            </div>
+        </div>
+    `;
+    
+    const detailsHtml = testResults.map(result => `
+        <div class="border rounded-lg p-4 ${result.overallStatus === 'PASS' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium">${result.recordName}</h4>
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${result.overallStatus === 'PASS' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${result.overallStatus}
+                </span>
+            </div>
+            <div class="text-sm text-muted-foreground">
+                ${result.ruleResults.map(ruleResult => `
+                    <div class="mb-1">
+                        <strong>${ruleResult.ruleId}:</strong> ${ruleResult.message}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+    
+    resultsContent.innerHTML = summaryHtml + '<div class="space-y-4">' + detailsHtml + '</div>';
+}
+
+// Debug payload structure
+async function debugPayloadStructure() {
+    const debugBtn = document.getElementById('debug-json-btn');
+    const debugSection = document.getElementById('debug-results-section');
+    const debugContent = document.getElementById('debug-results-content');
+    
+    if (!debugBtn || !debugSection || !debugContent) return;
+    
+    // Show loading state
+    debugBtn.disabled = true;
+    debugBtn.innerHTML = `
+        <div class="loading-spinner w-4 h-4 mr-2"></div>
+        Analyzing...
+    `;
+    
+    debugSection.classList.remove('hidden');
+    debugContent.innerHTML = `
+        <div class="flex items-center justify-center py-8">
+            <div class="loading-spinner w-6 h-6 mr-3"></div>
+            <span>Analyzing JSON structure...</span>
+        </div>
+    `;
+    
+    try {
+        if (!provisioningData || provisioningData.length === 0) {
+            debugContent.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="h-12 w-12 text-yellow-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-muted-foreground">No provisioning data available for analysis.</p>
+                    <p class="text-sm text-muted-foreground mt-2">Navigate to the Provisioning Monitor page and load some data first.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Analyze first few records
+        const analyses = [];
+        const maxRecords = Math.min(5, provisioningData.length);
+        
+        for (let i = 0; i < maxRecords; i++) {
+            const record = provisioningData[i];
+            if (record.Payload_Data__c) {
+                try {
+                    const payload = JSON.parse(record.Payload_Data__c);
+                    const analysis = ValidationEngine.analyzePayloadStructure(payload);
+                    analyses.push({
+                        recordName: record.Name || `Record ${i + 1}`,
+                        analysis: analysis,
+                        payload: payload
+                    });
+                } catch (error) {
+                    analyses.push({
+                        recordName: record.Name || `Record ${i + 1}`,
+                        error: error.message,
+                        payload: null
+                    });
+                }
+            } else {
+                analyses.push({
+                    recordName: record.Name || `Record ${i + 1}`,
+                    error: 'No Payload_Data__c field',
+                    payload: null
+                });
+            }
+        }
+        
+        // Render debug results
+        renderDebugResults(analyses);
+        
+    } catch (error) {
+        console.error('Error debugging payload structure:', error);
+        debugContent.innerHTML = `
+            <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 class="font-medium text-destructive">Debug Error</h4>
+                </div>
+                <p class="text-sm text-muted-foreground">Failed to analyze payload structure: ${error.message}</p>
+            </div>
+        `;
+    } finally {
+        // Restore button
+        debugBtn.disabled = false;
+        debugBtn.innerHTML = `
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+            </svg>
+            Debug JSON
+        `;
+    }
+}
+
+// Render debug results
+function renderDebugResults(analyses) {
+    const debugContent = document.getElementById('debug-results-content');
+    if (!debugContent) return;
+    
+    const debugHtml = analyses.map(analysis => {
+        if (analysis.error) {
+            return `
+                <div class="border border-red-200 rounded-lg p-4 bg-red-50">
+                    <h4 class="font-medium text-red-800 mb-2">${analysis.recordName}</h4>
+                    <p class="text-sm text-red-600">Error: ${analysis.error}</p>
+                </div>
+            `;
+        }
+        
+        const { analysis: struct, payload } = analysis;
+        
+        return `
+            <div class="border rounded-lg p-4">
+                <h4 class="font-medium mb-3">${analysis.recordName}</h4>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <h5 class="font-medium text-sm mb-2">Structure Analysis</h5>
+                        <div class="text-xs space-y-1">
+                            <div>Has Properties: <span class="${struct.hasProperties ? 'text-green-600' : 'text-red-600'}">${struct.hasProperties}</span></div>
+                            <div>Has Provisioning Detail: <span class="${struct.hasProvisioningDetail ? 'text-green-600' : 'text-red-600'}">${struct.hasProvisioningDetail}</span></div>
+                            <div>Has Entitlements: <span class="${struct.hasEntitlements ? 'text-green-600' : 'text-red-600'}">${struct.hasEntitlements}</span></div>
+                            <div>App Entitlements Path: <span class="font-mono">${struct.appEntitlementsPath || 'Not found'}</span></div>
+                            <div>App Entitlements Count: <span class="font-bold">${struct.appEntitlementsCount}</span></div>
+                        </div>
+                        
+                        ${struct.sampleAppEntitlement ? `
+                            <div class="mt-3">
+                                <h6 class="font-medium text-xs mb-1">Sample App Entitlement</h6>
+                                <pre class="text-xs bg-gray-100 p-2 rounded overflow-auto">${JSON.stringify(struct.sampleAppEntitlement, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-medium text-sm mb-2">Available Paths</h5>
+                        <div class="text-xs bg-gray-50 p-2 rounded max-h-48 overflow-y-auto">
+                            ${struct.allPaths.slice(0, 20).map(path => `<div class="font-mono">${path}</div>`).join('')}
+                            ${struct.allPaths.length > 20 ? `<div class="text-muted-foreground">... and ${struct.allPaths.length - 20} more</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    debugContent.innerHTML = `
+        <div class="mb-4">
+            <p class="text-sm text-muted-foreground">Analyzed ${analyses.length} records with payload data. Use this information to verify the correct path to app entitlements.</p>
+        </div>
+        <div class="space-y-4">${debugHtml}</div>
+    `;
+}
+
+// ===== NAVIGATION SYSTEM =====
+
+// Navigation and routing
+function showPage(pageId) {
+    console.log('Showing page:', pageId);
+    
+    // Hide all pages
+    const pages = document.querySelectorAll('.page-content');
+    pages.forEach(page => {
+        page.classList.add('hidden');
+        page.classList.remove('page-enter');
+    });
+    
+    // Show selected page with animation
+    const targetPage = document.getElementById(`page-${pageId}`);
+    if (targetPage) {
+        targetPage.classList.remove('hidden');
+        targetPage.classList.add('page-enter');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            targetPage.classList.remove('page-enter');
+        }, 300);
+    }
+    
+    // Update navigation active states
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active');
+        item.classList.remove('bg-accent', 'text-accent-foreground');
+    });
+    
+    // Add active state to current nav item
+    const activeNav = document.getElementById(`nav-${pageId}`);
+    if (activeNav) {
+        activeNav.classList.add('active');
+        activeNav.classList.add('bg-accent', 'text-accent-foreground');
+    }
+    
+    currentPage = pageId;
+    
+    // Save current page to localStorage
+    localStorage.setItem('currentPage', pageId);
+    
+    // Handle sub-navigation visibility
+    const provisioningSubnav = document.getElementById('provisioning-subnav');
+    if (pageId === 'provisioning' || pageId === 'validation-rules') {
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.remove('hidden');
+        }
+    } else {
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.add('hidden');
+        }
+    }
+    
+    // Update sub-navigation active states
+    const subNavItems = document.querySelectorAll('.sub-nav-item');
+    subNavItems.forEach(item => {
+        item.classList.remove('active');
+        item.classList.remove('bg-accent', 'text-accent-foreground');
+        item.classList.add('text-muted-foreground');
+    });
+    
+    // Handle sub-navigation for provisioning pages
+    if (pageId === 'provisioning') {
+        const provisioningMonitorNav = document.getElementById('nav-provisioning-monitor');
+        if (provisioningMonitorNav) {
+            provisioningMonitorNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            provisioningMonitorNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'validation-rules') {
+        const validationRulesNav = document.getElementById('nav-validation-rules');
+        if (validationRulesNav) {
+            validationRulesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            validationRulesNav.classList.remove('text-muted-foreground');
+        }
+    }
+    
+    // Trigger page-specific initialization
+    if (pageId === 'analytics') {
+        initializeAnalytics();
+    } else if (pageId === 'provisioning') {
+        initializeProvisioning();
+    } else if (pageId === 'validation-rules') {
+        initializeValidationRules();
+    } else if (pageId === 'roadmap') {
+        initializeRoadmap();
+    } else if (pageId === 'settings') {
+        initializeSettings();
+    }
+}
+
+// Handle provisioning main navigation (toggle sub-navigation)
+function handleProvisioningNavigation(event) {
+    event.preventDefault();
+    
+    const provisioningSubnav = document.getElementById('provisioning-subnav');
+    if (provisioningSubnav) {
+        const isHidden = provisioningSubnav.classList.contains('hidden');
+        if (isHidden) {
+            // Show sub-navigation and navigate to provisioning monitor
+            provisioningSubnav.classList.remove('hidden');
+            showPage('provisioning');
+        } else {
+            // If already visible, always navigate to provisioning monitor (don't collapse)
+            showPage('provisioning');
+        }
+    } else {
+        // Fallback to regular navigation
+        showPage('provisioning');
+    }
+}
+
+// Navigation handler for regular navigation items
+function handleNavigation(event) {
+    event.preventDefault();
+    
+    // Get the target page from the button ID
+    const targetPage = event.currentTarget;
+    if (!targetPage) return;
+    
+    let pageId = targetPage.id.replace('nav-', '');
+    
+    // Handle special mappings for sub-navigation items
+    if (pageId === 'provisioning-monitor') {
+        pageId = 'provisioning';
+        // Make sure sub-navigation is visible when navigating to monitor
+        const provisioningSubnav = document.getElementById('provisioning-subnav');
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.remove('hidden');
+        }
+    }
+    
+    showPage(pageId);
+    
+    // Add click effect
+    targetPage.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        targetPage.style.transform = '';
+    }, 150);
+}
+
+// Initialize navigation event listeners
+function setupNavigationEventListeners() {
+    console.log('Setting up navigation event listeners...');
+    
+    // Main navigation items
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navAnalytics = document.getElementById('nav-analytics');
+    const navRoadmap = document.getElementById('nav-roadmap');
+    const navProvisioning = document.getElementById('nav-provisioning');
+    const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
+    const navValidationRules = document.getElementById('nav-validation-rules');
+    const navSettings = document.getElementById('nav-settings');
+    
+    // Add event listeners
+    if (navDashboard) navDashboard.addEventListener('click', handleNavigation);
+    if (navAnalytics) navAnalytics.addEventListener('click', handleNavigation);
+    if (navRoadmap) navRoadmap.addEventListener('click', handleNavigation);
+    if (navProvisioning) navProvisioning.addEventListener('click', handleProvisioningNavigation);
+    if (navProvisioningMonitor) navProvisioningMonitor.addEventListener('click', handleNavigation);
+    if (navValidationRules) navValidationRules.addEventListener('click', handleNavigation);
+    if (navSettings) navSettings.addEventListener('click', handleNavigation);
+    
+    console.log('Navigation event listeners setup completed');
+}
+
+// Initialize placeholder functions for pages that don't exist yet
+function initializeAnalytics() {
+    console.log('Analytics page initialized');
+}
+
+function initializeRoadmap() {
+    console.log('Roadmap page initialized');
+}
+
+function initializeSettings() {
+    console.log('Settings page initialized');
+}
+
+// Initialize the application
+function initializeApp() {
+    console.log('Initializing Deployment Assistant...');
+    
+    // Setup navigation
+    setupNavigationEventListeners();
+    
+    // Initialize theme
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Initialize navigation - restore saved page or default to dashboard
+    const savedPage = localStorage.getItem('currentPage') || 'dashboard';
+    showPage(savedPage);
+    
+    console.log('Deployment Assistant initialized successfully');
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+console.log('Navigation system loaded');
+
+// ===== PRODUCT MODAL FUNCTIONALITY =====
+
+// Show product group details in modal
+function showProductGroup(recordId, groupType, entitlements) {
+    console.log('Showing product group:', groupType, 'for record:', recordId);
+    
+    const modal = document.getElementById('product-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
+    
+    if (!modal || !modalTitle || !modalContent) {
+        console.error('Modal elements not found');
+        return;
+    }
+    
+    // Parse entitlements if it's a string
+    let parsedEntitlements = entitlements;
+    if (typeof entitlements === 'string') {
+        try {
+            parsedEntitlements = JSON.parse(entitlements);
+        } catch (error) {
+            console.error('Error parsing entitlements:', error);
+            return;
+        }
+    }
+    
+    // Set modal title
+    const groupTitles = {
+        'models': 'Model Entitlements',
+        'data': 'Data Entitlements', 
+        'apps': 'App Entitlements'
+    };
+    
+    const groupIcons = {
+        'models': `<svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 12l2 2 4-4"></path>
+            <circle cx="21" cy="11" r="8"></circle>
+            <path d="M21 21l-4.35-4.35"></path>
+        </svg>`,
+        'data': `<svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>`,
+        'apps': `<svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+            <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+            <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+            <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+        </svg>`
+    };
+    
+    modalTitle.innerHTML = `
+        <div class="flex items-center gap-2">
+            ${groupIcons[groupType] || ''}
+            <span>${groupTitles[groupType] || 'Product Details'}</span>
+            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium">${parsedEntitlements.length}</span>
+        </div>
+    `;
+    
+    // Generate content based on group type
+    let content = '';
+    
+    if (!parsedEntitlements || parsedEntitlements.length === 0) {
+        content = `
+            <div class="text-center py-8 text-gray-500">
+                <p>No entitlements found in this group.</p>
+            </div>
+        `;
+    } else {
+        content = `
+            <div class="space-y-4">
+                ${parsedEntitlements.map((item, index) => renderEntitlementCard(item, index, groupType)).join('')}
+            </div>
+        `;
+    }
+    
+    modalContent.innerHTML = content;
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+// Render individual entitlement card
+function renderEntitlementCard(entitlement, index, groupType) {
+    const colorClasses = {
+        'models': 'border-green-200 bg-green-50',
+        'data': 'border-blue-200 bg-blue-50',
+        'apps': 'border-purple-200 bg-purple-50'
+    };
+    
+    const headerColors = {
+        'models': 'text-green-800',
+        'data': 'text-blue-800', 
+        'apps': 'text-purple-800'
+    };
+    
+    // Extract key fields from entitlement
+    const name = entitlement.name || entitlement.productName || entitlement.title || `${groupType.slice(0, -1)} ${index + 1}`;
+    const productCode = entitlement.productCode || entitlement.code || entitlement.id || 'N/A';
+    const quantity = entitlement.quantity || entitlement.qty || 'N/A';
+    const status = entitlement.status || entitlement.state || 'Active';
+    
+    // Build additional fields dynamically
+    const additionalFields = Object.entries(entitlement)
+        .filter(([key, value]) => 
+            !['name', 'productName', 'title', 'productCode', 'code', 'id', 'quantity', 'qty', 'status', 'state'].includes(key) &&
+            value !== null && value !== undefined && value !== ''
+        )
+        .map(([key, value]) => {
+            const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            const displayValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+            
+            return `
+                <div class="grid grid-cols-3 gap-2 py-1">
+                    <span class="text-sm font-medium text-gray-600">${displayKey}:</span>
+                    <span class="text-sm text-gray-900 col-span-2 break-all">${displayValue}</span>
+                </div>
+            `;
+        }).join('');
+    
+    return `
+        <div class="border rounded-lg p-4 ${colorClasses[groupType] || 'border-gray-200 bg-gray-50'}">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <h4 class="font-semibold ${headerColors[groupType] || 'text-gray-800'}">${name}</h4>
+                    <p class="text-sm text-gray-600">${productCode}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium">Qty: ${quantity}</div>
+                    <div class="text-xs text-gray-500">${status}</div>
+                </div>
+            </div>
+            
+            ${additionalFields ? `
+                <div class="border-t pt-3 mt-3">
+                    <details class="group">
+                        <summary class="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1">
+                            <svg class="h-4 w-4 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                            Additional Details
+                        </summary>
+                        <div class="mt-2 pl-5">
+                            ${additionalFields}
+                        </div>
+                    </details>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// REMOVED DUPLICATE FUNCTIONS - These are defined earlier in the file around line 2335

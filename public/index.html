@@ -98,17 +98,43 @@
                             Roadmap
                         </button>
                         
-                        <button 
-                            id="nav-provisioning" 
-                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        >
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect width="16" height="10" x="2" y="3" rx="2" ry="2"></rect>
-                                <path d="m7 11 2-2-2-2"></path>
-                                <rect width="4" height="4" x="11" y="7"></rect>
-                            </svg>
-                            Provisioning Monitor
-                        </button>
+                        <div class="provisioning-section">
+                            <button 
+                                id="nav-provisioning" 
+                                class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="16" height="10" x="2" y="3" rx="2" ry="2"></rect>
+                                    <path d="m7 11 2-2-2-2"></path>
+                                    <rect width="4" height="4" x="11" y="7"></rect>
+                                </svg>
+                                Provisioning Monitor
+                            </button>
+                            
+                            <!-- Sub-navigation for Provisioning -->
+                            <div id="provisioning-subnav" class="ml-6 mt-1 space-y-1 hidden">
+                                <button 
+                                    id="nav-provisioning-monitor" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 3v18h18"></path>
+                                        <path d="m19 9-5 5-4-4-3 3"></path>
+                                    </svg>
+                                    Monitor
+                                </button>
+                                <button 
+                                    id="nav-validation-rules" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9 12l2 2 4-4"></path>
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                    </svg>
+                                    Validation Rules
+                                </button>
+                            </div>
+                        </div>
                         
                         <button 
                             id="nav-settings" 
@@ -483,6 +509,9 @@
                                                 Products
                                                 <span class="sort-indicator ml-1">↕</span>
                                             </th>
+                                            <th class="px-4 py-3 text-center text-sm font-medium text-muted-foreground w-32">
+                                                Data Validations
+                                            </th>
                                             <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="status">
                                                 Status
                                                 <span class="sort-indicator ml-1">↕</span>
@@ -543,6 +572,109 @@
                             </div>
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <!-- Validation Rules Page -->
+            <div id="page-validation-rules" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-3xl font-bold tracking-tight">Data Validation Rules</h1>
+                                <p class="text-muted-foreground mt-2">
+                                    Manage validation rules applied to Technical Team Request records
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button 
+                                    id="test-validation-btn"
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m9 12 2 2 4-4"></path>
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                    </svg>
+                                    Test Rules
+                                </button>
+                                <button 
+                                    id="debug-json-btn"
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                    </svg>
+                                    Debug JSON
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Rules Summary -->
+                    <div class="grid gap-4 md:grid-cols-3 mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Total Rules</h3>
+                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2v20m8-10H4"></path>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold" id="total-rules-count">0</div>
+                        </div>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Enabled Rules</h3>
+                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 12l2 2 4-4"></path>
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold text-green-600" id="enabled-rules-count">0</div>
+                        </div>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Last Updated</h3>
+                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12,6 12,12 16,14"></polyline>
+                                </svg>
+                            </div>
+                            <div class="text-sm text-muted-foreground" id="last-updated-time">Never</div>
+                        </div>
+                    </div>
+
+                    <!-- Validation Rules List -->
+                    <div class="space-y-4">
+                        <h2 class="text-xl font-semibold">Validation Rules</h2>
+                        <div id="validation-rules-container" class="space-y-4">
+                            <!-- Rules will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Test Results Section -->
+                    <div id="test-results-section" class="mt-8 hidden">
+                        <h2 class="text-xl font-semibold mb-4">Test Results</h2>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6">
+                                <div id="test-results-content">
+                                    <!-- Test results will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Debug Results Section -->
+                    <div id="debug-results-section" class="mt-8 hidden">
+                        <h2 class="text-xl font-semibold mb-4">JSON Structure Analysis</h2>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6">
+                                <div id="debug-results-content">
+                                    <!-- Debug results will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -913,6 +1045,98 @@
         </main>
     </div>
 
+    <!-- Product Details Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Product Details</h3>
+                    <button 
+                        onclick="closeProductModal()" 
+                        class="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="modal-content" class="p-6 overflow-y-auto max-h-[70vh]">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+                <div class="p-6 border-t bg-gray-50">
+                    <button 
+                        onclick="closeProductModal()" 
+                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+    
+    <script src="validation-rules.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

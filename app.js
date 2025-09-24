@@ -1005,7 +1005,8 @@ app.get('/api/provisioning/requests', async (req, res) => {
         // Build SOQL query for Professional Services Requests
         let soqlQuery = `
             SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, 
-                   Status__c, Billing_Status__c, CreatedDate, LastModifiedDate, Deployment__c
+                   Status__c, Billing_Status__c, CreatedDate, LastModifiedDate, 
+                   Deployment__c, Payload_Data__c
             FROM Professional_Services_Request__c
         `;
         
