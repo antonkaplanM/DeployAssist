@@ -15,7 +15,8 @@ const ATLASSIAN_CONFIG = {
     email: process.env.ATLASSIAN_EMAIL,
     apiToken: process.env.ATLASSIAN_API_TOKEN,
     cloudId: process.env.ATLASSIAN_CLOUD_ID,
-    baseUrl: process.env.ATLASSIAN_BASE_URL || 'https://api.atlassian.com/ex/jira'
+    baseUrl: process.env.ATLASSIAN_BASE_URL || 'https://api.atlassian.com/ex/jira',
+    siteUrl: process.env.ATLASSIAN_SITE_URL || 'https://yoursite.atlassian.net'
 };
 
 // Sanitize user-provided strings for safe use in JQL
