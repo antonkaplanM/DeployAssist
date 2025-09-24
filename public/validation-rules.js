@@ -16,6 +16,16 @@ const DEFAULT_VALIDATION_RULES = [
         category: 'product-validation',
         version: '1.0',
         createdDate: '2025-01-24'
+    },
+    {
+        id: 'model-count-validation',
+        name: 'Model Count Validation',
+        description: 'Fails if number of Models is more than 100, otherwise passes',
+        longDescription: 'Validates the total count of model entitlements in the payload data. Rule fails if the number of models exceeds 100, otherwise passes.',
+        enabled: true,
+        category: 'product-validation',
+        version: '1.0',
+        createdDate: '2025-01-24'
     }
 ];
 
@@ -84,6 +94,8 @@ class ValidationEngine {
             switch (rule.id) {
                 case 'app-quantity-validation':
                     return this.validateAppQuantities(payload, record);
+                case 'model-count-validation':
+                    return this.validateModelCount(payload, record);
                 default:
                     console.warn(`[VALIDATION] Unknown rule: ${rule.id}`);
                     return { 
@@ -178,6 +190,64 @@ class ValidationEngine {
             status,
             message,
             details
+        };
+    }
+
+    /**
+     * Validates model count according to the model count rule
+     * Rule: Fail if number of Models is more than 100, otherwise pass
+     * @param {Object} payload - Parsed payload data
+     * @param {Object} record - Full record object for context
+     * @returns {Object} Validation result
+     */
+    static validateModelCount(payload, record) {
+        // Navigate to modelEntitlements - this path may need adjustment based on actual data structure
+        const modelEntitlements = payload?.properties?.provisioningDetail?.entitlements?.modelEntitlements ||
+                                 payload?.entitlements?.modelEntitlements ||
+                                 payload?.modelEntitlements ||
+                                 [];
+
+        if (!Array.isArray(modelEntitlements)) {
+            console.log(`[VALIDATION] No model entitlements array found for record ${record.Id}, defaulting to PASS`);
+            return {
+                ruleId: 'model-count-validation',
+                status: 'PASS',
+                message: 'No model entitlements found',
+                details: {
+                    totalCount: 0,
+                    limit: 100,
+                    withinLimit: true
+                }
+            };
+        }
+
+        const modelCount = modelEntitlements.length;
+        const limit = 100;
+        const withinLimit = modelCount <= limit;
+
+        console.log(`[VALIDATION] Checking model count: ${modelCount} models, limit: ${limit}`);
+
+        const status = withinLimit ? 'PASS' : 'FAIL';
+        const message = withinLimit 
+            ? `Model count ${modelCount} is within limit (≤${limit})`
+            : `Model count ${modelCount} exceeds limit of ${limit}`;
+
+        console.log(`[VALIDATION] Model count validation ${status}: ${message}`);
+
+        return {
+            ruleId: 'model-count-validation',
+            status,
+            message,
+            details: {
+                totalCount: modelCount,
+                limit: limit,
+                withinLimit: withinLimit,
+                modelsFound: modelEntitlements.map((model, index) => ({
+                    name: model.productCode || model.name || `Model-${index + 1}`,
+                    productCode: model.productCode || 'Unknown',
+                    quantity: model.quantity || 1
+                }))
+            }
         };
     }
 

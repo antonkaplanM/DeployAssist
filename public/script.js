@@ -1821,6 +1821,10 @@ async function loadProvisioningRequests(filters = {}) {
                 currentPage: provisioningPagination.currentPage,
                 totalPages: provisioningPagination.totalPages
             });
+            
+            // Process validation for loaded data
+            await processValidationResults();
+            
             renderProvisioningTable(filteredProvisioningData);
             updateProvisioningCount();
             updatePaginationInfo();
@@ -2772,6 +2776,16 @@ function toggleValidationRule(ruleId, enabled) {
     
     // Update enabled rules cache
     enabledValidationRules = getEnabledValidationRules();
+    
+    // Re-process validation for current provisioning data if available
+    if (provisioningData && provisioningData.length > 0) {
+        processValidationResults().then(() => {
+            // Re-render the provisioning table to show updated validation results
+            if (document.getElementById('page-provisioning') && !document.getElementById('page-provisioning').classList.contains('hidden')) {
+                renderProvisioningTable(filteredProvisioningData);
+            }
+        });
+    }
     
     console.log(`[VALIDATION] Rule ${ruleId} ${enabled ? 'enabled' : 'disabled'}`);
 }
