@@ -63,3 +63,6 @@ Desktop.ini
 # Temporary files
 .tmp/
 temp/
+
+# Salesforce authentication tokens (contains secrets)
+.salesforce_auth.json
