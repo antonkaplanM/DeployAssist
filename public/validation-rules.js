@@ -26,6 +26,16 @@ const DEFAULT_VALIDATION_RULES = [
         category: 'product-validation',
         version: '1.0',
         createdDate: '2025-01-24'
+    },
+    {
+        id: 'entitlement-date-overlap-validation',
+        name: 'Entitlement Date Overlap Validation',
+        description: 'Fails if entitlements with the same productCode have overlapping date ranges',
+        longDescription: 'Validates that for any entitlement with the same productCode, the end date of one entitlement does not fall between the start date and end date of any other entitlement with the same productCode. This prevents overlapping entitlement periods.',
+        enabled: true,
+        category: 'date-validation',
+        version: '1.0',
+        createdDate: '2025-01-24'
     }
 ];
 
@@ -96,6 +106,8 @@ class ValidationEngine {
                     return this.validateAppQuantities(payload, record);
                 case 'model-count-validation':
                     return this.validateModelCount(payload, record);
+                case 'entitlement-date-overlap-validation':
+                    return this.validateEntitlementDateOverlap(payload, record);
                 default:
                     console.warn(`[VALIDATION] Unknown rule: ${rule.id}`);
                     return { 
@@ -248,6 +260,178 @@ class ValidationEngine {
                     quantity: model.quantity || 1
                 }))
             }
+        };
+    }
+
+    /**
+     * Validates entitlement date overlap according to the date overlap rule
+     * Rule: Fail if entitlements with the same productCode have overlapping date ranges
+     * @param {Object} payload - Parsed payload data
+     * @param {Object} record - Full record object for context
+     * @returns {Object} Validation result
+     */
+    static validateEntitlementDateOverlap(payload, record) {
+        // Collect all entitlements from different entitlement types
+        const allEntitlements = [];
+        
+        // Get entitlements from all possible locations
+        const entitlementsObj = payload?.properties?.provisioningDetail?.entitlements ||
+                              payload?.entitlements ||
+                              {};
+        
+        // Collect model entitlements
+        const modelEntitlements = entitlementsObj.modelEntitlements || [];
+        if (Array.isArray(modelEntitlements)) {
+            modelEntitlements.forEach((ent, index) => {
+                allEntitlements.push({
+                    ...ent,
+                    type: 'model',
+                    index: index,
+                    productCode: ent.productCode || ent.product_code || ent.ProductCode,
+                    startDate: ent.startDate || ent.start_date || ent.StartDate,
+                    endDate: ent.endDate || ent.end_date || ent.EndDate
+                });
+            });
+        }
+        
+        // Collect app entitlements
+        const appEntitlements = entitlementsObj.appEntitlements || [];
+        if (Array.isArray(appEntitlements)) {
+            appEntitlements.forEach((ent, index) => {
+                allEntitlements.push({
+                    ...ent,
+                    type: 'app',
+                    index: index,
+                    productCode: ent.productCode || ent.product_code || ent.ProductCode,
+                    startDate: ent.startDate || ent.start_date || ent.StartDate,
+                    endDate: ent.endDate || ent.end_date || ent.EndDate
+                });
+            });
+        }
+        
+        // Collect data entitlements
+        const dataEntitlements = entitlementsObj.dataEntitlements || [];
+        if (Array.isArray(dataEntitlements)) {
+            dataEntitlements.forEach((ent, index) => {
+                allEntitlements.push({
+                    ...ent,
+                    type: 'data',
+                    index: index,
+                    productCode: ent.productCode || ent.product_code || ent.ProductCode,
+                    startDate: ent.startDate || ent.start_date || ent.StartDate,
+                    endDate: ent.endDate || ent.end_date || ent.EndDate
+                });
+            });
+        }
+
+        if (allEntitlements.length === 0) {
+            console.log(`[VALIDATION] No entitlements found for record ${record.Id}, defaulting to PASS`);
+            return {
+                ruleId: 'entitlement-date-overlap-validation',
+                status: 'PASS',
+                message: 'No entitlements found',
+                details: {
+                    totalCount: 0,
+                    overlapsFound: 0,
+                    overlaps: []
+                }
+            };
+        }
+
+        const overlaps = [];
+        const details = {
+            totalCount: allEntitlements.length,
+            overlapsFound: 0,
+            overlaps: []
+        };
+
+        // Group entitlements by productCode
+        const entitlementsByProduct = {};
+        for (const ent of allEntitlements) {
+            if (!ent.productCode) continue; // Skip entitlements without productCode
+            
+            if (!entitlementsByProduct[ent.productCode]) {
+                entitlementsByProduct[ent.productCode] = [];
+            }
+            entitlementsByProduct[ent.productCode].push(ent);
+        }
+
+        // Check for date overlaps within each productCode group
+        for (const [productCode, entitlements] of Object.entries(entitlementsByProduct)) {
+            if (entitlements.length < 2) continue; // Need at least 2 entitlements to have overlap
+            
+            for (let i = 0; i < entitlements.length; i++) {
+                for (let j = i + 1; j < entitlements.length; j++) {
+                    const ent1 = entitlements[i];
+                    const ent2 = entitlements[j];
+                    
+                    // Skip if either entitlement is missing date information
+                    if (!ent1.startDate || !ent1.endDate || !ent2.startDate || !ent2.endDate) {
+                        continue;
+                    }
+                    
+                    // Parse dates
+                    const start1 = new Date(ent1.startDate);
+                    const end1 = new Date(ent1.endDate);
+                    const start2 = new Date(ent2.startDate);
+                    const end2 = new Date(ent2.endDate);
+                    
+                    // Check if dates are valid
+                    if (isNaN(start1.getTime()) || isNaN(end1.getTime()) || 
+                        isNaN(start2.getTime()) || isNaN(end2.getTime())) {
+                        continue;
+                    }
+                    
+                    // Check for overlap: end date of one falls between start and end of another
+                    let overlapFound = false;
+                    let overlapDescription = '';
+                    
+                    if (end1 > start2 && end1 < end2) {
+                        overlapFound = true;
+                        overlapDescription = `End date of ${ent1.type}-${ent1.index + 1} (${ent1.endDate}) falls within period of ${ent2.type}-${ent2.index + 1} (${ent2.startDate} to ${ent2.endDate})`;
+                    } else if (end2 > start1 && end2 < end1) {
+                        overlapFound = true;
+                        overlapDescription = `End date of ${ent2.type}-${ent2.index + 1} (${ent2.endDate}) falls within period of ${ent1.type}-${ent1.index + 1} (${ent1.startDate} to ${ent1.endDate})`;
+                    }
+                    
+                    if (overlapFound) {
+                        const overlap = {
+                            productCode: productCode,
+                            entitlement1: {
+                                type: ent1.type,
+                                index: ent1.index + 1,
+                                startDate: ent1.startDate,
+                                endDate: ent1.endDate
+                            },
+                            entitlement2: {
+                                type: ent2.type,
+                                index: ent2.index + 1,
+                                startDate: ent2.startDate,
+                                endDate: ent2.endDate
+                            },
+                            description: overlapDescription
+                        };
+                        
+                        overlaps.push(overlap);
+                        details.overlaps.push(overlap);
+                        
+                        console.log(`[VALIDATION] Date overlap found for productCode ${productCode}: ${overlapDescription}`);
+                    }
+                }
+            }
+        }
+
+        details.overlapsFound = overlaps.length;
+        const status = overlaps.length === 0 ? 'PASS' : 'FAIL';
+        const message = status === 'PASS' 
+            ? `No date overlaps found across ${details.totalCount} entitlements`
+            : `${details.overlapsFound} date overlap${details.overlapsFound > 1 ? 's' : ''} found`;
+
+        return {
+            ruleId: 'entitlement-date-overlap-validation',
+            status,
+            message,
+            details
         };
     }
 

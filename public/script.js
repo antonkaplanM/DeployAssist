@@ -1479,6 +1479,45 @@ async function initializeProvisioning() {
 
 // Setup event listeners for Provisioning Monitor
 function setupProvisioningEventListeners() {
+    // Global delegation (attach once) for product group buttons as a fallback
+    if (!window.__productGroupDelegationAttached) {
+        document.addEventListener('click', function(event) {
+            if (event.defaultPrevented) return;
+            const button = event.target && event.target.closest && event.target.closest('.product-group-btn');
+            if (!button) return;
+            event.preventDefault();
+            const requestId = button.getAttribute('data-request-id');
+            const groupType = button.getAttribute('data-group-type');
+            const entitlements = button.getAttribute('data-entitlements');
+            if (requestId && groupType && entitlements) {
+                showProductGroup(requestId, groupType, entitlements);
+            }
+        }, true);
+        window.__productGroupDelegationAttached = true;
+    }
+
+    // Event delegation for product group buttons
+    const provisioningTable = document.getElementById('provisioning-table-body');
+    if (provisioningTable) {
+        provisioningTable.addEventListener('click', function(event) {
+            const button = event.target.closest('.product-group-btn');
+            if (button) {
+                event.preventDefault();
+                
+                const requestId = button.getAttribute('data-request-id');
+                const groupType = button.getAttribute('data-group-type');
+                const entitlements = button.getAttribute('data-entitlements');
+                
+                if (requestId && groupType && entitlements) {
+                    showProductGroup(requestId, groupType, entitlements);
+                } else {
+                    console.error('Missing button data:', { requestId, groupType, entitlements: !!entitlements });
+                }
+            }
+        });
+        console.log('Event delegation set up for product group buttons');
+    }
+    
     // Enhanced search with type-ahead
     const searchInput = document.getElementById('provisioning-search');
     if (searchInput) {
@@ -2146,8 +2185,10 @@ function getProductsDisplay(request) {
         if (modelEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
-                    onclick="showProductGroup('${request.Id}', 'models', ${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')})"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                    data-request-id="${request.Id}"
+                    data-group-type="models"
+                    data-entitlements="${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')}"
                 >
                     <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 12l2 2 4-4"></path>
@@ -2163,8 +2204,10 @@ function getProductsDisplay(request) {
         if (dataEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
-                    onclick="showProductGroup('${request.Id}', 'data', ${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')})"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                    data-request-id="${request.Id}"
+                    data-group-type="data"
+                    data-entitlements="${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')}"
                 >
                     <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
@@ -2180,8 +2223,10 @@ function getProductsDisplay(request) {
         if (appEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
-                    onclick="showProductGroup('${request.Id}', 'apps', ${JSON.stringify(appEntitlements).replace(/"/g, '&quot;')})"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
+                    data-request-id="${request.Id}"
+                    data-group-type="apps"
+                    data-entitlements="${JSON.stringify(appEntitlements).replace(/"/g, '&quot;')}"
                 >
                     <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect width="7" height="7" x="3" y="3" rx="1"></rect>
@@ -2233,10 +2278,12 @@ function showProductGroup(requestId, groupType, entitlements) {
 
 // Create and display product modal
 function showProductModal(requestName, groupType, items) {
-    // Remove existing modal if any
+    // Remove existing modal if any and clean up event listeners
     const existingModal = document.getElementById('product-modal');
     if (existingModal) {
         existingModal.remove();
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleModalEscape);
     }
     
     // Create modal HTML
@@ -2361,15 +2408,21 @@ function closeProductModal(event) {
     const modal = document.getElementById('product-modal');
     if (modal) {
         modal.remove();
-        document.body.style.overflow = '';
-        document.removeEventListener('keydown', handleModalEscape);
     }
+    
+    // Always clean up, even if modal doesn't exist
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleModalEscape);
 }
 
 // Handle escape key for modal
 function handleModalEscape(event) {
     if (event.key === 'Escape') {
-        closeProductModal();
+        // Check if modal actually exists before trying to close
+        const modal = document.getElementById('product-modal');
+        if (modal) {
+            closeProductModal();
+        }
     }
 }
 
@@ -3112,8 +3165,10 @@ function getProductsDisplay(request) {
         if (modelEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
-                    onclick="showProductGroup('${request.Id}', 'models', ${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')})"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                    data-request-id="${request.Id}"
+                    data-group-type="models"
+                    data-entitlements="${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')}"
                 >
                     <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 12l2 2 4-4"></path>
@@ -3127,8 +3182,10 @@ function getProductsDisplay(request) {
         if (dataEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
-                    onclick="showProductGroup('${request.Id}', 'data', ${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')})"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                    data-request-id="${request.Id}"
+                    data-group-type="data"
+                    data-entitlements="${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')}"
                 >
                     <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
@@ -3141,8 +3198,10 @@ function getProductsDisplay(request) {
         if (appEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
-                    onclick="showProductGroup('${request.Id}', 'apps', ${JSON.stringify(appEntitlements).replace(/"/g, '&quot;')})"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
+                    data-request-id="${request.Id}"
+                    data-group-type="apps"
+                    data-entitlements="${JSON.stringify(appEntitlements).replace(/"/g, '&quot;')}"
                 >
                     <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -3708,89 +3767,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 
 console.log('Navigation system loaded');
 
-// ===== PRODUCT MODAL FUNCTIONALITY =====
-
-// Show product group details in modal
-function showProductGroup(recordId, groupType, entitlements) {
-    console.log('Showing product group:', groupType, 'for record:', recordId);
-    
-    const modal = document.getElementById('product-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalContent = document.getElementById('modal-content');
-    
-    if (!modal || !modalTitle || !modalContent) {
-        console.error('Modal elements not found');
-        return;
-    }
-    
-    // Parse entitlements if it's a string
-    let parsedEntitlements = entitlements;
-    if (typeof entitlements === 'string') {
-        try {
-            parsedEntitlements = JSON.parse(entitlements);
-        } catch (error) {
-            console.error('Error parsing entitlements:', error);
-            return;
-        }
-    }
-    
-    // Set modal title
-    const groupTitles = {
-        'models': 'Model Entitlements',
-        'data': 'Data Entitlements', 
-        'apps': 'App Entitlements'
-    };
-    
-    const groupIcons = {
-        'models': `<svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 12l2 2 4-4"></path>
-            <circle cx="21" cy="11" r="8"></circle>
-            <path d="M21 21l-4.35-4.35"></path>
-        </svg>`,
-        'data': `<svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-        </svg>`,
-        'apps': `<svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="7" height="7" x="3" y="3" rx="1"></rect>
-            <rect width="7" height="7" x="14" y="3" rx="1"></rect>
-            <rect width="7" height="7" x="14" y="14" rx="1"></rect>
-            <rect width="7" height="7" x="3" y="14" rx="1"></rect>
-        </svg>`
-    };
-    
-    modalTitle.innerHTML = `
-        <div class="flex items-center gap-2">
-            ${groupIcons[groupType] || ''}
-            <span>${groupTitles[groupType] || 'Product Details'}</span>
-            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium">${parsedEntitlements.length}</span>
-        </div>
-    `;
-    
-    // Generate content based on group type
-    let content = '';
-    
-    if (!parsedEntitlements || parsedEntitlements.length === 0) {
-        content = `
-            <div class="text-center py-8 text-gray-500">
-                <p>No entitlements found in this group.</p>
-            </div>
-        `;
-    } else {
-        content = `
-            <div class="space-y-4">
-                ${parsedEntitlements.map((item, index) => renderEntitlementCard(item, index, groupType)).join('')}
-            </div>
-        `;
-    }
-    
-    modalContent.innerHTML = content;
-    
-    // Show modal
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
-}
+// (Removed legacy duplicate showProductGroup implementation)
 
 // Render individual entitlement card
 function renderEntitlementCard(entitlement, index, groupType) {
