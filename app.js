@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-// Configure SSL settings immediately after loading environment
+// Configure SSL settings immediately after loading environment.
 if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
     process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = '0';
     console.log('⚠️  SSL certificate validation disabled for corporate environment');
