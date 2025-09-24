@@ -1,12 +1,20 @@
 require('dotenv').config();
+
+// Configure SSL settings immediately after loading environment
+if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
+    process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = '0';
+    console.log('⚠️  SSL certificate validation disabled for corporate environment');
+}
+
 const express = require('express');
 const path = require('path');
 const { spawn } = require('child_process');
 const https = require('https');
+const salesforce = require('./salesforce');
 
 // Environment variables helper
 function getMissingAtlassianEnvVars() {
-    const required = ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN', 'ATLASSIAN_CLOUD_ID'];
+    const required = ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN', 'ATLASSIAN_SITE_URL'];
     return required.filter(key => !process.env[key]);
 }
 
@@ -150,7 +158,7 @@ async function fetchJiraInitiativesDirectAPI(assigneeName = null) {
         console.log(`🔍 Using JQL query: ${jqlQuery}`);
         
         // Prepare the API request
-        const searchUrl = `${ATLASSIAN_CONFIG.baseUrl}/${ATLASSIAN_CONFIG.cloudId}/rest/api/3/search`;
+        const searchUrl = `${ATLASSIAN_CONFIG.siteUrl}/rest/api/3/search`;
         const requestBody = {
             jql: jqlQuery,
             fields: ['summary', 'description', 'status', 'issuetype', 'priority', 'created', 'updated', 'project', 'assignee'],
@@ -229,7 +237,9 @@ function makeHttpsRequest(url, options = {}) {
             path: urlObj.pathname + urlObj.search,
             method: options.method || 'GET',
             headers: options.headers || {},
-            timeout: 30000 // 30 second timeout
+            timeout: 30000, // 30 second timeout
+            // Disable SSL certificate validation for corporate environments
+            rejectUnauthorized: false
         };
         
         const req = https.request(requestOptions, (res) => {
@@ -503,6 +513,142 @@ function getFallbackInitiatives(assigneeName = 'Default User') {
 
 // Removed MCP connection test function - no longer needed
 
+// Test Salesforce connectivity and OAuth configuration
+app.get('/api/test-salesforce', async (req, res) => {
+    console.log('🔧 Testing Salesforce connectivity...');
+    
+    try {
+        const results = {
+            timestamp: new Date().toISOString(),
+            tests: []
+        };
+
+        // Test 1: Environment Variables
+        const envTest = {
+            name: "Environment Variables",
+            status: "checking",
+            details: {}
+        };
+
+        const requiredEnvVars = ['SF_LOGIN_URL', 'SF_CLIENT_ID', 'SF_CLIENT_SECRET', 'SF_REDIRECT_URI'];
+        const missingVars = [];
+        
+        requiredEnvVars.forEach(varName => {
+            const value = process.env[varName];
+            envTest.details[varName] = value ? `Set (${value.length} chars)` : 'MISSING';
+            if (!value) missingVars.push(varName);
+        });
+
+        envTest.status = missingVars.length === 0 ? "success" : "error";
+        envTest.message = missingVars.length === 0 ? 
+            "All required environment variables are set" : 
+            `Missing variables: ${missingVars.join(', ')}`;
+        results.tests.push(envTest);
+
+        // Test 2: Client Credentials Flow Configuration
+        const clientCredTest = {
+            name: "Client Credentials Configuration",
+            status: "checking"
+        };
+
+        try {
+            // Test if we can construct the OAuth endpoint URL
+            const tokenUrl = `${process.env.SF_LOGIN_URL}/services/oauth2/token`;
+            const url = new URL(tokenUrl);
+            
+            clientCredTest.status = "success";
+            clientCredTest.message = "Client Credentials Flow configuration valid";
+            clientCredTest.details = {
+                tokenEndpoint: tokenUrl,
+                loginUrl: process.env.SF_LOGIN_URL,
+                flowType: "Client Credentials (server-to-server)",
+                requiresUserInteraction: false
+            };
+        } catch (error) {
+            clientCredTest.status = "error";
+            clientCredTest.message = `Configuration validation failed: ${error.message}`;
+        }
+        results.tests.push(clientCredTest);
+
+        // Test 3: Stored Authentication
+        const authFileTest = {
+            name: "Stored Authentication",
+            status: "checking"
+        };
+
+        try {
+            const hasValidAuth = await salesforce.hasValidAuthentication();
+            if (hasValidAuth) {
+                authFileTest.status = "success";
+                authFileTest.message = "Valid authentication tokens found";
+                
+                // Try to get connection info
+                try {
+                    const identity = await salesforce.getIdentity();
+                    authFileTest.details = {
+                        userId: identity.user_id,
+                        username: identity.username,
+                        orgId: identity.organization_id,
+                        instanceUrl: identity.urls && identity.urls.custom_domain
+                    };
+                } catch (identityError) {
+                    authFileTest.details = { identityError: identityError.message };
+                }
+            } else {
+                authFileTest.status = "warning";
+                authFileTest.message = "No valid authentication found - OAuth required";
+            }
+        } catch (error) {
+            authFileTest.status = "error";
+            authFileTest.message = `Authentication check failed: ${error.message}`;
+        }
+        results.tests.push(authFileTest);
+
+        // Test 4: API Connectivity (only if authenticated)
+        if (results.tests[2].status === "success") {
+            const apiTest = {
+                name: "Salesforce API",
+                status: "checking"
+            };
+
+            try {
+                const testResult = await salesforce.testConnection();
+                apiTest.status = "success";
+                apiTest.message = "Salesforce API accessible";
+                apiTest.details = testResult;
+            } catch (error) {
+                apiTest.status = "error";
+                apiTest.message = `API test failed: ${error.message}`;
+            }
+            results.tests.push(apiTest);
+        }
+
+        // Overall status
+        const hasErrors = results.tests.some(test => test.status === "error");
+        const hasWarnings = results.tests.some(test => test.status === "warning");
+        
+        results.overall = hasErrors ? "error" : hasWarnings ? "warning" : "success";
+        results.summary = hasErrors ? 
+            "Configuration errors detected" : 
+            hasWarnings ? 
+                "Authentication required" : 
+                "All systems operational";
+
+        res.json({
+            success: true,
+            ...results
+        });
+
+    } catch (error) {
+        console.error('❌ Salesforce connectivity test failed:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to test Salesforce connectivity',
+            details: error.message
+        });
+    }
+});
+
 // Test web connectivity endpoint
 app.get('/api/test-web-connectivity', async (req, res) => {
     try {
@@ -608,6 +754,220 @@ function testWebResource(url, timeout = 5000) {
 }
 
 // Removed duplicate /health endpoint
+
+// ===== SALESFORCE API ENDPOINTS =====
+
+// Salesforce OAuth endpoints
+app.get('/auth/salesforce', (req, res) => {
+    try {
+        const authUrl = salesforce.getAuthUrl();
+        res.redirect(authUrl);
+    } catch (err) {
+        console.error('❌ Salesforce auth error:', err.message);
+        res.status(500).json({ error: 'Failed to initiate Salesforce authentication' });
+    }
+});
+
+app.get('/auth/salesforce/callback', async (req, res) => {
+    const { code, error } = req.query;
+    
+    if (error) {
+        console.error('❌ Salesforce OAuth error:', error);
+        return res.status(400).json({ error: `OAuth error: ${error}` });
+    }
+    
+    if (!code) {
+        return res.status(400).json({ error: 'No authorization code received' });
+    }
+    
+    try {
+        const result = await salesforce.handleOAuthCallback(code);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Salesforce authentication successful!',
+                organizationId: result.organizationId,
+                instanceUrl: result.instanceUrl
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error
+            });
+        }
+    } catch (err) {
+        console.error('❌ OAuth callback error:', err.message);
+        res.status(500).json({ error: 'Authentication failed' });
+    }
+});
+
+// Professional Services Requests API
+app.get('/api/provisioning/requests', async (req, res) => {
+    try {
+        const filters = {
+            requestType: req.query.requestType,
+            accountId: req.query.accountId,
+            status: req.query.status,
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
+            search: req.query.search,
+            pageSize: req.query.pageSize ? parseInt(req.query.pageSize) : 25,
+            offset: req.query.offset ? parseInt(req.query.offset) : 0
+        };
+        
+        // Remove undefined values
+        Object.keys(filters).forEach(key => {
+            if (filters[key] === undefined || filters[key] === '') {
+                delete filters[key];
+            }
+        });
+        
+        const result = await salesforce.queryProfServicesRequests(filters);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                records: result.records,
+                totalCount: result.totalCount,
+                pageSize: result.pageSize,
+                offset: result.offset,
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                hasMore: result.hasMore,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                records: [],
+                totalCount: 0,
+                hasMore: false
+            });
+        }
+    } catch (err) {
+        console.error('❌ Provisioning requests error:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch provisioning requests',
+            records: [],
+            totalCount: 0,
+            hasMore: false
+        });
+    }
+});
+
+// Search endpoint for type-ahead functionality
+app.get('/api/provisioning/search', async (req, res) => {
+    try {
+        const searchTerm = req.query.q || req.query.search || '';
+        const limit = req.query.limit ? parseInt(req.query.limit) : 20;
+        
+        if (!searchTerm || searchTerm.length < 2) {
+            return res.json({
+                success: true,
+                results: {
+                    technicalRequests: [],
+                    accounts: [],
+                    totalCount: 0
+                }
+            });
+        }
+        
+        const result = await salesforce.searchProvisioningData(searchTerm, limit);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                results: result.results,
+                searchTerm: searchTerm,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                results: {
+                    technicalRequests: [],
+                    accounts: [],
+                    totalCount: 0
+                }
+            });
+        }
+    } catch (err) {
+        console.error('❌ Provisioning search error:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to search provisioning data',
+            results: {
+                technicalRequests: [],
+                accounts: [],
+                totalCount: 0
+            }
+        });
+    }
+});
+
+// Get specific Professional Services Request
+app.get('/api/provisioning/requests/:id', async (req, res) => {
+    try {
+        const result = await salesforce.getProfServicesRequestById(req.params.id);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                record: result.record,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                error: result.error
+            });
+        }
+    } catch (err) {
+        console.error('❌ Get provisioning request error:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch provisioning request'
+        });
+    }
+});
+
+// Get filter options for dropdowns
+app.get('/api/provisioning/filter-options', async (req, res) => {
+    try {
+        const result = await salesforce.getProfServicesFilterOptions();
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                requestTypes: result.requestTypes,
+                statuses: result.statuses,
+                accounts: result.accounts,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                requestTypes: [],
+                statuses: [],
+                accounts: []
+            });
+        }
+    } catch (err) {
+        console.error('❌ Filter options error:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch filter options',
+            requestTypes: [],
+            statuses: [],
+            accounts: []
+        });
+    }
+});
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);

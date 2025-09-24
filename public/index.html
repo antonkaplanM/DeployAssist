@@ -97,6 +97,18 @@
                         </button>
                         
                         <button 
+                            id="nav-provisioning" 
+                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="16" height="10" x="2" y="3" rx="2" ry="2"></rect>
+                                <path d="m7 11 2-2-2-2"></path>
+                                <rect width="4" height="4" x="11" y="7"></rect>
+                            </svg>
+                            Provisioning Monitor
+                        </button>
+                        
+                        <button 
                             id="nav-settings" 
                             class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
@@ -356,6 +368,178 @@
                 </div>
             </div>
 
+            <!-- Provisioning Monitor Page -->
+            <div id="page-provisioning" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="16" height="10" x="2" y="3" rx="2" ry="2"></rect>
+                                <path d="m7 11 2-2-2-2"></path>
+                                <rect width="4" height="4" x="11" y="7"></rect>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Provisioning Monitor</h1>
+                        </div>
+                        <p class="text-muted-foreground">Monitor deployment requests and product provisioning status</p>
+                    </header>
+
+                    <!-- Controls Section (Search, Filters, Actions) -->
+                    <section class="mb-6">
+                        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                            <!-- Enhanced Search with Type-ahead -->
+                            <div class="flex-1 relative">
+                                <label for="provisioning-search" class="sr-only">Search Requests</label>
+                                <input 
+                                    type="text" 
+                                    id="provisioning-search" 
+                                    placeholder="Search Technical Team Requests or Accounts (type-ahead enabled)"
+                                    class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
+                                >
+                                <svg class="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                                
+                                <!-- Type-ahead dropdown -->
+                                <div id="search-dropdown" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-50 hidden max-h-60 overflow-y-auto">
+                                    <!-- Search results will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Filter Dropdowns -->
+                            <select id="provisioning-request-type-filter" class="border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-ring">
+                                <option value="">All Request Types</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                            
+                            <select id="provisioning-status-filter" class="border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-ring">
+                                <option value="">All Statuses</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex gap-2">
+                                <button 
+                                    id="refresh-provisioning"
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                        <path d="M21 3v5h-5"></path>
+                                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                        <path d="M3 21v-5h5"></path>
+                                    </svg>
+                                    Refresh
+                                </button>
+                                
+                                <button 
+                                    id="export-provisioning"
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7,10 12,15 17,10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Export
+                                </button>
+                            </div>
+                            
+                            <div class="text-sm text-muted-foreground">
+                                <span id="provisioning-count">Loading...</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Provisioning Table -->
+                    <section class="space-y-4">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="overflow-x-auto">
+                                <table id="provisioning-table" class="w-full">
+                                    <thead class="border-b bg-muted/50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="name">
+                                                Technical Team Request
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="account">
+                                                Account
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="requestType">
+                                                Request Type
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="deployment">
+                                                Deployment Number
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="products">
+                                                Products
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="status">
+                                                Status
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-sort="created">
+                                                Created Date
+                                                <span class="sort-indicator ml-1">↕</span>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="provisioning-table-body" class="divide-y">
+                                        <!-- Table content will be populated by JavaScript -->
+                                        <tr>
+                                            <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                                                <div class="flex flex-col items-center gap-2">
+                                                    <div class="loading-spinner"></div>
+                                                    <span>Loading provisioning data...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Pagination Controls -->
+                        <div id="provisioning-pagination" class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+                            <div class="flex items-center text-sm text-muted-foreground">
+                                <span id="pagination-info">Showing 0 of 0 records</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    id="load-more-btn" 
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                    style="display: none;"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"></path>
+                                        <path d="m12 5 7 7-7 7"></path>
+                                    </svg>
+                                    Load More Records
+                                </button>
+                                
+                                <button 
+                                    id="load-more-loading" 
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-muted text-muted-foreground h-10 px-4 py-2"
+                                    style="display: none;"
+                                    disabled
+                                >
+                                    <div class="loading-spinner mr-2"></div>
+                                    Loading...
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
             <!-- Settings Page -->
             <div id="page-settings" class="page-content hidden">
                 <div class="container mx-auto px-4 py-8 max-w-6xl">
@@ -404,6 +588,42 @@
                                         </svg>
                                         <p>Click "Test Connectivity" to check web access</p>
                                         <p class="text-sm">Tests connectivity to key external services</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Salesforce Connection Test Section -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Salesforce Integration</h3>
+                                        <p class="text-sm text-muted-foreground">Test and configure Salesforce OAuth authentication</p>
+                                    </div>
+                                    <button 
+                                        id="test-salesforce-connection" 
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                    >
+                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
+                                            <path d="M9.5 12.5 11 14l4-4"></path>
+                                        </svg>
+                                        Test Salesforce
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="p-6">
+                                <div id="salesforce-results" class="space-y-4">
+                                    <div class="text-center py-8 text-muted-foreground">
+                                        <svg class="h-12 w-12 mx-auto mb-4 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="m22 2-5 10-3-3-5 10"></path>
+                                        </svg>
+                                        <p>Click "Test Salesforce" to check OAuth configuration</p>
+                                        <p class="text-sm">Tests authentication flow and API connectivity</p>
                                     </div>
                                 </div>
                             </div>
