@@ -289,20 +289,26 @@ async function loadJiraInitiatives(assigneeName = null) {
             return;
         }
         
-        if (apiResponse && apiResponse.issues && apiResponse.issues.length > 0) {
-            initiativesData = apiResponse.issues;
-            
-            // Update title with assignee name
-            updateAssigneeTitle(assigneeName, apiResponse.issues.length);
+        if (apiResponse && apiResponse.issues) {
+            if (apiResponse.issues.length > 0) {
+                // Success case - has data
+                initiativesData = apiResponse.issues;
+                
+                // Update title with assignee name
+                updateAssigneeTitle(assigneeName, apiResponse.issues.length);
+                
+                filteredData = [...initiativesData];
+                renderRoadmapTable(filteredData);
+                updateInitiativeCount(filteredData.length);
+            } else {
+                // No data found (empty array)
+                showRoadmapNoData(assigneeName);
+            }
         } else {
-            // No data found
-            showRoadmapNoData(assigneeName);
-            return;
+            // Unexpected response structure - treat as error
+            console.warn('Unexpected API response structure:', apiResponse);
+            showRoadmapError('Unexpected response from server. Please try again.');
         }
-        
-        filteredData = [...initiativesData];
-        renderRoadmapTable(filteredData);
-        updateInitiativeCount(filteredData.length);
         
     } catch (error) {
         console.error('Error loading initiatives:', error);
@@ -815,6 +821,7 @@ function showRoadmapError(message) {
             </td>
         </tr>
     `;
+    updateInitiativeCount(0);
 }
 
 // Utility function for debouncing
@@ -1169,7 +1176,10 @@ function setupSettingsEventListeners() {
     }
 
     // Setup collapsible sections
-    setupCollapsibleSections();
+    // Add a small delay to ensure DOM is fully rendered
+    setTimeout(() => {
+        setupCollapsibleSections();
+    }, 100);
 }
 
 // Setup collapsible sections functionality
@@ -1177,7 +1187,10 @@ function setupCollapsibleSections() {
     const sectionToggles = document.querySelectorAll('.settings-section-toggle');
     
     sectionToggles.forEach(toggle => {
-        toggle.addEventListener('click', function() {
+        toggle.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
             const sectionName = this.getAttribute('data-section');
             const content = document.getElementById(`${sectionName}-content`);
             const chevron = this.querySelector('.section-chevron');
@@ -3668,13 +3681,9 @@ function initializeAnalytics() {
     console.log('Analytics page initialized');
 }
 
-function initializeRoadmap() {
-    console.log('Roadmap page initialized');
-}
+// initializeRoadmap function moved to earlier in file (around line 254)
 
-function initializeSettings() {
-    console.log('Settings page initialized');
-}
+// initializeSettings function moved to earlier in file (around line 1155)
 
 // Initialize the application
 function initializeApp() {
