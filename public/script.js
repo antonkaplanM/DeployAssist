@@ -35,7 +35,6 @@ let provisioningPagination = {
     pageSize: 25,
     totalCount: 0,
     totalPages: 0,
-    hasMore: false,
     isLoading: false
 };
 
@@ -1266,18 +1265,107 @@ function renderConnectivityResults(data) {
 
 // ===== PROVISIONING MONITOR FUNCTIONALITY =====
 
+// Load filter options for provisioning monitor
+async function loadProvisioningFilterOptions() {
+    try {
+        console.log('Loading provisioning filter options from Salesforce...');
+        
+        const response = await fetch('/api/provisioning/filter-options');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('🔧 Filter options response:', data);
+        
+        if (data.success) {
+            // Populate Request Type filter
+            const requestTypeFilter = document.getElementById('provisioning-request-type-filter');
+            if (requestTypeFilter && data.requestTypes) {
+                const currentValue = requestTypeFilter.value;
+                requestTypeFilter.innerHTML = '<option value="">All Request Types</option>' + 
+                    data.requestTypes.map(type => 
+                        `<option value="${type}" ${type === currentValue ? 'selected' : ''}>${type}</option>`
+                    ).join('');
+            }
+            
+            // Populate Status filter
+            const statusFilter = document.getElementById('provisioning-status-filter');
+            if (statusFilter && data.statuses) {
+                const currentValue = statusFilter.value;
+                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+                    data.statuses.map(status => 
+                        `<option value="${status}" ${status === currentValue ? 'selected' : ''}>${status}</option>`
+                    ).join('');
+            }
+            
+            console.log(`✅ Filter options loaded: ${data.requestTypes?.length || 0} request types, ${data.statuses?.length || 0} statuses`);
+        } else {
+            console.error('Failed to load filter options:', data.error);
+            // Fall back to default options on error
+            loadDefaultFilterOptions();
+        }
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+        // Fall back to default options on error
+        this.loadDefaultFilterOptions();
+    }
+}
+
+// Load default filter options as fallback
+function loadDefaultFilterOptions() {
+    console.log('Loading default filter options...');
+    
+    const requestTypeFilter = document.getElementById('provisioning-request-type-filter');
+    if (requestTypeFilter) {
+        requestTypeFilter.innerHTML = `
+            <option value="">All Request Types</option>
+            <option value="New Implementation">New Implementation</option>
+            <option value="Configuration">Configuration</option>
+            <option value="Training">Training</option>
+            <option value="Support">Support</option>
+        `;
+    }
+    
+    const statusFilter = document.getElementById('provisioning-status-filter');
+    if (statusFilter) {
+        statusFilter.innerHTML = `
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="On Hold">On Hold</option>
+        `;
+    }
+}
+
 // Initialize Provisioning Monitor page
 async function initializeProvisioning() {
     console.log('Provisioning Monitor page initialized');
     
-    // Load filter options first
-    await loadProvisioningFilterOptions();
+    // Set initial loading state
+    const countElement = document.getElementById('provisioning-count');
+    if (countElement) {
+        countElement.textContent = 'Loading...';
+        console.log('🔧 Set initial loading text');
+    }
     
-    // Load initial data
-    await loadProvisioningRequests();
-    
-    // Setup event listeners
-    setupProvisioningEventListeners();
+    try {
+        // Load filter options first
+        await loadProvisioningFilterOptions();
+        
+        // Load initial data
+        await loadProvisioningRequests();
+        
+        // Setup event listeners
+        setupProvisioningEventListeners();
+        
+    } catch (error) {
+        console.error('❌ Error during provisioning initialization:', error);
+        if (countElement) {
+            countElement.textContent = 'Error loading data';
+        }
+    }
 }
 
 // Setup event listeners for Provisioning Monitor
@@ -1313,10 +1401,15 @@ function setupProvisioningEventListeners() {
         exportBtn.addEventListener('click', handleProvisioningExport);
     }
     
-    // Load More button
-    const loadMoreBtn = document.getElementById('load-more-btn');
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', loadMoreRecords);
+    // Pagination buttons
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', handlePreviousPage);
+    }
+    
+    const nextPageBtn = document.getElementById('next-page-btn');
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', handleNextPage);
     }
     
     // Table sorting
@@ -1574,20 +1667,16 @@ function handleDocumentClick(event) {
 }
 
 // Load provisioning requests with filters and pagination
-async function loadProvisioningRequests(filters = {}, append = false) {
+async function loadProvisioningRequests(filters = {}) {
     if (provisioningPagination.isLoading) return;
     
     provisioningPagination.isLoading = true;
     
     try {
-        console.log('Loading provisioning requests...', append ? 'appending' : 'new search');
+        console.log(`Loading provisioning requests (page ${provisioningPagination.currentPage})...`);
         
-        if (!append) {
-            // Show loading state for new searches
-            showProvisioningLoading();
-            provisioningPagination.currentPage = 1;
-            provisioningData = [];
-        }
+        // Show loading state
+        showProvisioningLoading();
         
         // Build query parameters
         const queryParams = new URLSearchParams();
@@ -1615,61 +1704,50 @@ async function loadProvisioningRequests(filters = {}, append = false) {
             success: data.success,
             recordsCount: data.records ? data.records.length : 0,
             totalCount: data.totalCount,
-            hasMore: data.hasMore,
+            totalCountType: typeof data.totalCount,
             currentPage: data.currentPage,
             totalPages: data.totalPages,
             fullResponse: data
         });
         
         if (data.success) {
-            if (append) {
-                // Append new records for lazy loading
-                provisioningData = [...provisioningData, ...data.records];
-            } else {
-                // Replace records for new search/filter
-                provisioningData = data.records || [];
-            }
-            
-            // Update pagination state
-            provisioningPagination.totalCount = data.totalCount;
-            provisioningPagination.totalPages = data.totalPages;
-            provisioningPagination.hasMore = data.hasMore;
-            
+            // Load current page records
+            provisioningData = data.records || [];
             filteredProvisioningData = [...provisioningData];
             
+            // Update pagination state
+            provisioningPagination.totalCount = data.totalCount !== undefined ? data.totalCount : 0;
+            provisioningPagination.totalPages = data.totalPages !== undefined ? data.totalPages : 1;
+            
             console.log(`✅ Loaded ${data.records.length} provisioning requests (page ${provisioningPagination.currentPage} of ${provisioningPagination.totalPages})`);
+            console.log('🔍 Pagination state before update:', {
+                totalCount: provisioningPagination.totalCount,
+                currentPage: provisioningPagination.currentPage,
+                totalPages: provisioningPagination.totalPages
+            });
             renderProvisioningTable(filteredProvisioningData);
-            updateProvisioningCount(data.totalCount);
+            updateProvisioningCount();
             updatePaginationInfo();
             
         } else {
             console.error('Failed to load provisioning requests:', data.error);
             showProvisioningError(data.error || 'Failed to load requests');
+            // Set default values on error
+            provisioningPagination.totalCount = 0;
+            provisioningPagination.totalPages = 0;
+            updateProvisioningCount();
         }
         
     } catch (err) {
         console.error('Error loading provisioning requests:', err);
         showProvisioningError('Network error while loading requests');
+        // Set default values on error
+        provisioningPagination.totalCount = 0;
+        provisioningPagination.totalPages = 0;
+        updateProvisioningCount();
     } finally {
         provisioningPagination.isLoading = false;
     }
-}
-
-// Load more records for pagination
-async function loadMoreRecords() {
-    const shouldHaveMore = provisioningData.length < provisioningPagination.totalCount;
-    const actualHasMore = provisioningPagination.hasMore !== false && shouldHaveMore;
-    
-    if (!actualHasMore || provisioningPagination.isLoading) {
-        return;
-    }
-    
-    provisioningPagination.currentPage++;
-    
-    // Get current filter values
-    const filters = getCurrentFilters();
-    
-    await loadProvisioningRequests(filters, true); // append = true
 }
 
 // Get current filter values from UI
@@ -1685,36 +1763,93 @@ function getCurrentFilters() {
     };
 }
 
-// Update pagination info display
-function updatePaginationInfo() {
-    const paginationInfo = document.getElementById('pagination-info');
-    const loadMoreBtn = document.getElementById('load-more-btn');
-    const loadMoreLoading = document.getElementById('load-more-loading');
-    
-    if (paginationInfo) {
-        const start = Math.min(1, provisioningPagination.totalCount);
-        const end = provisioningData.length;
-        const total = provisioningPagination.totalCount;
-        
-        paginationInfo.textContent = `Showing ${start}-${end} of ${total} records`;
+// Update provisioning count display
+function updateProvisioningCount() {
+    const countElement = document.getElementById('provisioning-count');
+    if (!countElement) {
+        console.error('❌ provisioning-count element not found');
+        return;
     }
     
-    // Show/hide load more button
-    if (loadMoreBtn && loadMoreLoading) {
-        // Calculate if there should be more records based on current data vs total
-        const shouldHaveMore = provisioningData.length < provisioningPagination.totalCount;
-        const actualHasMore = provisioningPagination.hasMore !== false && shouldHaveMore;
-        
-        if (actualHasMore && !provisioningPagination.isLoading) {
-            loadMoreBtn.style.display = 'flex';
-            loadMoreLoading.style.display = 'none';
-        } else if (provisioningPagination.isLoading) {
-            loadMoreBtn.style.display = 'none';
-            loadMoreLoading.style.display = 'flex';
+    const totalRecords = provisioningPagination.totalCount;
+    
+    console.log('🔢 [COUNT] Updating provisioning count:', {
+        totalCount: totalRecords,
+        totalCountType: typeof totalRecords,
+        isUndefined: totalRecords === undefined,
+        isNull: totalRecords === null,
+        isNumber: typeof totalRecords === 'number',
+        fullPaginationState: provisioningPagination
+    });
+    
+    // Always make it visible and set the text
+    countElement.style.visibility = 'visible';
+    countElement.style.display = 'block';
+    
+    // More defensive checking
+    if (typeof totalRecords === 'number' && !isNaN(totalRecords) && totalRecords >= 0) {
+        if (totalRecords === 0) {
+            countElement.textContent = 'No requests found';
         } else {
-            loadMoreBtn.style.display = 'none';
-            loadMoreLoading.style.display = 'none';
+            countElement.textContent = `${totalRecords} total requests`;
         }
+        console.log('✅ [COUNT] Set valid count:', countElement.textContent);
+    } else {
+        console.warn('⚠️ [COUNT] Invalid totalRecords, showing loading:', totalRecords);
+        countElement.textContent = 'Loading...';
+    }
+}
+
+// Show loading state for provisioning table
+function showProvisioningLoading() {
+    const tbody = document.getElementById('provisioning-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7" class="px-4 py-8 text-center">
+                <div class="space-y-4">
+                    <div class="loading-spinner mx-auto"></div>
+                    <p class="text-sm text-muted-foreground">Loading provisioning requests...</p>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    // Update count during loading
+    const countElement = document.getElementById('provisioning-count');
+    if (countElement) {
+        countElement.textContent = 'Loading...';
+    }
+}
+
+// Show error state for provisioning table
+function showProvisioningError(message) {
+    const tbody = document.getElementById('provisioning-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7" class="px-4 py-8 text-center">
+                <div class="space-y-4">
+                    <svg class="h-12 w-12 mx-auto text-red-500 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <div>
+                        <p class="font-medium text-red-600">Error Loading Requests</p>
+                        <p class="text-sm text-muted-foreground">${message}</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    // Show count with error message
+    const countElement = document.getElementById('provisioning-count');
+    if (countElement) {
+        countElement.textContent = 'Error loading data';
     }
 }
 
@@ -1774,6 +1909,74 @@ function renderProvisioningTable(data) {
             </td>
         </tr>
     `).join('');
+}
+
+// Update pagination info display
+function updatePaginationInfo() {
+    const paginationInfo = document.getElementById('pagination-info');
+    const pageIndicator = document.getElementById('page-indicator');
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+    
+    if (paginationInfo) {
+        const startRecord = ((provisioningPagination.currentPage - 1) * provisioningPagination.pageSize) + 1;
+        const endRecord = Math.min(provisioningPagination.currentPage * provisioningPagination.pageSize, provisioningPagination.totalCount);
+        const totalRecords = provisioningPagination.totalCount;
+        
+        console.log('📄 [PAGINATION] Updating pagination info:', {
+            totalRecords: totalRecords,
+            totalRecordsType: typeof totalRecords,
+            startRecord: startRecord,
+            endRecord: endRecord,
+            fullPaginationState: provisioningPagination
+        });
+        
+        if (totalRecords === 0) {
+            paginationInfo.textContent = 'No records to display';
+        } else {
+            paginationInfo.textContent = `Showing ${startRecord}-${endRecord} of ${totalRecords} records`;
+        }
+    }
+    
+    if (pageIndicator) {
+        pageIndicator.textContent = `Page ${provisioningPagination.currentPage} of ${provisioningPagination.totalPages}`;
+    }
+    
+    // Update button states
+    if (prevPageBtn) {
+        prevPageBtn.disabled = provisioningPagination.currentPage <= 1;
+    }
+    
+    if (nextPageBtn) {
+        nextPageBtn.disabled = provisioningPagination.currentPage >= provisioningPagination.totalPages;
+    }
+}
+
+// Handle previous page navigation
+async function handlePreviousPage() {
+    if (provisioningPagination.currentPage > 1) {
+        
+        provisioningPagination.currentPage--;
+        const filters = getCurrentFilters();
+        await loadProvisioningRequests(filters);
+    }
+}
+
+// Handle next page navigation
+async function handleNextPage() {
+    if (provisioningPagination.currentPage < provisioningPagination.totalPages) {
+        
+        provisioningPagination.currentPage++;
+        const filters = getCurrentFilters();
+        await loadProvisioningRequests(filters);
+    }
+}
+
+// Get products display for provisioning request
+function getProductsDisplay(request) {
+    // Simulate products display since we don't have real product data
+    const productCount = Math.floor(Math.random() * 5) + 1;
+    return `<div class="text-sm">${productCount} product${productCount > 1 ? 's' : ''}</div>`;
 }
 
 // Get status color classes
@@ -2116,27 +2319,23 @@ function showProvisioningError(message) {
     }
 }
 
-// Update provisioning count display
-function updateProvisioningCount(count) {
-    const countElement = document.getElementById('provisioning-count');
-    if (countElement) {
-        countElement.textContent = `${count} total requests`;
-    }
-}
+// (Removed duplicate updateProvisioningCount(count) to avoid overriding the state-based version)
 
 // Handle search input change
 async function handleProvisioningSearch(event) {
     const searchTerm = event.target.value;
-    provisioningPagination.currentPage = 1;
+    provisioningPagination.currentPage = 1; // Reset to first page
     provisioningData = [];
+    
     
     await loadProvisioningRequests({ search: searchTerm });
 }
 
 // Handle filter changes
 async function handleProvisioningFilterChange() {
-    provisioningPagination.currentPage = 1;
+    provisioningPagination.currentPage = 1; // Reset to first page
     provisioningData = [];
+    
     
     const filters = getCurrentFilters();
     await loadProvisioningRequests(filters);
@@ -2144,7 +2343,7 @@ async function handleProvisioningFilterChange() {
 
 // Handle refresh button
 async function handleProvisioningRefresh() {
-    provisioningPagination.currentPage = 1;
+    provisioningPagination.currentPage = 1; // Reset to first page
     provisioningData = [];
     
     const filters = getCurrentFilters();

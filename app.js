@@ -969,6 +969,188 @@ app.get('/api/provisioning/filter-options', async (req, res) => {
     }
 });
 
+// ===== REAL SALESFORCE PROVISIONING API =====
+
+// Get provisioning requests from Salesforce
+app.get('/api/provisioning/requests', async (req, res) => {
+    try {
+        console.log('📋 Fetching provisioning requests from Salesforce...', req.query);
+        
+        const salesforce = require('./salesforce');
+        
+        // Check if we have a valid Salesforce connection
+        if (!salesforce.hasValidAuthentication()) {
+            return res.status(401).json({
+                success: false,
+                error: 'No valid Salesforce authentication found. Please authenticate via /auth/salesforce',
+                records: [],
+                totalCount: 0,
+                currentPage: 1,
+                totalPages: 0,
+                hasMore: false
+            });
+        }
+        
+        const {
+            search = '',
+            requestType = '',
+            status = '',
+            pageSize = '25',
+            offset = '0'
+        } = req.query;
+        
+        // Get Salesforce connection
+        const conn = await salesforce.getConnection();
+        
+        // Build SOQL query for Professional Services Requests
+        let soqlQuery = `
+            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, 
+                   Status__c, Billing_Status__c, CreatedDate, LastModifiedDate, Deployment__c
+            FROM Professional_Services_Request__c
+        `;
+        
+        // Build WHERE clause
+        const whereConditions = [];
+        
+        if (search) {
+            whereConditions.push(`(Name LIKE '%${search}%' OR Account__c LIKE '%${search}%')`);
+        }
+        
+        if (requestType) {
+            whereConditions.push(`Request_Type_RI__c = '${requestType}'`);
+        }
+        
+        if (status) {
+            whereConditions.push(`Status__c = '${status}'`);
+        }
+        
+        if (whereConditions.length > 0) {
+            soqlQuery += ` WHERE ${whereConditions.join(' AND ')}`;
+        }
+        
+        // Add ordering
+        soqlQuery += ` ORDER BY LastModifiedDate DESC`;
+        
+        // Calculate pagination
+        const pageNumber = Math.floor(parseInt(offset) / parseInt(pageSize)) + 1;
+        const limitValue = parseInt(pageSize);
+        const offsetValue = parseInt(offset);
+        
+        // Add LIMIT and OFFSET
+        soqlQuery += ` LIMIT ${limitValue} OFFSET ${offsetValue}`;
+        
+        console.log('🔍 Executing SOQL:', soqlQuery);
+        
+        // Execute query
+        const result = await conn.query(soqlQuery);
+        
+        // Get total count (separate query without LIMIT/OFFSET)
+        let countQuery = `
+            SELECT COUNT() 
+            FROM Professional_Services_Request__c
+        `;
+        
+        if (whereConditions.length > 0) {
+            countQuery += ` WHERE ${whereConditions.join(' AND ')}`;
+        }
+        
+        const countResult = await conn.query(countQuery);
+        const totalCount = countResult.totalSize;
+        const totalPages = Math.ceil(totalCount / limitValue);
+        
+        console.log(`✅ Retrieved ${result.records.length} of ${totalCount} provisioning requests (page ${pageNumber}/${totalPages})`);
+        
+        res.json({
+            success: true,
+            records: result.records,
+            totalCount: totalCount,
+            currentPage: pageNumber,
+            totalPages: totalPages,
+            pageSize: limitValue,
+            hasMore: (offsetValue + limitValue) < totalCount
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching provisioning requests from Salesforce:', error);
+        res.status(500).json({
+            success: false,
+            error: `Failed to fetch provisioning requests: ${error.message}`,
+            records: [],
+            totalCount: 0,
+            currentPage: 1,
+            totalPages: 0,
+            hasMore: false
+        });
+    }
+});
+
+// Get filter options for provisioning requests
+app.get('/api/provisioning/filter-options', async (req, res) => {
+    try {
+        console.log('🔧 Fetching provisioning filter options from Salesforce...');
+        
+        const salesforce = require('./salesforce');
+        
+        // Check if we have a valid Salesforce connection
+        if (!salesforce.hasValidAuthentication()) {
+            return res.status(401).json({
+                success: false,
+                error: 'No valid Salesforce authentication found',
+                requestTypes: [],
+                statuses: [],
+                teams: []
+            });
+        }
+        
+        const conn = await salesforce.getConnection();
+        
+        // Get distinct request types
+        const requestTypesQuery = `
+            SELECT Request_Type_RI__c 
+            FROM Professional_Services_Request__c 
+            WHERE Request_Type_RI__c != null 
+            GROUP BY Request_Type_RI__c 
+            ORDER BY Request_Type_RI__c
+        `;
+        
+        // Get distinct statuses
+        const statusesQuery = `
+            SELECT Status__c 
+            FROM Professional_Services_Request__c 
+            WHERE Status__c != null 
+            GROUP BY Status__c 
+            ORDER BY Status__c
+        `;
+        
+        const [requestTypesResult, statusesResult] = await Promise.all([
+            conn.query(requestTypesQuery),
+            conn.query(statusesQuery)
+        ]);
+        
+        const requestTypes = requestTypesResult.records.map(r => r.Request_Type_RI__c);
+        const statuses = statusesResult.records.map(r => r.Status__c);
+        
+        console.log(`✅ Retrieved filter options: ${requestTypes.length} request types, ${statuses.length} statuses`);
+        
+        res.json({
+            success: true,
+            requestTypes: requestTypes,
+            statuses: statuses,
+            teams: [] // Teams could be added later if needed
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching filter options from Salesforce:', error);
+        res.status(500).json({
+            success: false,
+            error: `Failed to fetch filter options: ${error.message}`,
+            requestTypes: [],
+            statuses: [],
+            teams: []
+        });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
     console.log(`📁 Serving static files from ./public`);
