@@ -1,6 +1,6 @@
-# Hello World Node.js App 🚀
+# Deployment Assistant 🚀
 
-A simple Hello World application built with Node.js and Express, featuring a modern, responsive UI.
+A deployment assistant application built with Node.js and Express, featuring a modern, responsive UI and comprehensive integrations for DevOps workflows.
 
 ## Features
 
@@ -28,7 +28,7 @@ A simple Hello World application built with Node.js and Express, featuring a mod
 ## Project Structure
 
 ```
-hello-world-nodejs/
+deployment-assistant/
 ├── app.js              # Express server
 ├── package.json        # Project configuration
 ├── public/            # Static files
@@ -80,7 +80,7 @@ The application includes:
 ## Navigation Features
 
 ### **Pages**
-1. **Landing Page**: Original Hello World functionality with greeting system
+1. **Dashboard**: Welcome page with greeting system
 2. **Analytics Dashboard**: Empty table ready for account data with columns:
    - Account ID
    - Account Name
@@ -137,17 +137,17 @@ docker-compose down
 
 ```bash
 # Build the image
-docker build -t hello-world-nodejs .
+docker build -t deployment-assistant .
 
 # Run the container
-docker run -p 3000:3000 --name hello-world-app hello-world-nodejs
+docker run -p 3000:3000 --name deployment-assistant-app deployment-assistant
 
 # Run in detached mode
-docker run -d -p 3000:3000 --name hello-world-app hello-world-nodejs
+docker run -d -p 3000:3000 --name deployment-assistant-app deployment-assistant
 
 # Stop and remove container
-docker stop hello-world-app
-docker rm hello-world-app
+docker stop deployment-assistant-app
+docker rm deployment-assistant-app
 ```
 
 ### Docker Files Included
@@ -173,13 +173,13 @@ docker rm hello-world-app
 1. Ensure Docker Desktop is set to **Windows containers** mode
 2. Alternatively, use the Linux Dockerfile:
    ```bash
-   docker build -f Dockerfile.linux -t hello-world-nodejs .
+   docker build -f Dockerfile.linux -t deployment-assistant .
    ```
 
 **Alternative Windows Server Core image:**
 If you encounter issues with the Nano Server image, try the Server Core version:
 ```bash
-docker build -f Dockerfile.windows -t hello-world-nodejs .
+docker build -f Dockerfile.windows -t deployment-assistant .
 ```
 
 **Check container status:**
@@ -191,7 +191,7 @@ docker ps
 docker ps -a
 
 # View container logs
-docker logs hello-world-app
+docker logs deployment-assistant-app
 ```
 
 ### Production Deployment

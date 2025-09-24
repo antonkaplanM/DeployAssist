@@ -1,7 +1,7 @@
 {
-  "name": "hello-world-nodejs",
+  "name": "deployment-assistant",
   "version": "1.0.0",
-  "description": "A simple Hello World app with Node.js and modern UI",
+  "description": "A deployment assistant app with Node.js and modern UI",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -16,7 +16,8 @@
   "keywords": [
     "nodejs",
     "express",
-    "hello-world"
+    "deployment-assistant",
+    "integrations"
   ],
   "author": "",
   "license": "MIT"

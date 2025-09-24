@@ -766,7 +766,7 @@ async function fetchGreeting(name = '') {
     } catch (error) {
         console.error('Error fetching greeting:', error);
         return { 
-            message: 'Hello, World! 🌍', 
+            message: 'Welcome to Deployment Assistant! 🚀', 
             timestamp: new Date().toISOString() 
         };
     }

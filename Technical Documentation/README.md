@@ -1,6 +1,6 @@
 # Technical Documentation
 
-Welcome to the technical documentation for the hello-world-nodejs application integrations.
+Welcome to the technical documentation for the Deployment Assistant application integrations.
 
 ## 📁 Documentation Files
 
@@ -146,4 +146,4 @@ All documentation in this folder follows these standards:
 
 **Documentation Version**: 1.0  
 **Last Updated**: September 24, 2025  
-**Application Version**: Compatible with hello-world-nodejs v1.0+
+**Application Version**: Compatible with Deployment Assistant v1.0+
