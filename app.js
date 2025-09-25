@@ -1152,8 +1152,12 @@ app.get('/api/provisioning/filter-options', async (req, res) => {
     }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
-    console.log(`📁 Serving static files from ./public`);
-    console.log(`🔗 Direct Atlassian API Integration: No MCP configuration required`);
-});
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
+        console.log(`📁 Serving static files from ./public`);
+        console.log(`🔗 Direct Atlassian API Integration: No MCP configuration required`);
+    });
+}
+
+module.exports = app;

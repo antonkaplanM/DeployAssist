@@ -241,3 +241,21 @@ See `JIRA_INTEGRATION.md` for detailed setup instructions including:
 - Authentication troubleshooting
 
 Enjoy building with Node.js, shadcn/ui, and Docker on Windows! 🎉
+
+## Testing
+
+This repo includes a testing framework to prevent unintended behavior changes.
+
+### Stack
+
+- Jest for unit/integration tests (with Supertest and Nock)
+- Playwright for UI end-to-end tests
+
+### Commands
+
+```bash
+npm test            # run unit & integration tests with coverage
+npm run test:e2e    # run Playwright e2e tests (requires app running on :8080 or set E2E_BASE_URL)
+```
+
+See `Technical Documentation/Testing-Strategy.md` for details.

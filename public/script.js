@@ -2362,43 +2362,76 @@ function renderProductItems(items, groupType) {
     if (items.length === 0) {
         return '<p class="text-muted-foreground text-center py-8">No items found</p>';
     }
-    
+
+    // Accessors to normalize common fields across varying payload shapes
+    const getProductCode = (it) => it.productCode || it.product_code || it.ProductCode || it.name || '—';
+    const getStartDate = (it) => it.startDate || it.start_date || it.StartDate || '—';
+    const getEndDate = (it) => it.endDate || it.end_date || it.EndDate || '—';
+    const getQuantity = (it) => (it.quantity !== undefined ? it.quantity : (it.Quantity !== undefined ? it.Quantity : '—'));
+    const getModifier = (it) => it.productModifier || it.ProductModifier || '—';
+
+    // Determine columns per group type
+    let columns;
     if (groupType === 'models') {
-        return items.map((item, index) => `
-            <div class="border rounded-lg p-4 mb-3 hover:bg-muted/20 transition-colors">
-                <div class="flex items-start justify-between mb-2">
-                    <h3 class="font-medium text-green-800">${item.productCode || 'Unknown Model'}</h3>
-                    <span class="text-xs text-muted-foreground">#${index + 1}</span>
-                </div>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span class="text-muted-foreground">Start Date:</span>
-                        <span class="ml-2 font-medium">${item.startDate || 'N/A'}</span>
-                    </div>
-                    <div>
-                        <span class="text-muted-foreground">End Date:</span>
-                        <span class="ml-2 font-medium">${item.endDate || 'N/A'}</span>
-                    </div>
-                    ${item.productModifier ? `
-                        <div class="col-span-2">
-                            <span class="text-muted-foreground">Modifier:</span>
-                            <span class="ml-2 font-medium">${item.productModifier}</span>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
+        columns = [
+            { key: 'productCode', label: 'Product Code', get: getProductCode },
+            { key: 'startDate', label: 'Start Date', get: getStartDate },
+            { key: 'endDate', label: 'End Date', get: getEndDate },
+            { key: 'modifier', label: 'Modifier', get: getModifier }
+        ];
+    } else if (groupType === 'apps') {
+        columns = [
+            { key: 'productCode', label: 'Product Code', get: getProductCode },
+            { key: 'quantity', label: 'Quantity', get: getQuantity },
+            { key: 'startDate', label: 'Start Date', get: getStartDate },
+            { key: 'endDate', label: 'End Date', get: getEndDate }
+        ];
     } else {
-        // For data and app entitlements, show as structured data
-        return items.map((item, index) => `
-            <div class="border rounded-lg p-4 mb-3 hover:bg-muted/20 transition-colors">
-                <div class="flex items-start justify-between mb-2">
-                    <h3 class="font-medium ${groupType === 'data' ? 'text-blue-800' : 'text-purple-800'}">${groupType === 'data' ? 'Data' : 'App'} Item #${index + 1}</h3>
-                </div>
-                <pre class="text-xs bg-muted p-3 rounded overflow-x-auto font-mono">${JSON.stringify(item, null, 2)}</pre>
-            </div>
-        `).join('');
+        // data entitlements
+        columns = [
+            { key: 'productCode', label: 'Product Code', get: getProductCode },
+            { key: 'startDate', label: 'Start Date', get: getStartDate },
+            { key: 'endDate', label: 'End Date', get: getEndDate }
+        ];
     }
+
+    // Render as a single consolidated table for readability
+    const headerHtml = `
+        <tr>
+            ${columns.map(c => `<th class=\"px-3 py-2 text-left text-xs font-medium text-muted-foreground\">${c.label}</th>`).join('')}
+        </tr>
+    `;
+
+    const rowsHtml = items.map((item) => `
+        <tr class=\"border-b last:border-0\">
+            ${columns.map(c => `<td class=\"px-3 py-2 text-sm\">${escapeHtml(String(c.get(item)))}</td>`).join('')}
+        </tr>
+    `).join('');
+
+    return `
+        <div class=\"rounded-lg border bg-card text-card-foreground shadow-sm\">
+            <div class=\"overflow-x-auto\">
+                <table class=\"w-full text-sm\">
+                    <thead class=\"border-b bg-muted/50\">
+                        ${headerHtml}
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+// Simple HTML escaper for table cell content
+function escapeHtml(value) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // Close product modal
