@@ -8,8 +8,8 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
     // Verify we're on the dashboard
     await expect(page.locator('#page-dashboard')).toBeVisible();
 
-    // Check that the validation monitoring tile is present
-    await expect(page.getByText('Data Validation Monitor')).toBeVisible();
+    // Check that the validation monitoring tile is present on the dashboard
+    await expect(page.locator('#page-dashboard h2:has-text("Data Validation Monitor")')).toBeVisible();
     
     // Verify the time frame selector is present with correct options
     const timeFrameSelect = page.locator('#time-frame-select');
@@ -174,8 +174,8 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
     await expect(page.getByText('Model Count Validation:')).toBeVisible();
     await expect(page.getByText('Model count 150 exceeds limit of 100')).toBeVisible();
     
-    // Check that "View Record" buttons are present
-    const viewButtons = page.getByText('View Record');
+    // Check that "View Record" buttons are present on dashboard
+    const viewButtons = page.locator('#page-dashboard').getByRole('button', { name: 'View Record' });
     await expect(viewButtons).toHaveCount(2);
   });
 
@@ -199,8 +199,8 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
     // Wait for the API call to complete
     await page.waitForTimeout(1000);
     
-    // Check that error state is displayed
-    await expect(page.getByText('Unable to load validation data')).toBeVisible();
+    // Check that error state is displayed on dashboard
+    await expect(page.locator('#page-dashboard').getByText('Unable to load validation data')).toBeVisible();
     await expect(page.getByText('Database connection failed')).toBeVisible();
     
     // Verify that validation errors section is hidden
@@ -227,9 +227,9 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
     // Wait for the API call to complete
     await page.waitForTimeout(1000);
     
-    // Check that authentication error is displayed
-    await expect(page.getByText('Unable to load validation data')).toBeVisible();
-    await expect(page.getByText(/Salesforce authentication/)).toBeVisible();
+    // Check that authentication error is displayed on dashboard
+    await expect(page.locator('#page-dashboard').getByText('Unable to load validation data')).toBeVisible();
+    await expect(page.locator('#page-dashboard').getByText(/Salesforce authentication/)).toBeVisible();
   });
 
   test('view record button functionality', async ({ page }) => {
@@ -281,8 +281,8 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
       await dialog.accept();
     });
     
-    // Click the "View Record" button
-    await page.getByText('View Record').click();
+    // Click the "View Record" button on dashboard
+    await page.locator('#page-dashboard').getByRole('button', { name: 'View Record' }).first().click();
     
     // Verify that we navigate to the provisioning page
     await expect(page.locator('#page-provisioning')).toBeVisible();

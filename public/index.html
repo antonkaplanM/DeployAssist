@@ -137,6 +137,18 @@
                         </div>
                         
                         <button 
+                            id="nav-help" 
+                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <path d="M12 17h.01"></path>
+                            </svg>
+                            Help
+                        </button>
+                        
+                        <button 
                             id="nav-settings" 
                             class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
@@ -659,6 +671,364 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Help Page -->
+            <div id="page-help" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-4xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <path d="M12 17h.01"></path>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Help & User Guide</h1>
+                        </div>
+                        <p class="text-muted-foreground">Complete guide to using the Deployment Assistant</p>
+                    </header>
+
+                    <!-- Table of Contents -->
+                    <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 mb-8">
+                        <h2 class="text-xl font-semibold mb-4">Quick Navigation</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <a href="#getting-started" class="text-primary hover:underline">🚀 Getting Started</a>
+                            <a href="#dashboard" class="text-primary hover:underline">📊 Dashboard</a>
+                            <a href="#provisioning" class="text-primary hover:underline">🔧 Provisioning Monitor</a>
+                            <a href="#validation" class="text-primary hover:underline">✅ Validation Rules</a>
+                            <a href="#analytics" class="text-primary hover:underline">📈 Analytics</a>
+                            <a href="#roadmap" class="text-primary hover:underline">🗺️ Roadmap</a>
+                            <a href="#settings" class="text-primary hover:underline">⚙️ Settings</a>
+                            <a href="#troubleshooting" class="text-primary hover:underline">🔧 Troubleshooting</a>
+                        </div>
+                    </div>
+
+                    <!-- Getting Started -->
+                    <section id="getting-started" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                🚀 Getting Started
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Welcome to the Deployment Assistant! This application helps you manage and monitor Professional Services requests, 
+                                    track deployment progress, and maintain data quality through validation rules.
+                                </p>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-blue-900 mb-2">First Time Setup</h3>
+                                    <ol class="list-decimal list-inside space-y-2 text-blue-800">
+                                        <li>Navigate to <strong>Settings</strong> to configure Salesforce authentication</li>
+                                        <li>Test connectivity to ensure all integrations are working</li>
+                                        <li>Visit <strong>Validation Rules</strong> to configure data validation preferences</li>
+                                        <li>Explore the <strong>Dashboard</strong> for an overview of your system status</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Dashboard -->
+                    <section id="dashboard" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                📊 Dashboard
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Your central hub for monitoring system health and validation status.
+                                </p>
+                                
+                                <div class="grid gap-4">
+                                    <div class="border-l-4 border-blue-500 pl-4">
+                                        <h3 class="font-semibold">Data Validation Monitor</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Real-time validation status for Professional Services records. 
+                                            Use the time frame selector (1d/1w/1m/1y) to adjust the monitoring period.
+                                        </p>
+                                        <ul class="text-sm text-muted-foreground mt-2 ml-4 list-disc">
+                                            <li><strong>Green status:</strong> All records pass validation</li>
+                                            <li><strong>Red status:</strong> Validation failures detected with details</li>
+                                            <li><strong>Click "View Record"</strong> to navigate to specific PS records</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="border-l-4 border-green-500 pl-4">
+                                        <h3 class="font-semibold">API Status</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Shows the current status of server connectivity and API responses.
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="border-l-4 border-purple-500 pl-4">
+                                        <h3 class="font-semibold">Tech Stack</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Information about the underlying technologies powering the application.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Provisioning Monitor -->
+                    <section id="provisioning" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                🔧 Provisioning Monitor
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Monitor and manage Professional Services requests with advanced search and filtering capabilities.
+                                </p>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Key Features:</h3>
+                                    <ul class="space-y-2 text-sm text-muted-foreground ml-4">
+                                        <li><strong>🔍 Search:</strong> Type-ahead search for Technical Team Requests and Accounts</li>
+                                        <li><strong>🎯 Filters:</strong> Filter by Request Type, Status, and other criteria</li>
+                                        <li><strong>📄 Pagination:</strong> Browse through large datasets efficiently</li>
+                                        <li><strong>📊 Data Validations:</strong> View validation status for each record</li>
+                                        <li><strong>📦 Product Details:</strong> Click product groups to view entitlement details</li>
+                                        <li><strong>📤 Export:</strong> Export filtered results for external analysis</li>
+                                        <li><strong>🔄 Refresh:</strong> Update data in real-time</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-900 mb-2">Pro Tips:</h4>
+                                    <ul class="text-sm text-green-800 space-y-1">
+                                        <li>• Use the search box for quick access to specific requests</li>
+                                        <li>• Click column headers to sort data</li>
+                                        <li>• Check the Data Validations column for compliance status</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Validation Rules -->
+                    <section id="validation" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                ✅ Validation Rules
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Configure and manage data validation rules applied to Professional Services requests.
+                                </p>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Available Rules:</h3>
+                                    <div class="space-y-4">
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-blue-900">App Quantity Validation</h4>
+                                            <p class="text-sm text-muted-foreground">
+                                                Ensures app quantities are set to 1, except for IC-DATABRIDGE products which are always valid.
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-orange-900">Model Count Validation</h4>
+                                            <p class="text-sm text-muted-foreground">
+                                                Validates that the number of models doesn't exceed 100 per request.
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-red-900">Entitlement Date Overlap Validation</h4>
+                                            <p class="text-sm text-muted-foreground">
+                                                Prevents overlapping date ranges for entitlements with the same product code.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">How to Use:</h3>
+                                    <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                                        <li>Toggle rules on/off using the switches next to each rule</li>
+                                        <li>Click "Test Rules" to validate all current PS records</li>
+                                        <li>View detailed results and error reports</li>
+                                        <li>Settings automatically sync with the Dashboard validation monitor</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Analytics -->
+                    <section id="analytics" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                📈 Analytics
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    View comprehensive analytics about account performance and product metrics.
+                                </p>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Available Metrics:</h3>
+                                    <ul class="space-y-2 text-sm text-muted-foreground ml-4">
+                                        <li><strong>Total Accounts:</strong> Number of active accounts in the system</li>
+                                        <li><strong>Total Products:</strong> Count of provisioned products</li>
+                                        <li><strong>Average Products per Account:</strong> Distribution metrics</li>
+                                        <li><strong>Account Overview Table:</strong> Detailed breakdown by account</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Roadmap -->
+                    <section id="roadmap" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                🗺️ Platform Roadmap
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Track strategic initiatives and platform development progress through Jira integration.
+                                </p>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Features:</h3>
+                                    <ul class="space-y-2 text-sm text-muted-foreground ml-4">
+                                        <li><strong>Assignee Search:</strong> Enter team member names to load their initiatives</li>
+                                        <li><strong>Status Filtering:</strong> Filter by Open, In Progress, Proposed, etc.</li>
+                                        <li><strong>Initiative Tracking:</strong> View key details, summaries, and progress</li>
+                                        <li><strong>Export Options:</strong> Export roadmap data for reporting</li>
+                                        <li><strong>Real-time Sync:</strong> Data pulled directly from Jira</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-blue-900 mb-2">How to Use:</h4>
+                                    <ol class="text-sm text-blue-800 space-y-1">
+                                        <li>1. Enter an assignee name (e.g., "Kevin Yu")</li>
+                                        <li>2. Click "Load Initiatives" to fetch their work items</li>
+                                        <li>3. Use filters and search to narrow down results</li>
+                                        <li>4. Click on any initiative for more details</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Settings -->
+                    <section id="settings" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                ⚙️ Settings
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Configure application settings and test system connections.
+                                </p>
+                                
+                                <div class="space-y-4">
+                                    <div class="border-l-4 border-orange-500 pl-4">
+                                        <h3 class="font-semibold">Web Connectivity</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Test the application's ability to reach external web resources and APIs.
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="border-l-4 border-blue-500 pl-4">
+                                        <h3 class="font-semibold">Salesforce Integration</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Configure and test Salesforce OAuth authentication for data access.
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="border-l-4 border-gray-500 pl-4">
+                                        <h3 class="font-semibold">Application Settings</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            General preferences including theme settings and auto-refresh options.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Troubleshooting -->
+                    <section id="troubleshooting" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                🔧 Troubleshooting
+                            </h2>
+                            <div class="space-y-4">
+                                <div class="space-y-4">
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                        <h3 class="font-semibold text-yellow-900 mb-2">Common Issues & Solutions</h3>
+                                        
+                                        <div class="space-y-3 text-sm">
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">🔌 "Unable to load validation data" Error</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Check Salesforce authentication in Settings. 
+                                                    Ensure your credentials are valid and you have access to Prof_Services_Request__c object.
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">📊 Empty Dashboard or Missing Data</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Verify time frame selection and ensure PS records exist 
+                                                    in the selected period. Check validation rules are enabled.
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">🔍 Search Not Working</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Ensure search terms are at least 2 characters. 
+                                                    Clear browser cache if results seem outdated.
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">🗺️ Roadmap Not Loading</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Check Atlassian API configuration and ensure 
+                                                    assignee names are spelled correctly (e.g., "Kevin Yu").
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <h3 class="font-semibold text-blue-900 mb-2">Performance Tips</h3>
+                                        <ul class="text-sm text-blue-800 space-y-1">
+                                            <li>• Use specific time frames for faster validation monitoring</li>
+                                            <li>• Apply filters before searching large datasets</li>
+                                            <li>• Refresh data periodically for latest information</li>
+                                            <li>• Use browser refresh if UI becomes unresponsive</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <h3 class="font-semibold text-red-900 mb-2">Need More Help?</h3>
+                                        <p class="text-sm text-red-800">
+                                            If you continue experiencing issues, check the browser console for detailed error messages 
+                                            or contact your system administrator.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Footer -->
+                    <footer class="text-center mt-12 pt-8 border-t">
+                        <p class="text-sm text-muted-foreground">
+                            💡 This help guide covers all major features. For the latest updates, check the application regularly.
+                        </p>
+                    </footer>
                 </div>
             </div>
 

@@ -15,12 +15,14 @@ const navRoadmap = document.getElementById('nav-roadmap');
 const navProvisioning = document.getElementById('nav-provisioning');
 const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
 const navValidationRules = document.getElementById('nav-validation-rules');
+const navHelp = document.getElementById('nav-help');
 const navSettings = document.getElementById('nav-settings');
 const pageDashboard = document.getElementById('page-dashboard');
 const pageAnalytics = document.getElementById('page-analytics');
 const pageRoadmap = document.getElementById('page-roadmap');
 const pageProvisioning = document.getElementById('page-provisioning');
 const pageValidationRules = document.getElementById('page-validation-rules');
+const pageHelp = document.getElementById('page-help');
 const pageSettings = document.getElementById('page-settings');
 
 // Current page state
@@ -994,6 +996,7 @@ navRoadmap.addEventListener('click', handleNavigation);
 navProvisioning.addEventListener('click', handleProvisioningNavigation);
 navProvisioningMonitor.addEventListener('click', handleNavigation);
 navValidationRules.addEventListener('click', handleNavigation);
+navHelp.addEventListener('click', handleNavigation);
 navSettings.addEventListener('click', handleNavigation);
 
 // Initialize the app
@@ -3762,6 +3765,7 @@ function setupNavigationEventListeners() {
     const navProvisioning = document.getElementById('nav-provisioning');
     const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
     const navValidationRules = document.getElementById('nav-validation-rules');
+    const navHelp = document.getElementById('nav-help');
     const navSettings = document.getElementById('nav-settings');
     
     // Add event listeners
@@ -3771,12 +3775,66 @@ function setupNavigationEventListeners() {
     if (navProvisioning) navProvisioning.addEventListener('click', handleProvisioningNavigation);
     if (navProvisioningMonitor) navProvisioningMonitor.addEventListener('click', handleNavigation);
     if (navValidationRules) navValidationRules.addEventListener('click', handleNavigation);
+    if (navHelp) navHelp.addEventListener('click', handleNavigation);
     if (navSettings) navSettings.addEventListener('click', handleNavigation);
     
     console.log('Navigation event listeners setup completed');
 }
 
 // Initialize placeholder functions for pages that don't exist yet
+
+// ===== HELP PAGE FUNCTIONS =====
+
+// Initialize help page with smooth scrolling for internal links
+function initializeHelpPage() {
+    console.log('Initializing help page...');
+    
+    // Add smooth scrolling for internal navigation links
+    const helpPage = document.getElementById('page-help');
+    if (!helpPage) return;
+    
+    // Find all internal navigation links (href starting with #)
+    const internalLinks = helpPage.querySelectorAll('a[href^="#"]');
+    
+    internalLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const targetId = this.getAttribute('href').slice(1); // Remove the #
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                // Smooth scroll to the target element
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Optional: Add a temporary highlight effect
+                targetElement.style.transition = 'background-color 0.3s ease';
+                targetElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                
+                setTimeout(() => {
+                    targetElement.style.backgroundColor = '';
+                }, 2000);
+            }
+        });
+    });
+    
+    console.log(`✅ Help page initialized with ${internalLinks.length} internal navigation links`);
+}
+
+// Call help page initialization when help page is shown
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for help page navigation
+    const originalShowPage = showPage;
+    showPage = function(pageId) {
+        originalShowPage(pageId);
+        if (pageId === 'help') {
+            setTimeout(initializeHelpPage, 100);
+        }
+    };
+});
 function initializeAnalytics() {
     console.log('Analytics page initialized');
 }
