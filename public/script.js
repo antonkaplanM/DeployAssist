@@ -2334,7 +2334,9 @@ function showProductModal(requestName, groupType, items) {
                 
                 <!-- Modal Body -->
                 <div class="p-6 overflow-y-auto max-h-[60vh]">
-                    ${renderProductItems(items, groupType)}
+                    <div id="entitlements-table-container" data-group-type="${groupType}" data-items='${JSON.stringify(items).replace(/"/g, '&quot;')}' data-sort-key="" data-sort-direction="asc">
+                        ${renderProductItems(items, groupType)}
+                    </div>
                 </div>
                 
                 <!-- Modal Footer -->
@@ -2355,6 +2357,62 @@ function showProductModal(requestName, groupType, items) {
     
     // Add escape key listener
     document.addEventListener('keydown', handleModalEscape);
+
+    // Attach sorting handlers for entitlements table
+    try {
+        const container = document.getElementById('entitlements-table-container');
+        if (container) {
+            container.addEventListener('click', (ev) => {
+                const th = ev.target.closest && ev.target.closest('th[data-sort-key]');
+                if (!th) return;
+                const sortKey = th.getAttribute('data-sort-key');
+                const currentKey = container.getAttribute('data-sort-key') || '';
+                let direction = container.getAttribute('data-sort-direction') || 'asc';
+                if (currentKey === sortKey) {
+                    direction = direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    direction = 'asc';
+                }
+
+                container.setAttribute('data-sort-key', sortKey);
+                container.setAttribute('data-sort-direction', direction);
+
+                let itemsRaw = container.getAttribute('data-items') || '[]';
+                try { itemsRaw = itemsRaw.replace(/&quot;/g, '"'); } catch {}
+                let parsed = [];
+                try { parsed = JSON.parse(itemsRaw); } catch { parsed = []; }
+
+                // Define accessors matching renderProductItems columns
+                const accessors = {
+                    productCode: (it) => it.productCode || it.product_code || it.ProductCode || it.name || '',
+                    startDate: (it) => it.startDate || it.start_date || it.StartDate || '',
+                    endDate: (it) => it.endDate || it.end_date || it.EndDate || '',
+                    modifier: (it) => it.productModifier || it.ProductModifier || '',
+                    quantity: (it) => (it.quantity !== undefined ? it.quantity : (it.Quantity !== undefined ? it.Quantity : ''))
+                };
+
+                const accessor = accessors[sortKey] || (() => '');
+                parsed.sort((a, b) => {
+                    const av = accessor(a);
+                    const bv = accessor(b);
+                    const na = typeof av === 'number' ? av : (Number(av) || NaN);
+                    const nb = typeof bv === 'number' ? bv : (Number(bv) || NaN);
+                    let cmp;
+                    if (!isNaN(na) && !isNaN(nb)) {
+                        cmp = na - nb;
+                    } else {
+                        cmp = String(av).localeCompare(String(bv));
+                    }
+                    return direction === 'asc' ? cmp : -cmp;
+                });
+
+                container.setAttribute('data-items', JSON.stringify(parsed).replace(/"/g, '&quot;'));
+                container.innerHTML = renderProductItems(parsed, container.getAttribute('data-group-type'));
+            }, true);
+        }
+    } catch (e) {
+        console.warn('Failed to bind entitlements sorting:', e);
+    }
 }
 
 // Render product items based on type
@@ -2398,7 +2456,7 @@ function renderProductItems(items, groupType) {
     // Render as a single consolidated table for readability
     const headerHtml = `
         <tr>
-            ${columns.map(c => `<th class=\"px-3 py-2 text-left text-xs font-medium text-muted-foreground\">${c.label}</th>`).join('')}
+            ${columns.map(c => `<th class=\"px-3 py-2 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none\" data-sort-key=\"${c.key}\">${c.label} <span class=\"sort-indicator opacity-50\">↕</span></th>`).join('')}
         </tr>
     `;
 
@@ -2411,7 +2469,7 @@ function renderProductItems(items, groupType) {
     return `
         <div class=\"rounded-lg border bg-card text-card-foreground shadow-sm\">
             <div class=\"overflow-x-auto\">
-                <table class=\"w-full text-sm\">
+                <table class=\"w-full text-sm\" id=\"entitlements-table\">
                     <thead class=\"border-b bg-muted/50\">
                         ${headerHtml}
                     </thead>

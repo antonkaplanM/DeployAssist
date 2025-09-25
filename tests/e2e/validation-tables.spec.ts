@@ -13,8 +13,9 @@ test('provisioning entitlements modal renders tables', async ({ page }) => {
     const tbody = document.querySelector('#provisioning-table-body');
     if (!tbody) return;
     const fakeEntitlements = [
-      { productCode: 'IC-DATABRIDGE', quantity: 2, startDate: '2025-01-01', endDate: '2025-06-01' },
+      { productCode: 'IC-DATABRIDGE', quantity: 3, startDate: '2025-01-01', endDate: '2025-06-01' },
       { productCode: 'APP-X', quantity: 1, startDate: '2025-02-01', endDate: '2025-07-01' },
+      { productCode: 'APP-Y', quantity: 2, startDate: '2025-03-01', endDate: '2025-08-01' },
     ];
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -35,5 +36,29 @@ test('provisioning entitlements modal renders tables', async ({ page }) => {
   await expect(modal).toBeVisible();
   await expect(modal.locator('table')).toBeVisible();
   await expect(modal.locator('thead th')).toContainText(['Product Code', 'Quantity', 'Start Date', 'End Date']);
+
+  // Verify sorting toggles by Quantity
+  const getQuantities = async () => {
+    const count = await modal.locator('tbody tr').count();
+    const vals: number[] = [];
+    for (let i = 1; i <= count; i++) {
+      const txt = await modal.locator(`tbody tr:nth-child(${i}) td:nth-child(2)`).innerText();
+      const num = Number(String(txt).trim());
+      if (!Number.isNaN(num)) vals.push(num);
+    }
+    return vals;
+  };
+
+  // Ascending
+  await modal.locator('thead th[data-sort-key="quantity"]').click();
+  const asc = await getQuantities();
+  const ascSorted = [...asc].sort((a,b)=>a-b);
+  expect(asc).toEqual(ascSorted);
+
+  // Descending
+  await modal.locator('thead th[data-sort-key="quantity"]').click();
+  const desc = await getQuantities();
+  const descSorted = [...desc].sort((a,b)=>b-a);
+  expect(desc).toEqual(descSorted);
 });
 
