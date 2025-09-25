@@ -188,29 +188,40 @@
 
                     <!-- Main Content -->
                     <section class="space-y-8">
-                        <!-- Greeting Card -->
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-8">
-                            <div class="text-center space-y-6">
-                                <div class="space-y-3">
-                                    <h2 id="greeting-text" class="text-3xl md:text-4xl font-semibold tracking-tight transition-all duration-300">Welcome to Deployment Assistant! 🚀</h2>
-                                    <p id="timestamp" class="text-sm text-muted-foreground"></p>
+                        <!-- Data Validation Monitor -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="space-y-1">
+                                        <h2 class="text-2xl font-semibold tracking-tight flex items-center gap-2">
+                                            <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M9 12l2 2 4-4"></path>
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                            </svg>
+                                            Data Validation Monitor
+                                        </h2>
+                                        <p class="text-sm text-muted-foreground">Monitor validation errors from Provisioning Records</p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label for="time-frame-select" class="text-sm font-medium">Time Frame:</label>
+                                        <select id="time-frame-select" class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                            <option value="1d">Last 1 Day</option>
+                                            <option value="1w" selected>Last 1 Week</option>
+                                            <option value="1m">Last 1 Month</option>
+                                            <option value="1y">Last 1 Year</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 
-                                <div class="max-w-sm mx-auto">
-                                    <div class="flex gap-2">
-                                        <input 
-                                            type="text" 
-                                            id="name-input" 
-                                            placeholder="Enter your name..." 
-                                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1"
-                                        >
-                                        <button 
-                                            id="greet-btn" 
-                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                                        >
-                                            Greet User
-                                        </button>
+                                <div id="validation-status" class="rounded-lg border p-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="loading-spinner"></div>
+                                        <span class="text-sm text-muted-foreground">Loading validation status...</span>
                                     </div>
+                                </div>
+                                
+                                <div id="validation-errors" class="space-y-2 hidden">
+                                    <!-- Validation errors will be populated here -->
                                 </div>
                             </div>
                         </div>

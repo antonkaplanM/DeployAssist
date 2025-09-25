@@ -1,9 +1,12 @@
 // DOM elements
 const greetingText = document.getElementById('greeting-text');
 const timestampElement = document.getElementById('timestamp');
-const nameInput = document.getElementById('name-input');
-const greetButton = document.getElementById('greet-btn');
 const themeToggle = document.getElementById('theme-toggle');
+
+// Validation monitoring elements
+const timeFrameSelect = document.getElementById('time-frame-select');
+const validationStatus = document.getElementById('validation-status');
+const validationErrors = document.getElementById('validation-errors');
 
 // Navigation elements
 const navDashboard = document.getElementById('nav-dashboard');
@@ -162,8 +165,9 @@ function showPage(pageId) {
     } else if (pageId === 'landing') {
         // Refocus on input field if returning to landing page
         setTimeout(() => {
-            if (nameInput) {
-                nameInput.focus();
+            // Focus on time frame selector if available
+            if (timeFrameSelect) {
+                timeFrameSelect.focus();
             }
         }, 100);
     } else if (pageId === 'provisioning') {
@@ -872,61 +876,27 @@ async function fetchGreeting(name = '') {
     }
 }
 
-// Update greeting display
+// Greeting functionality removed - replaced with validation monitoring
+// (Functions commented out to avoid breaking existing references)
+/*
 async function updateGreeting(name = '') {
-    // Add loading state
-    const originalText = greetButton.textContent;
-    greetButton.textContent = 'Loading...';
-    greetButton.disabled = true;
-    greetButton.classList.add('opacity-50', 'cursor-not-allowed');
-    
-    try {
-        const data = await fetchGreeting(name);
-        
-        // Animate text change with shadcn-style transition
-        greetingText.style.opacity = '0';
-        greetingText.style.transform = 'translateY(10px)';
-        
-        setTimeout(() => {
-            greetingText.textContent = data.message;
-            greetingText.style.opacity = '1';
-            greetingText.style.transform = 'translateY(0)';
-            
-            // Update timestamp
-            const timestamp = new Date(data.timestamp);
-            timestampElement.textContent = `Generated: ${timestamp.toLocaleString()}`;
-        }, 150);
-        
-    } catch (error) {
-        console.error('Error updating greeting:', error);
-    } finally {
-        // Reset button state
-        setTimeout(() => {
-            greetButton.textContent = originalText;
-            greetButton.disabled = false;
-            greetButton.classList.remove('opacity-50', 'cursor-not-allowed');
-        }, 500);
-    }
+    // Legacy greeting functionality removed
 }
+*/
 
-// Handle greeting button click
+// Handle greeting button click - DISABLED (elements removed)
+/*
 function handleGreetClick() {
-    const name = nameInput.value.trim();
-    updateGreeting(name);
-    
-    // Add subtle click animation
-    greetButton.style.transform = 'scale(0.98)';
-    setTimeout(() => {
-        greetButton.style.transform = '';
-    }, 150);
+    // Legacy greeting functionality removed
 }
+*/
 
-// Handle Enter key in input field
+// Handle Enter key in input field - DISABLED (elements removed)
+/*
 function handleInputKeyPress(event) {
-    if (event.key === 'Enter') {
-        handleGreetClick();
-    }
+    // Legacy greeting functionality removed
 }
+*/
 
 // Add entrance animations to cards
 function addEntranceAnimations() {
@@ -943,20 +913,12 @@ function addEntranceAnimations() {
     });
 }
 
-// Enhanced input validation with shadcn-style feedback
+// Enhanced input validation - DISABLED (elements removed)
+/*
 function validateInput() {
-    const value = nameInput.value.trim();
-    
-    if (value.length > 50) {
-        nameInput.value = value.substring(0, 50);
-        
-        // Add visual feedback
-        nameInput.classList.add('border-red-500');
-        setTimeout(() => {
-            nameInput.classList.remove('border-red-500');
-        }, 2000);
-    }
+    // Legacy greeting functionality removed
 }
+*/
 
 // Add subtle hover effects to feature cards
 function addHoverEffects() {
@@ -1022,11 +984,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Event listeners
-greetButton.addEventListener('click', handleGreetClick);
-greetButton.addEventListener('click', createRippleEffect);
-nameInput.addEventListener('keypress', handleInputKeyPress);
-nameInput.addEventListener('input', validateInput);
+// Event listeners (greeting functionality removed)
 themeToggle.addEventListener('click', toggleTheme);
 
 // Navigation event listeners
@@ -1064,15 +1022,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedPage === 'landing') {
         // Focus on input field after animations for landing page
         setTimeout(() => {
-            if (nameInput) {
-                nameInput.focus();
-            }
+            // Focus removed - no input field available
         }, 800);
         
-        // Initial greeting for landing page
-        setTimeout(() => {
-            updateGreeting();
-        }, 1000);
+        // Initial greeting removed - replaced with validation monitoring
     }
 });
 
@@ -1107,10 +1060,7 @@ document.addEventListener('keydown', function(event) {
     
     // Escape to clear input (only on dashboard page)
     if (event.key === 'Escape' && currentPage === 'dashboard') {
-        if (nameInput) {
-            nameInput.value = '';
-            nameInput.focus();
-        }
+        // Input field functionality removed
     }
     
     // Arrow keys for navigation
@@ -3835,6 +3785,213 @@ function initializeAnalytics() {
 
 // initializeSettings function moved to earlier in file (around line 1155)
 
+// ===== VALIDATION MONITORING FUNCTIONS =====
+
+// Initialize validation monitoring tile
+function initializeValidationMonitoring() {
+    console.log('Initializing validation monitoring...');
+    
+    if (timeFrameSelect) {
+        timeFrameSelect.addEventListener('change', fetchValidationErrors);
+    }
+    
+    // Load initial validation errors
+    fetchValidationErrors();
+}
+
+// Fetch validation errors from the API
+async function fetchValidationErrors() {
+    if (!validationStatus || !validationErrors || !timeFrameSelect) {
+        console.warn('Validation monitoring elements not found');
+        return;
+    }
+    
+    const timeFrame = timeFrameSelect.value || '1w';
+    
+    try {
+        // Show loading state
+        validationStatus.innerHTML = `
+            <div class="flex items-center gap-2">
+                <div class="loading-spinner"></div>
+                <span class="text-sm text-muted-foreground">Loading validation status for ${getTimeFrameLabel(timeFrame)}...</span>
+            </div>
+        `;
+        validationErrors.classList.add('hidden');
+        
+        console.log(`Fetching validation errors for time frame: ${timeFrame}`);
+        
+        // Get enabled rules from the validation rules configuration
+        let enabledRuleIds = [];
+        try {
+            // Try to get enabled rules from localStorage (same as validation rules page)
+            const validationConfig = localStorage.getItem('deploymentAssistant_validationRules');
+            if (validationConfig) {
+                const config = JSON.parse(validationConfig);
+                enabledRuleIds = Object.keys(config.enabledRules || {}).filter(ruleId => 
+                    config.enabledRules[ruleId] === true
+                );
+            }
+            
+            // If no config found, use default enabled rules
+            if (enabledRuleIds.length === 0) {
+                enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
+            }
+            
+            console.log(`📋 Using enabled validation rules: ${enabledRuleIds.join(', ')}`);
+        } catch (error) {
+            console.warn('⚠️ Error loading validation config, using default rules:', error);
+            enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
+        }
+        
+        const response = await fetch(`/api/validation/errors?timeFrame=${timeFrame}&enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayValidationResults(data);
+        } else {
+            displayValidationError(data.error || 'Failed to load validation data');
+        }
+        
+    } catch (error) {
+        console.error('Error fetching validation errors:', error);
+        displayValidationError(`Network error: ${error.message}`);
+    }
+}
+
+// Display validation results in the tile
+function displayValidationResults(data) {
+    const { summary, errors } = data;
+    const timeFrameLabel = getTimeFrameLabel(summary.timeFrame);
+    
+    if (summary.invalidRecords === 0) {
+        // No validation errors
+        validationStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-green-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">No validation failures found</p>
+                    <p class="text-sm text-muted-foreground">
+                        All ${summary.totalRecords} PS records from ${timeFrameLabel} passed validation
+                        ${summary.enabledRulesCount > 0 ? `(${summary.enabledRulesCount} rules checked)` : ''}
+                    </p>
+                </div>
+            </div>
+        `;
+        validationErrors.classList.add('hidden');
+        
+    } else {
+        // Show validation errors
+        validationStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-red-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">${summary.invalidRecords} validation error${summary.invalidRecords > 1 ? 's' : ''} found</p>
+                    <p class="text-sm text-muted-foreground">
+                        ${summary.invalidRecords} of ${summary.totalRecords} PS records from ${timeFrameLabel} failed validation
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Display individual errors
+        displayValidationErrorDetails(errors);
+        validationErrors.classList.remove('hidden');
+    }
+}
+
+// Display detailed validation error information
+function displayValidationErrorDetails(errors) {
+    if (!errors || errors.length === 0) {
+        validationErrors.innerHTML = '<p class="text-sm text-muted-foreground">No error details available</p>';
+        return;
+    }
+    
+    const errorHtml = errors.map((error, index) => `
+        <div class="border border-red-200 rounded-lg p-4 bg-red-50">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-medium text-red-900">${error.recordName || error.recordId}</span>
+                        ${error.account ? `<span class="text-sm text-red-600">(${error.account})</span>` : ''}
+                    </div>
+                    <div class="space-y-1">
+                        ${error.failedRules.map(rule => `
+                            <div class="text-sm">
+                                <span class="font-medium text-red-800">${rule.ruleName}:</span>
+                                <span class="text-red-700 ml-1">${rule.message}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${error.createdDate ? `
+                        <div class="text-xs text-red-600 mt-2">
+                            Created: ${new Date(error.createdDate).toLocaleDateString()}
+                        </div>
+                    ` : ''}
+                </div>
+                <button 
+                    class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    onclick="viewPSRecord('${error.recordId}')"
+                >
+                    View Record
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    validationErrors.innerHTML = errorHtml;
+}
+
+// Display validation error message
+function displayValidationError(errorMessage) {
+    validationStatus.innerHTML = `
+        <div class="flex items-center gap-3 text-yellow-700">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="m12 17 .01 0"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">Unable to load validation data</p>
+                <p class="text-sm text-muted-foreground">${errorMessage}</p>
+            </div>
+        </div>
+    `;
+    validationErrors.classList.add('hidden');
+}
+
+// Helper function to get user-friendly time frame labels
+function getTimeFrameLabel(timeFrame) {
+    switch (timeFrame) {
+        case '1d': return 'the last 24 hours';
+        case '1w': return 'the last week';
+        case '1m': return 'the last month';
+        case '1y': return 'the last year';
+        default: return 'the selected time period';
+    }
+}
+
+// Navigate to view a specific PS record (placeholder for now)
+function viewPSRecord(recordId) {
+    console.log(`Viewing PS record: ${recordId}`);
+    // Navigate to provisioning monitor and filter by record ID
+    showPage('provisioning');
+    // TODO: Add filter functionality to show specific record
+    alert(`PS Record ID: ${recordId}\n\nThis would navigate to the Provisioning Monitor page and show this specific record.`);
+}
+
 // Initialize the application
 function initializeApp() {
     console.log('Initializing Deployment Assistant...');
@@ -3845,6 +4002,9 @@ function initializeApp() {
     // Initialize theme
     const theme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', theme);
+    
+    // Initialize validation monitoring
+    initializeValidationMonitoring();
     
     // Initialize navigation - restore saved page or default to dashboard
     const savedPage = localStorage.getItem('currentPage') || 'dashboard';
