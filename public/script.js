@@ -2225,12 +2225,15 @@ function showProductGroup(requestId, groupType, entitlements) {
         }
     }
     
+    // Get validation results for this request
+    const validationResult = validationResults.get(requestId);
+    
     // Create and show modal
-    showProductModal(request.Name, groupType, items);
+    showProductModal(request.Name, groupType, items, validationResult);
 }
 
 // Create and display product modal
-function showProductModal(requestName, groupType, items) {
+function showProductModal(requestName, groupType, items, validationResult = null) {
     // Remove existing modal if any and clean up event listeners
     const existingModal = document.getElementById('product-modal');
     if (existingModal) {
@@ -2287,8 +2290,8 @@ function showProductModal(requestName, groupType, items) {
                 
                 <!-- Modal Body -->
                 <div class="p-6 overflow-y-auto max-h-[60vh]">
-                    <div id="entitlements-table-container" data-group-type="${groupType}" data-items='${JSON.stringify(items).replace(/"/g, '&quot;')}' data-sort-key="" data-sort-direction="asc">
-                        ${renderProductItems(items, groupType)}
+                    <div id="entitlements-table-container" data-group-type="${groupType}" data-items='${JSON.stringify(items).replace(/"/g, '&quot;')}' data-validation-result='${JSON.stringify(validationResult || {}).replace(/"/g, '&quot;')}' data-sort-key="" data-sort-direction="asc">
+                        ${renderProductItems(items, groupType, validationResult)}
                     </div>
                 </div>
                 
@@ -2360,7 +2363,14 @@ function showProductModal(requestName, groupType, items) {
                 });
 
                 container.setAttribute('data-items', JSON.stringify(parsed).replace(/"/g, '&quot;'));
-                container.innerHTML = renderProductItems(parsed, container.getAttribute('data-group-type'));
+                const storedValidationResult = container.getAttribute('data-validation-result');
+                let validationResult = null;
+                try {
+                    validationResult = storedValidationResult ? JSON.parse(storedValidationResult.replace(/&quot;/g, '"')) : null;
+                } catch (e) {
+                    console.warn('Error parsing stored validation result:', e);
+                }
+                container.innerHTML = renderProductItems(parsed, container.getAttribute('data-group-type'), validationResult);
             }, true);
         }
     } catch (e) {
@@ -2369,7 +2379,7 @@ function showProductModal(requestName, groupType, items) {
 }
 
 // Render product items based on type
-function renderProductItems(items, groupType) {
+function renderProductItems(items, groupType, validationResult = null) {
     if (items.length === 0) {
         return '<p class="text-muted-foreground text-center py-8">No items found</p>';
     }
@@ -2380,6 +2390,31 @@ function renderProductItems(items, groupType) {
     const getEndDate = (it) => it.endDate || it.end_date || it.EndDate || '—';
     const getQuantity = (it) => (it.quantity !== undefined ? it.quantity : (it.Quantity !== undefined ? it.Quantity : '—'));
     const getModifier = (it) => it.productModifier || it.ProductModifier || '—';
+
+    // Helper function to check if an entitlement has validation issues
+    const hasValidationIssue = (item, index) => {
+        if (!validationResult || validationResult.overallStatus !== 'FAIL') return false;
+        
+        // Look for date overlap validation failures
+        const dateOverlapRule = validationResult.ruleResults?.find(rule => 
+            rule.ruleId === 'entitlement-date-overlap-validation' && rule.status === 'FAIL'
+        );
+        
+        if (!dateOverlapRule?.details?.overlaps) return false;
+        
+        // Map UI groupType to validation engine type
+        const validationGroupType = {
+            'models': 'model',
+            'apps': 'app', 
+            'data': 'data'
+        }[groupType] || groupType;
+        
+        // Check if this item is involved in any overlaps
+        return dateOverlapRule.details.overlaps.some(overlap => 
+            (overlap.entitlement1.type === validationGroupType && overlap.entitlement1.index === (index + 1)) ||
+            (overlap.entitlement2.type === validationGroupType && overlap.entitlement2.index === (index + 1))
+        );
+    };
 
     // Determine columns per group type
     let columns;
@@ -2406,18 +2441,26 @@ function renderProductItems(items, groupType) {
         ];
     }
 
-    // Render as a single consolidated table for readability
+    // Render as a single consolidated table for readability  
     const headerHtml = `
         <tr>
+            <th class="px-1 py-2 w-4 text-center text-xs font-medium text-muted-foreground">⚠</th>
             ${columns.map(c => `<th class=\"px-3 py-2 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none\" data-sort-key=\"${c.key}\">${c.label} <span class=\"sort-indicator opacity-50\">↕</span></th>`).join('')}
         </tr>
     `;
 
-    const rowsHtml = items.map((item) => `
-        <tr class=\"border-b last:border-0\">
-            ${columns.map(c => `<td class=\"px-3 py-2 text-sm\">${escapeHtml(String(c.get(item)))}</td>`).join('')}
-        </tr>
-    `).join('');
+    const rowsHtml = items.map((item, index) => {
+        const hasIssue = hasValidationIssue(item, index);
+        const rowClass = hasIssue ? 'border-b last:border-0 bg-red-25 border-red-200' : 'border-b last:border-0';
+        const cellClass = hasIssue ? 'px-3 py-2 text-sm relative' : 'px-3 py-2 text-sm';
+        
+        return `
+            <tr class="${rowClass}" ${hasIssue ? 'title="This entitlement has a date overlap validation failure"' : ''}>
+                ${hasIssue ? '<td class="px-1 py-2 w-4"><svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="m12 17 .01 0"></path></svg></td>' : '<td class="px-1 py-2 w-4"></td>'}
+                ${columns.map(c => `<td class="${cellClass}">${escapeHtml(String(c.get(item)))}</td>`).join('')}
+            </tr>
+        `;
+    }).join('');
 
     return `
         <div class=\"rounded-lg border bg-card text-card-foreground shadow-sm\">
@@ -3063,7 +3106,7 @@ function renderProvisioningTable(data) {
                 <div class="text-sm">${request.Deployment__c || 'N/A'}</div>
             </td>
             <td class="px-4 py-3">
-                ${getProductsDisplay(request)}
+                ${getProductsDisplay(request, validationResults.get(request.Id))}
             </td>
             <td class="px-4 py-3 text-center">
                 ${renderValidationColumn(request)}
@@ -3183,7 +3226,7 @@ function getStatusColor(status) {
     }
 }
 
-function getProductsDisplay(request) {
+function getProductsDisplay(request, validationResult = null) {
     if (!request.Payload_Data__c) {
         return '<span class="text-muted-foreground text-xs">No payload data</span>';
     }
@@ -3203,13 +3246,38 @@ function getProductsDisplay(request) {
             return '<span class="text-muted-foreground text-xs">No entitlements</span>';
         }
         
+        // Check for date overlap validation failures
+        let hasDateOverlapFailure = false;
+        let dateOverlapDetails = null;
+        if (validationResult && validationResult.overallStatus === 'FAIL') {
+            const dateOverlapRule = validationResult.ruleResults.find(rule => 
+                rule.ruleId === 'entitlement-date-overlap-validation' && rule.status === 'FAIL'
+            );
+            if (dateOverlapRule) {
+                hasDateOverlapFailure = true;
+                dateOverlapDetails = dateOverlapRule.details;
+            }
+        }
+        
+        // Helper function to check if an entitlement type/index has overlap issues
+        const hasOverlapIssue = (type, index) => {
+            if (!hasDateOverlapFailure || !dateOverlapDetails?.overlaps) return false;
+            return dateOverlapDetails.overlaps.some(overlap => 
+                (overlap.entitlement1.type === type && overlap.entitlement1.index === (index + 1)) ||
+                (overlap.entitlement2.type === type && overlap.entitlement2.index === (index + 1))
+            );
+        };
+        
         // Create interactive summary with expandable groups
         const groups = [];
         
         if (modelEntitlements.length > 0) {
+            const hasModelOverlap = modelEntitlements.some((_, index) => hasOverlapIssue('model', index));
+            const outliveClass = hasModelOverlap ? 'ring-2 ring-red-400' : '';
+            
             groups.push(`
                 <button 
-                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors ${outliveClass}"
                     data-request-id="${request.Id}"
                     data-group-type="models"
                     data-entitlements="${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')}"
@@ -3224,9 +3292,12 @@ function getProductsDisplay(request) {
         }
         
         if (dataEntitlements.length > 0) {
+            const hasDataOverlap = dataEntitlements.some((_, index) => hasOverlapIssue('data', index));
+            const outliveClass = hasDataOverlap ? 'ring-2 ring-red-400' : '';
+            
             groups.push(`
                 <button 
-                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors ${outliveClass}"
                     data-request-id="${request.Id}"
                     data-group-type="data"
                     data-entitlements="${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')}"
@@ -3240,9 +3311,12 @@ function getProductsDisplay(request) {
         }
         
         if (appEntitlements.length > 0) {
+            const hasAppOverlap = appEntitlements.some((_, index) => hasOverlapIssue('app', index));
+            const outliveClass = hasAppOverlap ? 'ring-2 ring-red-400' : '';
+            
             groups.push(`
                 <button 
-                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors ${outliveClass}"
                     data-request-id="${request.Id}"
                     data-group-type="apps"
                     data-entitlements="${JSON.stringify(appEntitlements).replace(/"/g, '&quot;')}"
