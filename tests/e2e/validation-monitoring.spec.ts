@@ -274,11 +274,43 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
     // Wait for the API call to complete
     await page.waitForTimeout(1000);
     
-    // Handle the alert dialog that will appear when clicking "View Record"
-    page.on('dialog', async dialog => {
-      expect(dialog.message()).toContain('PS-TEST-001');
-      expect(dialog.message()).toContain('Provisioning Monitor');
-      await dialog.accept();
+    // Mock the provisioning search API to return the specific record
+    await page.route('**/api/provisioning/requests*', async route => {
+      const url = new URL(route.request().url());
+      const search = url.searchParams.get('search');
+      
+      if (search && search.includes('Test PS Request')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: [{
+              Id: 'PS-TEST-001',
+              Name: 'Test PS Request',
+              Account__c: 'Test Account',
+              Status__c: 'Active',
+              Request_Type_RI__c: 'Standard'
+            }],
+            pagination: {
+              currentPage: 1,
+              totalPages: 1,
+              totalCount: 1,
+              pageSize: 25
+            }
+          })
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json', 
+          body: JSON.stringify({
+            success: true,
+            data: [],
+            pagination: { currentPage: 1, totalPages: 0, totalCount: 0, pageSize: 25 }
+          })
+        });
+      }
     });
     
     // Click the "View Record" button on dashboard
@@ -287,5 +319,16 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
     // Verify that we navigate to the provisioning page
     await expect(page.locator('#page-provisioning')).toBeVisible();
     await expect(page.locator('#page-dashboard')).toHaveClass(/hidden/);
+    
+    // Wait for the search to be triggered and verify search input contains the record name
+    await page.waitForTimeout(1000); // Give more time for async search
+    const searchInput = page.locator('#provisioning-search');
+    await expect(searchInput).toHaveValue('Test PS Request');
+    
+    // Verify that the search was triggered (search input should be focused)
+    await expect(searchInput).toBeFocused();
+    
+    // Verify that a search request was made (should happen automatically)
+    // The search should have filtered results to show only the target record
   });
 });

@@ -3999,7 +3999,7 @@ function displayValidationErrorDetails(errors) {
                 </div>
                 <button 
                     class="text-red-600 hover:text-red-800 text-sm font-medium"
-                    onclick="viewPSRecord('${error.recordId}')"
+                    onclick="viewPSRecord('${error.recordId}', '${error.recordName || error.recordId}')"
                 >
                     View Record
                 </button>
@@ -4041,13 +4041,82 @@ function getTimeFrameLabel(timeFrame) {
     }
 }
 
-// Navigate to view a specific PS record (placeholder for now)
-function viewPSRecord(recordId) {
-    console.log(`Viewing PS record: ${recordId}`);
-    // Navigate to provisioning monitor and filter by record ID
+// Navigate to view a specific PS record in the provisioning monitor
+async function viewPSRecord(recordId, recordName) {
+    console.log(`Navigating to PS record: ${recordName} (${recordId})`);
+    
+    // Navigate to provisioning monitor
     showPage('provisioning');
-    // TODO: Add filter functionality to show specific record
-    alert(`PS Record ID: ${recordId}\n\nThis would navigate to the Provisioning Monitor page and show this specific record.`);
+    
+    // Store the search term for after initialization
+    const searchTerm = recordName || recordId;
+    
+    // Wait for the page to fully initialize before searching
+    const waitForInitialization = async () => {
+        let attempts = 0;
+        const maxAttempts = 20; // Wait up to 4 seconds (20 * 200ms)
+        
+        while (attempts < maxAttempts) {
+            const searchInput = document.getElementById('provisioning-search');
+            const tableBody = document.getElementById('provisioning-table-body');
+            
+            // Check if both the search input and table body are available and not in loading state
+            if (searchInput && tableBody && !provisioningPagination.isLoading) {
+                console.log(`✅ Provisioning page is ready after ${attempts * 200}ms`);
+                return true;
+            }
+            
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        console.warn('⚠️ Timeout waiting for provisioning page to initialize');
+        return false;
+    };
+    
+    // Wait for initialization, then perform search
+    setTimeout(async () => {
+        const isReady = await waitForInitialization();
+        
+        if (isReady) {
+            const searchInput = document.getElementById('provisioning-search');
+            
+            try {
+                // Clear any existing search
+                searchInput.value = '';
+                
+                // Set the search value
+                searchInput.value = searchTerm;
+                
+                // Clear current data to force fresh search
+                provisioningData = [];
+                provisioningPagination.currentPage = 1;
+                provisioningPagination.isLoading = false;
+                
+                // Trigger the search directly via loadProvisioningRequests
+                console.log(`🔍 Triggering search for: ${searchTerm}`);
+                await loadProvisioningRequests({ search: searchTerm });
+                
+                // Focus on the search input to highlight the search
+                searchInput.focus();
+                
+                console.log(`✅ Successfully searched for record: ${searchTerm}`);
+                
+            } catch (error) {
+                console.error('❌ Error during search:', error);
+                // Fallback: try triggering search via event handler
+                try {
+                    handleProvisioningSearch({ target: { value: searchTerm } });
+                    searchInput.focus();
+                    console.log(`✅ Fallback search triggered for: ${searchTerm}`);
+                } catch (fallbackError) {
+                    console.error('❌ Fallback search also failed:', fallbackError);
+                }
+            }
+        } else {
+            console.error('❌ Failed to initialize provisioning page for search');
+        }
+    }, 100); // Start checking after a short delay
 }
 
 // Initialize the application
