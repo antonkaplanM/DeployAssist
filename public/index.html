@@ -298,54 +298,32 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Analytics Dashboard</h1>
                         </div>
-                        <p class="text-muted-foreground">Monitor account performance and product metrics</p>
+                        <p class="text-muted-foreground">Monitor Technical Team Request activity and trends</p>
                     </header>
 
                     <!-- Analytics Content -->
                     <section class="space-y-6">
                         <!-- Stats Overview -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-muted-foreground">Total Accounts</p>
-                                        <p class="text-2xl font-bold">0</p>
-                                    </div>
-                                    <div class="h-4 w-4 text-muted-foreground">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                            <circle cx="9" cy="7" r="4"></circle>
-                                            <path d="m22 21-3-3m0 0a6 6 0 1 0-6-6 6 6 0 0 0 6 6Z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-semibold">Technical Team Requests - Last 6 Months</h2>
+                                <span id="analytics-period" class="text-sm text-muted-foreground"></span>
                             </div>
-
-                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-muted-foreground">Total Products</p>
-                                        <p class="text-2xl font-bold">0</p>
-                                    </div>
-                                    <div class="h-4 w-4 text-muted-foreground">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="m7.5 4.27 9 5.15"></path>
-                                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-muted-foreground">Avg Products/Account</p>
-                                        <p class="text-2xl font-bold">0</p>
-                                    </div>
-                                    <div class="h-4 w-4 text-muted-foreground">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"></polyline>
-                                        </svg>
+                            <div id="request-type-tiles" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <!-- Dynamic tiles will be populated here -->
+                                <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-muted-foreground">Loading...</p>
+                                            <p class="text-2xl font-bold">-</p>
+                                        </div>
+                                        <div class="h-4 w-4 text-muted-foreground">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect width="16" height="10" x="2" y="3" rx="2" ry="2"></rect>
+                                                <path d="m7 11 2-2-2-2"></path>
+                                                <rect width="4" height="4" x="11" y="7"></rect>
+                                            </svg>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

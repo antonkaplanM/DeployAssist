@@ -237,23 +237,112 @@ function initializeAnalytics() {
     // Analytics page initialization
     console.log('Analytics page initialized');
     
-    // Here you could load analytics data from an API
-    // For now, we'll just show the empty state
-    updateAnalyticsStats({
-        totalAccounts: 0,
-        totalProducts: 0,
-        avgProductsPerAccount: 0
-    });
+    // Load analytics data for Technical Team Requests by type
+    loadAnalyticsData();
+}
+
+// Load analytics data for Technical Team Requests by type
+async function loadAnalyticsData() {
+    try {
+        const response = await fetch('/api/analytics/request-types-week');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderRequestTypeTiles(data.data);
+            updateAnalyticsPeriod(data.period);
+        } else {
+            console.error('Failed to load analytics data:', data.error);
+            showAnalyticsError();
+        }
+    } catch (error) {
+        console.error('Error loading analytics data:', error);
+        showAnalyticsError();
+    }
+}
+
+// Render request type tiles with data
+function renderRequestTypeTiles(analyticsData) {
+    const container = document.getElementById('request-type-tiles');
+    if (!container) return;
+    
+    if (analyticsData.length === 0) {
+        container.innerHTML = `
+            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 col-span-full">
+                <div class="text-center">
+                    <div class="text-muted-foreground text-sm">No Technical Team Requests found in the last 6 months</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Generate color classes for different request types
+    const colors = [
+        'bg-blue-100 text-blue-800',
+        'bg-green-100 text-green-800', 
+        'bg-purple-100 text-purple-800',
+        'bg-orange-100 text-orange-800',
+        'bg-pink-100 text-pink-800',
+        'bg-indigo-100 text-indigo-800'
+    ];
+    
+    const tiles = analyticsData.map((item, index) => {
+        const colorClass = colors[index % colors.length];
+        const isZeroCount = item.count === 0;
+        const tileClass = isZeroCount ? 'rounded-lg border bg-card text-card-foreground shadow-sm p-6 opacity-60' : 'rounded-lg border bg-card text-card-foreground shadow-sm p-6';
+        const badgeClass = isZeroCount ? 'bg-gray-100 text-gray-500' : colorClass;
+        
+        return `
+            <div class="${tileClass}">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-muted-foreground">${item.requestType}</p>
+                        <p class="text-2xl font-bold ${isZeroCount ? 'text-gray-400' : ''}">${item.count}</p>
+                        <p class="text-xs text-muted-foreground">${item.percentage}% of total</p>
+                    </div>
+                    <div class="h-4 w-4 text-muted-foreground">
+                        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${badgeClass}">
+                            ${item.count}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = tiles;
+}
+
+// Update the analytics period display
+function updateAnalyticsPeriod(period) {
+    const periodElement = document.getElementById('analytics-period');
+    if (periodElement && period) {
+        const startDate = new Date(period.startDate).toLocaleDateString();
+        const endDate = new Date(period.endDate).toLocaleDateString();
+        periodElement.textContent = `${startDate} - ${endDate}`;
+    }
+}
+
+// Show error state for analytics
+function showAnalyticsError() {
+    const container = document.getElementById('request-type-tiles');
+    if (container) {
+        container.innerHTML = `
+            <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 col-span-full">
+                <div class="text-center">
+                    <div class="text-red-600 text-sm">Failed to load analytics data</div>
+                    <button onclick="loadAnalyticsData()" class="mt-2 text-xs text-blue-600 hover:text-blue-800">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+    }
 }
 
 function updateAnalyticsStats(stats) {
-    // Update the stats cards in the analytics page
-    const statsCards = document.querySelectorAll('#page-analytics .text-2xl');
-    if (statsCards.length >= 3) {
-        statsCards[0].textContent = stats.totalAccounts;
-        statsCards[1].textContent = stats.totalProducts;
-        statsCards[2].textContent = stats.avgProductsPerAccount.toFixed(1);
-    }
+    // Legacy function - kept for compatibility
+    console.log('updateAnalyticsStats called with:', stats);
 }
 
 // Roadmap page functionality
@@ -3909,9 +3998,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 });
-function initializeAnalytics() {
-    console.log('Analytics page initialized');
-}
 
 // initializeRoadmap function moved to earlier in file (around line 254)
 

@@ -736,6 +736,93 @@ async function testConnection() {
     };
 }
 
+// Get 6-month analytics data for Technical Team Requests by request type
+async function getWeeklyRequestTypeAnalytics(startDate, endDate) {
+    try {
+        const conn = await getConnection();
+        if (!conn) {
+            throw new Error('No Salesforce connection available');
+        }
+
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        // First, get all possible request types
+        const allTypesQuery = `
+            SELECT Request_Type_RI__c 
+            FROM Prof_Services_Request__c 
+            WHERE Request_Type_RI__c != null 
+            GROUP BY Request_Type_RI__c 
+            ORDER BY Request_Type_RI__c
+        `;
+
+        // Then, get counts for the specific time period
+        const analyticsQuery = `
+            SELECT Request_Type_RI__c, COUNT(Id) RequestCount
+            FROM Prof_Services_Request__c 
+            WHERE CreatedDate >= ${startDateStr}T00:00:00.000Z 
+            AND CreatedDate <= ${endDateStr}T23:59:59.999Z
+            AND Request_Type_RI__c != null 
+            GROUP BY Request_Type_RI__c 
+            ORDER BY COUNT(Id) DESC
+        `;
+
+        console.log('📊 Fetching all request types:', allTypesQuery);
+        const allTypesResult = await conn.query(allTypesQuery);
+        
+        console.log('📊 Fetching 6-month analytics data:', analyticsQuery);
+        const analyticsResult = await conn.query(analyticsQuery);
+
+        // Create a map of actual counts
+        const countsMap = new Map();
+        analyticsResult.records.forEach(record => {
+            countsMap.set(record.Request_Type_RI__c, record.RequestCount);
+        });
+
+        // Build data array with all request types, filling in 0 for missing ones
+        const data = allTypesResult.records.map(record => ({
+            requestType: record.Request_Type_RI__c,
+            count: countsMap.get(record.Request_Type_RI__c) || 0,
+            percentage: 0 // Will calculate after getting total
+        }));
+
+        // Calculate total and percentages
+        const totalRequests = data.reduce((sum, item) => sum + item.count, 0);
+        data.forEach(item => {
+            item.percentage = totalRequests > 0 ? ((item.count / totalRequests) * 100).toFixed(1) : '0.0';
+        });
+
+        // Sort by count descending, then by name for consistent ordering
+        data.sort((a, b) => {
+            if (b.count !== a.count) {
+                return b.count - a.count;
+            }
+            return a.requestType.localeCompare(b.requestType);
+        });
+
+        console.log(`✅ Analytics data fetched: ${data.length} request types (${allTypesResult.records.length} total), ${totalRequests} total requests`);
+
+        return {
+            success: true,
+            data: data,
+            totalRequests: totalRequests,
+            period: {
+                startDate: startDateStr,
+                endDate: endDateStr
+            }
+        };
+
+    } catch (err) {
+        console.error('❌ Error fetching weekly analytics:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            data: [],
+            totalRequests: 0
+        };
+    }
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -752,5 +839,6 @@ module.exports = {
     searchProvisioningData,
     hasValidAuthentication,
     getIdentity,
-    testConnection
+    testConnection,
+    getWeeklyRequestTypeAnalytics
 };

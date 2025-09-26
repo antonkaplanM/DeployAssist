@@ -802,6 +802,43 @@ app.get('/auth/salesforce/callback', async (req, res) => {
     }
 });
 
+// Analytics API - Technical Team Request counts by type (last 6 months)
+app.get('/api/analytics/request-types-week', async (req, res) => {
+    try {
+        // Calculate date range for last 6 months
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(endDate.getMonth() - 6);
+        
+        const result = await salesforce.getWeeklyRequestTypeAnalytics(startDate, endDate);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                data: result.data,
+                period: {
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
+                },
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                data: []
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching analytics data:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch analytics data',
+            data: []
+        });
+    }
+});
+
 // Professional Services Requests API
 app.get('/api/provisioning/requests', async (req, res) => {
     try {
