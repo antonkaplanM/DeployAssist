@@ -278,3 +278,6 @@ A: "Phased approach allows value delivery every 6 weeks. Each phase stands alone
 
 Q: "How do we ensure ROI?"
 A: "Built-in metrics and monthly reporting. ROI tracking from Day 1."
+
+
+

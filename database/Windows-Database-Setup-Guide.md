@@ -331,3 +331,6 @@ Get-Service postgresql*, Redis | Format-Table Name, Status, StartType
 - Redis: `redis://localhost:6379`
 
 This completes the Windows database setup! You're now ready to proceed with Phase 1 of the database enhancement initiative.
+
+
+

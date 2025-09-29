@@ -14,3 +14,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Log initialization
 SELECT 'Database initialized successfully for Deployment Assistant' AS status;
+
+
+

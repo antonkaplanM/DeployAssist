@@ -65,3 +65,6 @@ Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "1. Install Node.js database packages: npm install pg redis db-migrate" -ForegroundColor Gray
 Write-Host "2. Update your .env file with database connection details" -ForegroundColor Gray
 Write-Host "3. Test the database connections" -ForegroundColor Gray
+
+
+
