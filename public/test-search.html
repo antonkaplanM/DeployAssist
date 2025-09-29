@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Test</title>
+</head>
+<body>
+    <h1>Account History Search Test</h1>
+    
+    <div>
+        <label>Search Input:</label>
+        <input id="test-search" type="text" placeholder="Type PS-4331 or Bank of America Corporation">
+        <button id="test-search-btn">Search</button>
+    </div>
+    
+    <div id="test-results">
+        <!-- Results will appear here -->
+    </div>
+
+    <script>
+        console.log('🔍 Search test page loaded');
+        
+        const searchInput = document.getElementById('test-search');
+        const searchBtn = document.getElementById('test-search-btn');
+        const resultsDiv = document.getElementById('test-results');
+        
+        async function testSearch(query) {
+            console.log('🔍 Testing search for:', query);
+            resultsDiv.innerHTML = '<p>Searching...</p>';
+            
+            try {
+                // Test the search endpoint
+                const searchResponse = await fetch(`/api/provisioning/search?q=${encodeURIComponent(query)}&limit=5`);
+                const searchData = await searchResponse.text();
+                console.log('🔍 Search response:', searchData);
+                
+                // Test direct account history lookup
+                const historyResponse = await fetch(`/api/analytics/account-history?accountName=${encodeURIComponent(query)}`);
+                const historyData = await historyResponse.text();
+                console.log('📊 History response:', historyData);
+                
+                // Test debug endpoint for PS-4331
+                if (query === 'PS-4331') {
+                    const debugResponse = await fetch('/api/debug/ps-4331');
+                    const debugData = await debugResponse.text();
+                    console.log('🐛 Debug response:', debugData);
+                }
+                
+                resultsDiv.innerHTML = `
+                    <h3>Search Response:</h3>
+                    <pre>${searchData}</pre>
+                    <h3>History Response:</h3>
+                    <pre>${historyData}</pre>
+                    ${query === 'PS-4331' ? `<h3>Debug Response:</h3><pre>${debugData}</pre>` : ''}
+                `;
+                
+            } catch (err) {
+                console.error('❌ Search test error:', err);
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`;
+            }
+        }
+        
+        searchBtn.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (query) {
+                testSearch(query);
+            }
+        });
+        
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query) {
+                    testSearch(query);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -73,16 +73,42 @@
                             Dashboard
                         </button>
                         
-                        <button 
-                            id="nav-analytics" 
-                            class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        >
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 3v18h18"></path>
-                                <path d="m19 9-5 5-4-4-3 3"></path>
-                            </svg>
-                            Analytics
-                        </button>
+                        <div class="analytics-section">
+                            <button 
+                                id="nav-analytics" 
+                                class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 3v18h18"></path>
+                                    <path d="m19 9-5 5-4-4-3 3"></path>
+                                </svg>
+                                Analytics
+                            </button>
+                            
+                            <!-- Sub-navigation for Analytics -->
+                            <div id="analytics-subnav" class="ml-6 mt-1 space-y-1 hidden">
+                                <button 
+                                    id="nav-analytics-overview" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 3v18h18"></path>
+                                        <path d="m19 9-5 5-4-4-3 3"></path>
+                                    </svg>
+                                    Overview
+                                </button>
+                                <button 
+                                    id="nav-account-history" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    Account History
+                                </button>
+                            </div>
+                        </div>
                         
                         <button 
                             id="nav-roadmap" 
@@ -332,8 +358,23 @@
                         <!-- Data Table -->
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                             <div class="p-6 border-b">
-                                <h3 class="text-lg font-semibold">Account Overview</h3>
-                                <p class="text-sm text-muted-foreground">A comprehensive view of all accounts and their product counts</p>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Account Overview</h3>
+                                        <p class="text-sm text-muted-foreground">A comprehensive view of all accounts and their product counts</p>
+                                    </div>
+                                    <button 
+                                        onclick="navigateToAccountHistory()"
+                                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
+                                        title="View detailed account history"
+                                    >
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        View Account History
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="p-6">
@@ -370,6 +411,166 @@
                 </div>
             </div>
 
+            <!-- Account History Page -->
+            <div id="page-account-history" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Account History</h1>
+                        </div>
+                        <p class="text-muted-foreground">View all Technical Team Requests and track product changes for any account</p>
+                    </header>
+
+                    <!-- Search Section -->
+                    <section class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-lg font-semibold mb-4">Search for Account</h2>
+                            <p class="text-sm text-muted-foreground mb-4">
+                                Search by account name (e.g., "Bank of America") or by Technical Team Request ID (e.g., "PS-4331")
+                            </p>
+                            
+                            <div class="relative">
+                                <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.3-4.3"></path>
+                                </svg>
+                                <input
+                                    type="text"
+                                    id="account-history-search"
+                                    placeholder="Enter account name or PS-ID..."
+                                    class="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                />
+                                <div id="account-history-search-loading" class="absolute right-3 top-3 hidden">
+                                    <svg class="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Results Dropdown -->
+                            <div id="account-history-search-results" class="hidden mt-2 rounded-lg border bg-card shadow-lg max-h-64 overflow-y-auto">
+                                <!-- Dynamic search results will appear here -->
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Account Summary (Hidden by default, shown after selection) -->
+                    <section id="account-summary-section" class="mb-8 hidden">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h2 class="text-xl font-semibold" id="account-summary-name">Account Name</h2>
+                                    <p class="text-sm text-muted-foreground mt-1">
+                                        <span id="account-summary-count">0</span> Technical Team Requests
+                                        <span class="mx-2">•</span>
+                                        <span id="account-summary-date-range">-</span>
+                                    </p>
+                                </div>
+                                <button id="account-history-clear" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" x2="6" y1="6" y2="18"></line>
+                                        <line x1="6" x2="18" y1="6" y2="18"></line>
+                                    </svg>
+                                    Clear Selection
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- History Table (Hidden by default, shown after selection) -->
+                    <section id="account-history-table-section" class="hidden">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 border-b">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Request History</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            <span id="account-history-count-indicator">Showing all requests</span> in chronological order
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <label for="account-history-limit" class="text-sm text-muted-foreground">Show:</label>
+                                            <select id="account-history-limit" class="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                                <option value="5" selected>Latest 5</option>
+                                                <option value="10">Latest 10</option>
+                                                <option value="25">Latest 25</option>
+                                                <option value="50">Latest 50</option>
+                                                <option value="all">All Requests</option>
+                                            </select>
+                                        </div>
+                                        <label class="inline-flex items-center gap-2 text-sm">
+                                            <input type="checkbox" id="show-comparison-toggle" class="h-4 w-4 rounded border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                            <span>Show Product Changes</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-6">
+                                <div class="overflow-hidden rounded-md border">
+                                    <table class="w-full caption-bottom text-sm">
+                                        <thead class="[&_tr]:border-b bg-muted/50">
+                                            <tr class="border-b transition-colors">
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-10"></th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Request ID</th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Products</th>
+                                                <th class="h-12 px-4 text-center align-middle font-medium text-muted-foreground">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="account-history-table-body" class="[&_tr:last-child]:border-0">
+                                            <!-- Dynamic rows will be populated here -->
+                                            <tr class="border-b transition-colors">
+                                                <td class="p-4 align-middle text-center text-muted-foreground" colspan="7">
+                                                    <div class="flex flex-col items-center gap-2 py-8">
+                                                        <svg class="h-8 w-8 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <circle cx="12" cy="12" r="10"></circle>
+                                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                                        </svg>
+                                                        <p class="text-sm">No requests found</p>
+                                                        <p class="text-xs text-muted-foreground">Search for an account to view its request history</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Empty State (Shown by default) -->
+                    <section id="account-history-empty-state">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-12">
+                            <div class="flex flex-col items-center gap-4 text-center">
+                                <svg class="h-16 w-16 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.3-4.3"></path>
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Search for an Account</h3>
+                                    <p class="text-sm text-muted-foreground mt-2">
+                                        Use the search box above to find an account by name or by Technical Team Request ID
+                                    </p>
+                                    <p class="text-sm text-muted-foreground mt-1">
+                                        Example: "Bank of America" or "PS-4331"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
             <!-- Provisioning Monitor Page -->
             <div id="page-provisioning" class="page-content hidden">
                 <div class="container mx-auto px-4 py-8 max-w-7xl">
@@ -395,7 +596,7 @@
                                 <input 
                                     type="text" 
                                     id="provisioning-search" 
-                                    placeholder="Search Technical Team Requests or Accounts (type-ahead enabled)"
+                                    placeholder="Search Technical Team Requests or Accounts"
                                     class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
                                 >
                                 <svg class="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -676,7 +877,7 @@
                             <a href="#dashboard" class="text-primary hover:underline">📊 Dashboard</a>
                             <a href="#provisioning" class="text-primary hover:underline">🔧 Provisioning Monitor</a>
                             <a href="#validation" class="text-primary hover:underline">✅ Validation Rules</a>
-                            <a href="#analytics" class="text-primary hover:underline">📈 Analytics</a>
+                            <a href="#analytics" class="text-primary hover:underline">📈 Analytics & Account History</a>
                             <a href="#roadmap" class="text-primary hover:underline">🗺️ Roadmap</a>
                             <a href="#settings" class="text-primary hover:underline">⚙️ Settings</a>
                             <a href="#troubleshooting" class="text-primary hover:underline">🔧 Troubleshooting</a>
@@ -841,20 +1042,93 @@
                     <section id="analytics" class="mb-8">
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
                             <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
-                                📈 Analytics
+                                📈 Analytics & Account History
                             </h2>
                             <div class="space-y-4">
                                 <p class="text-muted-foreground">
-                                    View comprehensive analytics about account performance and product metrics.
+                                    View comprehensive analytics and track the complete history of Technical Team Requests for any account.
                                 </p>
                                 
                                 <div class="space-y-3">
-                                    <h3 class="font-semibold">Available Metrics:</h3>
+                                    <h3 class="font-semibold">Analytics Overview:</h3>
                                     <ul class="space-y-2 text-sm text-muted-foreground ml-4">
                                         <li><strong>Total Accounts:</strong> Number of active accounts in the system</li>
                                         <li><strong>Total Products:</strong> Count of provisioned products</li>
                                         <li><strong>Average Products per Account:</strong> Distribution metrics</li>
                                         <li><strong>Account Overview Table:</strong> Detailed breakdown by account</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="border-t pt-4 mt-4">
+                                    <h3 class="font-semibold text-lg mb-3">Account History Feature</h3>
+                                    <p class="text-muted-foreground text-sm mb-4">
+                                        Track the complete evolution of product entitlements for any account through a chronological view of all Technical Team Requests.
+                                    </p>
+                                    
+                                    <div class="space-y-4">
+                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-blue-900 mb-2">🔍 Smart Search</h4>
+                                            <p class="text-sm text-blue-800 mb-2">Search by either:</p>
+                                            <ul class="text-sm text-blue-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Account Name:</strong> e.g., "Bank of America" - shows all requests for that account</li>
+                                                <li><strong>PS-ID:</strong> e.g., "PS-4331" - automatically loads the associated account's history</li>
+                                                <li>Auto-detection identifies your search type automatically</li>
+                                                <li>Real-time autocomplete suggestions as you type</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-green-900 mb-2">⚙️ Configurable Display</h4>
+                                            <ul class="text-sm text-green-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Default Limit:</strong> Shows latest 5 requests (fastest loading)</li>
+                                                <li><strong>Options:</strong> Latest 5, 10, 25, 50, or All Requests</li>
+                                                <li><strong>Count Indicator:</strong> Always shows "X of Y requests" for clarity</li>
+                                                <li><strong>Chronological Order:</strong> Most recent requests appear first</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-purple-900 mb-2">📦 Product Information</h4>
+                                            <ul class="text-sm text-purple-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Collapsible Categories:</strong> Models, Data, and Apps are collapsed by default</li>
+                                                <li><strong>Click to Expand:</strong> Click any product category to view details</li>
+                                                <li><strong>Product Modal:</strong> Click category buttons to open detailed modal with full product list</li>
+                                                <li><strong>Expandable Details:</strong> Expand each request row for complete entitlement information</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-orange-900 mb-2">🔄 Product Change Comparison</h4>
+                                            <p class="text-sm text-orange-800 mb-2">Enable "Show Product Changes" to see:</p>
+                                            <ul class="text-sm text-orange-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Added Products:</strong> Highlighted in green - new products in this request</li>
+                                                <li><strong>Removed Products:</strong> Highlighted in red - products removed from previous request</li>
+                                                <li><strong>Chronological Comparison:</strong> Each request compared to its previous version</li>
+                                                <li><strong>Evolution Tracking:</strong> See how product sets changed over time</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-indigo-900 mb-2">⚡ Actions & Navigation</h4>
+                                            <ul class="text-sm text-indigo-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Actions Dropdown:</strong> Click the three-dot menu (⋮) for options</li>
+                                                <li><strong>View in Provisioning Monitor:</strong> Navigate to see the request with exact match filtering</li>
+                                                <li><strong>Exact Search:</strong> PS-89 shows only PS-89, not PS-898 or similar IDs</li>
+                                                <li><strong>Seamless Integration:</strong> Switch between Account History and Provisioning Monitor easily</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">💡 Pro Tips:</h4>
+                                    <ul class="text-sm text-gray-800 space-y-1 ml-4 list-disc">
+                                        <li>Start with the default limit of 5 for faster loading, then expand as needed</li>
+                                        <li>Use "Show Product Changes" to quickly identify configuration changes</li>
+                                        <li>Click product categories to open modals with detailed entitlement information</li>
+                                        <li>Use the Actions dropdown to navigate to Provisioning Monitor for related records</li>
+                                        <li>Expand request rows to see complete technical details and metadata</li>
+                                        <li>Click the "Clear Selection" button to start a new search</li>
                                     </ul>
                                 </div>
                             </div>

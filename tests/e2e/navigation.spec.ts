@@ -24,5 +24,23 @@ test.describe('UI Navigation', () => {
     await page.click('#nav-settings');
     await expect(page.locator('#page-settings')).toBeVisible();
   });
+
+  test('navigates to Analytics sub-pages (Overview and Account History)', async ({ page }) => {
+    const base = process.env.E2E_BASE_URL || 'http://localhost:8080';
+    await page.goto(base);
+
+    // Navigate to Analytics - should show sub-navigation
+    await page.click('#nav-analytics');
+    await expect(page.locator('#analytics-subnav')).toBeVisible();
+    await expect(page.locator('#page-analytics')).toBeVisible();
+
+    // Navigate to Analytics Overview
+    await page.click('#nav-analytics-overview');
+    await expect(page.locator('#page-analytics')).toBeVisible();
+
+    // Navigate to Account History
+    await page.click('#nav-account-history');
+    await expect(page.locator('#page-account-history')).toBeVisible();
+  });
 });
 

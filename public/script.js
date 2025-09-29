@@ -45,6 +45,7 @@ let provisioningPagination = {
     totalPages: 0,
     isLoading: false
 };
+let exactMatchFilter = null; // For filtering to exact PS-ID matches from Account History
 
 // Validation state
 let validationResults = new Map(); // recordId -> validationResult
@@ -183,6 +184,27 @@ function showPage(pageId) {
     }
 }
 
+// Handle analytics main navigation (toggle sub-navigation)
+function handleAnalyticsNavigation(event) {
+    event.preventDefault();
+    
+    const analyticsSubnav = document.getElementById('analytics-subnav');
+    if (analyticsSubnav) {
+        const isHidden = analyticsSubnav.classList.contains('hidden');
+        if (isHidden) {
+            // Show sub-navigation and navigate to analytics overview
+            analyticsSubnav.classList.remove('hidden');
+            showPage('analytics');
+        } else {
+            // If already visible, always navigate to analytics overview (don't collapse)
+            showPage('analytics');
+        }
+    } else {
+        // Fallback to regular navigation
+        showPage('analytics');
+    }
+}
+
 // Handle provisioning main navigation (toggle sub-navigation)
 function handleProvisioningNavigation(event) {
     event.preventDefault();
@@ -215,12 +237,25 @@ function handleNavigation(event) {
     let pageId = targetPage.id.replace('nav-', '');
     
     // Handle special mappings for sub-navigation items
-    if (pageId === 'provisioning-monitor') {
+    if (pageId === 'analytics-overview') {
+        pageId = 'analytics';
+        // Make sure analytics sub-navigation is visible
+        const analyticsSubnav = document.getElementById('analytics-subnav');
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'provisioning-monitor') {
         pageId = 'provisioning';
         // Make sure sub-navigation is visible when navigating to monitor
         const provisioningSubnav = document.getElementById('provisioning-subnav');
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'account-history') {
+        // Make sure analytics sub-navigation is visible for Account History
+        const analyticsSubnav = document.getElementById('analytics-subnav');
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
         }
     }
     
@@ -1080,13 +1115,19 @@ themeToggle.addEventListener('click', toggleTheme);
 
 // Navigation event listeners
 navDashboard.addEventListener('click', handleNavigation);
-navAnalytics.addEventListener('click', handleNavigation);
+navAnalytics.addEventListener('click', handleAnalyticsNavigation);
 navRoadmap.addEventListener('click', handleNavigation);
 navProvisioning.addEventListener('click', handleProvisioningNavigation);
 navProvisioningMonitor.addEventListener('click', handleNavigation);
 navValidationRules.addEventListener('click', handleNavigation);
 navHelp.addEventListener('click', handleNavigation);
 navSettings.addEventListener('click', handleNavigation);
+
+// Analytics sub-navigation event listeners
+const navAnalyticsOverview = document.getElementById('nav-analytics-overview');
+const navAccountHistory = document.getElementById('nav-account-history');
+if (navAnalyticsOverview) navAnalyticsOverview.addEventListener('click', handleNavigation);
+if (navAccountHistory) navAccountHistory.addEventListener('click', handleNavigation);
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -1617,6 +1658,12 @@ async function handleProvisioningTypeAhead(event) {
     const searchTerm = event.target.value.trim();
     currentSearchTerm = searchTerm;
     
+    // Clear exact match filter when user manually types a new search
+    if (exactMatchFilter) {
+        console.log('🔍 Clearing exact match filter - user initiated new search');
+        exactMatchFilter = null;
+    }
+    
     if (searchTerm.length < 2) {
         hideSearchDropdown();
         return;
@@ -1750,6 +1797,12 @@ function handleSearchResultClick(event) {
     const item = event.currentTarget;
     const name = item.dataset.name;
     const type = item.dataset.type;
+    
+    // Clear exact match filter when user selects from type-ahead
+    if (exactMatchFilter) {
+        console.log('🔍 Clearing exact match filter - user selected from type-ahead');
+        exactMatchFilter = null;
+    }
     
     // Set the search input value
     const searchInput = document.getElementById('provisioning-search');
@@ -2296,9 +2349,14 @@ function getProductsDisplay(request) {
 
 // Show specific product group details in a modal
 function showProductGroup(requestId, groupType, entitlements) {
-    const request = provisioningData.find(r => r.Id === requestId);
+    // Try to find the request in provisioning data first, then in account history
+    let request = provisioningData.find(r => r.Id === requestId);
+    if (!request && currentAccountHistory && currentAccountHistory.requests) {
+        request = currentAccountHistory.requests.find(r => r.Id === requestId);
+    }
+    
     if (!request) {
-        console.error('Request not found:', requestId);
+        console.error('Request not found in provisioning or account history data:', requestId);
         return;
     }
     
@@ -2314,7 +2372,7 @@ function showProductGroup(requestId, groupType, entitlements) {
         }
     }
     
-    // Get validation results for this request
+    // Get validation results for this request (mainly for provisioning monitor)
     const validationResult = validationResults.get(requestId);
     
     // Create and show modal
@@ -2680,6 +2738,12 @@ async function handleProvisioningFilterChange() {
 
 // Handle refresh button
 async function handleProvisioningRefresh() {
+    // Clear exact match filter on refresh
+    if (exactMatchFilter) {
+        console.log('🔍 Clearing exact match filter - user clicked refresh');
+        exactMatchFilter = null;
+    }
+    
     provisioningPagination.currentPage = 1; // Reset to first page
     provisioningData = [];
     
@@ -3160,6 +3224,12 @@ function loadDefaultFilterOptions() {
 function renderProvisioningTable(data) {
     const tbody = document.getElementById('provisioning-table-body');
     if (!tbody) return;
+    
+    // Apply exact match filter if set (from Account History navigation)
+    if (exactMatchFilter && data && data.length > 0) {
+        data = data.filter(record => record.Name === exactMatchFilter);
+        console.log(`🔍 Applied exact match filter for: ${exactMatchFilter}, found ${data.length} record(s)`);
+    }
     
     if (!data || data.length === 0) {
         tbody.innerHTML = `
@@ -3867,6 +3937,27 @@ function showPage(pageId) {
     }
 }
 
+// Handle analytics main navigation (toggle sub-navigation)
+function handleAnalyticsNavigation(event) {
+    event.preventDefault();
+    
+    const analyticsSubnav = document.getElementById('analytics-subnav');
+    if (analyticsSubnav) {
+        const isHidden = analyticsSubnav.classList.contains('hidden');
+        if (isHidden) {
+            // Show sub-navigation and navigate to analytics overview
+            analyticsSubnav.classList.remove('hidden');
+            showPage('analytics');
+        } else {
+            // If already visible, always navigate to analytics overview (don't collapse)
+            showPage('analytics');
+        }
+    } else {
+        // Fallback to regular navigation
+        showPage('analytics');
+    }
+}
+
 // Handle provisioning main navigation (toggle sub-navigation)
 function handleProvisioningNavigation(event) {
     event.preventDefault();
@@ -3899,12 +3990,25 @@ function handleNavigation(event) {
     let pageId = targetPage.id.replace('nav-', '');
     
     // Handle special mappings for sub-navigation items
-    if (pageId === 'provisioning-monitor') {
+    if (pageId === 'analytics-overview') {
+        pageId = 'analytics';
+        // Make sure analytics sub-navigation is visible
+        const analyticsSubnav = document.getElementById('analytics-subnav');
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'provisioning-monitor') {
         pageId = 'provisioning';
         // Make sure sub-navigation is visible when navigating to monitor
         const provisioningSubnav = document.getElementById('provisioning-subnav');
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'account-history') {
+        // Make sure analytics sub-navigation is visible for Account History
+        const analyticsSubnav = document.getElementById('analytics-subnav');
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
         }
     }
     
@@ -3931,15 +4035,23 @@ function setupNavigationEventListeners() {
     const navHelp = document.getElementById('nav-help');
     const navSettings = document.getElementById('nav-settings');
     
+    // Analytics sub-navigation items
+    const navAnalyticsOverview = document.getElementById('nav-analytics-overview');
+    const navAccountHistory = document.getElementById('nav-account-history');
+    
     // Add event listeners
     if (navDashboard) navDashboard.addEventListener('click', handleNavigation);
-    if (navAnalytics) navAnalytics.addEventListener('click', handleNavigation);
+    if (navAnalytics) navAnalytics.addEventListener('click', handleAnalyticsNavigation);
     if (navRoadmap) navRoadmap.addEventListener('click', handleNavigation);
     if (navProvisioning) navProvisioning.addEventListener('click', handleProvisioningNavigation);
     if (navProvisioningMonitor) navProvisioningMonitor.addEventListener('click', handleNavigation);
     if (navValidationRules) navValidationRules.addEventListener('click', handleNavigation);
     if (navHelp) navHelp.addEventListener('click', handleNavigation);
     if (navSettings) navSettings.addEventListener('click', handleNavigation);
+    
+    // Analytics sub-navigation listeners
+    if (navAnalyticsOverview) navAnalyticsOverview.addEventListener('click', handleNavigation);
+    if (navAccountHistory) navAccountHistory.addEventListener('click', handleNavigation);
     
     console.log('Navigation event listeners setup completed');
 }
@@ -4201,6 +4313,75 @@ function getTimeFrameLabel(timeFrame) {
     }
 }
 
+// Navigate to view a specific PS record with exact matching (for Account History)
+async function viewPSRecordExact(recordId, recordName) {
+    console.log(`Navigating to PS record with exact match: ${recordName} (${recordId})`);
+    
+    // Navigate to provisioning monitor
+    showPage('provisioning');
+    
+    // Store the search term for after initialization
+    const searchTerm = recordName || recordId;
+    
+    // Wait for the page to fully initialize before searching
+    const waitForInitialization = async () => {
+        let attempts = 0;
+        const maxAttempts = 20; // Wait up to 4 seconds (20 * 200ms)
+        
+        while (attempts < maxAttempts) {
+            const searchInput = document.getElementById('provisioning-search');
+            const tableBody = document.getElementById('provisioning-table-body');
+            
+            // Check if both the search input and table body are available and not in loading state
+            if (searchInput && tableBody && !provisioningPagination.isLoading) {
+                console.log(`✅ Provisioning page is ready after ${attempts * 200}ms`);
+                return true;
+            }
+            
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        console.warn('⚠️ Timeout waiting for provisioning page to initialize');
+        return false;
+    };
+    
+    // Wait for initialization, then perform search
+    setTimeout(async () => {
+        const isReady = await waitForInitialization();
+        
+        if (isReady) {
+            const searchInput = document.getElementById('provisioning-search');
+            
+            try {
+                // Clear any existing search
+                searchInput.value = '';
+                
+                // Set the search value
+                searchInput.value = searchTerm;
+                
+                // Set exact match filter flag
+                exactMatchFilter = searchTerm;
+                console.log(`🔍 Setting exact match filter for: ${searchTerm}`);
+                
+                // Clear current data to force fresh search
+                provisioningData = [];
+                provisioningPagination.currentPage = 1;
+                provisioningPagination.isLoading = false;
+                
+                // Trigger the search directly via loadProvisioningRequests
+                // The renderProvisioningTable function will automatically apply the exact match filter
+                await loadProvisioningRequests({ search: searchTerm });
+                
+            } catch (error) {
+                console.error('❌ Error searching for PS record:', error);
+            }
+        } else {
+            console.error('❌ Provisioning page failed to initialize');
+        }
+    }, 100);
+}
+
 // Navigate to view a specific PS record in the provisioning monitor
 async function viewPSRecord(recordId, recordName) {
     console.log(`Navigating to PS record: ${recordName} (${recordId})`);
@@ -4378,3 +4559,872 @@ function renderEntitlementCard(entitlement, index, groupType) {
 }
 
 // REMOVED DUPLICATE FUNCTIONS - These are defined earlier in the file around line 2335
+// ===== ACCOUNT HISTORY PAGE FUNCTIONS =====
+
+// Account History state
+let currentAccountHistory = {
+    accountName: null,
+    requests: [],
+    showComparison: false,
+    limit: 5  // Default to showing latest 5 requests
+};
+
+// Initialize Account History page
+function initializeAccountHistory() {
+    const searchInput = document.getElementById('account-history-search');
+    const clearButton = document.getElementById('account-history-clear');
+    const comparisonToggle = document.getElementById('show-comparison-toggle');
+    const limitSelector = document.getElementById('account-history-limit');
+    const tableBody = document.getElementById('account-history-table-body');
+    
+    if (searchInput) {
+        // Debounce search to avoid too many API calls
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                handleAccountHistorySearch(e.target.value);
+            }, 300);
+        });
+    }
+    
+    if (clearButton) {
+        clearButton.addEventListener('click', clearAccountHistory);
+    }
+    
+    if (comparisonToggle) {
+        comparisonToggle.addEventListener('change', (e) => {
+            currentAccountHistory.showComparison = e.target.checked;
+            renderAccountHistoryTable();
+        });
+    }
+    
+    if (limitSelector) {
+        limitSelector.addEventListener('change', (e) => {
+            const value = e.target.value;
+            currentAccountHistory.limit = value === 'all' ? null : parseInt(value);
+            renderAccountHistoryTable();
+        });
+    }
+    
+    // Set up event delegation for product group buttons in Account History table
+    if (tableBody && !tableBody.dataset.productDelegationSet) {
+        tableBody.addEventListener('click', function(event) {
+            const button = event.target.closest('.product-group-btn');
+            if (button) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const requestId = button.getAttribute('data-request-id');
+                const groupType = button.getAttribute('data-group-type');
+                const entitlements = button.getAttribute('data-entitlements');
+                
+                console.log('Account History: Product button clicked', { requestId, groupType, hasEntitlements: !!entitlements });
+                
+                if (requestId && groupType && entitlements) {
+                    showProductGroup(requestId, groupType, entitlements);
+                } else {
+                    console.error('Missing button data:', { requestId, groupType, entitlements: !!entitlements });
+                }
+            }
+        });
+        tableBody.dataset.productDelegationSet = 'true';
+        console.log('Event delegation set up for Account History product group buttons');
+    }
+    
+    console.log('Account History page initialized');
+}
+
+// Handle account history search with smart detection
+async function handleAccountHistorySearch(searchTerm) {
+    const searchInput = document.getElementById('account-history-search');
+    const searchResults = document.getElementById('account-history-search-results');
+    const searchLoading = document.getElementById('account-history-search-loading');
+    
+    if (!searchTerm || searchTerm.trim().length < 2) {
+        searchResults.classList.add('hidden');
+        return;
+    }
+    
+    // Show loading indicator
+    if (searchLoading) searchLoading.classList.remove('hidden');
+    
+    try {
+        // Smart detection: if starts with PS-, search by request ID, otherwise by account name
+        const isPSID = /^PS-/i.test(searchTerm.trim());
+        
+        const response = await fetch(`/api/provisioning/search?q=${encodeURIComponent(searchTerm)}&limit=20`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Search failed');
+        }
+        
+        // Display search results
+        displayAccountHistorySearchResults(data.results, searchTerm, isPSID);
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        searchResults.innerHTML = `<div class="p-4 text-sm text-red-600">Error: ${error.message}</div>`;
+        searchResults.classList.remove('hidden');
+    } finally {
+        if (searchLoading) searchLoading.classList.add('hidden');
+    }
+}
+
+// Display search results with account and request options
+function displayAccountHistorySearchResults(results, searchTerm, isPSID) {
+    const searchResults = document.getElementById('account-history-search-results');
+    
+    const technicalRequests = results.technicalRequests || [];
+    const accounts = results.accounts || [];
+    
+    if (technicalRequests.length === 0 && accounts.length === 0) {
+        searchResults.innerHTML = `
+            <div class="p-4 text-sm text-muted-foreground">
+                No results found for "${searchTerm}"
+            </div>
+        `;
+        searchResults.classList.remove('hidden');
+        return;
+    }
+    
+    let html = '';
+    
+    // Show Technical Team Requests section
+    if (technicalRequests.length > 0) {
+        html += `
+            <div class="p-2 border-b bg-muted/50">
+                <p class="text-xs font-medium text-muted-foreground uppercase">Technical Team Requests</p>
+            </div>
+        `;
+        
+        technicalRequests.forEach(request => {
+            html += `
+                <button 
+                    class="w-full px-4 py-3 text-left hover:bg-accent transition-colors border-b last:border-b-0"
+                    onclick="selectAccountFromRequest('${request.id}', '${request.name}', '${escapeHtml(request.account)}')"
+                >
+                    <div class="font-medium text-sm">${request.name}</div>
+                    <div class="text-xs text-muted-foreground mt-1">
+                        Account: ${escapeHtml(request.account)} 
+                        <span class="mx-1">•</span>
+                        ${request.requestType || 'N/A'}
+                    </div>
+                </button>
+            `;
+        });
+    }
+    
+    // Show Accounts section
+    if (accounts.length > 0) {
+        html += `
+            <div class="p-2 border-b bg-muted/50">
+                <p class="text-xs font-medium text-muted-foreground uppercase">Accounts</p>
+            </div>
+        `;
+        
+        accounts.forEach(account => {
+            html += `
+                <button 
+                    class="w-full px-4 py-3 text-left hover:bg-accent transition-colors border-b last:border-b-0"
+                    onclick="selectAccount('${escapeHtml(account.name)}')"
+                >
+                    <div class="font-medium text-sm">${escapeHtml(account.name)}</div>
+                    ${account.industry ? `<div class="text-xs text-muted-foreground mt-1">${account.industry}</div>` : ''}
+                </button>
+            `;
+        });
+    }
+    
+    searchResults.innerHTML = html;
+    searchResults.classList.remove('hidden');
+}
+
+// Select account from a Technical Team Request
+async function selectAccountFromRequest(requestId, requestName, accountName) {
+    console.log('Selecting account from request:', requestName, accountName);
+    
+    // Hide search results
+    const searchResults = document.getElementById('account-history-search-results');
+    if (searchResults) searchResults.classList.add('hidden');
+    
+    // Load the account history
+    await loadAccountHistory(accountName);
+    
+    // Optionally scroll to the specific request in the table
+    setTimeout(() => {
+        const requestRow = document.querySelector(`[data-request-name="${requestName}"]`);
+        if (requestRow) {
+            requestRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            requestRow.classList.add('bg-accent');
+            setTimeout(() => requestRow.classList.remove('bg-accent'), 2000);
+        }
+    }, 100);
+}
+
+// Select account directly
+async function selectAccount(accountName) {
+    console.log('Selecting account:', accountName);
+    
+    // Hide search results
+    const searchResults = document.getElementById('account-history-search-results');
+    if (searchResults) searchResults.classList.add('hidden');
+    
+    // Load the account history
+    await loadAccountHistory(accountName);
+}
+
+// Load account history
+async function loadAccountHistory(accountName) {
+    try {
+        console.log('Loading history for account:', accountName);
+        
+        // Show loading state
+        showAccountHistoryLoading(true);
+        
+        // Fetch all requests for this account
+        const response = await fetch(`/api/provisioning/requests?search=${encodeURIComponent(accountName)}&pageSize=100`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load account history');
+        }
+        
+        // Sort requests by date (oldest to newest)
+        const requests = (data.records || []).sort((a, b) => {
+            return new Date(a.CreatedDate) - new Date(b.CreatedDate);
+        });
+        
+        // Update state (preserve limit setting)
+        const limitSelector = document.getElementById('account-history-limit');
+        const currentLimit = limitSelector?.value || '5';
+        
+        currentAccountHistory = {
+            accountName: accountName,
+            requests: requests,
+            showComparison: document.getElementById('show-comparison-toggle')?.checked || false,
+            limit: currentLimit === 'all' ? null : parseInt(currentLimit)
+        };
+        
+        // Ensure the limit selector is set to the current value
+        if (limitSelector && !limitSelector.value) {
+            limitSelector.value = '5';
+        }
+        
+        // Update UI
+        displayAccountSummary(accountName, requests);
+        renderAccountHistoryTable();
+        
+        // Hide loading state
+        showAccountHistoryLoading(false);
+        
+    } catch (error) {
+        console.error('Error loading account history:', error);
+        alert('Failed to load account history: ' + error.message);
+        showAccountHistoryLoading(false);
+    }
+}
+
+// Show/hide loading state
+function showAccountHistoryLoading(isLoading) {
+    const emptyState = document.getElementById('account-history-empty-state');
+    const summarySection = document.getElementById('account-summary-section');
+    const tableSection = document.getElementById('account-history-table-section');
+    
+    if (isLoading) {
+        if (emptyState) emptyState.classList.add('hidden');
+        if (summarySection) summarySection.classList.add('hidden');
+        if (tableSection) tableSection.classList.add('hidden');
+        // Could add a loading spinner here
+    }
+}
+
+// Display account summary card
+function displayAccountSummary(accountName, requests) {
+    const emptyState = document.getElementById('account-history-empty-state');
+    const summarySection = document.getElementById('account-summary-section');
+    const summaryName = document.getElementById('account-summary-name');
+    const summaryCount = document.getElementById('account-summary-count');
+    const summaryDateRange = document.getElementById('account-summary-date-range');
+    
+    if (emptyState) emptyState.classList.add('hidden');
+    if (summarySection) summarySection.classList.remove('hidden');
+    
+    if (summaryName) summaryName.textContent = accountName;
+    if (summaryCount) summaryCount.textContent = requests.length;
+    
+    if (summaryDateRange && requests.length > 0) {
+        const oldestDate = new Date(requests[0].CreatedDate);
+        const newestDate = new Date(requests[requests.length - 1].CreatedDate);
+        const dateRange = `${oldestDate.toLocaleDateString()} - ${newestDate.toLocaleDateString()}`;
+        summaryDateRange.textContent = dateRange;
+    }
+}
+
+// Render account history table
+function renderAccountHistoryTable() {
+    const tableSection = document.getElementById('account-history-table-section');
+    const tableBody = document.getElementById('account-history-table-body');
+    
+    if (!tableBody) return;
+    
+    if (!currentAccountHistory.requests || currentAccountHistory.requests.length === 0) {
+        tableBody.innerHTML = `
+            <tr class="border-b transition-colors">
+                <td class="p-4 align-middle text-center text-muted-foreground" colspan="7">
+                    <div class="flex flex-col items-center gap-2 py-8">
+                        <p class="text-sm">No requests found for this account</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        if (tableSection) tableSection.classList.add('hidden');
+        return;
+    }
+    
+    if (tableSection) tableSection.classList.remove('hidden');
+    
+    // Sort requests by date descending (most recent first)
+    const allRequests = [...currentAccountHistory.requests].sort((a, b) => {
+        return new Date(b.CreatedDate) - new Date(a.CreatedDate);
+    });
+    
+    // Apply limit if set
+    const totalCount = allRequests.length;
+    const limit = currentAccountHistory.limit;
+    const requests = limit ? allRequests.slice(0, limit) : allRequests;
+    
+    // Update count indicator
+    const countIndicator = document.getElementById('account-history-count-indicator');
+    if (countIndicator) {
+        if (limit && limit < totalCount) {
+            countIndicator.textContent = `Showing latest ${requests.length} of ${totalCount} requests`;
+        } else {
+            countIndicator.textContent = `Showing all ${totalCount} requests`;
+        }
+    }
+    
+    let html = '';
+    
+    requests.forEach((request, index) => {
+        const createdDate = new Date(request.CreatedDate);
+        
+        // Main row
+        html += `
+            <tr class="border-b transition-colors hover:bg-muted/50" data-request-name="${request.Name}">
+                <td class="px-4 py-3 align-middle">
+                    <button 
+                        class="text-muted-foreground hover:text-foreground transition-colors"
+                        onclick="toggleRequestDetails('${request.Id}')"
+                        title="View details"
+                    >
+                        <svg id="expand-icon-${request.Id}" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </td>
+                <td class="px-4 py-3 align-middle">
+                    <span class="font-medium">${request.Name}</span>
+                </td>
+                <td class="px-4 py-3 align-middle text-sm text-muted-foreground">
+                    ${createdDate.toLocaleDateString()}
+                </td>
+                <td class="px-4 py-3 align-middle">
+                    <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
+                        ${request.Status__c || 'Unknown'}
+                    </span>
+                </td>
+                <td class="px-4 py-3 align-middle text-sm">
+                    ${request.Request_Type_RI__c || 'N/A'}
+                </td>
+                <td class="px-4 py-3 align-middle text-sm">
+                    ${getProductsDisplay(request)}
+                </td>
+                <td class="px-4 py-3 align-middle text-center">
+                    <div class="relative inline-block">
+                        <button 
+                            onclick="toggleActionDropdown('${request.Id}')"
+                            class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                            title="Actions"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="12" cy="5" r="1"></circle>
+                                <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                        </button>
+                        <div id="action-dropdown-${request.Id}" class="hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                            <div class="py-1" role="menu">
+                                <button 
+                                    onclick="viewRequestInProvisioning('${request.Id}', '${request.Name}')"
+                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    role="menuitem"
+                                >
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    View in Provisioning Monitor
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr id="details-row-${request.Id}" class="hidden border-b bg-muted/30">
+                <td colspan="7" class="p-0">
+                    <div class="p-6">
+                        ${renderRequestDetails(request, index < requests.length - 1 ? requests[index + 1] : null)}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// Render request details (for expandable row)
+function renderRequestDetails(request, previousRequest) {
+    // Parse the payload data properly
+    let parsedPayload = {};
+    if (request.Payload_Data__c) {
+        try {
+            const payload = JSON.parse(request.Payload_Data__c);
+            const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
+            parsedPayload = {
+                hasDetails: true,
+                modelEntitlements: entitlements.modelEntitlements || [],
+                dataEntitlements: entitlements.dataEntitlements || [],
+                appEntitlements: entitlements.appEntitlements || []
+            };
+        } catch (e) {
+            console.error('Error parsing payload:', e);
+        }
+    }
+    
+    const showComparison = currentAccountHistory.showComparison && previousRequest;
+    
+    let html = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="font-semibold mb-3">Request Information</h4>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-muted-foreground">Salesforce ID:</dt>
+                        <dd class="font-medium">${request.Id}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-muted-foreground">Created:</dt>
+                        <dd class="font-medium">${new Date(request.CreatedDate).toLocaleString()}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-muted-foreground">Last Modified:</dt>
+                        <dd class="font-medium">${new Date(request.LastModifiedDate).toLocaleString()}</dd>
+                    </div>
+                    ${request.Deployment__c ? `
+                    <div class="flex justify-between">
+                        <dt class="text-muted-foreground">Deployment ID:</dt>
+                        <dd class="font-medium font-mono text-xs">${request.Deployment__c}</dd>
+                    </div>
+                    ` : ''}
+                </dl>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-3">Product Entitlements</h4>
+                ${renderEntitlementsSummary(parsedPayload, request.Id)}
+            </div>
+        </div>
+    `;
+    
+    // Add comparison section if enabled and previous request exists
+    if (showComparison && previousRequest) {
+        // Parse previous request payload
+        let previousParsedPayload = {};
+        if (previousRequest.Payload_Data__c) {
+            try {
+                const prevPayload = JSON.parse(previousRequest.Payload_Data__c);
+                const prevEntitlements = prevPayload.properties?.provisioningDetail?.entitlements || {};
+                previousParsedPayload = {
+                    hasDetails: true,
+                    modelEntitlements: prevEntitlements.modelEntitlements || [],
+                    dataEntitlements: prevEntitlements.dataEntitlements || [],
+                    appEntitlements: prevEntitlements.appEntitlements || []
+                };
+            } catch (e) {
+                console.error('Error parsing previous payload:', e);
+            }
+        }
+        
+        html += `
+            <div class="mt-6 pt-6 border-t">
+                <h4 class="font-semibold mb-3 flex items-center gap-2">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"></polyline>
+                        <line x1="4" x2="21" y1="20" y2="3"></line>
+                        <polyline points="21 16 21 21 16 21"></polyline>
+                        <line x1="15" x2="10" y1="15" y2="15"></line>
+                        <line x1="15" x2="10" y1="19" y2="19"></line>
+                    </svg>
+                    Changes from Previous Request (${previousRequest.Name})
+                </h4>
+                ${renderProductComparison(parsedPayload, previousParsedPayload)}
+            </div>
+        `;
+    }
+    
+    return html;
+}
+
+// Render entitlements summary with collapsible categories
+function renderEntitlementsSummary(parsedPayload, requestId) {
+    if (!parsedPayload.hasDetails) {
+        return '<p class="text-sm text-muted-foreground">No entitlements data available</p>';
+    }
+    
+    let html = '<div class="space-y-3 text-sm">';
+    
+    const modelEntitlements = parsedPayload.modelEntitlements || [];
+    const dataEntitlements = parsedPayload.dataEntitlements || [];
+    const appEntitlements = parsedPayload.appEntitlements || [];
+    
+    // Models - Collapsible
+    if (modelEntitlements.length > 0) {
+        const modelsId = `detail-models-${requestId}`;
+        html += `
+            <div>
+                <button 
+                    onclick="toggleDetailProductGroup('${modelsId}')"
+                    class="flex items-center gap-2 font-medium mb-1 text-left hover:text-primary transition-colors"
+                >
+                    <svg id="${modelsId}-icon" class="h-3 w-3 transform transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                    Models (${modelEntitlements.length})
+                </button>
+                <div id="${modelsId}" class="hidden text-muted-foreground ml-5">
+                    ${modelEntitlements.map(e => e.productCode || 'Unknown').join(', ')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Data Entitlements - Collapsible
+    if (dataEntitlements.length > 0) {
+        const dataId = `detail-data-${requestId}`;
+        html += `
+            <div>
+                <button 
+                    onclick="toggleDetailProductGroup('${dataId}')"
+                    class="flex items-center gap-2 font-medium mb-1 text-left hover:text-primary transition-colors"
+                >
+                    <svg id="${dataId}-icon" class="h-3 w-3 transform transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                    Data Entitlements (${dataEntitlements.length})
+                </button>
+                <div id="${dataId}" class="hidden text-muted-foreground ml-5">
+                    ${dataEntitlements.map(e => e.productCode || e.name || 'Unknown').join(', ')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Applications - Collapsible
+    if (appEntitlements.length > 0) {
+        const appsId = `detail-apps-${requestId}`;
+        html += `
+            <div>
+                <button 
+                    onclick="toggleDetailProductGroup('${appsId}')"
+                    class="flex items-center gap-2 font-medium mb-1 text-left hover:text-primary transition-colors"
+                >
+                    <svg id="${appsId}-icon" class="h-3 w-3 transform transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                    Applications (${appEntitlements.length})
+                </button>
+                <div id="${appsId}" class="hidden text-muted-foreground ml-5">
+                    ${appEntitlements.map(e => e.productCode || e.name || 'Unknown').join(', ')}
+                </div>
+            </div>
+        `;
+    }
+    
+    if (parsedPayload.tenantName) {
+        html += `<div class="pt-2 border-t"><span class="text-muted-foreground">Tenant:</span> <span class="font-medium">${parsedPayload.tenantName}</span></div>`;
+    }
+    
+    if (parsedPayload.region) {
+        html += `<div><span class="text-muted-foreground">Region:</span> <span class="font-medium">${parsedPayload.region}</span></div>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+// Toggle detail product group visibility
+function toggleDetailProductGroup(groupId) {
+    const group = document.getElementById(groupId);
+    const icon = document.getElementById(`${groupId}-icon`);
+    
+    if (group && icon) {
+        group.classList.toggle('hidden');
+        if (group.classList.contains('hidden')) {
+            icon.classList.remove('rotate-90');
+        } else {
+            icon.classList.add('rotate-90');
+        }
+    }
+}
+
+// Render product comparison
+function renderProductComparison(currentPayload, previousPayload) {
+    const current = {
+        models: (currentPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean),
+        data: (currentPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean),
+        apps: (currentPayload.appEntitlements || []).map(e => e.productCode || e.name).filter(Boolean)
+    };
+    
+    const previous = {
+        models: (previousPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean),
+        data: (previousPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean),
+        apps: (previousPayload.appEntitlements || []).map(e => e.productCode || e.name).filter(Boolean)
+    };
+    
+    const changes = {
+        models: {
+            added: current.models.filter(p => !previous.models.includes(p)),
+            removed: previous.models.filter(p => !current.models.includes(p))
+        },
+        data: {
+            added: current.data.filter(p => !previous.data.includes(p)),
+            removed: previous.data.filter(p => !current.data.includes(p))
+        },
+        apps: {
+            added: current.apps.filter(p => !previous.apps.includes(p)),
+            removed: previous.apps.filter(p => !current.apps.includes(p))
+        }
+    };
+    
+    const hasChanges = 
+        changes.models.added.length > 0 || changes.models.removed.length > 0 ||
+        changes.data.added.length > 0 || changes.data.removed.length > 0 ||
+        changes.apps.added.length > 0 || changes.apps.removed.length > 0;
+    
+    if (!hasChanges) {
+        return '<p class="text-sm text-muted-foreground">No changes in product entitlements</p>';
+    }
+    
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">';
+    
+    // Added products
+    const hasAdded = changes.models.added.length > 0 || changes.data.added.length > 0 || changes.apps.added.length > 0;
+    if (hasAdded) {
+        html += '<div class="space-y-2">';
+        html += '<h5 class="font-medium text-green-700 flex items-center gap-2">';
+        html += '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>';
+        html += 'Added</h5>';
+        
+        if (changes.models.added.length > 0) {
+            html += `<p><span class="font-medium">Models:</span> ${changes.models.added.join(', ')}</p>`;
+        }
+        if (changes.data.added.length > 0) {
+            html += `<p><span class="font-medium">Data:</span> ${changes.data.added.join(', ')}</p>`;
+        }
+        if (changes.apps.added.length > 0) {
+            html += `<p><span class="font-medium">Apps:</span> ${changes.apps.added.join(', ')}</p>`;
+        }
+        html += '</div>';
+    }
+    
+    // Removed products
+    const hasRemoved = changes.models.removed.length > 0 || changes.data.removed.length > 0 || changes.apps.removed.length > 0;
+    if (hasRemoved) {
+        html += '<div class="space-y-2">';
+        html += '<h5 class="font-medium text-red-700 flex items-center gap-2">';
+        html += '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line></svg>';
+        html += 'Removed</h5>';
+        
+        if (changes.models.removed.length > 0) {
+            html += `<p><span class="font-medium">Models:</span> ${changes.models.removed.join(', ')}</p>`;
+        }
+        if (changes.data.removed.length > 0) {
+            html += `<p><span class="font-medium">Data:</span> ${changes.data.removed.join(', ')}</p>`;
+        }
+        if (changes.apps.removed.length > 0) {
+            html += `<p><span class="font-medium">Apps:</span> ${changes.apps.removed.join(', ')}</p>`;
+        }
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+// Toggle request details row
+function toggleRequestDetails(requestId) {
+    const detailsRow = document.getElementById(`details-row-${requestId}`);
+    const expandIcon = document.getElementById(`expand-icon-${requestId}`);
+    
+    if (!detailsRow) return;
+    
+    const isHidden = detailsRow.classList.contains('hidden');
+    
+    if (isHidden) {
+        detailsRow.classList.remove('hidden');
+        if (expandIcon) {
+            expandIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+        }
+    } else {
+        detailsRow.classList.add('hidden');
+        if (expandIcon) {
+            expandIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+        }
+    }
+}
+
+// Toggle action dropdown for a specific request
+function toggleActionDropdown(requestId) {
+    const dropdown = document.getElementById(`action-dropdown-${requestId}`);
+    if (!dropdown) return;
+    
+    // Close all other dropdowns first
+    document.querySelectorAll('[id^="action-dropdown-"]').forEach(dd => {
+        if (dd.id !== `action-dropdown-${requestId}`) {
+            dd.classList.add('hidden');
+        }
+    });
+    
+    // Toggle this dropdown
+    dropdown.classList.toggle('hidden');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('[id^="action-dropdown-"]') && !event.target.closest('button[onclick*="toggleActionDropdown"]')) {
+        document.querySelectorAll('[id^="action-dropdown-"]').forEach(dd => {
+            dd.classList.add('hidden');
+        });
+    }
+});
+
+// View request in provisioning monitor
+function viewRequestInProvisioning(requestId, requestName) {
+    console.log('Viewing request in provisioning:', requestName);
+    
+    // Close the dropdown
+    const dropdown = document.getElementById(`action-dropdown-${requestId}`);
+    if (dropdown) dropdown.classList.add('hidden');
+    
+    // View the record with exact matching
+    viewPSRecordExact(requestId, requestName);
+}
+
+// Clear account history and return to search
+function clearAccountHistory() {
+    currentAccountHistory = {
+        accountName: null,
+        requests: [],
+        showComparison: false,
+        limit: 5  // Reset to default
+    };
+    
+    const searchInput = document.getElementById('account-history-search');
+    const searchResults = document.getElementById('account-history-search-results');
+    const emptyState = document.getElementById('account-history-empty-state');
+    const summarySection = document.getElementById('account-summary-section');
+    const tableSection = document.getElementById('account-history-table-section');
+    const comparisonToggle = document.getElementById('show-comparison-toggle');
+    const limitSelector = document.getElementById('account-history-limit');
+    
+    if (searchInput) searchInput.value = '';
+    if (searchResults) searchResults.classList.add('hidden');
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (summarySection) summarySection.classList.add('hidden');
+    if (tableSection) tableSection.classList.add('hidden');
+    if (comparisonToggle) comparisonToggle.checked = false;
+    if (limitSelector) limitSelector.value = '5';  // Reset to default
+}
+
+// HTML escape helper
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize Account History page when it's shown
+const originalShowPage2 = showPage;
+if (typeof showPage === 'function') {
+    window.showPage = function(pageId) {
+        originalShowPage2(pageId);
+        if (pageId === 'account-history') {
+            setTimeout(initializeAccountHistory, 100);
+        }
+    };
+}
+
+console.log('Account History module loaded');
+// ===== ACCOUNT HISTORY NAVIGATION HELPERS =====
+
+// Navigate to Account History page (with optional pre-selected account)
+function navigateToAccountHistory(accountName = null) {
+    console.log('Navigating to Account History', accountName ? `for account: ${accountName}` : '');
+    
+    // Show analytics subnav
+    const analyticsSubnav = document.getElementById('analytics-subnav');
+    if (analyticsSubnav) {
+        analyticsSubnav.classList.remove('hidden');
+    }
+    
+    // Navigate to the page
+    showPage('account-history');
+    
+    // If account name is provided, automatically load it
+    if (accountName) {
+        setTimeout(() => {
+            const searchInput = document.getElementById('account-history-search');
+            if (searchInput) {
+                searchInput.value = accountName;
+                // Automatically trigger the search and load
+                selectAccount(accountName);
+            }
+        }, 200);
+    }
+}
+
+// Navigate to Account History from a specific request (used in Provisioning Monitor)
+function viewAccountHistoryForRequest(accountName, requestName = null) {
+    console.log(`Navigating to Account History for account: ${accountName}, request: ${requestName || 'N/A'}`);
+    
+    // Show analytics subnav
+    const analyticsSubnav = document.getElementById('analytics-subnav');
+    if (analyticsSubnav) {
+        analyticsSubnav.classList.remove('hidden');
+    }
+    
+    // Navigate to the page
+    showPage('account-history');
+    
+    // Load the account history
+    setTimeout(async () => {
+        await loadAccountHistory(accountName);
+        
+        // If request name is provided, scroll to it
+        if (requestName) {
+            setTimeout(() => {
+                const requestRow = document.querySelector(`[data-request-name="${requestName}"]`);
+                if (requestRow) {
+                    requestRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    requestRow.classList.add('bg-accent');
+                    setTimeout(() => requestRow.classList.remove('bg-accent'), 2000);
+                }
+            }, 100);
+        }
+    }, 200);
+}
+
+console.log('Account History navigation helpers loaded');

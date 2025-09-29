@@ -444,27 +444,37 @@ async function searchAccounts(searchTerm, limit = 10) {
         } catch (accountError) {
             console.log('❌ Cannot query Account object directly, trying via Prof_Services_Request__c');
             
-            // Fallback: search unique account names from Prof_Services_Request__c
+            // Fallback: search account names from Prof_Services_Request__c and deduplicate
             soql = `
-                SELECT Account__c
+                SELECT Account__c, Id
                 FROM Prof_Services_Request__c 
                 WHERE Account__c LIKE '%${searchTerm.replace(/'/g, "\\'")}%'
                 AND Account__c != null
-                GROUP BY Account__c
                 ORDER BY Account__c ASC 
-                LIMIT ${limit}
+                LIMIT ${limit * 5}
             `;
             
             console.log('🔍 Searching Accounts via Prof_Services_Request__c:', soql);
             const result = await conn.query(soql);
             
+            // Deduplicate account names
+            const uniqueAccounts = new Map();
+            result.records.forEach(record => {
+                if (!uniqueAccounts.has(record.Account__c)) {
+                    uniqueAccounts.set(record.Account__c, {
+                        id: record.Account__c,
+                        name: record.Account__c,
+                        type: 'account'
+                    });
+                }
+            });
+            
+            // Return only up to the limit
+            const accountsArray = Array.from(uniqueAccounts.values()).slice(0, limit);
+            
             return {
                 success: true,
-                records: result.records.map(record => ({
-                    id: record.Account__c,
-                    name: record.Account__c,
-                    type: 'account'
-                }))
+                records: accountsArray
             };
         }
         

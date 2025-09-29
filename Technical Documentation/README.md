@@ -26,12 +26,35 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - Diagnostic tools and commands
 - Recovery procedures
 
+### 📊 [Account History Feature](./Account-History-Feature.md)
+**Track account product evolution**
+- Comprehensive feature documentation
+- User workflows and use cases
+- Technical implementation details
+- UX patterns and design principles
+- Testing coverage and strategies
+
+### ✅ [Validation Rules Documentation](./Validation-Rules-Documentation.md)
+**Payload validation system**
+- Validation rule descriptions
+- Implementation details
+- Testing and troubleshooting
+
+### 🧪 [Testing Strategy](./Testing-Strategy.md)
+**Comprehensive test coverage**
+- Unit, integration, and E2E testing approach
+- Test execution guidelines
+- Coverage reports and best practices
+- Feature-specific test documentation
+
 ## 🎯 Quick Navigation
 
 ### For Developers
 - **New to the project?** → Start with [Quick Setup Guide](./Quick-Setup-Guide.md)
 - **Need implementation details?** → See [Integration Architecture](./Integration-Architecture.md)
 - **Something not working?** → Check [Troubleshooting Checklist](./Troubleshooting-Checklist.md)
+- **Account History feature?** → See [Account History Feature](./Account-History-Feature.md)
+- **Testing guidance?** → See [Testing Strategy](./Testing-Strategy.md)
 
 ### For DevOps/Infrastructure
 - **Environment setup** → [Quick Setup Guide - Environment Setup](./Quick-Setup-Guide.md#environment-setup)
