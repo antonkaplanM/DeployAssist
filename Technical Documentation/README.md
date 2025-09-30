@@ -40,6 +40,12 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - Implementation details
 - Testing and troubleshooting
 
+### 🗑️ [Product Removals Feature](./Product-Removals-Feature.md)
+**Product removal tracking and monitoring**
+- Feature overview and implementation
+- Monitoring dashboard details
+- API endpoints and usage
+
 ### 🧪 [Testing Strategy](./Testing-Strategy.md)
 **Comprehensive test coverage**
 - Unit, integration, and E2E testing approach
@@ -47,13 +53,36 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - Coverage reports and best practices
 - Feature-specific test documentation
 
+### 🗄️ [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md)
+**Database connection and configuration**
+- Complete PostgreSQL setup guide
+- Connection module documentation
+- API reference and best practices
+- Transaction management and security
+
+### 📚 [Database README](./Database-README.md)
+**Database directory overview**
+- Quick links to database documentation
+- Current setup status
+- Quick start examples
+
+### ⚡ [Database Quick Reference](./Database-Quick-Reference.md)
+**Fast lookup for common database operations**
+- Connection details
+- Common SQL operations
+- Environment variables
+- Useful commands
+
 ## 🎯 Quick Navigation
 
 ### For Developers
 - **New to the project?** → Start with [Quick Setup Guide](./Quick-Setup-Guide.md)
 - **Need implementation details?** → See [Integration Architecture](./Integration-Architecture.md)
 - **Something not working?** → Check [Troubleshooting Checklist](./Troubleshooting-Checklist.md)
+- **Database setup?** → See [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md)
+- **Quick database reference?** → See [Database Quick Reference](./Database-Quick-Reference.md)
 - **Account History feature?** → See [Account History Feature](./Account-History-Feature.md)
+- **Product Removals feature?** → See [Product Removals Feature](./Product-Removals-Feature.md)
 - **Testing guidance?** → See [Testing Strategy](./Testing-Strategy.md)
 
 ### For DevOps/Infrastructure
@@ -80,12 +109,20 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - **Purpose**: Professional Services Request management
 - **Status**: ✅ Operational with automatic token management
 
+### PostgreSQL Database
+- **Type**: Connection Pool with pg driver
+- **Authentication**: Username/password
+- **Purpose**: Application data storage and persistence
+- **Version**: PostgreSQL 16.8 (64-bit)
+- **Status**: ✅ Connected and operational
+
 ## 🚀 Current Status
 
 | Integration | Status | Last Updated | Records Available |
 |-------------|--------|--------------|-------------------|
 | Atlassian   | ✅ Active | 2025-09-24 | ~100 issues/query |
 | Salesforce  | ✅ Active | 2025-09-24 | 3,369 PS requests |
+| PostgreSQL  | ✅ Active | 2025-09-30 | deployment_assistant DB |
 
 ## 🛠️ Built-in Diagnostics
 
@@ -101,15 +138,22 @@ The application includes comprehensive diagnostic tools:
 - **Fallback mechanism**: Automatic degradation to mock data if API unavailable
 - **SSL status**: Clear indication of certificate handling
 
+### Database Diagnostics
+- **API Endpoint**: `GET /api/health/database`
+- **Tests**: Connection status, pool statistics, query execution
+- **Built-in Functions**: `testConnection()`, `getPoolStats()`
+
 ## 📋 Pre-flight Checklist
 
 Before deploying or troubleshooting:
 
 - [ ] Environment variables configured in `.env` file
+- [ ] PostgreSQL database connection configured
 - [ ] Salesforce Connected App uses Client Credentials Flow only
 - [ ] Atlassian API token has appropriate permissions
 - [ ] SSL bypass configured for corporate networks
 - [ ] Application logs are being monitored
+- [ ] Database health check endpoint responding
 
 ## 🔄 Maintenance Schedule
 
@@ -167,6 +211,6 @@ All documentation in this folder follows these standards:
 
 *For questions about this documentation, please refer to the troubleshooting guide or contact the development team.*
 
-**Documentation Version**: 1.0  
-**Last Updated**: September 24, 2025  
+**Documentation Version**: 1.1  
+**Last Updated**: September 30, 2025  
 **Application Version**: Compatible with Deployment Assistant v1.0+

@@ -11,6 +11,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const https = require('https');
 const salesforce = require('./salesforce');
+const db = require('./database');
 
 // Environment variables helper
 function getMissingAtlassianEnvVars() {
@@ -64,6 +65,47 @@ app.get('/api/greeting', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Database health check endpoint
+app.get('/api/health/database', async (req, res) => {
+    try {
+        const dbStatus = await db.testConnection();
+        const poolStats = db.getPoolStats();
+        
+        if (dbStatus.success) {
+            res.status(200).json({
+                status: 'OK',
+                database: {
+                    connected: true,
+                    database: dbStatus.database,
+                    user: dbStatus.user,
+                    timestamp: dbStatus.timestamp
+                },
+                pool: {
+                    total: poolStats.totalCount,
+                    idle: poolStats.idleCount,
+                    waiting: poolStats.waitingCount
+                }
+            });
+        } else {
+            res.status(503).json({
+                status: 'ERROR',
+                database: {
+                    connected: false,
+                    error: dbStatus.error
+                }
+            });
+        }
+    } catch (error) {
+        res.status(503).json({
+            status: 'ERROR',
+            database: {
+                connected: false,
+                error: error.message
+            }
+        });
+    }
 });
 
 // Jira initiatives API endpoint - now using direct Atlassian API
