@@ -3239,7 +3239,7 @@ function renderProvisioningTable(data) {
     if (!data || data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="px-4 py-8 text-center">
+                <td colspan="9" class="px-4 py-8 text-center">
                     <div class="flex flex-col items-center gap-2">
                         <svg class="h-12 w-12 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 3v18h18V3H3z"></path>
@@ -3283,6 +3283,21 @@ function renderProvisioningTable(data) {
             <td class="px-4 py-3">
                 <div class="text-sm">${new Date(request.CreatedDate).toLocaleDateString()}</div>
                 <div class="text-xs text-muted-foreground">${new Date(request.CreatedDate).toLocaleTimeString()}</div>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button 
+                    class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                    onclick="viewAccountHistoryForRequest('${(request.Account__c || '').replace(/'/g, "\\'")}', '${(request.Name || '').replace(/'/g, "\\'")}')"
+                    title="View account history for this PS request"
+                >
+                    <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18 17V9"/>
+                        <path d="M13 17V5"/>
+                        <path d="M8 17v-3"/>
+                    </svg>
+                    <span class="hidden sm:inline">History</span>
+                </button>
             </td>
         </tr>
     `).join('');
