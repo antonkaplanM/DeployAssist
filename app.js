@@ -1006,6 +1006,60 @@ app.get('/api/provisioning/filter-options', async (req, res) => {
     }
 });
 
+// Get PS requests with product removals
+app.get('/api/provisioning/removals', async (req, res) => {
+    try {
+        console.log('🔥 REMOVALS ENDPOINT CALLED - Fetching PS requests with removals for dashboard monitoring...', req.query);
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            console.log('⚠️ No valid Salesforce authentication - returning empty data');
+            return res.json({
+                success: true,
+                requests: [],
+                totalCount: 0,
+                timeFrame: req.query.timeFrame || '1w',
+                startDate: new Date().toISOString().split('T')[0],
+                note: 'No Salesforce authentication - please configure in Settings',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        const timeFrame = req.query.timeFrame || '1w';
+        
+        console.log(`🔍 Fetching PS requests with removals (${timeFrame})...`);
+        
+        const result = await salesforce.getPSRequestsWithRemovals(timeFrame);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                requests: result.requests,
+                totalCount: result.totalCount,
+                timeFrame: result.timeFrame,
+                startDate: result.startDate,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                requests: [],
+                totalCount: 0
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching PS requests with removals:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch PS requests with removals',
+            requests: [],
+            totalCount: 0
+        });
+    }
+});
+
 // ===== VALIDATION ERRORS API =====
 
 // Get validation errors for dashboard monitoring

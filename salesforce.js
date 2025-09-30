@@ -833,6 +833,220 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate) {
     }
 }
 
+// Get PS requests with product removals compared to previous request
+async function getPSRequestsWithRemovals(timeFrame = '1w') {
+    try {
+        const conn = await getConnection();
+        if (!conn) {
+            throw new Error('No Salesforce connection available');
+        }
+
+        // Calculate date range based on time frame
+        const now = new Date();
+        let startDate;
+        
+        switch (timeFrame) {
+            case '1d':
+                startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                break;
+            case '1w':
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case '1m':
+                startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            case '1y':
+                startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                break;
+            default:
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        }
+        
+        const startDateStr = startDate.toISOString().split('T')[0];
+        
+        console.log(`🔍 Fetching PS requests with removals since ${startDateStr} (${timeFrame})`);
+        
+        // Get all PS requests in the time period
+        const currentPeriodQuery = `
+            SELECT Id, Name, Account__c, Status__c, Request_Type_RI__c,
+                   CreatedDate, LastModifiedDate, Payload_Data__c
+            FROM Prof_Services_Request__c
+            WHERE CreatedDate >= ${startDateStr}T00:00:00Z 
+            AND Name LIKE 'PS-%'
+            ORDER BY Account__c, CreatedDate DESC
+            LIMIT 1000
+        `;
+        
+        const currentResult = await conn.query(currentPeriodQuery);
+        const currentRequests = currentResult.records || [];
+        
+        console.log(`✅ Found ${currentRequests.length} PS requests in time period`);
+        
+        // Group requests by account
+        const requestsByAccount = new Map();
+        currentRequests.forEach(request => {
+            const account = request.Account__c;
+            if (!requestsByAccount.has(account)) {
+                requestsByAccount.set(account, []);
+            }
+            requestsByAccount.get(account).push(request);
+        });
+        
+        console.log(`📊 Found ${requestsByAccount.size} unique accounts`);
+        
+        // For each request, find removals by comparing with previous request
+        const requestsWithRemovals = [];
+        
+        for (const [account, accountRequests] of requestsByAccount) {
+            // Sort by creation date descending (newest first)
+            accountRequests.sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+            
+            for (let i = 0; i < accountRequests.length; i++) {
+                const currentRequest = accountRequests[i];
+                
+                // Find the previous request for this account (chronologically before current)
+                const previousRequestQuery = `
+                    SELECT Id, Name, Account__c, Payload_Data__c, CreatedDate
+                    FROM Prof_Services_Request__c
+                    WHERE Account__c = '${account.replace(/'/g, "\\'")}'
+                    AND CreatedDate < ${currentRequest.CreatedDate}
+                    AND Name LIKE 'PS-%'
+                    ORDER BY CreatedDate DESC
+                    LIMIT 1
+                `;
+                
+                try {
+                    const previousResult = await conn.query(previousRequestQuery);
+                    
+                    if (previousResult.records && previousResult.records.length > 0) {
+                        const previousRequest = previousResult.records[0];
+                        
+                        // Parse payloads
+                        const currentPayload = parsePayloadData(currentRequest.Payload_Data__c);
+                        const previousPayload = parsePayloadData(previousRequest.Payload_Data__c);
+                        
+                        // Find removed products
+                        const removals = findRemovedProducts(previousPayload, currentPayload);
+                        
+                        if (removals.hasRemovals) {
+                            requestsWithRemovals.push({
+                                currentRequest: {
+                                    id: currentRequest.Id,
+                                    name: currentRequest.Name,
+                                    account: currentRequest.Account__c,
+                                    status: currentRequest.Status__c,
+                                    requestType: currentRequest.Request_Type_RI__c,
+                                    createdDate: currentRequest.CreatedDate
+                                },
+                                previousRequest: {
+                                    id: previousRequest.Id,
+                                    name: previousRequest.Name,
+                                    createdDate: previousRequest.CreatedDate
+                                },
+                                removals: removals
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`⚠️ Error finding previous request for ${currentRequest.Name}:`, err.message);
+                }
+            }
+        }
+        
+        console.log(`✅ Found ${requestsWithRemovals.length} PS requests with product removals`);
+        
+        return {
+            success: true,
+            requests: requestsWithRemovals,
+            totalCount: requestsWithRemovals.length,
+            timeFrame: timeFrame,
+            startDate: startDateStr
+        };
+        
+    } catch (err) {
+        console.error('❌ Error fetching PS requests with removals:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            requests: [],
+            totalCount: 0
+        };
+    }
+}
+
+// Helper function to find removed products between two payloads
+function findRemovedProducts(previousPayload, currentPayload) {
+    const removedModels = [];
+    const removedData = [];
+    const removedApps = [];
+    
+    // Compare model entitlements
+    if (previousPayload.modelEntitlements && previousPayload.modelEntitlements.length > 0) {
+        const currentModelCodes = new Set(
+            (currentPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean)
+        );
+        
+        previousPayload.modelEntitlements.forEach(prevModel => {
+            if (prevModel.productCode && !currentModelCodes.has(prevModel.productCode)) {
+                removedModels.push({
+                    productCode: prevModel.productCode,
+                    name: prevModel.name || prevModel.productCode,
+                    type: 'Model'
+                });
+            }
+        });
+    }
+    
+    // Compare data entitlements
+    if (previousPayload.dataEntitlements && previousPayload.dataEntitlements.length > 0) {
+        const currentDataCodes = new Set(
+            (currentPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean)
+        );
+        
+        previousPayload.dataEntitlements.forEach(prevData => {
+            const identifier = prevData.productCode || prevData.name;
+            if (identifier && !currentDataCodes.has(identifier)) {
+                removedData.push({
+                    productCode: identifier,
+                    name: prevData.name || identifier,
+                    type: 'Data'
+                });
+            }
+        });
+    }
+    
+    // Compare app entitlements
+    if (previousPayload.appEntitlements && previousPayload.appEntitlements.length > 0) {
+        const currentAppCodes = new Set(
+            (currentPayload.appEntitlements || []).map(e => e.productCode || e.name).filter(Boolean)
+        );
+        
+        previousPayload.appEntitlements.forEach(prevApp => {
+            const identifier = prevApp.productCode || prevApp.name;
+            if (identifier && !currentAppCodes.has(identifier)) {
+                removedApps.push({
+                    productCode: identifier,
+                    name: prevApp.name || identifier,
+                    type: 'App'
+                });
+            }
+        });
+    }
+    
+    const totalRemovals = removedModels.length + removedData.length + removedApps.length;
+    
+    return {
+        hasRemovals: totalRemovals > 0,
+        removedModels,
+        removedData,
+        removedApps,
+        totalCount: totalRemovals,
+        summary: totalRemovals > 0 
+            ? `${removedModels.length} Model(s), ${removedData.length} Data, ${removedApps.length} App(s)` 
+            : 'No removals'
+    };
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -850,5 +1064,6 @@ module.exports = {
     hasValidAuthentication,
     getIdentity,
     testConnection,
-    getWeeklyRequestTypeAnalytics
+    getWeeklyRequestTypeAnalytics,
+    getPSRequestsWithRemovals
 };

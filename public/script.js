@@ -8,6 +8,11 @@ const timeFrameSelect = document.getElementById('time-frame-select');
 const validationStatus = document.getElementById('validation-status');
 const validationErrors = document.getElementById('validation-errors');
 
+// PS Request Removals monitoring elements
+const removalsTimeFrameSelect = document.getElementById('removals-time-frame-select');
+const removalsStatus = document.getElementById('removals-status');
+const removalsList = document.getElementById('removals-list');
+
 // Navigation elements
 const navDashboard = document.getElementById('nav-dashboard');
 const navAnalytics = document.getElementById('nav-analytics');
@@ -4313,6 +4318,230 @@ function getTimeFrameLabel(timeFrame) {
     }
 }
 
+// ===== PS REQUEST REMOVALS MONITORING FUNCTIONS =====
+
+// Initialize PS Request Removals monitoring tile
+function initializePSRemovalsMonitoring() {
+    console.log('Initializing PS Request Removals monitoring...');
+    
+    if (removalsTimeFrameSelect) {
+        removalsTimeFrameSelect.addEventListener('change', fetchPSRemovals);
+    }
+    
+    // Load initial removals data
+    fetchPSRemovals();
+}
+
+// Fetch PS requests with removals from the API
+async function fetchPSRemovals() {
+    if (!removalsStatus || !removalsList || !removalsTimeFrameSelect) {
+        console.warn('PS Removals monitoring elements not found');
+        return;
+    }
+    
+    const timeFrame = removalsTimeFrameSelect.value || '1w';
+    
+    try {
+        // Show loading state
+        removalsStatus.innerHTML = `
+            <div class="flex items-center gap-2">
+                <div class="loading-spinner"></div>
+                <span class="text-sm text-muted-foreground">Loading PS request removals for ${getTimeFrameLabel(timeFrame)}...</span>
+            </div>
+        `;
+        removalsList.classList.add('hidden');
+        
+        console.log(`Fetching PS request removals for time frame: ${timeFrame}`);
+        
+        const response = await fetch(`/api/provisioning/removals?timeFrame=${timeFrame}`);
+        
+        // Check if the response is OK
+        if (!response.ok) {
+            const contentType = response.headers.get('content-type');
+            console.error(`API error: Status ${response.status}, Content-Type: ${contentType}`);
+            
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                displayRemovalsError(errorData.error || `API error: ${response.status}`);
+            } else {
+                // Server returned HTML or other non-JSON response
+                const textResponse = await response.text();
+                console.error('Non-JSON response:', textResponse.substring(0, 200));
+                displayRemovalsError(`Server error (${response.status}). Please ensure the server is running and the endpoint exists.`);
+            }
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayRemovalsResults(data);
+        } else {
+            displayRemovalsError(data.error || 'Failed to load removal data');
+        }
+        
+    } catch (error) {
+        console.error('Error fetching PS request removals:', error);
+        displayRemovalsError(`Network error: ${error.message}. Please check the browser console for details.`);
+    }
+}
+
+// Display removals results in the tile
+function displayRemovalsResults(data) {
+    const { requests, totalCount, timeFrame, note } = data;
+    const timeFrameLabel = getTimeFrameLabel(timeFrame);
+    
+    // Check if this is a "no authentication" response
+    if (note && note.includes('No Salesforce authentication')) {
+        removalsStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-blue-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">Salesforce Authentication Required</p>
+                    <p class="text-sm text-muted-foreground">
+                        Please configure Salesforce authentication in Settings to view product removals.
+                    </p>
+                </div>
+            </div>
+        `;
+        removalsList.classList.add('hidden');
+        return;
+    }
+    
+    if (totalCount === 0) {
+        // No removals found
+        removalsStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-green-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">No product removals found</p>
+                    <p class="text-sm text-muted-foreground">
+                        No PS requests with product entitlement removals in ${timeFrameLabel}
+                    </p>
+                </div>
+            </div>
+        `;
+        removalsList.classList.add('hidden');
+    } else {
+        // Display removals count
+        removalsStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-orange-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                        <path d="M12 9v4"></path>
+                        <path d="M12 17h.01"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">${totalCount} PS request${totalCount !== 1 ? 's' : ''} with product removals</p>
+                    <p class="text-sm text-muted-foreground">
+                        Found in ${timeFrameLabel}
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Display list of removals
+        removalsList.innerHTML = requests.map(item => {
+            const { currentRequest, previousRequest, removals } = item;
+            const removedItems = [
+                ...removals.removedModels.map(m => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mr-1 mb-1">Model: ${m.productCode}</span>`),
+                ...removals.removedData.map(d => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 mr-1 mb-1">Data: ${d.productCode}</span>`),
+                ...removals.removedApps.map(a => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-1 mb-1">App: ${a.productCode}</span>`)
+            ].join('');
+            
+            return `
+                <div class="rounded-lg border bg-white p-4 hover:shadow-md transition-shadow">
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-semibold text-base">${currentRequest.name}</h3>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        ${currentRequest.requestType || 'Update'}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-muted-foreground mt-1">
+                                    Account: ${currentRequest.account}
+                                </p>
+                                <p class="text-xs text-muted-foreground mt-0.5">
+                                    Created: ${new Date(currentRequest.createdDate).toLocaleDateString()}
+                                </p>
+                            </div>
+                            <button 
+                                onclick="viewPSRecordExact('${currentRequest.id}', '${currentRequest.name}')" 
+                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                            >
+                                View Record
+                            </button>
+                        </div>
+                        
+                        <div class="border-t pt-3">
+                            <div class="flex items-start gap-2">
+                                <svg class="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-orange-900 mb-2">
+                                        Removed from ${previousRequest.name}
+                                        <span class="text-xs text-muted-foreground ml-1">
+                                            (${new Date(previousRequest.createdDate).toLocaleDateString()})
+                                        </span>
+                                    </p>
+                                    <div class="flex flex-wrap gap-1">
+                                        ${removedItems}
+                                    </div>
+                                    <p class="text-xs text-muted-foreground mt-2">
+                                        Total removals: ${removals.totalCount} product${removals.totalCount !== 1 ? 's' : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        removalsList.classList.remove('hidden');
+    }
+}
+
+// Display error message for removals
+function displayRemovalsError(errorMessage) {
+    removalsStatus.innerHTML = `
+        <div class="flex items-center gap-3 text-red-700">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">Error loading removal data</p>
+                <p class="text-sm text-muted-foreground">${errorMessage}</p>
+            </div>
+        </div>
+    `;
+    removalsList.classList.add('hidden');
+}
+
 // Navigate to view a specific PS record with exact matching (for Account History)
 async function viewPSRecordExact(recordId, recordName) {
     console.log(`Navigating to PS record with exact match: ${recordName} (${recordId})`);
@@ -4473,6 +4702,9 @@ function initializeApp() {
     
     // Initialize validation monitoring
     initializeValidationMonitoring();
+    
+    // Initialize PS Request Removals monitoring
+    initializePSRemovalsMonitoring();
     
     // Initialize navigation - restore saved page or default to dashboard
     const savedPage = localStorage.getItem('currentPage') || 'dashboard';
