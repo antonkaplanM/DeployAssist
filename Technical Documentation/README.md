@@ -53,6 +53,21 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - Coverage reports and best practices
 - Feature-specific test documentation
 
+### 📊 [Analytics Validation Integration](./Analytics-Validation-Integration.md)
+**Analytics dashboard validation features**
+- Validation failure tracking and analytics
+- Multi-request type trend chart (Update, Onboarding, Deprovision)
+- Interactive trend line toggles and preferences
+- Dynamic y-axis scaling and color-coded design
+- API endpoints and technical implementation
+
+### 🔗 [Jira Integration Guide](./Jira-Integration-Guide.md)
+**Atlassian Jira Cloud integration**
+- API token setup and authentication
+- JQL query customization
+- Environment configuration
+- Troubleshooting and security notes
+
 ### 🗄️ [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md)
 **Database connection and configuration**
 - Complete PostgreSQL setup guide
@@ -73,6 +88,30 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - Environment variables
 - Useful commands
 
+---
+
+## 📝 Change Logs
+
+### [Analytics Trend Enhancement](./CHANGELOG-Analytics-Trend-Enhancement.md)
+**Latest: September 30, 2025**
+- Multi-request type trend lines (Update, Onboarding, Deprovision)
+- Interactive trend line toggles with localStorage persistence
+- Dynamic y-axis rescaling for improved readability
+- Color-aligned design system across all visualizations
+- 16 comprehensive E2E tests
+
+### [Analytics Enhancement](./CHANGELOG-Analytics-Enhancement.md)
+**Validation failure tracking integration**
+- Request type tiles with validation metrics
+- Integration with validation rules system
+- API endpoint documentation
+
+### [Account History](./CHANGELOG-Account-History.md)
+**Account timeline and product evolution tracking**
+- Complete account history feature
+- Product change comparison
+- Search and navigation improvements
+
 ## 🎯 Quick Navigation
 
 ### For Developers
@@ -83,7 +122,10 @@ Welcome to the technical documentation for the Deployment Assistant application 
 - **Quick database reference?** → See [Database Quick Reference](./Database-Quick-Reference.md)
 - **Account History feature?** → See [Account History Feature](./Account-History-Feature.md)
 - **Product Removals feature?** → See [Product Removals Feature](./Product-Removals-Feature.md)
+- **Analytics & Validation?** → See [Analytics Validation Integration](./Analytics-Validation-Integration.md)
+- **Jira integration?** → See [Jira Integration Guide](./Jira-Integration-Guide.md)
 - **Testing guidance?** → See [Testing Strategy](./Testing-Strategy.md)
+- **Recent changes?** → Check [Change Logs](#-change-logs)
 
 ### For DevOps/Infrastructure
 - **Environment setup** → [Quick Setup Guide - Environment Setup](./Quick-Setup-Guide.md#environment-setup)
@@ -211,6 +253,39 @@ All documentation in this folder follows these standards:
 
 *For questions about this documentation, please refer to the troubleshooting guide or contact the development team.*
 
-**Documentation Version**: 1.1  
+---
+
+## 📂 Documentation Index
+
+### Core Documentation
+1. [Integration Architecture](./Integration-Architecture.md) - Complete technical reference
+2. [Quick Setup Guide](./Quick-Setup-Guide.md) - Fast-track setup instructions
+3. [Troubleshooting Checklist](./Troubleshooting-Checklist.md) - Problem resolution guide
+4. [Testing Strategy](./Testing-Strategy.md) - Test coverage and execution
+
+### Feature Documentation
+5. [Account History Feature](./Account-History-Feature.md) - Account timeline tracking
+6. [Product Removals Feature](./Product-Removals-Feature.md) - Product removal monitoring
+7. [Analytics Validation Integration](./Analytics-Validation-Integration.md) - Validation analytics
+8. [Validation Rules Documentation](./Validation-Rules-Documentation.md) - Validation system
+9. [Jira Integration Guide](./Jira-Integration-Guide.md) - Atlassian Jira setup
+
+### Database Documentation
+10. [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md) - Complete setup guide
+11. [Database README](./Database-README.md) - Database overview
+12. [Database Quick Reference](./Database-Quick-Reference.md) - Quick command reference
+
+### Change Logs
+13. [CHANGELOG: Analytics Trend Enhancement](./CHANGELOG-Analytics-Trend-Enhancement.md) - Sep 30, 2025
+14. [CHANGELOG: Analytics Enhancement](./CHANGELOG-Analytics-Enhancement.md)
+15. [CHANGELOG: Account History](./CHANGELOG-Account-History.md)
+
+**Total Documentation Files**: 15 comprehensive guides
+
+---
+
+*For questions about this documentation, please refer to the troubleshooting guide or contact the development team.*
+
+**Documentation Version**: 1.2  
 **Last Updated**: September 30, 2025  
 **Application Version**: Compatible with Deployment Assistant v1.0+

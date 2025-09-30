@@ -5,7 +5,12 @@
 
 ## Overview
 
-The Analytics Dashboard's "Technical Team Requests - Last Year" section now displays validation failure counts and rates for each request type. This feature integrates directly with the **Provisioning Monitor's Data Validation Monitor** system to provide consistent, accurate validation metrics.
+The Analytics Dashboard provides comprehensive validation failure analytics through two integrated features:
+
+1. **Request Type Tiles** - Shows validation failure counts and rates for each request type over the last year
+2. **Validation Trend Chart** - Displays rolling annual validation failure percentages over a 3-month period for Update, Onboarding, and Deprovision request types
+
+Both features integrate directly with the **Provisioning Monitor's Data Validation Monitor** system to provide consistent, accurate validation metrics.
 
 ## How It Works
 
@@ -213,6 +218,150 @@ Enable console logging to see validation details:
    - Only enable rules that are actively monitored
    - Document why each rule is enabled/disabled
    - Review rule effectiveness based on failure patterns
+
+## Validation Trend Chart
+
+### Overview
+
+The Validation Trend Chart displays rolling annual validation failure percentages for three request types over the last 3 months:
+- **🔴 Update** - Red trend line
+- **🔵 Onboarding** - Blue trend line  
+- **🟢 Deprovision** - Green trend line
+
+### Features
+
+#### 1. Interactive Trend Line Toggles
+
+Users can show/hide individual trend lines using checkboxes:
+- Click any checkbox to toggle that request type's trend line
+- Changes are saved to localStorage and persist across sessions
+- Chart automatically rescales to maximize readability based on visible data
+
+#### 2. Dynamic Y-Axis Scaling
+
+The y-axis automatically adjusts based on the data:
+- **Maximum**: Set to 15% above the highest visible data point (minimum 10%)
+- **Minimum**: Intelligent scaling - 0% for low values, or 15% below minimum for high values
+- **Rescaling**: When you toggle trend lines, the axis recalculates to show only visible data
+- **Benefit**: Eliminates wasted space and improves trend visibility
+
+#### 3. Color-Coded Design
+
+Colors are consistent across all analytics visualizations:
+
+| Request Type | Trend Line | Tile Badge | Toggle Indicator |
+|--------------|------------|------------|------------------|
+| Update | Red `rgb(239, 68, 68)` | `bg-red-100 text-red-800` | Red circle |
+| Onboarding | Blue `rgb(59, 130, 246)` | `bg-blue-100 text-blue-800` | Blue circle |
+| Deprovision | Green `rgb(16, 185, 129)` | `bg-green-100 text-green-800` | Green circle |
+
+#### 4. Rolling Annual Calculation
+
+Each data point represents a **rolling 1-year validation failure percentage**:
+- **X-Axis**: Daily points over last 3 months (sampled every 3 days for clarity)
+- **Y-Axis**: Percentage of requests that failed validation in the trailing 12 months
+- **Calculation**: For each day, counts all failures in the 365 days ending on that date
+
+**Example:**
+- Point on "Sep 30": Shows % of failures from Oct 1, 2024 - Sep 30, 2025
+- Point on "Sep 27": Shows % of failures from Sep 28, 2024 - Sep 27, 2025
+
+### Technical Implementation
+
+#### API Endpoint
+
+**Endpoint:** `GET /api/analytics/validation-trend`
+
+**Query Parameters:**
+- `enabledRules` - JSON array of enabled rule IDs
+
+**Example:**
+```javascript
+fetch('/api/analytics/validation-trend?enabledRules=["app-quantity-validation","model-count-validation"]')
+```
+
+#### Response Format
+
+```json
+{
+  "success": true,
+  "trendData": [
+    {
+      "date": "2025-09-30",
+      "displayDate": "Sep 30",
+      "updateTotal": 1234,
+      "updateFailures": 42,
+      "updateFailurePercentage": "3.4",
+      "onboardingTotal": 156,
+      "onboardingFailures": 8,
+      "onboardingFailurePercentage": "5.1",
+      "deprovisionTotal": 89,
+      "deprovisionFailures": 2,
+      "deprovisionFailurePercentage": "2.2"
+    }
+  ],
+  "period": {
+    "startDate": "2025-06-30",
+    "endDate": "2025-09-30"
+  }
+}
+```
+
+#### Backend Function
+
+**File:** `salesforce.js`  
+**Function:** `getValidationFailureTrend(startDate, endDate, enabledRuleIds)`
+
+**Process:**
+1. Fetches 15 months of data (12 months + 3 months for display)
+2. Queries Update, Onboarding, and Deprovision requests
+3. Validates each record using enabled rules
+4. Groups validated records by request type
+5. Calculates rolling annual percentage for each day
+6. Returns daily data points with all three request types
+
+### User Preferences
+
+Trend line visibility preferences are stored in localStorage:
+
+**Key:** `validationTrendPreferences`
+
+**Structure:**
+```json
+{
+  "showUpdate": true,
+  "showOnboarding": true,
+  "showDeprovision": false
+}
+```
+
+### Tooltips
+
+Hovering over any data point shows:
+- **Update**: Annual failure rate and count (e.g., "42 of 1234 failed")
+- **Onboarding**: Annual failure rate and count  
+- **Deprovision**: Annual failure rate and count
+
+### Troubleshooting
+
+#### Issue: Onboarding/Deprovision Lines Show 0%
+
+**Possible Causes:**
+1. No Onboarding/Deprovision requests in the time period
+2. All requests passed validation (0 failures = 0%)
+3. Validation rules may not apply to these request types
+
+**Solution:**
+- Check console logs for data point samples
+- Verify requests exist in Salesforce for these types
+- Confirm validation rules are appropriate for request type
+
+#### Issue: Chart Doesn't Rescale When Toggling Lines
+
+**Solution:**
+- Clear browser cache
+- Check console for JavaScript errors
+- Verify localStorage is enabled in browser
 
 ## Related Documentation
 
