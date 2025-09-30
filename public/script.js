@@ -279,12 +279,37 @@ function initializeAnalytics() {
     
     // Load analytics data for Technical Team Requests by type
     loadAnalyticsData();
+    
+    // Load validation failure trend chart
+    loadValidationTrendChart();
 }
 
 // Load analytics data for Technical Team Requests by type
 async function loadAnalyticsData() {
     try {
-        const response = await fetch('/api/analytics/request-types-week');
+        // Get enabled rules from localStorage (same as validation monitoring)
+        let enabledRuleIds = [];
+        try {
+            const validationConfig = localStorage.getItem('deploymentAssistant_validationRules');
+            if (validationConfig) {
+                const config = JSON.parse(validationConfig);
+                enabledRuleIds = Object.keys(config.enabledRules || {}).filter(ruleId => 
+                    config.enabledRules[ruleId] === true
+                );
+            }
+            
+            // If no config found, use default enabled rules
+            if (enabledRuleIds.length === 0) {
+                enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
+            }
+            
+            console.log(`📋 Analytics using enabled validation rules: ${enabledRuleIds.join(', ')}`);
+        } catch (error) {
+            console.warn('⚠️ Error loading validation config for analytics, using default rules:', error);
+            enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
+        }
+        
+        const response = await fetch(`/api/analytics/request-types-week?enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
         const data = await response.json();
         
         if (data.success) {
@@ -309,42 +334,71 @@ function renderRequestTypeTiles(analyticsData) {
         container.innerHTML = `
             <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6 col-span-full">
                 <div class="text-center">
-                    <div class="text-muted-foreground text-sm">No Technical Team Requests found in the last 6 months</div>
+                    <div class="text-muted-foreground text-sm">No Technical Team Requests found in the last year</div>
                 </div>
             </div>
         `;
         return;
     }
     
-    // Generate color classes for different request types
-    const colors = [
-        'bg-blue-100 text-blue-800',
-        'bg-green-100 text-green-800', 
-        'bg-purple-100 text-purple-800',
-        'bg-orange-100 text-orange-800',
-        'bg-pink-100 text-pink-800',
-        'bg-indigo-100 text-indigo-800'
-    ];
+    // Map request types to specific colors matching trend lines
+    const requestTypeColors = {
+        'Update': 'bg-red-100 text-red-800',
+        'Onboarding': 'bg-blue-100 text-blue-800',
+        'Deprovision': 'bg-green-100 text-green-800',
+        // Fallback colors for other request types
+        'default': [
+            'bg-purple-100 text-purple-800',
+            'bg-orange-100 text-orange-800',
+            'bg-pink-100 text-pink-800',
+            'bg-indigo-100 text-indigo-800'
+        ]
+    };
     
     const tiles = analyticsData.map((item, index) => {
-        const colorClass = colors[index % colors.length];
+        // Get color based on request type name, or use fallback
+        const colorClass = requestTypeColors[item.requestType] || 
+                          requestTypeColors.default[index % requestTypeColors.default.length];
         const isZeroCount = item.count === 0;
         const tileClass = isZeroCount ? 'rounded-lg border bg-card text-card-foreground shadow-sm p-6 opacity-60' : 'rounded-lg border bg-card text-card-foreground shadow-sm p-6';
         const badgeClass = isZeroCount ? 'bg-gray-100 text-gray-500' : colorClass;
         
+        // Validation failure information
+        const validationFailures = item.validationFailures || 0;
+        const validationFailureRate = item.validationFailureRate || '0.0';
+        const hasValidationFailures = validationFailures > 0;
+        const validationBadgeColor = hasValidationFailures ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+        const validationIcon = hasValidationFailures ? '⚠️' : '✓';
+        
         return `
             <div class="${tileClass}">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground">${item.requestType}</p>
-                        <p class="text-2xl font-bold ${isZeroCount ? 'text-gray-400' : ''}">${item.count}</p>
-                        <p class="text-xs text-muted-foreground">${item.percentage}% of total</p>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-muted-foreground">${item.requestType}</p>
+                            <p class="text-3xl font-bold ${isZeroCount ? 'text-gray-400' : ''}">${item.count}</p>
+                        </div>
+                        <div>
+                            <span class="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${badgeClass}">
+                                ${item.percentage}%
+                            </span>
+                        </div>
                     </div>
-                    <div class="h-4 w-4 text-muted-foreground">
-                        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${badgeClass}">
-                            ${item.count}
-                        </span>
+                    ${!isZeroCount ? `
+                    <div class="pt-2 border-t border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1">
+                                <span class="text-xs font-medium ${hasValidationFailures ? 'text-red-600' : 'text-green-600'}">
+                                    ${validationIcon} Validation
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold ${hasValidationFailures ? 'text-red-600' : 'text-green-600'}">${validationFailures}</p>
+                                <p class="text-xs text-muted-foreground">failed (${validationFailureRate}%)</p>
+                            </div>
+                        </div>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -378,6 +432,348 @@ function showAnalyticsError() {
             </div>
         `;
     }
+}
+
+// Load validation failure trend chart
+let validationTrendChart = null;
+let validationTrendData = null; // Store data globally for re-rendering
+
+async function loadValidationTrendChart() {
+    const canvas = document.getElementById('validation-trend-chart');
+    const container = document.getElementById('validation-trend-container');
+    const loading = document.getElementById('trend-loading');
+    const error = document.getElementById('trend-error');
+    const periodElement = document.getElementById('trend-period');
+    
+    if (!canvas || !container || !loading || !error) {
+        console.warn('Validation trend chart elements not found');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        container.style.display = 'none';
+        loading.style.display = 'flex';
+        error.style.display = 'none';
+        
+        // Get enabled rules from localStorage (same as analytics)
+        let enabledRuleIds = [];
+        try {
+            const validationConfig = localStorage.getItem('deploymentAssistant_validationRules');
+            if (validationConfig) {
+                const config = JSON.parse(validationConfig);
+                enabledRuleIds = Object.keys(config.enabledRules || {}).filter(ruleId => 
+                    config.enabledRules[ruleId] === true
+                );
+            }
+            
+            if (enabledRuleIds.length === 0) {
+                enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
+            }
+        } catch (e) {
+            enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
+        }
+        
+        console.log('📈 Fetching validation trend data...');
+        const response = await fetch(`/api/analytics/validation-trend?enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
+        const data = await response.json();
+        
+        if (data.success && data.trendData && data.trendData.length > 0) {
+            // Store data globally
+            validationTrendData = data;
+            
+            // Hide loading, show chart
+            loading.style.display = 'none';
+            container.style.display = 'block';
+            
+            // Update period display
+            if (periodElement && data.period) {
+                const startDate = new Date(data.period.startDate).toLocaleDateString();
+                const endDate = new Date(data.period.endDate).toLocaleDateString();
+                periodElement.textContent = `${startDate} - ${endDate}`;
+            }
+            
+            // Set up toggle event listeners
+            setupTrendToggleListeners();
+            
+            // Render the chart
+            renderValidationTrendChart();
+            
+            console.log('✅ Validation trend chart loaded with', data.trendData.length, 'data points');
+        } else {
+            // Show error state
+            loading.style.display = 'none';
+            container.style.display = 'none';
+            error.style.display = 'flex';
+            console.error('No trend data available');
+        }
+    } catch (err) {
+        console.error('Error loading validation trend chart:', err);
+        loading.style.display = 'none';
+        container.style.display = 'none';
+        error.style.display = 'flex';
+    }
+}
+
+// Set up event listeners for trend line toggles
+function setupTrendToggleListeners() {
+    const toggles = document.querySelectorAll('.trend-toggle');
+    
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', () => {
+            // Save preferences to localStorage
+            const preferences = {
+                showUpdate: document.getElementById('trend-toggle-update')?.checked ?? true,
+                showOnboarding: document.getElementById('trend-toggle-onboarding')?.checked ?? true,
+                showDeprovision: document.getElementById('trend-toggle-deprovision')?.checked ?? true
+            };
+            localStorage.setItem('validationTrendPreferences', JSON.stringify(preferences));
+            
+            // Re-render chart with new settings
+            renderValidationTrendChart();
+        });
+    });
+}
+
+// Render the validation trend chart based on current toggle states
+function renderValidationTrendChart() {
+    if (!validationTrendData || !validationTrendData.trendData) {
+        console.warn('No trend data available to render');
+        return;
+    }
+    
+    const canvas = document.getElementById('validation-trend-chart');
+    if (!canvas) return;
+    
+    // Get toggle states from localStorage or default to all enabled
+    let preferences = {
+        showUpdate: true,
+        showOnboarding: true,
+        showDeprovision: true
+    };
+    
+    try {
+        const saved = localStorage.getItem('validationTrendPreferences');
+        if (saved) {
+            preferences = JSON.parse(saved);
+        }
+    } catch (e) {
+        console.warn('Could not load trend preferences:', e);
+    }
+    
+    // Update checkbox states
+    const updateToggle = document.getElementById('trend-toggle-update');
+    const onboardingToggle = document.getElementById('trend-toggle-onboarding');
+    const deprovisionToggle = document.getElementById('trend-toggle-deprovision');
+    
+    if (updateToggle) updateToggle.checked = preferences.showUpdate;
+    if (onboardingToggle) onboardingToggle.checked = preferences.showOnboarding;
+    if (deprovisionToggle) deprovisionToggle.checked = preferences.showDeprovision;
+    
+    // Prepare chart data - sample every 3 days to avoid overcrowding
+    const sampledData = validationTrendData.trendData.filter((d, index) => index % 3 === 0);
+    const labels = sampledData.map(d => d.displayDate);
+    
+    // Debug: Log a sample data point to check structure
+    if (sampledData.length > 0) {
+        console.log('Sample data point:', sampledData[0]);
+    }
+    
+    // Extract data for each request type
+    const updateFailurePercentages = sampledData.map(d => parseFloat(d.updateFailurePercentage || d.failurePercentage || 0));
+    const onboardingFailurePercentages = sampledData.map(d => parseFloat(d.onboardingFailurePercentage || 0));
+    const deprovisionFailurePercentages = sampledData.map(d => parseFloat(d.deprovisionFailurePercentage || 0));
+    
+    // Debug: Log extracted percentages
+    console.log('Update percentages sample:', updateFailurePercentages.slice(0, 3));
+    console.log('Onboarding percentages sample:', onboardingFailurePercentages.slice(0, 3));
+    console.log('Deprovision percentages sample:', deprovisionFailurePercentages.slice(0, 3));
+    
+    // Build datasets based on toggle states
+    const datasets = [];
+    const visibleValues = [];
+    
+    if (preferences.showUpdate) {
+        datasets.push({
+            label: 'Update - Validation Failure Rate (%)',
+            data: updateFailurePercentages,
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgb(239, 68, 68)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        });
+        visibleValues.push(...updateFailurePercentages);
+    }
+    
+    if (preferences.showOnboarding) {
+        datasets.push({
+            label: 'Onboarding - Validation Failure Rate (%)',
+            data: onboardingFailurePercentages,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgb(59, 130, 246)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        });
+        visibleValues.push(...onboardingFailurePercentages);
+    }
+    
+    if (preferences.showDeprovision) {
+        datasets.push({
+            label: 'Deprovision - Validation Failure Rate (%)',
+            data: deprovisionFailurePercentages,
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgb(16, 185, 129)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        });
+        visibleValues.push(...deprovisionFailurePercentages);
+    }
+    
+    // Calculate dynamic y-axis range based on visible data only
+    const maxValue = visibleValues.length > 0 ? Math.max(...visibleValues) : 10;
+    const minValue = visibleValues.length > 0 ? Math.min(...visibleValues) : 0;
+    
+    // Set y-axis max with 15% padding above the highest value, minimum of 10%
+    const yAxisMax = Math.max(Math.ceil(maxValue * 1.15), 10);
+    // Set y-axis min to 0 or slightly below min value if all values are high
+    const yAxisMin = minValue > 5 ? Math.max(0, Math.floor(minValue * 0.85)) : 0;
+    
+    // Destroy existing chart if it exists
+    if (validationTrendChart) {
+        validationTrendChart.destroy();
+    }
+    
+    // Create the chart with selected datasets
+    const ctx = canvas.getContext('2d');
+    validationTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: {
+                            family: 'Inter',
+                            size: 12
+                        },
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        family: 'Inter',
+                        size: 13
+                    },
+                    bodyFont: {
+                        family: 'Inter',
+                        size: 12
+                    },
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            const dataPoint = sampledData[context.dataIndex];
+                            const datasetLabel = context.dataset.label;
+                            
+                            if (datasetLabel.startsWith('Update')) {
+                                return [
+                                    `Update Annual Failure Rate: ${dataPoint.updateFailurePercentage || dataPoint.failurePercentage || '0.0'}%`,
+                                    `Rolling Year: ${dataPoint.updateFailures || dataPoint.failures || 0} of ${dataPoint.updateTotal || dataPoint.total || 0} failed`
+                                ];
+                            } else if (datasetLabel.startsWith('Onboarding')) {
+                                return [
+                                    `Onboarding Annual Failure Rate: ${dataPoint.onboardingFailurePercentage || '0.0'}%`,
+                                    `Rolling Year: ${dataPoint.onboardingFailures || 0} of ${dataPoint.onboardingTotal || 0} failed`
+                                ];
+                            } else if (datasetLabel.startsWith('Deprovision')) {
+                                return [
+                                    `Deprovision Annual Failure Rate: ${dataPoint.deprovisionFailurePercentage || '0.0'}%`,
+                                    `Rolling Year: ${dataPoint.deprovisionFailures || 0} of ${dataPoint.deprovisionTotal || 0} failed`
+                                ];
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: yAxisMin,
+                    max: yAxisMax,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        font: {
+                            family: 'Inter',
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Rolling Annual Failure %',
+                        font: {
+                            family: 'Inter',
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            family: 'Inter',
+                            size: 11
+                        },
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    grid: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Date (Last 3 Months)',
+                        font: {
+                            family: 'Inter',
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log('✅ Chart re-rendered with preferences:', preferences);
 }
 
 function updateAnalyticsStats(stats) {

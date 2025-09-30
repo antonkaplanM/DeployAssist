@@ -746,13 +746,15 @@ async function testConnection() {
     };
 }
 
-// Get 6-month analytics data for Technical Team Requests by request type
-async function getWeeklyRequestTypeAnalytics(startDate, endDate) {
+// Get 1-year analytics data for Technical Team Requests by request type with validation failures
+async function getWeeklyRequestTypeAnalytics(startDate, endDate, enabledRuleIds = null) {
     try {
         const conn = await getConnection();
         if (!conn) {
             throw new Error('No Salesforce connection available');
         }
+
+        const validationEngine = require('./validation-engine');
 
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
@@ -766,38 +768,85 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate) {
             ORDER BY Request_Type_RI__c
         `;
 
-        // Then, get counts for the specific time period
+        // Then, get all records for the specific time period (need full records for validation)
+        // Match the same query pattern as /api/validation/errors endpoint
         const analyticsQuery = `
-            SELECT Request_Type_RI__c, COUNT(Id) RequestCount
+            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, 
+                   Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
             FROM Prof_Services_Request__c 
             WHERE CreatedDate >= ${startDateStr}T00:00:00.000Z 
             AND CreatedDate <= ${endDateStr}T23:59:59.999Z
+            AND Name LIKE 'PS-%'
             AND Request_Type_RI__c != null 
-            GROUP BY Request_Type_RI__c 
-            ORDER BY COUNT(Id) DESC
+            ORDER BY Request_Type_RI__c, CreatedDate DESC
         `;
 
         console.log('📊 Fetching all request types:', allTypesQuery);
         const allTypesResult = await conn.query(allTypesQuery);
         
-        console.log('📊 Fetching 6-month analytics data:', analyticsQuery);
+        console.log('📊 Fetching 1-year analytics data with validation:', analyticsQuery);
         const analyticsResult = await conn.query(analyticsQuery);
 
-        // Create a map of actual counts
-        const countsMap = new Map();
+        // Get enabled validation rules - use provided ones or defaults
+        let enabledRules;
+        if (enabledRuleIds && enabledRuleIds.length > 0) {
+            enabledRules = validationEngine.DEFAULT_VALIDATION_RULES.filter(rule => 
+                enabledRuleIds.includes(rule.id)
+            );
+            console.log(`🔧 Using ${enabledRules.length} client-specified enabled validation rules: ${enabledRuleIds.join(', ')}`);
+        } else {
+            enabledRules = validationEngine.getEnabledValidationRules();
+            console.log(`🔧 Using ${enabledRules.length} default enabled validation rules`);
+        }
+
+        // Process records by request type and validate them (same as validation errors endpoint)
+        const typeStatsMap = new Map();
+        
         analyticsResult.records.forEach(record => {
-            countsMap.set(record.Request_Type_RI__c, record.RequestCount);
+            const requestType = record.Request_Type_RI__c;
+            
+            if (!typeStatsMap.has(requestType)) {
+                typeStatsMap.set(requestType, {
+                    count: 0,
+                    validationFailures: 0
+                });
+            }
+            
+            const stats = typeStatsMap.get(requestType);
+            stats.count++;
+            
+            // Validate the record using the same logic as /api/validation/errors
+            try {
+                const validationResult = validationEngine.ValidationEngine.validateRecord(record, enabledRules);
+                if (validationResult.overallStatus === 'FAIL') {
+                    stats.validationFailures++;
+                    console.log(`[ANALYTICS] Record ${record.Name} (${requestType}) FAILED validation`);
+                }
+            } catch (error) {
+                console.warn(`⚠️ Error validating record ${record.Id}:`, error.message);
+                // Don't count as failure if validation itself errors
+            }
         });
 
         // Build data array with all request types, filling in 0 for missing ones
-        const data = allTypesResult.records.map(record => ({
-            requestType: record.Request_Type_RI__c,
-            count: countsMap.get(record.Request_Type_RI__c) || 0,
-            percentage: 0 // Will calculate after getting total
-        }));
+        const data = allTypesResult.records.map(record => {
+            const requestType = record.Request_Type_RI__c;
+            const stats = typeStatsMap.get(requestType) || { count: 0, validationFailures: 0 };
+            
+            return {
+                requestType: requestType,
+                count: stats.count,
+                validationFailures: stats.validationFailures,
+                validationFailureRate: stats.count > 0 ? 
+                    ((stats.validationFailures / stats.count) * 100).toFixed(1) : '0.0',
+                percentage: 0 // Will calculate after getting total
+            };
+        });
 
         // Calculate total and percentages
         const totalRequests = data.reduce((sum, item) => sum + item.count, 0);
+        const totalValidationFailures = data.reduce((sum, item) => sum + item.validationFailures, 0);
+        
         data.forEach(item => {
             item.percentage = totalRequests > 0 ? ((item.count / totalRequests) * 100).toFixed(1) : '0.0';
         });
@@ -810,12 +859,14 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate) {
             return a.requestType.localeCompare(b.requestType);
         });
 
-        console.log(`✅ Analytics data fetched: ${data.length} request types (${allTypesResult.records.length} total), ${totalRequests} total requests`);
+        console.log(`✅ Analytics data fetched: ${data.length} request types (${allTypesResult.records.length} total), ${totalRequests} total requests, ${totalValidationFailures} validation failures`);
 
         return {
             success: true,
             data: data,
             totalRequests: totalRequests,
+            totalValidationFailures: totalValidationFailures,
+            enabledRulesCount: enabledRules.length,
             period: {
                 startDate: startDateStr,
                 endDate: endDateStr
@@ -828,7 +879,149 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate) {
             success: false,
             error: err.message,
             data: [],
-            totalRequests: 0
+            totalRequests: 0,
+            totalValidationFailures: 0
+        };
+    }
+}
+
+// Get validation failure trend for Update, Onboarding, and Deprovision requests over time
+// Each data point shows the rolling annual validation failure percentage
+async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = null) {
+    try {
+        const conn = await getConnection();
+        if (!conn) {
+            throw new Error('No Salesforce connection available');
+        }
+
+        const validationEngine = require('./validation-engine');
+        
+        // We need data from 1 year + 3 months to calculate rolling annual for the 3-month period
+        const dataStartDate = new Date(startDate);
+        dataStartDate.setFullYear(dataStartDate.getFullYear() - 1);
+        
+        const startDateStr = dataStartDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        console.log(`📈 Fetching validation failure trend from ${startDateStr} to ${endDateStr} (15 months of data)`);
+        
+        // Get all Update, Onboarding, and Deprovision requests for the extended period
+        const query = `
+            SELECT Id, Name, Request_Type_RI__c, Payload_Data__c, CreatedDate
+            FROM Prof_Services_Request__c 
+            WHERE CreatedDate >= ${startDateStr}T00:00:00.000Z 
+            AND CreatedDate <= ${endDateStr}T23:59:59.999Z
+            AND Name LIKE 'PS-%'
+            AND (Request_Type_RI__c = 'Update' OR Request_Type_RI__c = 'Onboarding' OR Request_Type_RI__c = 'Deprovision')
+            ORDER BY CreatedDate ASC
+        `;
+        
+        const result = await conn.query(query);
+        const records = result.records || [];
+        
+        console.log(`✅ Retrieved ${records.length} requests for rolling annual trend analysis`);
+        
+        // Get enabled validation rules
+        let enabledRules;
+        if (enabledRuleIds && enabledRuleIds.length > 0) {
+            enabledRules = validationEngine.DEFAULT_VALIDATION_RULES.filter(rule => 
+                enabledRuleIds.includes(rule.id)
+            );
+        } else {
+            enabledRules = validationEngine.getEnabledValidationRules();
+        }
+        
+        // Validate all records once and store results by request type
+        const validatedRecordsByType = {
+            'Update': [],
+            'Onboarding': [],
+            'Deprovision': []
+        };
+        
+        records.forEach(record => {
+            let failed = false;
+            try {
+                const validationResult = validationEngine.ValidationEngine.validateRecord(record, enabledRules);
+                failed = validationResult.overallStatus === 'FAIL';
+            } catch (error) {
+                console.warn(`⚠️ Error validating record ${record.Id}:`, error.message);
+            }
+            
+            const requestType = record.Request_Type_RI__c;
+            if (validatedRecordsByType[requestType]) {
+                validatedRecordsByType[requestType].push({
+                    createdDate: new Date(record.CreatedDate),
+                    failed: failed
+                });
+            }
+        });
+        
+        console.log(`✅ Validated ${records.length} records: Update=${validatedRecordsByType['Update'].length}, Onboarding=${validatedRecordsByType['Onboarding'].length}, Deprovision=${validatedRecordsByType['Deprovision'].length}`);
+        
+        // Calculate rolling annual failure percentage for each day in the 3-month period
+        const trendData = [];
+        const currentDate = new Date(startDate); // This is 3 months ago
+        const finalDate = new Date(endDate);
+        
+        while (currentDate <= finalDate) {
+            // Calculate the 1-year period ending on this date
+            const yearStart = new Date(currentDate);
+            yearStart.setFullYear(yearStart.getFullYear() - 1);
+            
+            const dataPoint = {
+                date: currentDate.toISOString().split('T')[0],
+                displayDate: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            };
+            
+            // Calculate for each request type
+            ['Update', 'Onboarding', 'Deprovision'].forEach(requestType => {
+                const recordsInWindow = validatedRecordsByType[requestType].filter(r => 
+                    r.createdDate >= yearStart && r.createdDate <= currentDate
+                );
+                
+                const total = recordsInWindow.length;
+                const failures = recordsInWindow.filter(r => r.failed).length;
+                const failurePercentage = total > 0 ? ((failures / total) * 100).toFixed(1) : '0.0';
+                
+                const fieldPrefix = requestType.toLowerCase();
+                dataPoint[`${fieldPrefix}Total`] = total;
+                dataPoint[`${fieldPrefix}Failures`] = failures;
+                dataPoint[`${fieldPrefix}FailurePercentage`] = failurePercentage;
+            });
+            
+            // Legacy fields for backwards compatibility (Update data)
+            dataPoint.total = dataPoint.updateTotal;
+            dataPoint.failures = dataPoint.updateFailures;
+            dataPoint.failurePercentage = dataPoint.updateFailurePercentage;
+            
+            trendData.push(dataPoint);
+            
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        console.log(`✅ Trend data calculated: ${trendData.length} daily data points with rolling annual percentages for Update, Onboarding, and Deprovision`);
+        
+        // Debug: Log first data point to verify structure
+        if (trendData.length > 0) {
+            console.log('📊 First data point sample:', JSON.stringify(trendData[0], null, 2));
+        }
+        
+        return {
+            success: true,
+            trendData: trendData,
+            period: {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0]
+            }
+        };
+        
+    } catch (err) {
+        console.error('❌ Error fetching validation failure trend:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            trendData: []
         };
     }
 }
@@ -1065,5 +1258,6 @@ module.exports = {
     getIdentity,
     testConnection,
     getWeeklyRequestTypeAnalytics,
-    getPSRequestsWithRemovals
+    getPSRequestsWithRemovals,
+    getValidationFailureTrend
 };

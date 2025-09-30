@@ -844,15 +844,89 @@ app.get('/auth/salesforce/callback', async (req, res) => {
     }
 });
 
-// Analytics API - Technical Team Request counts by type (last 6 months)
-app.get('/api/analytics/request-types-week', async (req, res) => {
+// Validation failure trend API - Update requests over 3 months
+app.get('/api/analytics/validation-trend', async (req, res) => {
     try {
-        // Calculate date range for last 6 months
+        const validationEngine = require('./validation-engine');
+        
+        // Calculate 3-month period
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setMonth(endDate.getMonth() - 6);
+        startDate.setMonth(endDate.getMonth() - 3);
         
-        const result = await salesforce.getWeeklyRequestTypeAnalytics(startDate, endDate);
+        // Get enabled validation rules
+        let enabledRuleIds;
+        const clientEnabledRules = req.query.enabledRules;
+        
+        if (clientEnabledRules) {
+            try {
+                enabledRuleIds = typeof clientEnabledRules === 'string' ? 
+                    JSON.parse(clientEnabledRules) : clientEnabledRules;
+            } catch (error) {
+                console.warn('⚠️ Error parsing enabled rules for trend, using defaults:', error);
+                enabledRuleIds = null;
+            }
+        } else {
+            enabledRuleIds = validationEngine.getEnabledValidationRules().map(r => r.id);
+        }
+        
+        const result = await salesforce.getValidationFailureTrend(startDate, endDate, enabledRuleIds);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                trendData: result.trendData,
+                period: result.period,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                trendData: [],
+                timestamp: new Date().toISOString()
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching validation trend:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: err.message,
+            trendData: []
+        });
+    }
+});
+
+// Analytics API - Technical Team Request counts by type (last 1 year)
+app.get('/api/analytics/request-types-week', async (req, res) => {
+    try {
+        const validationEngine = require('./validation-engine');
+        
+        // Calculate date range for last 1 year
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(endDate.getFullYear() - 1);
+        
+        // Get enabled validation rules from query params or localStorage pattern
+        let enabledRuleIds;
+        const clientEnabledRules = req.query.enabledRules;
+        
+        if (clientEnabledRules) {
+            try {
+                enabledRuleIds = typeof clientEnabledRules === 'string' ? 
+                    JSON.parse(clientEnabledRules) : clientEnabledRules;
+                console.log(`🔧 Analytics using ${enabledRuleIds.length} client-specified enabled validation rules`);
+            } catch (error) {
+                console.warn('⚠️ Error parsing client enabled rules for analytics, using defaults:', error);
+                enabledRuleIds = null;
+            }
+        } else {
+            // Use default enabled rules if not specified
+            enabledRuleIds = validationEngine.getEnabledValidationRules().map(r => r.id);
+            console.log(`🔧 Analytics using ${enabledRuleIds.length} default enabled validation rules`);
+        }
+        
+        const result = await salesforce.getWeeklyRequestTypeAnalytics(startDate, endDate, enabledRuleIds);
         
         if (result.success) {
             res.json({
