@@ -57,7 +57,8 @@ const jql = `assignee in ("${assigneeName}") AND (issuetype = "Initiative" OR is
 
 #### API Endpoint
 ```
-GET https://{site}.atlassian.net/rest/api/3/search?jql={query}&maxResults=100
+POST https://{site}.atlassian.net/rest/api/3/search/jql
+Body: { "jql": "{query}", "maxResults": 100 }
 ```
 
 ### Features

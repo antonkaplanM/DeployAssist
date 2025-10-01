@@ -199,8 +199,8 @@ async function fetchJiraInitiativesDirectAPI(assigneeName = null) {
         
         console.log(`🔍 Using JQL query: ${jqlQuery}`);
         
-        // Prepare the API request
-        const searchUrl = `${ATLASSIAN_CONFIG.siteUrl}/rest/api/3/search`;
+        // Prepare the API request - Updated to use /rest/api/3/search/jql endpoint
+        const searchUrl = `${ATLASSIAN_CONFIG.siteUrl}/rest/api/3/search/jql`;
         const requestBody = {
             jql: jqlQuery,
             fields: ['summary', 'description', 'status', 'issuetype', 'priority', 'created', 'updated', 'project', 'assignee'],
