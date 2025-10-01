@@ -2948,20 +2948,42 @@ function renderProductItems(items, groupType, validationResult = null) {
             rule.ruleId === 'entitlement-date-overlap-validation' && rule.status === 'FAIL'
         );
         
-        if (!dateOverlapRule?.details?.overlaps) return false;
+        if (dateOverlapRule?.details?.overlaps) {
+            // Map UI groupType to validation engine type
+            const validationGroupType = {
+                'models': 'model',
+                'apps': 'app', 
+                'data': 'data'
+            }[groupType] || groupType;
+            
+            // Check if this item is involved in any overlaps
+            const hasOverlap = dateOverlapRule.details.overlaps.some(overlap => 
+                (overlap.entitlement1.type === validationGroupType && overlap.entitlement1.index === (index + 1)) ||
+                (overlap.entitlement2.type === validationGroupType && overlap.entitlement2.index === (index + 1))
+            );
+            
+            if (hasOverlap) return true;
+        }
         
-        // Map UI groupType to validation engine type
-        const validationGroupType = {
-            'models': 'model',
-            'apps': 'app', 
-            'data': 'data'
-        }[groupType] || groupType;
+        // Look for app quantity validation failures (only for apps groupType)
+        if (groupType === 'apps') {
+            const appQuantityRule = validationResult.ruleResults?.find(rule => 
+                rule.ruleId === 'app-quantity-validation' && rule.status === 'FAIL'
+            );
+            
+            if (appQuantityRule?.details?.failures && appQuantityRule.details.failures.length > 0) {
+                // Check if this specific app failed
+                const productCode = item.productCode || item.product_code || item.ProductCode;
+                const quantity = item.quantity;
+                
+                // An app fails if quantity !== 1 AND productCode !== "IC-DATABRIDGE"
+                if (quantity !== 1 && productCode !== "IC-DATABRIDGE") {
+                    return true;
+                }
+            }
+        }
         
-        // Check if this item is involved in any overlaps
-        return dateOverlapRule.details.overlaps.some(overlap => 
-            (overlap.entitlement1.type === validationGroupType && overlap.entitlement1.index === (index + 1)) ||
-            (overlap.entitlement2.type === validationGroupType && overlap.entitlement2.index === (index + 1))
-        );
+        return false;
     };
 
     // Determine columns per group type
@@ -3848,7 +3870,19 @@ function getProductsDisplay(request, validationResult = null) {
         
         if (modelEntitlements.length > 0) {
             const hasModelOverlap = modelEntitlements.some((_, index) => hasOverlapIssue('model', index));
-            const outliveClass = hasModelOverlap ? 'ring-2 ring-red-400' : '';
+            
+            // Check for model count validation failures
+            let hasModelCountFailure = false;
+            if (validationResult && validationResult.overallStatus === 'FAIL') {
+                const modelCountRule = validationResult.ruleResults.find(rule => 
+                    rule.ruleId === 'model-count-validation' && rule.status === 'FAIL'
+                );
+                if (modelCountRule) {
+                    hasModelCountFailure = true;
+                }
+            }
+            
+            const outliveClass = (hasModelOverlap || hasModelCountFailure) ? 'ring-2 ring-red-400' : '';
             
             groups.push(`
                 <button 
@@ -3887,7 +3921,19 @@ function getProductsDisplay(request, validationResult = null) {
         
         if (appEntitlements.length > 0) {
             const hasAppOverlap = appEntitlements.some((_, index) => hasOverlapIssue('app', index));
-            const outliveClass = hasAppOverlap ? 'ring-2 ring-red-400' : '';
+            
+            // Check for app quantity validation failures
+            let hasAppQuantityFailure = false;
+            if (validationResult && validationResult.overallStatus === 'FAIL') {
+                const appQuantityRule = validationResult.ruleResults.find(rule => 
+                    rule.ruleId === 'app-quantity-validation' && rule.status === 'FAIL'
+                );
+                if (appQuantityRule) {
+                    hasAppQuantityFailure = true;
+                }
+            }
+            
+            const outliveClass = (hasAppOverlap || hasAppQuantityFailure) ? 'ring-2 ring-red-400' : '';
             
             groups.push(`
                 <button 
