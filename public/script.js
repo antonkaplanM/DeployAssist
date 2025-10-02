@@ -21,6 +21,7 @@ const navProvisioning = document.getElementById('nav-provisioning');
 const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
 const navValidationRules = document.getElementById('nav-validation-rules');
 const navExpiration = document.getElementById('nav-expiration');
+const navCustomerProducts = document.getElementById('nav-customer-products');
 const navHelp = document.getElementById('nav-help');
 const navSettings = document.getElementById('nav-settings');
 const pageDashboard = document.getElementById('page-dashboard');
@@ -172,6 +173,12 @@ function showPage(pageId) {
             expirationNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             expirationNav.classList.remove('text-muted-foreground');
         }
+    } else if (pageId === 'customer-products') {
+        const customerProductsNav = document.getElementById('nav-customer-products');
+        if (customerProductsNav) {
+            customerProductsNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            customerProductsNav.classList.remove('text-muted-foreground');
+        }
     }
     
     // Trigger page-specific initialization
@@ -191,6 +198,8 @@ function showPage(pageId) {
         initializeValidationRules();
     } else if (pageId === 'expiration') {
         initializeExpiration();
+    } else if (pageId === 'customer-products') {
+        initializeCustomerProducts();
     } else if (pageId === 'roadmap') {
         initializeRoadmap();
     } else if (pageId === 'settings') {
@@ -1533,6 +1542,7 @@ navProvisioning.addEventListener('click', handleProvisioningNavigation);
 navProvisioningMonitor.addEventListener('click', handleNavigation);
 navValidationRules.addEventListener('click', handleNavigation);
 navExpiration.addEventListener('click', handleNavigation);
+navCustomerProducts.addEventListener('click', handleNavigation);
 navHelp.addEventListener('click', handleNavigation);
 navSettings.addEventListener('click', handleNavigation);
 
@@ -4401,6 +4411,12 @@ function showPage(pageId) {
             expirationNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             expirationNav.classList.remove('text-muted-foreground');
         }
+    } else if (pageId === 'customer-products') {
+        const customerProductsNav = document.getElementById('nav-customer-products');
+        if (customerProductsNav) {
+            customerProductsNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            customerProductsNav.classList.remove('text-muted-foreground');
+        }
     }
     
     // Trigger page-specific initialization
@@ -4412,6 +4428,8 @@ function showPage(pageId) {
         initializeValidationRules();
     } else if (pageId === 'expiration') {
         initializeExpiration();
+    } else if (pageId === 'customer-products') {
+        initializeCustomerProducts();
     } else if (pageId === 'roadmap') {
         initializeRoadmap();
     } else if (pageId === 'settings') {
@@ -6137,6 +6155,469 @@ function viewAccountHistoryForRequest(accountName, requestName = null) {
 }
 
 console.log('Account History navigation helpers loaded');
+
+// ==================== CUSTOMER PRODUCTS PAGE ====================
+
+// State management for customer products
+let currentCustomerProducts = {
+    accountName: null,
+    data: null
+};
+
+// Initialize Customer Products page
+function initializeCustomerProducts() {
+    console.log('Initializing Customer Products page...');
+    
+    const searchInput = document.getElementById('customer-products-search');
+    const searchBtn = document.getElementById('customer-products-search-btn');
+    const clearBtn = document.getElementById('customer-products-clear');
+    const viewHistoryBtn = document.getElementById('customer-products-view-history');
+    
+    // Search button click
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            const accountName = searchInput?.value?.trim();
+            if (accountName) {
+                loadCustomerProducts(accountName);
+            }
+        });
+    }
+    
+    // Enter key on search input
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const accountName = searchInput.value.trim();
+                if (accountName) {
+                    loadCustomerProducts(accountName);
+                }
+            }
+        });
+        
+        // Simple autocomplete - reuse account search from provisioning
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value.trim();
+            
+            if (searchTerm.length < 2) {
+                hideCustomerProductsSearchResults();
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                await fetchCustomerProductsSearchSuggestions(searchTerm);
+            }, 300);
+        });
+    }
+    
+    // Clear button
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            clearCustomerProducts();
+        });
+    }
+    
+    // View Account History button
+    if (viewHistoryBtn) {
+        viewHistoryBtn.addEventListener('click', () => {
+            if (currentCustomerProducts.accountName) {
+                navigateToAccountHistory(currentCustomerProducts.accountName);
+            }
+        });
+    }
+    
+    console.log('✅ Customer Products page initialized');
+}
+
+// Fetch search suggestions for accounts
+async function fetchCustomerProductsSearchSuggestions(searchTerm) {
+    try {
+        const response = await fetch(`/api/provisioning/search?search=${encodeURIComponent(searchTerm)}&limit=10`);
+        const data = await response.json();
+        
+        if (data.success && data.results) {
+            displayCustomerProductsSearchResults(data.results.accounts || []);
+        }
+    } catch (error) {
+        console.error('Error fetching search suggestions:', error);
+    }
+}
+
+// Display search results dropdown
+function displayCustomerProductsSearchResults(accounts) {
+    const resultsContainer = document.getElementById('customer-products-search-results');
+    
+    if (!resultsContainer) return;
+    
+    if (accounts.length === 0) {
+        resultsContainer.classList.add('hidden');
+        return;
+    }
+    
+    resultsContainer.innerHTML = accounts.map(account => `
+        <button 
+            class="w-full text-left px-4 py-2 hover:bg-accent border-b last:border-b-0"
+            onclick="selectCustomerProductsAccount('${account.name.replace(/'/g, "\\'")}')"
+        >
+            <div class="font-medium">${escapeHtml(account.name)}</div>
+            <div class="text-xs text-muted-foreground">${account.requestCount} request${account.requestCount !== 1 ? 's' : ''}</div>
+        </button>
+    `).join('');
+    
+    resultsContainer.classList.remove('hidden');
+    
+    // Hide dropdown when clicking outside
+    const hideHandler = (e) => {
+        if (!resultsContainer.contains(e.target) && e.target.id !== 'customer-products-search') {
+            hideCustomerProductsSearchResults();
+            document.removeEventListener('click', hideHandler);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', hideHandler), 100);
+}
+
+// Hide search results dropdown
+function hideCustomerProductsSearchResults() {
+    const resultsContainer = document.getElementById('customer-products-search-results');
+    if (resultsContainer) {
+        resultsContainer.classList.add('hidden');
+    }
+}
+
+// Select account from search results
+function selectCustomerProductsAccount(accountName) {
+    const searchInput = document.getElementById('customer-products-search');
+    if (searchInput) {
+        searchInput.value = accountName;
+    }
+    hideCustomerProductsSearchResults();
+    loadCustomerProducts(accountName);
+}
+
+// Load customer products for an account
+async function loadCustomerProducts(accountName) {
+    try {
+        console.log(`Loading customer products for: ${accountName}`);
+        
+        showCustomerProductsLoading(true);
+        hideCustomerProductsSearchResults();
+        
+        const response = await fetch(`/api/customer-products?account=${encodeURIComponent(accountName)}`);
+        const data = await response.json();
+        
+        showCustomerProductsLoading(false);
+        
+        if (data.success) {
+            currentCustomerProducts = {
+                accountName: accountName,
+                data: data
+            };
+            
+            renderCustomerProducts(data);
+        } else {
+            console.error('Error loading customer products:', data.error);
+            showCustomerProductsError(data.error);
+        }
+    } catch (error) {
+        console.error('Error loading customer products:', error);
+        showCustomerProductsLoading(false);
+        showCustomerProductsError('Failed to load customer products');
+    }
+}
+
+// Show/hide loading state
+function showCustomerProductsLoading(isLoading) {
+    const loadingSpinner = document.getElementById('customer-products-search-loading');
+    const searchBtn = document.getElementById('customer-products-search-btn');
+    
+    if (loadingSpinner) {
+        loadingSpinner.classList.toggle('hidden', !isLoading);
+    }
+    if (searchBtn) {
+        searchBtn.disabled = isLoading;
+    }
+}
+
+// Render customer products data
+function renderCustomerProducts(data) {
+    // Hide empty state, show summary and regions
+    const emptyState = document.getElementById('customer-products-empty-state');
+    const summary = document.getElementById('customer-products-summary');
+    const regionsSection = document.getElementById('customer-products-regions');
+    
+    if (emptyState) emptyState.classList.add('hidden');
+    if (summary) summary.classList.remove('hidden');
+    if (regionsSection) regionsSection.classList.remove('hidden');
+    
+    // Update account name
+    const accountNameEl = document.getElementById('customer-products-account-name');
+    if (accountNameEl) {
+        accountNameEl.textContent = data.account;
+    }
+    
+    // Update product count
+    const countEl = document.getElementById('customer-products-count');
+    if (countEl) {
+        const total = data.summary.totalActive || 0;
+        countEl.textContent = `${total} active product${total !== 1 ? 's' : ''}`;
+    }
+    
+    // Update last updated
+    const lastUpdatedEl = document.getElementById('customer-products-last-updated');
+    if (lastUpdatedEl && data.lastUpdated) {
+        const date = new Date(data.lastUpdated.date);
+        lastUpdatedEl.textContent = `${data.lastUpdated.psRecordId} on ${date.toLocaleDateString()}`;
+    }
+    
+    // Update category counts
+    document.getElementById('customer-products-models-count').textContent = data.summary.byCategory.models || 0;
+    document.getElementById('customer-products-data-count').textContent = data.summary.byCategory.data || 0;
+    document.getElementById('customer-products-apps-count').textContent = data.summary.byCategory.apps || 0;
+    
+    // Render regions
+    renderCustomerProductsRegions(data.productsByRegion);
+}
+
+// Render products by region
+function renderCustomerProductsRegions(productsByRegion) {
+    const regionsSection = document.getElementById('customer-products-regions');
+    if (!regionsSection) return;
+    
+    const regions = Object.keys(productsByRegion).sort();
+    
+    if (regions.length === 0) {
+        regionsSection.innerHTML = `
+            <div class="rounded-lg border bg-card p-8 text-center">
+                <p class="text-muted-foreground">No active products found for this account</p>
+            </div>
+        `;
+        return;
+    }
+    
+    regionsSection.innerHTML = regions.map((region, index) => {
+        const products = productsByRegion[region];
+        const totalProducts = (products.models?.length || 0) + (products.data?.length || 0) + (products.apps?.length || 0);
+        const regionId = `region-${index}`;
+        
+        return `
+            <div class="mb-6 rounded-lg border bg-card text-card-foreground shadow-sm">
+                <button 
+                    class="w-full p-6 border-b bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                    onclick="toggleRegionSection('${regionId}')"
+                >
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <svg class="h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                                <path d="M2 12h20"></path>
+                            </svg>
+                            <h2 class="text-xl font-semibold">${escapeHtml(region)}</h2>
+                            <span class="text-sm text-muted-foreground">${totalProducts} product${totalProducts !== 1 ? 's' : ''}</span>
+                        </div>
+                        <svg class="h-6 w-6 text-muted-foreground transition-transform" id="${regionId}-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                </button>
+                <div id="${regionId}" class="p-6 space-y-6">
+                    ${renderCategorySection('Models', products.models || [], 'blue')}
+                    ${renderCategorySection('Data', products.data || [], 'green')}
+                    ${renderCategorySection('Apps', products.apps || [], 'purple')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Render category section (Models, Data, Apps)
+function renderCategorySection(categoryName, products, color) {
+    if (products.length === 0) return '';
+    
+    const categoryId = `category-${categoryName.toLowerCase()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    return `
+        <div class="category-section">
+            <button 
+                class="flex w-full items-center justify-between p-3 rounded-lg bg-${color}-50 border border-${color}-200 hover:bg-${color}-100 transition-colors"
+                onclick="toggleCustomerProductsCategory('${categoryId}')"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-${color}-700" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" x2="12" y1="22.08" y2="12"></line>
+                    </svg>
+                    <span class="font-semibold text-${color}-900">${categoryName}</span>
+                    <span class="text-sm text-${color}-700">(${products.length})</span>
+                </div>
+                <svg class="h-5 w-5 text-${color}-700 transition-transform" id="${categoryId}-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <div id="${categoryId}" class="mt-3 space-y-2">
+                ${products.map(product => renderProductCard(product, color)).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Render individual product card
+function renderProductCard(product, color) {
+    const statusIcon = getStatusIcon(product.status);
+    const statusColor = getStatusColor(product.status);
+    
+    return `
+        <div class="rounded-lg border bg-card p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        ${statusIcon}
+                        <h4 class="font-semibold">${escapeHtml(product.productName)}</h4>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                        Product Code: <span class="font-mono">${escapeHtml(product.productCode)}</span>
+                    </p>
+                    ${product.packageName ? `
+                        <p class="text-sm text-muted-foreground">
+                            Package: <span class="font-mono">${escapeHtml(product.packageName)}</span>
+                        </p>
+                    ` : ''}
+                    <p class="text-sm text-muted-foreground mt-2">
+                        Active: ${product.startDate} → ${product.endDate}
+                    </p>
+                    <p class="text-sm">
+                        <span class="font-medium ${statusColor}">${product.status === 'active' ? '🟢 Active' : product.status === 'expiring-soon' ? '🟡 Expiring Soon' : '🟠 Expiring'}</span>
+                        <span class="text-muted-foreground"> (${product.daysRemaining} days remaining)</span>
+                    </p>
+                    <div class="mt-2">
+                        <p class="text-xs text-muted-foreground">Source PS Records:</p>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            ${product.sourcePSRecords.map(psId => `
+                                <button 
+                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary hover:bg-secondary/80 transition-colors"
+                                    onclick="navigateToProvisioningWithExactMatch('${psId}')"
+                                >
+                                    ${psId}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Get status icon
+function getStatusIcon(status) {
+    switch (status) {
+        case 'active':
+            return '<svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+        case 'expiring-soon':
+            return '<svg class="h-4 w-4 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+        case 'expiring':
+            return '<svg class="h-4 w-4 text-orange-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+        default:
+            return '';
+    }
+}
+
+// Get status color class
+function getStatusColor(status) {
+    switch (status) {
+        case 'active':
+            return 'text-green-700';
+        case 'expiring-soon':
+            return 'text-yellow-700';
+        case 'expiring':
+            return 'text-orange-700';
+        default:
+            return 'text-muted-foreground';
+    }
+}
+
+// Toggle category section
+function toggleCustomerProductsCategory(categoryId) {
+    const section = document.getElementById(categoryId);
+    const chevron = document.getElementById(`${categoryId}-chevron`);
+    
+    if (section && chevron) {
+        section.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+    }
+}
+
+// Toggle region section
+function toggleRegionSection(regionId) {
+    const section = document.getElementById(regionId);
+    const chevron = document.getElementById(`${regionId}-chevron`);
+    
+    if (section && chevron) {
+        section.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+    }
+}
+
+// Navigate to Provisioning Monitor with exact match
+function navigateToProvisioningWithExactMatch(psId) {
+    exactMatchFilter = psId;
+    showPage('provisioning');
+    
+    // Set search input
+    const searchInput = document.getElementById('provisioning-search');
+    if (searchInput) {
+        searchInput.value = psId;
+    }
+    
+    // Refresh provisioning data
+    setTimeout(() => {
+        refreshProvisioningMonitor();
+    }, 100);
+}
+
+// Clear customer products view
+function clearCustomerProducts() {
+    currentCustomerProducts = {
+        accountName: null,
+        data: null
+    };
+    
+    // Clear search input
+    const searchInput = document.getElementById('customer-products-search');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    // Hide summary and regions, show empty state
+    const emptyState = document.getElementById('customer-products-empty-state');
+    const summary = document.getElementById('customer-products-summary');
+    const regionsSection = document.getElementById('customer-products-regions');
+    
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (summary) summary.classList.add('hidden');
+    if (regionsSection) {
+        regionsSection.classList.add('hidden');
+        regionsSection.innerHTML = '';
+    }
+}
+
+// Show error message
+function showCustomerProductsError(message) {
+    const regionsSection = document.getElementById('customer-products-regions');
+    if (regionsSection) {
+        regionsSection.innerHTML = `
+            <div class="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                <p class="text-red-900 font-semibold">Error Loading Customer Products</p>
+                <p class="text-red-700 text-sm mt-2">${escapeHtml(message)}</p>
+            </div>
+        `;
+        regionsSection.classList.remove('hidden');
+    }
+}
+
+console.log('Customer Products page functions loaded');
 
 // ===== EXPIRATION MONITOR FUNCTIONS =====
 

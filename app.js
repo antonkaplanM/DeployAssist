@@ -1594,6 +1594,68 @@ app.get('/api/expiration/status', async (req, res) => {
     }
 });
 
+// ===== CUSTOMER PRODUCTS API ENDPOINTS =====
+
+// Get aggregated customer products for an account
+app.get('/api/customer-products', async (req, res) => {
+    try {
+        console.log('📦 Customer products API called...', req.query);
+        
+        const accountName = req.query.account;
+        
+        if (!accountName) {
+            return res.status(400).json({
+                success: false,
+                error: 'Account name is required'
+            });
+        }
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            console.log('⚠️ No valid Salesforce authentication - returning empty data');
+            return res.json({
+                success: true,
+                account: accountName,
+                summary: {
+                    totalActive: 0,
+                    byCategory: { models: 0, data: 0, apps: 0 }
+                },
+                productsByRegion: {},
+                lastUpdated: null,
+                psRecordsAnalyzed: 0,
+                note: 'No Salesforce authentication - please configure in Settings',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        console.log(`🔍 Fetching customer products for: ${accountName}`);
+        
+        const result = await salesforce.getCustomerProducts(accountName);
+        
+        if (result.success) {
+            res.json({
+                ...result,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                account: accountName,
+                productsByRegion: {}
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching customer products:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch customer products',
+            productsByRegion: {}
+        });
+    }
+});
+
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);

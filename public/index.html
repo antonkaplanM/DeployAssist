@@ -170,6 +170,18 @@
                                     </svg>
                                     Expiration Monitor
                                 </button>
+                                <button 
+                                    id="nav-customer-products" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                    Customer Products
+                                </button>
                             </div>
                         </div>
                         
@@ -1069,6 +1081,132 @@
                             <button id="refresh-empty-btn" class="mt-4 inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                                 Run Analysis
                             </button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Customer Products Page -->
+            <div id="page-customer-products" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Customer Products</h1>
+                        </div>
+                        <p class="text-muted-foreground">View all active products for a customer organized by geographic region</p>
+                    </header>
+
+                    <!-- Search Section -->
+                    <section class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-lg font-semibold mb-4">Search for Customer</h2>
+                            <p class="text-sm text-muted-foreground mb-4">
+                                Enter an account name to view all active products
+                            </p>
+                            
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.3-4.3"></path>
+                                    </svg>
+                                    <input
+                                        type="text"
+                                        id="customer-products-search"
+                                        placeholder="Enter customer account name..."
+                                        class="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                    <div id="customer-products-search-loading" class="absolute right-3 top-3 hidden">
+                                        <svg class="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <!-- Search Results Dropdown -->
+                                <div id="customer-products-search-results" class="hidden absolute mt-12 rounded-lg border bg-card shadow-lg max-h-64 overflow-y-auto z-10 w-auto min-w-64">
+                                    <!-- Dynamic search results will appear here -->
+                                </div>
+                                <button id="customer-products-search-btn" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                    Search
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Account Summary (Hidden by default, shown after selection) -->
+                    <section id="customer-products-summary" class="mb-8 hidden">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h2 class="text-xl font-semibold" id="customer-products-account-name">Account Name</h2>
+                                    <p class="text-sm text-muted-foreground mt-1">
+                                        <span id="customer-products-count">0 active products</span>
+                                        <span class="mx-2">•</span>
+                                        Last updated: <span id="customer-products-last-updated">-</span>
+                                    </p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="customer-products-view-history" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        View Account History
+                                    </button>
+                                    <button id="customer-products-clear" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" x2="6" y1="6" y2="18"></line>
+                                            <line x1="6" x2="18" y1="6" y2="18"></line>
+                                        </svg>
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="text-sm font-medium text-blue-900">Models</div>
+                                    <div class="text-2xl font-bold text-blue-700" id="customer-products-models-count">0</div>
+                                </div>
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div class="text-sm font-medium text-green-900">Data</div>
+                                    <div class="text-2xl font-bold text-green-700" id="customer-products-data-count">0</div>
+                                </div>
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <div class="text-sm font-medium text-purple-900">Apps</div>
+                                    <div class="text-2xl font-bold text-purple-700" id="customer-products-apps-count">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Products by Region (Hidden by default, shown after selection) -->
+                    <section id="customer-products-regions" class="hidden">
+                        <!-- Dynamic region cards will be populated here -->
+                    </section>
+
+                    <!-- Empty State (Shown by default) -->
+                    <section id="customer-products-empty-state">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-12">
+                            <div class="flex flex-col items-center gap-4 text-center">
+                                <svg class="h-16 w-16 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.3-4.3"></path>
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Search for a Customer</h3>
+                                    <p class="text-sm text-muted-foreground mt-2">
+                                        Enter a customer account name above to view all active products organized by region
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </section>
                 </div>
