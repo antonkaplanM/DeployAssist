@@ -1345,6 +1345,255 @@ app.get('/api/validation/errors', async (req, res) => {
 // Note: Duplicate provisioning API endpoints removed to avoid conflicts
 // The main provisioning endpoints are defined earlier in the file
 
+// ===== EXPIRATION MONITOR API ENDPOINTS =====
+
+// Get expiration monitor data
+app.get('/api/expiration/monitor', async (req, res) => {
+    try {
+        console.log('⏰ Expiration monitor API called...', req.query);
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            console.log('⚠️ No valid Salesforce authentication - returning empty data');
+            return res.json({
+                success: true,
+                summary: {
+                    totalExpiring: 0,
+                    atRisk: 0,
+                    extended: 0,
+                    accountsAffected: 0
+                },
+                expirations: [],
+                lastAnalyzed: null,
+                note: 'No Salesforce authentication - please configure in Settings',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        const expirationWindow = parseInt(req.query.expirationWindow) || 30;
+        const showExtended = req.query.showExtended !== 'false'; // Default true
+        
+        console.log(`📊 Fetching expiration data (window: ${expirationWindow} days, showExtended: ${showExtended})`);
+        
+        // Get summary from database
+        const summaryResult = await db.getExpirationSummary(expirationWindow);
+        
+        // Get expiring entitlements grouped by account/PS record
+        const result = await salesforce.getExpiringEntitlements(expirationWindow, showExtended);
+        
+        // Get last analysis status
+        const analysisStatus = await db.getLatestAnalysisStatus();
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                summary: {
+                    totalExpiring: parseInt(summaryResult.summary?.total_expiring || 0),
+                    atRisk: parseInt(summaryResult.summary?.at_risk || 0),
+                    extended: parseInt(summaryResult.summary?.extended || 0),
+                    accountsAffected: parseInt(summaryResult.summary?.accounts_affected || 0)
+                },
+                expirations: result.expirations,
+                expirationWindow: expirationWindow,
+                lastAnalyzed: analysisStatus.hasAnalysis ? analysisStatus.analysis.analysis_completed : null,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                summary: {
+                    totalExpiring: 0,
+                    atRisk: 0,
+                    extended: 0,
+                    accountsAffected: 0
+                },
+                expirations: []
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching expiration monitor data:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch expiration monitor data',
+            expirations: [],
+            summary: {
+                totalExpiring: 0,
+                atRisk: 0,
+                extended: 0,
+                accountsAffected: 0
+            }
+        });
+    }
+});
+
+// Refresh expiration analysis (background job)
+app.post('/api/expiration/refresh', async (req, res) => {
+    try {
+        console.log('🔄 Expiration analysis refresh requested...');
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            return res.status(401).json({
+                success: false,
+                error: 'No Salesforce authentication available'
+            });
+        }
+        
+        const lookbackYears = parseInt(req.body.lookbackYears) || 5;
+        const expirationWindow = parseInt(req.body.expirationWindow) || 30;
+        
+        const analysisStarted = new Date();
+        
+        // Start analysis (this could take a while with 5 years of data)
+        console.log(`⏰ Starting expiration analysis: ${lookbackYears} year lookback, ${expirationWindow} day window`);
+        
+        const result = await salesforce.analyzeExpirations(lookbackYears, expirationWindow);
+        
+        const analysisCompleted = new Date();
+        
+        if (result.success) {
+            // Clear existing cache
+            await db.clearExpirationCache();
+            
+            // Insert new expiration data into database
+            await db.insertExpirationData(result.expirationData);
+            
+            // Log the analysis
+            await db.logExpirationAnalysis({
+                analysisStarted: analysisStarted,
+                analysisCompleted: analysisCompleted,
+                recordsAnalyzed: result.recordsAnalyzed,
+                entitlementsProcessed: result.entitlementsProcessed,
+                expirationsFound: result.expirationsFound,
+                extensionsFound: result.extensionsFound,
+                lookbackYears: lookbackYears,
+                status: 'completed'
+            });
+            
+            console.log(`✅ Expiration analysis complete: ${result.expirationsFound} expirations found`);
+            
+            res.json({
+                success: true,
+                message: 'Expiration analysis completed successfully',
+                summary: {
+                    recordsAnalyzed: result.recordsAnalyzed,
+                    entitlementsProcessed: result.entitlementsProcessed,
+                    expirationsFound: result.expirationsFound,
+                    extensionsFound: result.extensionsFound,
+                    lookbackYears: lookbackYears,
+                    expirationWindow: expirationWindow,
+                    duration: (analysisCompleted - analysisStarted) / 1000 // seconds
+                },
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            // Log the failed analysis
+            await db.logExpirationAnalysis({
+                analysisStarted: analysisStarted,
+                analysisCompleted: new Date(),
+                recordsAnalyzed: 0,
+                entitlementsProcessed: 0,
+                expirationsFound: 0,
+                extensionsFound: 0,
+                lookbackYears: lookbackYears,
+                status: 'failed',
+                errorMessage: result.error
+            });
+            
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                message: 'Expiration analysis failed'
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error refreshing expiration analysis:', err.message);
+        
+        // Log the error
+        await db.logExpirationAnalysis({
+            analysisStarted: new Date(),
+            analysisCompleted: new Date(),
+            recordsAnalyzed: 0,
+            entitlementsProcessed: 0,
+            expirationsFound: 0,
+            extensionsFound: 0,
+            lookbackYears: req.body.lookbackYears || 5,
+            status: 'failed',
+            errorMessage: err.message
+        });
+        
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to refresh expiration analysis',
+            details: err.message
+        });
+    }
+});
+
+// Get expiration analysis status
+app.get('/api/expiration/status', async (req, res) => {
+    try {
+        const analysisStatus = await db.getLatestAnalysisStatus();
+        
+        if (!analysisStatus.success) {
+            return res.status(500).json({
+                success: false,
+                error: analysisStatus.error
+            });
+        }
+        
+        if (!analysisStatus.hasAnalysis) {
+            return res.json({
+                success: true,
+                hasAnalysis: false,
+                message: 'No analysis has been run yet. Click "Refresh" to analyze expirations.'
+            });
+        }
+        
+        const analysis = analysisStatus.analysis;
+        
+        // Calculate age of analysis
+        const analysisAge = new Date() - new Date(analysis.analysis_completed);
+        const ageHours = Math.floor(analysisAge / (1000 * 60 * 60));
+        const ageMinutes = Math.floor((analysisAge % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let ageText;
+        if (ageHours > 24) {
+            const ageDays = Math.floor(ageHours / 24);
+            ageText = `${ageDays} day${ageDays !== 1 ? 's' : ''} ago`;
+        } else if (ageHours > 0) {
+            ageText = `${ageHours} hour${ageHours !== 1 ? 's' : ''} ago`;
+        } else {
+            ageText = `${ageMinutes} minute${ageMinutes !== 1 ? 's' : ''} ago`;
+        }
+        
+        res.json({
+            success: true,
+            hasAnalysis: true,
+            analysis: {
+                lastRun: analysis.analysis_completed,
+                lastRunAgo: ageText,
+                status: analysis.status,
+                recordsAnalyzed: analysis.records_analyzed,
+                entitlementsProcessed: analysis.entitlements_processed,
+                expirationsFound: analysis.expirations_found,
+                extensionsFound: analysis.extensions_found,
+                lookbackYears: analysis.lookback_years,
+                errorMessage: analysis.error_message
+            }
+        });
+    } catch (err) {
+        console.error('❌ Error getting expiration status:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get expiration status'
+        });
+    }
+});
+
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);

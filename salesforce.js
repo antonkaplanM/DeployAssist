@@ -1240,6 +1240,314 @@ function findRemovedProducts(previousPayload, currentPayload) {
     };
 }
 
+// ===== EXPIRATION MONITOR FUNCTIONS =====
+
+/**
+ * Analyze product entitlement expirations across PS records
+ * @param {number} lookbackYears - Years to look back for PS records (default: 5)
+ * @param {number} expirationWindow - Days in the future to check for expirations
+ * @returns {Promise<Object>} Analysis result
+ */
+async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
+    try {
+        const conn = await getConnection();
+        if (!conn) {
+            throw new Error('No Salesforce connection available');
+        }
+
+        console.log(`⏰ Starting expiration analysis: ${lookbackYears} year lookback, ${expirationWindow} day window`);
+        
+        // Calculate lookback date
+        const lookbackDate = new Date();
+        lookbackDate.setFullYear(lookbackDate.getFullYear() - lookbackYears);
+        const lookbackDateStr = lookbackDate.toISOString().split('T')[0];
+        
+        // Query all PS records from lookback period
+        const query = `
+            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+                   Status__c, CreatedDate, Payload_Data__c
+            FROM Prof_Services_Request__c
+            WHERE CreatedDate >= ${lookbackDateStr}T00:00:00Z
+            AND Name LIKE 'PS-%'
+            ORDER BY Account__c, CreatedDate ASC
+            LIMIT 10000
+        `;
+        
+        console.log(`🔍 Querying PS records from ${lookbackDateStr}...`);
+        const result = await conn.query(query);
+        const records = result.records || [];
+        
+        console.log(`✅ Retrieved ${records.length} PS records for analysis`);
+        
+        // Extract all entitlements from all records
+        const allEntitlements = [];
+        let entitlementsProcessed = 0;
+        
+        for (const record of records) {
+            const parsedPayload = parsePayloadData(record.Payload_Data__c);
+            
+            if (parsedPayload.hasDetails) {
+                // Process model entitlements
+                if (parsedPayload.modelEntitlements) {
+                    parsedPayload.modelEntitlements.forEach(ent => {
+                        const endDate = ent.endDate || ent.end_date || ent.EndDate;
+                        if (endDate) {
+                            allEntitlements.push({
+                                accountId: record.Account__c,
+                                accountName: record.Account_Site__c || record.Account__c,
+                                psRecordId: record.Id,
+                                psRecordName: record.Name,
+                                productCode: ent.productCode || ent.code || ent.id,
+                                productName: ent.name || ent.productName || ent.productCode,
+                                productType: 'Model',
+                                endDate: endDate,
+                                createdDate: record.CreatedDate
+                            });
+                            entitlementsProcessed++;
+                        }
+                    });
+                }
+                
+                // Process data entitlements
+                if (parsedPayload.dataEntitlements) {
+                    parsedPayload.dataEntitlements.forEach(ent => {
+                        const endDate = ent.endDate || ent.end_date || ent.EndDate;
+                        if (endDate) {
+                            allEntitlements.push({
+                                accountId: record.Account__c,
+                                accountName: record.Account_Site__c || record.Account__c,
+                                psRecordId: record.Id,
+                                psRecordName: record.Name,
+                                productCode: ent.productCode || ent.code || ent.id || ent.name,
+                                productName: ent.name || ent.productName,
+                                productType: 'Data',
+                                endDate: endDate,
+                                createdDate: record.CreatedDate
+                            });
+                            entitlementsProcessed++;
+                        }
+                    });
+                }
+                
+                // Process app entitlements
+                if (parsedPayload.appEntitlements) {
+                    parsedPayload.appEntitlements.forEach(ent => {
+                        const endDate = ent.endDate || ent.end_date || ent.EndDate;
+                        if (endDate) {
+                            allEntitlements.push({
+                                accountId: record.Account__c,
+                                accountName: record.Account_Site__c || record.Account__c,
+                                psRecordId: record.Id,
+                                psRecordName: record.Name,
+                                productCode: ent.productCode || ent.code || ent.id || ent.name,
+                                productName: ent.name || ent.productName,
+                                productType: 'App',
+                                endDate: endDate,
+                                createdDate: record.CreatedDate
+                            });
+                            entitlementsProcessed++;
+                        }
+                    });
+                }
+            }
+        }
+        
+        console.log(`📦 Extracted ${entitlementsProcessed} entitlements with end dates`);
+        
+        // Group entitlements by account for extension detection
+        const byAccount = new Map();
+        allEntitlements.forEach(ent => {
+            if (!byAccount.has(ent.accountId)) {
+                byAccount.set(ent.accountId, []);
+            }
+            byAccount.get(ent.accountId).push(ent);
+        });
+        
+        console.log(`🏢 Processing ${byAccount.size} unique accounts for extension detection`);
+        
+        // Detect expirations and extensions
+        const expiringItems = [];
+        let extensionsFound = 0;
+        const today = new Date();
+        const expirationThreshold = new Date();
+        expirationThreshold.setDate(expirationThreshold.getDate() + expirationWindow);
+        
+        for (const [accountId, accountEntitlements] of byAccount) {
+            // Group by product code within account
+            const byProductCode = new Map();
+            accountEntitlements.forEach(ent => {
+                if (!byProductCode.has(ent.productCode)) {
+                    byProductCode.set(ent.productCode, []);
+                }
+                byProductCode.get(ent.productCode).push(ent);
+            });
+            
+            // For each product code, check for expirations and extensions
+            for (const [productCode, entitlements] of byProductCode) {
+                // Sort by end date
+                entitlements.sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
+                
+                for (let i = 0; i < entitlements.length; i++) {
+                    const current = entitlements[i];
+                    const currentEndDate = new Date(current.endDate);
+                    
+                    // Check if this entitlement is expiring within the window
+                    if (currentEndDate >= today && currentEndDate <= expirationThreshold) {
+                        // Calculate days until expiry
+                        const daysUntilExpiry = Math.ceil((currentEndDate - today) / (1000 * 60 * 60 * 24));
+                        
+                        // Look for extensions (same product code, later end date, different PS record)
+                        const extension = entitlements.find(e => 
+                            e.psRecordId !== current.psRecordId &&
+                            new Date(e.endDate) > currentEndDate
+                        );
+                        
+                        if (extension) {
+                            extensionsFound++;
+                        }
+                        
+                        expiringItems.push({
+                            accountId: current.accountId,
+                            accountName: current.accountName,
+                            psRecordId: current.psRecordId,
+                            psRecordName: current.psRecordName,
+                            productCode: current.productCode,
+                            productName: current.productName,
+                            productType: current.productType,
+                            endDate: current.endDate,
+                            daysUntilExpiry: daysUntilExpiry,
+                            isExtended: !!extension,
+                            extendingPsRecordId: extension?.psRecordId || null,
+                            extendingPsRecordName: extension?.psRecordName || null,
+                            extendingEndDate: extension?.endDate || null
+                        });
+                    }
+                }
+            }
+        }
+        
+        console.log(`✅ Analysis complete: ${expiringItems.length} expirations found, ${extensionsFound} extensions detected`);
+        
+        return {
+            success: true,
+            recordsAnalyzed: records.length,
+            entitlementsProcessed: entitlementsProcessed,
+            expirationsFound: expiringItems.length,
+            extensionsFound: extensionsFound,
+            expirationData: expiringItems,
+            lookbackYears: lookbackYears,
+            expirationWindow: expirationWindow
+        };
+        
+    } catch (err) {
+        console.error('❌ Error analyzing expirations:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            expirationData: []
+        };
+    }
+}
+
+/**
+ * Get expiring entitlements grouped by account and PS record
+ * @param {number} expirationWindow - Days in the future to check
+ * @param {boolean} showExtended - Whether to include extended items
+ * @returns {Promise<Object>} Grouped expiration data
+ */
+async function getExpiringEntitlements(expirationWindow = 30, showExtended = true) {
+    try {
+        const db = require('./database');
+        
+        // Get expiration data from cache
+        const result = await db.getExpirationData({
+            expirationWindow: expirationWindow,
+            showExtended: showExtended
+        });
+        
+        if (!result.success || !result.data) {
+            return {
+                success: false,
+                error: result.error || 'Failed to get expiration data',
+                expirations: []
+            };
+        }
+        
+        // Group by account and PS record
+        const grouped = new Map();
+        
+        result.data.forEach(item => {
+            const key = `${item.account_id}|${item.ps_record_id}`;
+            
+            if (!grouped.has(key)) {
+                grouped.set(key, {
+                    account: {
+                        id: item.account_id,
+                        name: item.account_name
+                    },
+                    psRecord: {
+                        id: item.ps_record_id,
+                        name: item.ps_record_name
+                    },
+                    expiringProducts: {
+                        models: [],
+                        data: [],
+                        apps: []
+                    },
+                    earliestExpiry: item.end_date,
+                    status: 'extended' // Default to extended, will be updated if any at-risk found
+                });
+            }
+            
+            const group = grouped.get(key);
+            
+            // Add product to appropriate category
+            const product = {
+                productCode: item.product_code,
+                productName: item.product_name,
+                endDate: item.end_date,
+                daysUntilExpiry: item.days_until_expiry,
+                isExtended: item.is_extended,
+                extendingPsRecordId: item.extending_ps_record_id,
+                extendingPsRecordName: item.extending_ps_record_name,
+                extendingEndDate: item.extending_end_date
+            };
+            
+            if (item.product_type === 'Model') {
+                group.expiringProducts.models.push(product);
+            } else if (item.product_type === 'Data') {
+                group.expiringProducts.data.push(product);
+            } else if (item.product_type === 'App') {
+                group.expiringProducts.apps.push(product);
+            }
+            
+            // Update earliest expiry
+            if (new Date(item.end_date) < new Date(group.earliestExpiry)) {
+                group.earliestExpiry = item.end_date;
+            }
+            
+            // Update status - if ANY product is not extended, mark entire group as at-risk
+            if (!item.is_extended) {
+                group.status = 'at-risk';
+            }
+        });
+        
+        return {
+            success: true,
+            expirations: Array.from(grouped.values()),
+            totalCount: grouped.size
+        };
+        
+    } catch (err) {
+        console.error('❌ Error getting expiring entitlements:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            expirations: []
+        };
+    }
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -1259,5 +1567,8 @@ module.exports = {
     testConnection,
     getWeeklyRequestTypeAnalytics,
     getPSRequestsWithRemovals,
-    getValidationFailureTrend
+    getValidationFailureTrend,
+    // Expiration monitor functions
+    analyzeExpirations,
+    getExpiringEntitlements
 };

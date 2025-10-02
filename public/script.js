@@ -20,6 +20,7 @@ const navRoadmap = document.getElementById('nav-roadmap');
 const navProvisioning = document.getElementById('nav-provisioning');
 const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
 const navValidationRules = document.getElementById('nav-validation-rules');
+const navExpiration = document.getElementById('nav-expiration');
 const navHelp = document.getElementById('nav-help');
 const navSettings = document.getElementById('nav-settings');
 const pageDashboard = document.getElementById('page-dashboard');
@@ -134,7 +135,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'validation-rules') {
+    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -165,6 +166,12 @@ function showPage(pageId) {
             validationRulesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             validationRulesNav.classList.remove('text-muted-foreground');
         }
+    } else if (pageId === 'expiration') {
+        const expirationNav = document.getElementById('nav-expiration');
+        if (expirationNav) {
+            expirationNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            expirationNav.classList.remove('text-muted-foreground');
+        }
     }
     
     // Trigger page-specific initialization
@@ -182,6 +189,8 @@ function showPage(pageId) {
         initializeProvisioning();
     } else if (pageId === 'validation-rules') {
         initializeValidationRules();
+    } else if (pageId === 'expiration') {
+        initializeExpiration();
     } else if (pageId === 'roadmap') {
         initializeRoadmap();
     } else if (pageId === 'settings') {
@@ -1384,8 +1393,10 @@ function handleNavigation(event) {
 
 // Update timestamp on page load
 function updateTimestamp() {
-    const now = new Date();
-    timestampElement.textContent = `Last updated: ${now.toLocaleString()}`;
+    if (timestampElement) {
+        const now = new Date();
+        timestampElement.textContent = `Last updated: ${now.toLocaleString()}`;
+    }
 }
 
 // Fetch greeting from API
@@ -1521,6 +1532,7 @@ navRoadmap.addEventListener('click', handleNavigation);
 navProvisioning.addEventListener('click', handleProvisioningNavigation);
 navProvisioningMonitor.addEventListener('click', handleNavigation);
 navValidationRules.addEventListener('click', handleNavigation);
+navExpiration.addEventListener('click', handleNavigation);
 navHelp.addEventListener('click', handleNavigation);
 navSettings.addEventListener('click', handleNavigation);
 
@@ -4352,7 +4364,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'validation-rules') {
+    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -4383,6 +4395,12 @@ function showPage(pageId) {
             validationRulesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             validationRulesNav.classList.remove('text-muted-foreground');
         }
+    } else if (pageId === 'expiration') {
+        const expirationNav = document.getElementById('nav-expiration');
+        if (expirationNav) {
+            expirationNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            expirationNav.classList.remove('text-muted-foreground');
+        }
     }
     
     // Trigger page-specific initialization
@@ -4392,6 +4410,8 @@ function showPage(pageId) {
         initializeProvisioning();
     } else if (pageId === 'validation-rules') {
         initializeValidationRules();
+    } else if (pageId === 'expiration') {
+        initializeExpiration();
     } else if (pageId === 'roadmap') {
         initializeRoadmap();
     } else if (pageId === 'settings') {
@@ -6117,3 +6137,528 @@ function viewAccountHistoryForRequest(accountName, requestName = null) {
 }
 
 console.log('Account History navigation helpers loaded');
+
+// ===== EXPIRATION MONITOR FUNCTIONS =====
+
+// Expiration Monitor state
+let expirationData = [];
+let expirationWindow = 30;
+let showExtended = true;
+
+// Initialize Expiration Monitor page
+async function initializeExpiration() {
+    console.log('[Expiration] ========================================');
+    console.log('[Expiration] initializeExpiration() called');
+    console.log('[Expiration] ========================================');
+    
+    try {
+        // Set up event listeners
+        console.log('[Expiration] Setting up event listeners...');
+        setupExpirationEventListeners();
+        
+        // Load expiration status
+        console.log('[Expiration] Loading status...');
+        await loadExpirationStatus();
+        
+        // Load expiration data
+        console.log('[Expiration] Loading data...');
+        await loadExpirationData();
+        
+        console.log('[Expiration] Initialization complete');
+    } catch (error) {
+        console.error('[Expiration] Error during initialization:', error);
+    }
+}
+
+// Set up event listeners for expiration monitor
+function setupExpirationEventListeners() {
+    const refreshBtn = document.getElementById('refresh-expiration-btn');
+    const refreshEmptyBtn = document.getElementById('refresh-empty-btn');
+    const windowSelect = document.getElementById('expiration-window-select');
+    const extendedCheckbox = document.getElementById('show-extended-checkbox');
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshExpirationAnalysis);
+    }
+    
+    if (refreshEmptyBtn) {
+        refreshEmptyBtn.addEventListener('click', refreshExpirationAnalysis);
+    }
+    
+    if (windowSelect) {
+        windowSelect.addEventListener('change', (e) => {
+            expirationWindow = parseInt(e.target.value);
+            loadExpirationData();
+        });
+    }
+    
+    if (extendedCheckbox) {
+        extendedCheckbox.addEventListener('change', (e) => {
+            showExtended = e.target.checked;
+            loadExpirationData();
+        });
+    }
+}
+
+// Load expiration analysis status
+async function loadExpirationStatus() {
+    try {
+        const response = await fetch('/api/expiration/status');
+        const data = await response.json();
+        
+        const lastAnalyzedEl = document.getElementById('expiration-last-analyzed');
+        if (lastAnalyzedEl) {
+            if (data.hasAnalysis) {
+                lastAnalyzedEl.textContent = `Last analyzed: ${data.analysis.lastRunAgo}`;
+            } else {
+                lastAnalyzedEl.textContent = 'Last analyzed: Never';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading expiration status:', error);
+    }
+}
+
+// Load expiration data from API
+async function loadExpirationData() {
+    console.log('[Expiration] loadExpirationData() called');
+    try {
+        const statusEl = document.getElementById('expiration-status');
+        console.log('[Expiration] Status element found:', !!statusEl);
+        if (statusEl) statusEl.textContent = 'Loading...';
+        
+        const params = new URLSearchParams({
+            expirationWindow: expirationWindow,
+            showExtended: showExtended
+        });
+        
+        console.log('[Expiration] Fetching data with params:', params.toString());
+        const response = await fetch(`/api/expiration/monitor?${params}`);
+        console.log('[Expiration] Response received:', response.status);
+        
+        const data = await response.json();
+        console.log('[Expiration] Data parsed:', { success: data.success, count: data.expirations?.length, summary: data.summary });
+        
+        if (data.success) {
+            expirationData = data.expirations || [];
+            console.log('[Expiration] Updating summary...');
+            updateExpirationSummary(data.summary);
+            
+            console.log('[Expiration] Rendering table with', expirationData.length, 'items...');
+            console.log('[Expiration] Sample item:', expirationData[0]);
+            renderExpirationTable();
+            
+            if (statusEl) {
+                statusEl.textContent = `Showing ${expirationData.length} account${expirationData.length !== 1 ? 's' : ''}`;
+            }
+            console.log('[Expiration] Load complete');
+        } else {
+            console.error('[Expiration] API returned error:', data.error);
+            if (statusEl) statusEl.textContent = 'Error loading data';
+        }
+    } catch (error) {
+        console.error('[Expiration] Exception in loadExpirationData:', error);
+        console.error('[Expiration] Stack:', error.stack);
+        const statusEl = document.getElementById('expiration-status');
+        if (statusEl) statusEl.textContent = 'Error: ' + error.message;
+    }
+}
+
+// Update summary cards
+function updateExpirationSummary(summary) {
+    document.getElementById('expiration-total').textContent = summary.totalExpiring || 0;
+    document.getElementById('expiration-at-risk').textContent = summary.atRisk || 0;
+    document.getElementById('expiration-extended').textContent = summary.extended || 0;
+    document.getElementById('expiration-accounts').textContent = summary.accountsAffected || 0;
+}
+
+// Render expiration table
+function renderExpirationTable() {
+    const tbody = document.getElementById('expiration-table-body');
+    const emptyState = document.getElementById('expiration-empty-state');
+    const tableSection = document.querySelector('#expiration-table-section > div:nth-child(2)');
+    
+    if (!tbody) return;
+    
+    // Clear existing rows
+    tbody.innerHTML = '';
+    
+    if (expirationData.length === 0) {
+        // Show empty state
+        if (tableSection) tableSection.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    // Hide empty state, show table
+    if (tableSection) tableSection.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+    
+    // Render rows
+    expirationData.forEach((item, index) => {
+        // Debug logging for first few items to verify status
+        if (index < 3) {
+            console.log(`[ExpirationTable] Item ${index} status:`, item.status, 'PS Record:', item.psRecord.name);
+        }
+        
+        const row = document.createElement('tr');
+        row.className = 'border-b transition-colors hover:bg-muted/50';
+        
+        // Account
+        const accountCell = document.createElement('td');
+        accountCell.className = 'p-4 align-middle';
+        accountCell.textContent = item.account.name || item.account.id;
+        row.appendChild(accountCell);
+        
+        // PS Record
+        const psRecordCell = document.createElement('td');
+        psRecordCell.className = 'p-4 align-middle';
+        psRecordCell.innerHTML = `<span class="font-mono text-sm">${item.psRecord.name}</span>`;
+        row.appendChild(psRecordCell);
+        
+        // Expiring Products
+        const productsCell = document.createElement('td');
+        productsCell.className = 'p-4 align-middle';
+        productsCell.innerHTML = getExpiringProductsBadges(item);
+        row.appendChild(productsCell);
+        
+        // Status
+        const statusCell = document.createElement('td');
+        statusCell.className = 'p-4 align-middle';
+        if (item.status === 'at-risk') {
+            statusCell.innerHTML = `
+                <span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-2 ring-red-600">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                        <path d="M12 9v4"></path>
+                        <path d="M12 17h.01"></path>
+                    </svg>
+                    At-Risk
+                </span>
+            `;
+        } else {
+            statusCell.innerHTML = `
+                <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-2 ring-green-600">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    Extended
+                </span>
+            `;
+        }
+        row.appendChild(statusCell);
+        
+        // Earliest Expiry
+        const expiryCell = document.createElement('td');
+        expiryCell.className = 'p-4 align-middle';
+        const expiryDate = new Date(item.earliestExpiry);
+        const daysUntil = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        expiryCell.innerHTML = `
+            <div class="text-sm">${expiryDate.toLocaleDateString()}</div>
+            <div class="text-xs text-muted-foreground">${daysUntil} day${daysUntil !== 1 ? 's' : ''}</div>
+        `;
+        row.appendChild(expiryCell);
+        
+        // Actions
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'p-4 align-middle';
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3';
+        detailsBtn.textContent = 'View Details';
+        detailsBtn.onclick = () => showExpirationDetails(item);
+        actionsCell.appendChild(detailsBtn);
+        row.appendChild(actionsCell);
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Get expiring products badges with red contour for at-risk categories
+function getExpiringProductsBadges(item) {
+    const badges = [];
+    const products = item.expiringProducts;
+    
+    // Models badge (blue when extended, red when at-risk)
+    if (products.models && products.models.length > 0) {
+        const hasAtRisk = products.models.some(p => !p.isExtended);
+        const badgeClass = hasAtRisk 
+            ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600' 
+            : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-600/20';
+        badges.push(`<span class="${badgeClass}">Models (${products.models.length})</span>`);
+    }
+    
+    // Data badge (green when extended, red when at-risk)
+    if (products.data && products.data.length > 0) {
+        const hasAtRisk = products.data.some(p => !p.isExtended);
+        const badgeClass = hasAtRisk 
+            ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600' 
+            : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-green-600/20';
+        badges.push(`<span class="${badgeClass}">Data (${products.data.length})</span>`);
+    }
+    
+    // Apps badge (purple when extended, red when at-risk)
+    if (products.apps && products.apps.length > 0) {
+        const hasAtRisk = products.apps.some(p => !p.isExtended);
+        const badgeClass = hasAtRisk 
+            ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600' 
+            : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-purple-50 text-purple-700 ring-1 ring-purple-600/20';
+        badges.push(`<span class="${badgeClass}">Apps (${products.apps.length})</span>`);
+    }
+    
+    return `<div class="flex flex-wrap gap-1">${badges.join(' ')}</div>`;
+}
+
+// Show expiration details modal
+function showExpirationDetails(item) {
+    if (!item) {
+        console.error('No item provided to showExpirationDetails');
+        return;
+    }
+    
+    // Debug logging
+    console.log('[ExpirationDetails] Item received:', item);
+    console.log('[ExpirationDetails] Expiring products:', item.expiringProducts);
+    
+    const products = item.expiringProducts;
+    const accountName = item.account.name;
+    const psRecordName = item.psRecord.name;
+    
+    let modalContent = `
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-lg font-semibold">Account: ${accountName}</h3>
+                <p class="text-sm text-muted-foreground">PS Record: ${psRecordName}</p>
+            </div>
+    `;
+    
+    let hasProducts = false;
+    
+    // Models
+    if (products.models && products.models.length > 0) {
+        hasProducts = true;
+        const hasAtRisk = products.models.some(p => !p.isExtended);
+        const headerClass = hasAtRisk 
+            ? 'text-lg font-semibold text-red-600 border-l-4 border-red-600 pl-3' 
+            : 'text-lg font-semibold text-blue-700 border-l-4 border-blue-600 pl-3';
+        const icon = hasAtRisk ? '🔴' : '🔵';
+        modalContent += `
+            <div>
+                <h4 class="${headerClass} mb-2">${icon} Models (${products.models.length} expiring)</h4>
+                <div class="space-y-2">
+                    ${products.models.map(p => renderExpiringProduct(p)).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Data
+    if (products.data && products.data.length > 0) {
+        hasProducts = true;
+        const hasAtRisk = products.data.some(p => !p.isExtended);
+        const headerClass = hasAtRisk 
+            ? 'text-lg font-semibold text-red-600 border-l-4 border-red-600 pl-3' 
+            : 'text-lg font-semibold text-green-700 border-l-4 border-green-600 pl-3';
+        const icon = hasAtRisk ? '🔴' : '🟢';
+        modalContent += `
+            <div>
+                <h4 class="${headerClass} mb-2">${icon} Data (${products.data.length} expiring)</h4>
+                <div class="space-y-2">
+                    ${products.data.map(p => renderExpiringProduct(p)).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Apps
+    if (products.apps && products.apps.length > 0) {
+        hasProducts = true;
+        const hasAtRisk = products.apps.some(p => !p.isExtended);
+        const headerClass = hasAtRisk 
+            ? 'text-lg font-semibold text-red-600 border-l-4 border-red-600 pl-3' 
+            : 'text-lg font-semibold text-purple-700 border-l-4 border-purple-600 pl-3';
+        const icon = hasAtRisk ? '🔴' : '🟣';
+        modalContent += `
+            <div>
+                <h4 class="${headerClass} mb-2">${icon} Apps (${products.apps.length} expiring)</h4>
+                <div class="space-y-2">
+                    ${products.apps.map(p => renderExpiringProduct(p)).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Show message if no products found
+    if (!hasProducts) {
+        modalContent += `
+            <div class="text-center py-8 text-muted-foreground">
+                <p>No expiring products found.</p>
+                <p class="text-sm mt-2">This may indicate a data structure issue.</p>
+            </div>
+        `;
+        console.warn('[ExpirationDetails] No products found in categories. Products object:', products);
+    }
+    
+    modalContent += '</div>';
+    
+    showModal(`Expiring Products - ${psRecordName}`, modalContent);
+}
+
+// Render individual expiring product
+function renderExpiringProduct(product) {
+    const bgClass = product.isExtended ? 'bg-green-50' : 'bg-red-50';
+    const textClass = product.isExtended ? 'text-green-700' : 'text-red-700';
+    const icon = product.isExtended ? '🟢' : '🔴';
+    
+    let html = `
+        <div class="${bgClass} rounded-lg p-3">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="font-semibold ${textClass}">${icon} ${product.productName || product.productCode}</p>
+                    <p class="text-sm text-muted-foreground">Code: ${product.productCode}</p>
+                    <p class="text-sm">End Date: ${new Date(product.endDate).toLocaleDateString()} (${product.daysUntilExpiry} day${product.daysUntilExpiry !== 1 ? 's' : ''})</p>
+                </div>
+    `;
+    
+    if (product.isExtended) {
+        html += `
+                <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                    ✓ Extended
+                </span>
+        `;
+    } else {
+        html += `
+                <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+                    ⚠️ At-Risk
+                </span>
+        `;
+    }
+    
+    html += '</div>';
+    
+    if (product.isExtended && product.extendingPsRecordName) {
+        html += `
+            <div class="mt-2 pt-2 border-t border-green-200">
+                <p class="text-sm text-green-700">
+                    ✓ Extended by <span class="font-mono">${product.extendingPsRecordName}</span> until ${new Date(product.extendingEndDate).toLocaleDateString()}
+                </p>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+// Refresh expiration analysis
+async function refreshExpirationAnalysis() {
+    const refreshBtn = document.getElementById('refresh-expiration-btn');
+    const refreshEmptyBtn = document.getElementById('refresh-empty-btn');
+    const statusEl = document.getElementById('expiration-status');
+    
+    const originalBtnText = refreshBtn ? refreshBtn.innerHTML : '';
+    const originalEmptyBtnText = refreshEmptyBtn ? refreshEmptyBtn.innerHTML : '';
+    
+    try {
+        // Update button states
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = `
+                <svg class="h-4 w-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                    <path d="M21 3v5h-5"></path>
+                </svg>
+                Analyzing...
+            `;
+        }
+        
+        if (refreshEmptyBtn) {
+            refreshEmptyBtn.disabled = true;
+            refreshEmptyBtn.textContent = 'Analyzing...';
+        }
+        
+        if (statusEl) statusEl.textContent = 'Running analysis...';
+        
+        const response = await fetch('/api/expiration/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lookbackYears: 5,
+                expirationWindow: expirationWindow
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Analysis complete:', data.summary.expirationsFound, 'expirations found');
+            alert(`Analysis complete!\n\n${data.summary.expirationsFound} expirations found\n${data.summary.extensionsFound} extensions detected\n${data.summary.recordsAnalyzed} records analyzed`);
+            
+            // Reload data and status
+            await loadExpirationStatus();
+            await loadExpirationData();
+        } else {
+            console.error('❌ Analysis failed:', data.error);
+            alert(`Analysis failed: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Error refreshing expiration analysis:', error);
+        alert('Failed to refresh expiration analysis. Check console for details.');
+    } finally {
+        // Restore button states
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = originalBtnText;
+        }
+        
+        if (refreshEmptyBtn) {
+            refreshEmptyBtn.disabled = false;
+            refreshEmptyBtn.textContent = originalEmptyBtnText;
+        }
+    }
+}
+
+console.log('Expiration Monitor module loaded');
+
+// ===== MODAL FUNCTIONS =====
+
+// Show modal with title and content
+function showModal(title, content) {
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
+    
+    if (modalOverlay && modalTitle && modalContent) {
+        modalTitle.textContent = title;
+        modalContent.innerHTML = content;
+        modalOverlay.style.display = 'flex';
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Close modal
+function closeModal(event) {
+    // If event is provided and target is not the overlay, don't close
+    if (event && event.target.id !== 'modal-overlay') {
+        return;
+    }
+    
+    const modalOverlay = document.getElementById('modal-overlay');
+    if (modalOverlay) {
+        modalOverlay.style.display = 'none';
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
