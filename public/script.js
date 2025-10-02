@@ -136,7 +136,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration') {
+    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration' || pageId === 'customer-products') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -4374,7 +4374,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration') {
+    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration' || pageId === 'customer-products') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }

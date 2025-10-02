@@ -1236,6 +1236,7 @@
                             <a href="#dashboard" class="text-primary hover:underline">📊 Dashboard</a>
                             <a href="#provisioning" class="text-primary hover:underline">🔧 Provisioning Monitor</a>
                             <a href="#expiration" class="text-primary hover:underline">⏰ Expiration Monitor</a>
+                            <a href="#customer-products-help" class="text-primary hover:underline">👥 Customer Products</a>
                             <a href="#validation" class="text-primary hover:underline">✅ Validation Rules</a>
                             <a href="#analytics" class="text-primary hover:underline">📈 Analytics & Account History</a>
                             <a href="#roadmap" class="text-primary hover:underline">🗺️ Roadmap</a>
@@ -1435,6 +1436,179 @@
                                         <li><strong>Monitor Button:</strong> Navigate to Provisioning Monitor to see the complete PS record</li>
                                         <li><strong>Exact Match:</strong> PS-89 shows only PS-89, not PS-898 or similar IDs</li>
                                         <li><strong>Seamless Integration:</strong> Switch between Expiration Monitor and Provisioning Monitor easily</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Customer Products -->
+                    <section id="customer-products-help" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                👥 Customer Products
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    View all active products for a customer account, organized by geographic region and product category.
+                                </p>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-blue-900 mb-2">What It Does:</h3>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-blue-800">
+                                        <li>Aggregates all Professional Services (PS) records for an account</li>
+                                        <li>Displays only <strong>active products</strong> (not expired)</li>
+                                        <li>Organizes products by geographic region (North America, Europe, etc.)</li>
+                                        <li>Groups products into categories: Models, Data, and Apps</li>
+                                        <li>Shows product expiration status and days remaining</li>
+                                        <li>Tracks which PS records contribute to each product</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Key Features:</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-primary mb-2">🌍 Region Organization</h4>
+                                            <p class="text-sm text-muted-foreground mb-2">
+                                                Products grouped by geographic region for easy regional comparison.
+                                            </p>
+                                            <ul class="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                                <li>Collapsible region sections</li>
+                                                <li>Shows product count per region</li>
+                                                <li>Click region header to expand/collapse</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-primary mb-2">📦 Category Breakdown</h4>
+                                            <p class="text-sm text-muted-foreground mb-2">
+                                                Three product categories with color coding for easy identification.
+                                            </p>
+                                            <ul class="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                                <li><span class="text-blue-600">●</span> Models (blue) - Analytical models</li>
+                                                <li><span class="text-green-600">●</span> Data (green) - Data feeds and datasets</li>
+                                                <li><span class="text-purple-600">●</span> Apps (purple) - Applications with PackageName</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-primary mb-2">🔄 Smart Merging</h4>
+                                            <p class="text-sm text-muted-foreground mb-2">
+                                                Same product across multiple PS records shown as one entry.
+                                            </p>
+                                            <ul class="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                                <li>Merges by region + category + product code</li>
+                                                <li>Shows earliest start and latest end dates</li>
+                                                <li>Lists all contributing PS records</li>
+                                                <li>Exception: DataBridge can have multiple instances</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-primary mb-2">⏱️ Status Indicators</h4>
+                                            <p class="text-sm text-muted-foreground mb-2">
+                                                Visual indicators show product expiration status.
+                                            </p>
+                                            <ul class="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                                <li>🟢 <strong>Active</strong>: > 90 days remaining</li>
+                                                <li>🟡 <strong>Expiring Soon</strong>: 30-90 days</li>
+                                                <li>🟠 <strong>Expiring</strong>: < 30 days</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-900 mb-2">How to Use:</h4>
+                                    <ol class="list-decimal list-inside space-y-2 text-sm text-green-800">
+                                        <li>Navigate to <strong>Provisioning → Customer Products</strong></li>
+                                        <li>Type customer account name in the search box</li>
+                                        <li>Select from autocomplete suggestions or press Enter</li>
+                                        <li>View products organized by region and category</li>
+                                        <li>Expand/collapse regions to focus on specific areas</li>
+                                        <li>Click PS record badges to view source in Provisioning Monitor</li>
+                                        <li>Use "View Account History" to see chronological changes</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Product Information Displayed:</h3>
+                                    <div class="bg-gray-50 border rounded-lg p-4">
+                                        <ul class="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                                            <li><strong>Product Name</strong> and <strong>Product Code</strong></li>
+                                            <li><strong>PackageName</strong> (for Apps - indicates resource allocation size)</li>
+                                            <li><strong>Geographic Region</strong> where product is deployed</li>
+                                            <li><strong>Active Period</strong>: Start date → End date</li>
+                                            <li><strong>Days Remaining</strong> until expiration</li>
+                                            <li><strong>Status</strong>: Active, Expiring Soon, or Expiring</li>
+                                            <li><strong>Source PS Records</strong>: Clickable badges linking to Provisioning Monitor</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-purple-900 mb-2">💡 Pro Tips:</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-purple-800">
+                                        <li><strong>Collapse Regions:</strong> Focus on one geographic area by collapsing others</li>
+                                        <li><strong>Category Breakdown:</strong> Each category (Models/Data/Apps) is also collapsible</li>
+                                        <li><strong>Quick Navigation:</strong> Click PS record IDs to jump to Provisioning Monitor</li>
+                                        <li><strong>Cross-Reference:</strong> Use "View Account History" to see how products changed over time</li>
+                                        <li><strong>Active Only:</strong> Page shows only active products (expired products are filtered out)</li>
+                                        <li><strong>Real-Time Data:</strong> Products are aggregated fresh from Salesforce on each search</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Integration with Other Features:</h3>
+                                    <div class="space-y-2">
+                                        <div class="bg-white border rounded-lg p-3">
+                                            <h4 class="font-medium text-sm mb-1">🔗 Account History</h4>
+                                            <p class="text-xs text-muted-foreground">
+                                                Click "View Account History" to see chronological changes to products. 
+                                                Customer Products shows current state; Account History shows timeline.
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="bg-white border rounded-lg p-3">
+                                            <h4 class="font-medium text-sm mb-1">🔗 Provisioning Monitor</h4>
+                                            <p class="text-xs text-muted-foreground">
+                                                Click any PS record badge to navigate to Provisioning Monitor with exact match. 
+                                                View complete payload data and request details.
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="bg-white border rounded-lg p-3">
+                                            <h4 class="font-medium text-sm mb-1">🔗 Expiration Monitor</h4>
+                                            <p class="text-xs text-muted-foreground">
+                                                Customer Products shows status for all active products. 
+                                                Expiration Monitor provides detailed analysis of products expiring within specific timeframes.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-amber-900 mb-2">⚠️ Important Notes:</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-amber-800">
+                                        <li><strong>Active Products Only:</strong> Expired products (endDate < today) are not shown</li>
+                                        <li><strong>Product Merging:</strong> Same product in multiple PS records appears as one entry with all sources listed</li>
+                                        <li><strong>DataBridge Exception:</strong> DataBridge products can appear multiple times in same region (each instance shown separately)</li>
+                                        <li><strong>Real-Time Aggregation:</strong> Data is fetched fresh from Salesforce each time (no caching)</li>
+                                        <li><strong>Region Required:</strong> Products must have a region value in payload data</li>
+                                        <li><strong>Salesforce Auth Required:</strong> Requires valid Salesforce authentication to load data</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <h3 class="font-semibold">Example Use Cases:</h3>
+                                    <ul class="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                                        <li><strong>Regional Review:</strong> See what products a customer has in each geographic region</li>
+                                        <li><strong>Product Audit:</strong> Verify customer has correct products across all regions</li>
+                                        <li><strong>Expiration Planning:</strong> Identify products expiring soon for renewal planning</li>
+                                        <li><strong>Cross-Region Comparison:</strong> Compare product deployments across different regions</li>
+                                        <li><strong>Resource Sizing:</strong> Check App PackageNames to verify resource allocations</li>
+                                        <li><strong>Change Tracking:</strong> Use with Account History to understand product evolution</li>
                                     </ul>
                                 </div>
                             </div>

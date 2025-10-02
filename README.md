@@ -71,6 +71,9 @@ The application includes:
 - **🚀 Navigation Sidebar**: Left-side navigation with Landing Page, Analytics, and Roadmap sections
 - **📊 Analytics Dashboard**: Dedicated analytics page with data table and statistics cards
 - **🗺️ Roadmap Page**: Jira integration for Kevin Yu's initiatives with search, filter, and export
+- **👥 Customer Products**: View all active products for customers organized by region and category
+- **⏰ Expiration Monitor**: Track product entitlements expiring within configurable timeframes
+- **📈 Account History**: Chronological view of all Technical Team Requests for an account
 - **🌙 Dark Mode**: Toggle between light and dark themes
 - **✨ Enhanced UI**: Cards, buttons, and inputs follow shadcn/ui patterns
 - **♿ Better Accessibility**: Focus indicators and screen reader support
