@@ -23,7 +23,7 @@ A deployment assistant application built with Node.js and Express, featuring a m
    ```
 
 3. **Open in Browser**:
-   Navigate to [http://localhost:3000](http://localhost:3000)
+   Navigate to [http://localhost:8080](http://localhost:8080)
 
 ## Project Structure
 
@@ -43,7 +43,7 @@ deployment-assistant/
 - `GET /` - Serves the main HTML page
 - `GET /api/greeting?name=YourName` - Returns personalized greeting JSON
 - `POST /api/jira/initiatives` - Returns Jira initiatives data (currently mock data)
-- `GET /health` - Health check endpoint for Docker
+- `GET /health` - Health check endpoint
 
 ## Technologies Used
 
@@ -109,116 +109,6 @@ The application includes:
 - **Responsive Design**: Sidebar adapts to different screen sizes
 - **shadcn/ui Components**: Clean table and navigation components
 
-## Docker Deployment 🐳
-
-This application is fully containerized and ready for deployment with Docker Desktop.
-
-### Prerequisites
-
-- **Docker Desktop** installed and running
-- **Windows Containers** (default configuration)
-  - Ensure Docker Desktop is set to "Windows containers" mode
-  - Right-click Docker Desktop system tray icon
-  - Select "Switch to Windows containers..." if currently using Linux containers
-
-### Quick Start with Docker
-
-#### Option 1: Using Docker Compose (Recommended)
-
-```bash
-# Build and start the application
-docker-compose up --build
-
-# Run in detached mode (background)
-docker-compose up -d --build
-
-# Stop the application
-docker-compose down
-```
-
-#### Option 2: Using Docker Commands
-
-```bash
-# Build the image
-docker build -t deployment-assistant .
-
-# Run the container
-docker run -p 3000:3000 --name deployment-assistant-app deployment-assistant
-
-# Run in detached mode
-docker run -d -p 3000:3000 --name deployment-assistant-app deployment-assistant
-
-# Stop and remove container
-docker stop deployment-assistant-app
-docker rm deployment-assistant-app
-```
-
-### Docker Files Included
-
-- **`Dockerfile`** - Windows containers (default configuration)
-- **`Dockerfile.linux`** - Linux containers (alternative)
-- **`Dockerfile.windows`** - Alternative Windows Server Core image
-- **`docker-compose.yml`** - Easy deployment configuration
-- **`.dockerignore`** - Optimized build context
-
-### Docker Features
-
-- ✅ **Health Checks** - Automatic container health monitoring via `/health` endpoint
-- ✅ **Windows Containers** - Optimized for Windows Docker Desktop
-- ✅ **Multi-stage Build** - Efficient Node.js installation and setup
-- ✅ **Port Mapping** - Accessible on http://localhost:3000
-- ✅ **Auto Restart** - Container restarts automatically unless stopped
-- ✅ **Production Ready** - Environment variables and proper configuration
-
-### Troubleshooting
-
-**If you see "no matching manifest" errors:**
-1. Ensure Docker Desktop is set to **Windows containers** mode
-2. Alternatively, use the Linux Dockerfile:
-   ```bash
-   docker build -f Dockerfile.linux -t deployment-assistant .
-   ```
-
-**Alternative Windows Server Core image:**
-If you encounter issues with the Nano Server image, try the Server Core version:
-```bash
-docker build -f Dockerfile.windows -t deployment-assistant .
-```
-
-**Check container status:**
-```bash
-# View running containers
-docker ps
-
-# View all containers
-docker ps -a
-
-# View container logs
-docker logs deployment-assistant-app
-```
-
-### Production Deployment
-
-For production environments, consider:
-- Using a container orchestration platform (Kubernetes, Docker Swarm)
-- Setting up proper environment variables
-- Implementing proper logging and monitoring
-- Using a reverse proxy (nginx, traefik)
-
-### Container Configuration
-
-**Current Setup:**
-- **Base Image**: Windows Nano Server LTSC 2022
-- **Node.js Version**: 18.20.4
-- **Container Type**: Windows containers
-- **Health Monitoring**: Built-in health checks every 30 seconds
-
-**Available Endpoints:**
-- `http://localhost:3000` - Main application  
-- `http://localhost:3000/health` - Health check endpoint
-- `http://localhost:3000/api/greeting` - API endpoint
-- `http://localhost:3000/api/jira/initiatives` - Jira initiatives API (mock data)
-
 ## Jira Integration
 
 The Roadmap page includes integration with Jira to display Kevin Yu's initiatives. 
@@ -242,8 +132,6 @@ See `JIRA_INTEGRATION.md` for detailed setup instructions including:
 - MCP server configuration  
 - JQL query customization
 - Authentication troubleshooting
-
-Enjoy building with Node.js, shadcn/ui, and Docker on Windows! 🎉
 
 ## Testing
 
