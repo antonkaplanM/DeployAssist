@@ -2703,7 +2703,7 @@ function getProductsDisplay(request) {
         if (modelEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
                     data-request-id="${request.Id}"
                     data-group-type="models"
                     data-entitlements="${JSON.stringify(modelEntitlements).replace(/"/g, '&quot;')}"
@@ -2713,7 +2713,7 @@ function getProductsDisplay(request) {
                         <circle cx="21" cy="11" r="8"></circle>
                         <path d="M21 21l-4.35-4.35"></path>
                     </svg>
-                    <span class="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full text-xs font-medium">${modelEntitlements.length}</span>
+                    <span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs font-medium">${modelEntitlements.length}</span>
                     Models
                 </button>
             `);
@@ -2722,7 +2722,7 @@ function getProductsDisplay(request) {
         if (dataEntitlements.length > 0) {
             groups.push(`
                 <button 
-                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                    class="product-group-btn inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
                     data-request-id="${request.Id}"
                     data-group-type="data"
                     data-entitlements="${JSON.stringify(dataEntitlements).replace(/"/g, '&quot;')}"
@@ -2732,7 +2732,7 @@ function getProductsDisplay(request) {
                         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
                     </svg>
-                    <span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs font-medium">${dataEntitlements.length}</span>
+                    <span class="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full text-xs font-medium">${dataEntitlements.length}</span>
                     Data
                 </button>
             `);
@@ -2820,12 +2820,12 @@ function showProductModal(requestName, groupType, items, validationResult = null
     }[groupType] || 'Product Entitlements';
     
     const groupIcon = {
-        'models': `<svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        'models': `<svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 12l2 2 4-4"></path>
             <circle cx="21" cy="11" r="8"></circle>
             <path d="M21 21l-4.35-4.35"></path>
         </svg>`,
-        'data': `<svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        'data': `<svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
             <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
             <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
@@ -5218,14 +5218,14 @@ console.log('Navigation system loaded');
 // Render individual entitlement card
 function renderEntitlementCard(entitlement, index, groupType) {
     const colorClasses = {
-        'models': 'border-green-200 bg-green-50',
-        'data': 'border-blue-200 bg-blue-50',
+        'models': 'border-blue-200 bg-blue-50',
+        'data': 'border-green-200 bg-green-50',
         'apps': 'border-purple-200 bg-purple-50'
     };
     
     const headerColors = {
-        'models': 'text-green-800',
-        'data': 'text-blue-800', 
+        'models': 'text-blue-800',
+        'data': 'text-green-800', 
         'apps': 'text-purple-800'
     };
     
