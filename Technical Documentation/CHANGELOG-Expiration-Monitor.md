@@ -1,5 +1,49 @@
 # Expiration Monitor - Changelog
 
+## Version 1.2.0 - October 2, 2025
+
+### New Features
+- **Monitor Button in Actions Column**: Added quick navigation from Expiration Monitor to Provisioning Monitor
+  - New "Monitor" button alongside "View Details" in the Actions column
+  - Clicking the button navigates to Provisioning Monitor and automatically searches for the PS record
+  - Uses exact match filtering to show only the selected PS record
+  - Includes eye icon and "View in Provisioning Monitor" tooltip for clarity
+  - Seamless integration between expiration tracking and detailed provisioning view
+
+### UI Enhancements
+- **Actions Column Redesign**: Actions cell now displays both buttons in a flex container with gap spacing
+- **Consistent UX**: Follows the same pattern as Account History's "View in Provisioning Monitor" action
+- **Improved Navigation**: Users can quickly access full PS record details without manual searching
+
+### Backend
+- Added `viewExpirationInProvisioning()` function to handle navigation from expiration monitor
+- Reuses existing `viewPSRecordExact()` function for consistent exact-match filtering
+
+### Documentation
+- Updated `Expiration-Monitor-Feature.md` with:
+  - New feature in Features list
+  - Updated Daily Usage section with Monitor button instruction
+  - New "Recent Enhancements" section documenting the Monitor button
+- Updated Help page with:
+  - New key feature listing for Quick Navigation
+  - Added Monitor button to "How to Use" instructions
+  - New "Actions & Navigation" section explaining both action buttons
+  - Updated Best Practices with Monitor button usage
+
+### Testing
+- Added 4 new E2E tests in `expiration-monitor.spec.ts`:
+  - `should have Monitor button in actions column` - Verifies button presence and styling
+  - `should navigate to provisioning monitor when Monitor button clicked` - Tests navigation and search functionality
+  - `should have both View Details and Monitor buttons in each row` - Validates dual-button layout
+  - `should display Monitor button tooltip` - Confirms tooltip text
+
+### Migration Notes
+- No database changes required
+- No breaking changes to existing functionality
+- All previous features remain fully functional
+
+---
+
 ## Version 1.1.0 - October 2, 2025
 
 ### Bug Fixes
@@ -119,6 +163,14 @@
 ---
 
 ## Migration Notes
+
+### From 1.1.0 to 1.2.0
+No database migrations required. UI changes are backward compatible.
+
+**Recommended Actions:**
+1. Clear browser cache to ensure latest JavaScript/CSS
+2. Test the new Monitor button to verify navigation works correctly
+3. Verify tooltip displays properly on hover
 
 ### From 1.0.0 to 1.1.0
 No database migrations required. UI changes are backward compatible.

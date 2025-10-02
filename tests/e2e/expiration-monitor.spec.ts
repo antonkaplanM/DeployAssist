@@ -231,7 +231,93 @@ test.describe('Expiration Monitor', () => {
         // Should be on provisioning page
         await expect(page.locator('#page-provisioning')).toBeVisible();
     });
+
+    test('should have Monitor button in actions column', async ({ page }) => {
+        const table = page.locator('#expiration-table-body');
+        const hasRows = await table.locator('tr').count() > 0;
+        
+        if (hasRows) {
+            // Check for Monitor button
+            const monitorButtons = page.locator('button:has-text("Monitor")');
+            const monitorCount = await monitorButtons.count();
+            
+            // Should have at least one Monitor button
+            expect(monitorCount).toBeGreaterThan(0);
+            
+            // Verify button has eye icon
+            const firstMonitorBtn = monitorButtons.first();
+            await expect(firstMonitorBtn).toBeVisible();
+            
+            // Check button has proper styling
+            const classes = await firstMonitorBtn.getAttribute('class');
+            expect(classes).toContain('inline-flex');
+        }
+    });
+
+    test('should navigate to provisioning monitor when Monitor button clicked', async ({ page }) => {
+        const table = page.locator('#expiration-table-body');
+        const hasRows = await table.locator('tr').count() > 0;
+        
+        if (hasRows) {
+            // Get the PS record name from the first row
+            const firstRow = table.locator('tr').first();
+            const psRecordCell = firstRow.locator('td:nth-child(2)');
+            const psRecordName = await psRecordCell.textContent();
+            
+            // Click Monitor button
+            const monitorBtn = firstRow.locator('button:has-text("Monitor")');
+            await monitorBtn.click();
+            
+            // Wait for navigation to provisioning page
+            await page.waitForSelector('#page-provisioning', { state: 'visible', timeout: 5000 });
+            
+            // Should be on provisioning page
+            await expect(page.locator('#page-provisioning')).toBeVisible();
+            
+            // Wait for search to complete
+            await page.waitForTimeout(2000);
+            
+            // Search input should have PS record name
+            const searchInput = page.locator('#provisioning-search');
+            const searchValue = await searchInput.inputValue();
+            expect(searchValue).toContain(psRecordName?.trim() || '');
+        }
+    });
+
+    test('should have both View Details and Monitor buttons in each row', async ({ page }) => {
+        const table = page.locator('#expiration-table-body');
+        const hasRows = await table.locator('tr').count() > 0;
+        
+        if (hasRows) {
+            const firstRow = table.locator('tr').first();
+            
+            // Should have View Details button
+            await expect(firstRow.locator('button:has-text("View Details")')).toBeVisible();
+            
+            // Should have Monitor button
+            await expect(firstRow.locator('button:has-text("Monitor")')).toBeVisible();
+            
+            // Both buttons should be in the Actions column (last td)
+            const actionsCell = firstRow.locator('td:last-child');
+            const buttonsInActions = await actionsCell.locator('button').count();
+            expect(buttonsInActions).toBe(2);
+        }
+    });
+
+    test('should display Monitor button tooltip', async ({ page }) => {
+        const table = page.locator('#expiration-table-body');
+        const hasRows = await table.locator('tr').count() > 0;
+        
+        if (hasRows) {
+            const monitorBtn = page.locator('button:has-text("Monitor")').first();
+            
+            // Check title attribute
+            const title = await monitorBtn.getAttribute('title');
+            expect(title).toBe('View in Provisioning Monitor');
+        }
+    });
 });
+
 
 
 

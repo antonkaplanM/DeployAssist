@@ -11,6 +11,7 @@ The Expiration Monitor tracks product entitlements that are expiring within a co
 - ✅ Database caching for fast performance
 - ✅ Grouped by account and PS record
 - ✅ Detailed modal with product breakdown
+- ✅ Direct navigation to Provisioning Monitor for PS records
 
 ## Database Tables
 
@@ -178,7 +179,8 @@ The system identifies extensions by:
 1. View expiration data in the main table
 2. Use filters to adjust expiration window or hide extended items
 3. Click **"View Details"** to see product-by-product breakdown
-4. Look for 🔴 red indicators for at-risk categories
+4. Click **"Monitor"** button to view the PS record in Provisioning Monitor
+5. Look for 🔴 red indicators for at-risk categories
 
 ### Refresh Frequency
 - **Recommended:** Daily or weekly
@@ -291,11 +293,21 @@ The implementation includes comprehensive console logging:
 - `[ExpirationTable]` - Table rendering and status display
 - `[ExpirationDetails]` - Modal data population
 
+## Recent Enhancements
+
+### Navigation to Provisioning Monitor (October 2025)
+Added a **"Monitor"** button in the Actions column that allows users to:
+- Click to navigate directly from Expiration Monitor to Provisioning Monitor
+- Automatically search for and display the specific PS record
+- Use exact match filtering to show only the selected PS record
+- Seamlessly switch between expiration tracking and detailed provisioning view
+
+This enhancement provides quick access to full PS record details without manual searching.
+
 ## Future Enhancements
 - Email notifications for critical expirations
 - Export to CSV/Excel functionality
 - Scheduled automatic analysis (cron job)
-- Integration with Account History page
 - Trend analysis over time
 - Configurable grace periods for extensions
 - Bulk operations (e.g., mark as reviewed, add notes)

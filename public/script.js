@@ -6272,6 +6272,14 @@ function updateExpirationSummary(summary) {
     document.getElementById('expiration-accounts').textContent = summary.accountsAffected || 0;
 }
 
+// View PS record from expiration monitor in provisioning monitor
+function viewExpirationInProvisioning(recordId, recordName) {
+    console.log('Viewing PS record from expiration monitor:', recordName);
+    
+    // View the record with exact matching
+    viewPSRecordExact(recordId, recordName);
+}
+
 // Render expiration table
 function renderExpirationTable() {
     const tbody = document.getElementById('expiration-table-body');
@@ -6363,11 +6371,33 @@ function renderExpirationTable() {
         // Actions
         const actionsCell = document.createElement('td');
         actionsCell.className = 'p-4 align-middle';
+        
+        // Container for action buttons
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'flex gap-2';
+        
+        // View Details button
         const detailsBtn = document.createElement('button');
         detailsBtn.className = 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3';
         detailsBtn.textContent = 'View Details';
         detailsBtn.onclick = () => showExpirationDetails(item);
-        actionsCell.appendChild(detailsBtn);
+        actionsContainer.appendChild(detailsBtn);
+        
+        // Open in Monitor button
+        const monitorBtn = document.createElement('button');
+        monitorBtn.className = 'inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3';
+        monitorBtn.title = 'View in Provisioning Monitor';
+        monitorBtn.innerHTML = `
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Monitor</span>
+        `;
+        monitorBtn.onclick = () => viewExpirationInProvisioning(item.psRecord.id, item.psRecord.name);
+        actionsContainer.appendChild(monitorBtn);
+        
+        actionsCell.appendChild(actionsContainer);
         row.appendChild(actionsCell);
         
         tbody.appendChild(row);
