@@ -1473,7 +1473,7 @@ app.post('/api/expiration/refresh', async (req, res) => {
                 status: 'completed'
             });
             
-            console.log(`✅ Expiration analysis complete: ${result.expirationsFound} expirations found`);
+            console.log(`✅ Expiration analysis complete: ${result.expirationsFound} expirations found (${result.removedInSubsequentRecord || 0} filtered out)`);
             
             res.json({
                 success: true,
@@ -1483,6 +1483,7 @@ app.post('/api/expiration/refresh', async (req, res) => {
                     entitlementsProcessed: result.entitlementsProcessed,
                     expirationsFound: result.expirationsFound,
                     extensionsFound: result.extensionsFound,
+                    removedInSubsequentRecord: result.removedInSubsequentRecord || 0,
                     lookbackYears: lookbackYears,
                     expirationWindow: expirationWindow,
                     duration: (analysisCompleted - analysisStarted) / 1000 // seconds

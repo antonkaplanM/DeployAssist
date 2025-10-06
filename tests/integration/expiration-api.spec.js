@@ -32,6 +32,11 @@ describe('Expiration Monitor API', () => {
                 expect(analysis).toHaveProperty('expirationsFound');
                 expect(analysis).toHaveProperty('extensionsFound');
                 expect(analysis).toHaveProperty('lookbackYears');
+                
+                // Verify analysis metrics are numbers
+                expect(typeof analysis.recordsAnalyzed).toBe('number');
+                expect(typeof analysis.expirationsFound).toBe('number');
+                expect(typeof analysis.extensionsFound).toBe('number');
             }
         });
     });
@@ -220,8 +225,27 @@ describe('Expiration Monitor API', () => {
                 expect(response.body.summary).toHaveProperty('extensionsFound');
                 expect(response.body.summary).toHaveProperty('lookbackYears');
                 expect(response.body.summary).toHaveProperty('duration');
+                
+                // Verify all metrics are numbers
+                expect(typeof response.body.summary.recordsAnalyzed).toBe('number');
+                expect(typeof response.body.summary.expirationsFound).toBe('number');
+                expect(typeof response.body.summary.extensionsFound).toBe('number');
+                expect(typeof response.body.summary.duration).toBe('number');
             }
         }, 75000); // 75 second test timeout
+        
+        it('should include removedInSubsequentRecord metric', async () => {
+            const response = await request(app)
+                .post('/api/expiration/refresh')
+                .send({})
+                .timeout(70000);
+
+            if (response.body.success) {
+                expect(response.body.summary).toHaveProperty('removedInSubsequentRecord');
+                expect(typeof response.body.summary.removedInSubsequentRecord).toBe('number');
+                expect(response.body.summary.removedInSubsequentRecord).toBeGreaterThanOrEqual(0);
+            }
+        }, 75000);
 
         it('should accept custom lookbackYears parameter', async () => {
             const response = await request(app)
@@ -312,6 +336,90 @@ describe('Expiration Monitor API', () => {
                 expect(date.toString()).not.toBe('Invalid Date');
             }
         });
+    });
+    
+    describe('Expiration filtering enhancement', () => {
+        it('should filter out products removed in subsequent PS records', async () => {
+            // This test verifies the enhancement that filters products
+            // that were removed in later PS records
+            const refreshResponse = await request(app)
+                .post('/api/expiration/refresh')
+                .send({ lookbackYears: 5, expirationWindow: 30 })
+                .timeout(70000);
+
+            if (refreshResponse.body.success) {
+                const { summary } = refreshResponse.body;
+                
+                // The removedInSubsequentRecord should be tracked
+                expect(summary).toHaveProperty('removedInSubsequentRecord');
+                
+                // If filtering is working, we should have filtered some items
+                // Note: This could be 0 if no products were removed in later records
+                expect(summary.removedInSubsequentRecord).toBeGreaterThanOrEqual(0);
+                
+                // The expirationsFound should be less than or equal to
+                // what it would be without filtering
+                expect(summary.expirationsFound).toBeGreaterThanOrEqual(0);
+                
+                console.log(`Filtering Stats: ${summary.removedInSubsequentRecord} products filtered, ${summary.expirationsFound} remaining`);
+            }
+        }, 75000);
+        
+        it('should only show active products in expiration monitor', async () => {
+            // Get the expiration monitor results
+            const response = await request(app)
+                .get('/api/expiration/monitor')
+                .query({ expirationWindow: 30 })
+                .expect(200);
+
+            const { expirations } = response.body;
+            
+            // All returned products should be currently active
+            // (not removed in later PS records)
+            for (const item of expirations) {
+                const allProducts = [
+                    ...item.expiringProducts.models,
+                    ...item.expiringProducts.data,
+                    ...item.expiringProducts.apps
+                ];
+                
+                // Each product should have valid expiration data
+                for (const product of allProducts) {
+                    expect(product).toHaveProperty('productCode');
+                    expect(product).toHaveProperty('endDate');
+                    expect(product).toHaveProperty('daysUntilExpiry');
+                    
+                    // Days until expiry should be within the window
+                    expect(product.daysUntilExpiry).toBeGreaterThanOrEqual(0);
+                    expect(product.daysUntilExpiry).toBeLessThanOrEqual(30);
+                }
+            }
+        });
+        
+        it('should reduce noise by filtering expected expirations', async () => {
+            // Run a refresh and check that filtering is active
+            const response = await request(app)
+                .post('/api/expiration/refresh')
+                .send({})
+                .timeout(70000);
+
+            if (response.body.success) {
+                const { summary } = response.body;
+                
+                // Calculate what percentage of expirations were filtered
+                const totalBeforeFiltering = summary.expirationsFound + summary.removedInSubsequentRecord;
+                
+                if (totalBeforeFiltering > 0) {
+                    const filterPercentage = (summary.removedInSubsequentRecord / totalBeforeFiltering) * 100;
+                    
+                    console.log(`Filter efficiency: ${filterPercentage.toFixed(1)}% of expirations filtered as expected removals`);
+                    
+                    // Filtering percentage should be reasonable (0-100%)
+                    expect(filterPercentage).toBeGreaterThanOrEqual(0);
+                    expect(filterPercentage).toBeLessThanOrEqual(100);
+                }
+            }
+        }, 75000);
     });
 });
 

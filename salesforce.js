@@ -1355,6 +1355,53 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
         
         console.log(`📦 Extracted ${entitlementsProcessed} entitlements with end dates`);
         
+        // Build a map of PS records by account to track product presence
+        const psRecordsByAccount = new Map();
+        records.forEach(record => {
+            if (!psRecordsByAccount.has(record.Account__c)) {
+                psRecordsByAccount.set(record.Account__c, []);
+            }
+            
+            // Extract all product codes from this PS record
+            const parsedPayload = parsePayloadData(record.Payload_Data__c);
+            const productCodesInRecord = new Set();
+            
+            if (parsedPayload.hasDetails) {
+                if (parsedPayload.modelEntitlements) {
+                    parsedPayload.modelEntitlements.forEach(ent => {
+                        const code = ent.productCode || ent.code || ent.id;
+                        if (code) productCodesInRecord.add(code);
+                    });
+                }
+                if (parsedPayload.dataEntitlements) {
+                    parsedPayload.dataEntitlements.forEach(ent => {
+                        const code = ent.productCode || ent.code || ent.id || ent.name;
+                        if (code) productCodesInRecord.add(code);
+                    });
+                }
+                if (parsedPayload.appEntitlements) {
+                    parsedPayload.appEntitlements.forEach(ent => {
+                        const code = ent.productCode || ent.code || ent.id || ent.name;
+                        if (code) productCodesInRecord.add(code);
+                    });
+                }
+            }
+            
+            psRecordsByAccount.get(record.Account__c).push({
+                id: record.Id,
+                name: record.Name,
+                createdDate: new Date(record.CreatedDate),
+                productCodes: productCodesInRecord
+            });
+        });
+        
+        // Sort PS records by creation date for each account
+        psRecordsByAccount.forEach(records => {
+            records.sort((a, b) => a.createdDate - b.createdDate);
+        });
+        
+        console.log(`📋 Built PS record map for ${psRecordsByAccount.size} accounts`);
+        
         // Group entitlements by account for extension detection
         const byAccount = new Map();
         allEntitlements.forEach(ent => {
@@ -1369,11 +1416,15 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
         // Detect expirations and extensions
         const expiringItems = [];
         let extensionsFound = 0;
+        let removedInSubsequentRecord = 0;
         const today = new Date();
         const expirationThreshold = new Date();
         expirationThreshold.setDate(expirationThreshold.getDate() + expirationWindow);
         
         for (const [accountId, accountEntitlements] of byAccount) {
+            // Get PS records for this account
+            const accountPsRecords = psRecordsByAccount.get(accountId) || [];
+            
             // Group by product code within account
             const byProductCode = new Map();
             accountEntitlements.forEach(ent => {
@@ -1407,27 +1458,48 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
                             extensionsFound++;
                         }
                         
-                        expiringItems.push({
-                            accountId: current.accountId,
-                            accountName: current.accountName,
-                            psRecordId: current.psRecordId,
-                            psRecordName: current.psRecordName,
-                            productCode: current.productCode,
-                            productName: current.productName,
-                            productType: current.productType,
-                            endDate: current.endDate,
-                            daysUntilExpiry: daysUntilExpiry,
-                            isExtended: !!extension,
-                            extendingPsRecordId: extension?.psRecordId || null,
-                            extendingPsRecordName: extension?.psRecordName || null,
-                            extendingEndDate: extension?.endDate || null
-                        });
+                        // Check if this product was removed in a subsequent PS record
+                        const currentPsRecord = accountPsRecords.find(pr => pr.id === current.psRecordId);
+                        let wasRemovedInLaterRecord = false;
+                        
+                        if (currentPsRecord) {
+                            // Find any PS record created after this one
+                            const laterRecords = accountPsRecords.filter(pr => 
+                                pr.createdDate > currentPsRecord.createdDate &&
+                                !pr.productCodes.has(productCode)
+                            );
+                            
+                            // If there's a later record without this product, it was removed
+                            if (laterRecords.length > 0) {
+                                wasRemovedInLaterRecord = true;
+                                removedInSubsequentRecord++;
+                            }
+                        }
+                        
+                        // Only include if not removed in a subsequent record
+                        if (!wasRemovedInLaterRecord) {
+                            expiringItems.push({
+                                accountId: current.accountId,
+                                accountName: current.accountName,
+                                psRecordId: current.psRecordId,
+                                psRecordName: current.psRecordName,
+                                productCode: current.productCode,
+                                productName: current.productName,
+                                productType: current.productType,
+                                endDate: current.endDate,
+                                daysUntilExpiry: daysUntilExpiry,
+                                isExtended: !!extension,
+                                extendingPsRecordId: extension?.psRecordId || null,
+                                extendingPsRecordName: extension?.psRecordName || null,
+                                extendingEndDate: extension?.endDate || null
+                            });
+                        }
                     }
                 }
             }
         }
         
-        console.log(`✅ Analysis complete: ${expiringItems.length} expirations found, ${extensionsFound} extensions detected`);
+        console.log(`✅ Analysis complete: ${expiringItems.length} expirations found, ${extensionsFound} extensions detected, ${removedInSubsequentRecord} filtered (removed in subsequent records)`);
         
         return {
             success: true,
@@ -1435,6 +1507,7 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
             entitlementsProcessed: entitlementsProcessed,
             expirationsFound: expiringItems.length,
             extensionsFound: extensionsFound,
+            removedInSubsequentRecord: removedInSubsequentRecord,
             expirationData: expiringItems,
             lookbackYears: lookbackYears,
             expirationWindow: expirationWindow
