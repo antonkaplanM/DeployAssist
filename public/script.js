@@ -4949,7 +4949,7 @@ function displayRemovalsResults(data) {
         `;
         
         // Display list of removals
-        removalsList.innerHTML = requests.map(item => {
+        const renderRemovalCard = (item) => {
             const { currentRequest, previousRequest, removals } = item;
             const removedItems = [
                 ...removals.removedModels.map(m => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mr-1 mb-1">Model: ${m.productCode}</span>`),
@@ -5011,7 +5011,32 @@ function displayRemovalsResults(data) {
                     </div>
                 </div>
             `;
-        }).join('');
+        };
+        
+        // Show only the first record, rest are collapsible
+        const firstRecord = renderRemovalCard(requests[0]);
+        const remainingRecords = requests.slice(1);
+        
+        if (remainingRecords.length > 0) {
+            removalsList.innerHTML = `
+                ${firstRecord}
+                <div id="removals-additional" class="space-y-2 hidden">
+                    ${remainingRecords.map(item => renderRemovalCard(item)).join('')}
+                </div>
+                <button 
+                    id="removals-expand-btn"
+                    onclick="toggleRemovalsExpand()"
+                    class="w-full inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
+                    <svg id="removals-expand-icon" class="h-4 w-4 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6"></path>
+                    </svg>
+                    <span id="removals-expand-text">Show ${remainingRecords.length} more record${remainingRecords.length !== 1 ? 's' : ''}</span>
+                </button>
+            `;
+        } else {
+            removalsList.innerHTML = firstRecord;
+        }
         
         removalsList.classList.remove('hidden');
     }
@@ -5035,6 +5060,31 @@ function displayRemovalsError(errorMessage) {
         </div>
     `;
     removalsList.classList.add('hidden');
+}
+
+// Toggle expand/collapse for additional removal records
+function toggleRemovalsExpand() {
+    const additionalRecords = document.getElementById('removals-additional');
+    const expandIcon = document.getElementById('removals-expand-icon');
+    const expandText = document.getElementById('removals-expand-text');
+    const expandBtn = document.getElementById('removals-expand-btn');
+    
+    if (!additionalRecords) return;
+    
+    const isHidden = additionalRecords.classList.contains('hidden');
+    
+    if (isHidden) {
+        // Expand
+        additionalRecords.classList.remove('hidden');
+        expandIcon.style.transform = 'rotate(180deg)';
+        expandText.textContent = 'Show less';
+    } else {
+        // Collapse
+        additionalRecords.classList.add('hidden');
+        expandIcon.style.transform = 'rotate(0deg)';
+        const remainingCount = additionalRecords.children.length;
+        expandText.textContent = `Show ${remainingCount} more record${remainingCount !== 1 ? 's' : ''}`;
+    }
 }
 
 // Navigate to view a specific PS record with exact matching (for Account History)
