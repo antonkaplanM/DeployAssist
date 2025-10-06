@@ -69,3 +69,6 @@ temp/
 
 # Salesforce configuration files (contains secrets)
 sf-replacements.txt
+
+# Salesforce configuration Description (contains secrets)
+SALESFORCE-PROD-CONNECTED.md
