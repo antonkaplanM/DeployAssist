@@ -72,3 +72,9 @@ sf-replacements.txt
 
 # Salesforce configuration Description (contains secrets)
 SALESFORCE-PROD-CONNECTED.md
+test-sf-prod.js
+
+# BFG Repo Cleaner files
+secrets-cleanup.txt
+..bfg-report/
+.git.bfg-report/
