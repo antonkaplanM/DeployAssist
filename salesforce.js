@@ -1263,6 +1263,7 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
         const lookbackDateStr = lookbackDate.toISOString().split('T')[0];
         
         // Query all PS records from lookback period
+        // Account__c contains the actual account name (not Account_Site__c which is the site location)
         const query = `
             SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
                    Status__c, CreatedDate, Payload_Data__c
@@ -1294,7 +1295,7 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
                         if (endDate) {
                             allEntitlements.push({
                                 accountId: record.Account__c,
-                                accountName: record.Account_Site__c || record.Account__c,
+                                accountName: record.Account__c || 'Unknown',
                                 psRecordId: record.Id,
                                 psRecordName: record.Name,
                                 productCode: ent.productCode || ent.code || ent.id,
@@ -1315,7 +1316,7 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
                         if (endDate) {
                             allEntitlements.push({
                                 accountId: record.Account__c,
-                                accountName: record.Account_Site__c || record.Account__c,
+                                accountName: record.Account__c || 'Unknown',
                                 psRecordId: record.Id,
                                 psRecordName: record.Name,
                                 productCode: ent.productCode || ent.code || ent.id || ent.name,
@@ -1336,7 +1337,7 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
                         if (endDate) {
                             allEntitlements.push({
                                 accountId: record.Account__c,
-                                accountName: record.Account_Site__c || record.Account__c,
+                                accountName: record.Account__c || 'Unknown',
                                 psRecordId: record.Id,
                                 psRecordName: record.Name,
                                 productCode: ent.productCode || ent.code || ent.id || ent.name,
