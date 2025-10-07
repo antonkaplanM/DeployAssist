@@ -1122,6 +1122,82 @@ app.get('/api/provisioning/filter-options', async (req, res) => {
     }
 });
 
+// Check for new PS requests since last check (for notifications)
+app.get('/api/provisioning/new-records', async (req, res) => {
+    try {
+        const sinceTimestamp = req.query.since;
+        
+        if (!sinceTimestamp) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing "since" timestamp parameter'
+            });
+        }
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            return res.json({
+                success: true,
+                newRecords: [],
+                totalNew: 0,
+                checkTimestamp: new Date().toISOString(),
+                note: 'No Salesforce authentication'
+            });
+        }
+        
+        console.log(`🔔 Checking for new PS records since ${sinceTimestamp}...`);
+        
+        // Query for new records created after the provided timestamp
+        const conn = await salesforce.getConnection();
+        
+        // Convert ISO timestamp to Salesforce datetime format
+        const sinceDate = new Date(sinceTimestamp);
+        const soqlTimestamp = sinceDate.toISOString().replace('.000Z', 'Z');
+        
+        const soqlQuery = `
+            SELECT Id, Name, Request_Type_RI__c, Account__c, Account_Site__c, 
+                   Status__c, CreatedDate, LastModifiedDate
+            FROM Prof_Services_Request__c
+            WHERE CreatedDate > ${soqlTimestamp}
+            ORDER BY CreatedDate DESC
+            LIMIT 10
+        `;
+        
+        const result = await conn.query(soqlQuery);
+        const records = result.records || [];
+        
+        console.log(`✅ Found ${records.length} new PS record(s) since ${sinceTimestamp}`);
+        
+        // Format records for notification display
+        const newRecords = records.map(record => ({
+            id: record.Id,
+            name: record.Name,
+            requestType: record.Request_Type_RI__c || 'Unknown',
+            account: record.Account__c,
+            accountSite: record.Account_Site__c,
+            status: record.Status__c,
+            createdDate: record.CreatedDate
+        }));
+        
+        res.json({
+            success: true,
+            newRecords: newRecords,
+            totalNew: newRecords.length,
+            checkTimestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error checking for new PS records:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to check for new records',
+            newRecords: [],
+            totalNew: 0
+        });
+    }
+});
+
 // Get PS requests with product removals
 app.get('/api/provisioning/removals', async (req, res) => {
     try {

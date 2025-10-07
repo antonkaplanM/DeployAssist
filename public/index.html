@@ -134,7 +134,8 @@
                                         <path d="M3 3v18h18"></path>
                                         <path d="m19 9-5 5-4-4-3 3"></path>
                                     </svg>
-                                    Monitor
+                                    <span class="flex-1">Monitor</span>
+                                    <span id="notification-badge" class="notification-badge hidden">0</span>
                                 </button>
                                 <button 
                                     id="nav-expiration" 
@@ -1218,6 +1219,7 @@
                             <a href="#validation" class="text-primary hover:underline">✅ Validation Rules</a>
                             <a href="#analytics" class="text-primary hover:underline">📈 Analytics & Account History</a>
                             <a href="#roadmap" class="text-primary hover:underline">🗺️ Roadmap</a>
+                            <a href="#notifications" class="text-primary hover:underline">🔔 Notifications</a>
                             <a href="#settings" class="text-primary hover:underline">⚙️ Settings</a>
                             <a href="#troubleshooting" class="text-primary hover:underline">🔧 Troubleshooting</a>
                         </div>
@@ -1877,6 +1879,130 @@
                         </div>
                     </section>
 
+                    <!-- Notifications -->
+                    <section id="notifications" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                🔔 Notifications
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Stay informed with real-time alerts for new Professional Services requests. The notification system monitors 
+                                    for new PS records and alerts you instantly through both in-browser toasts and native desktop notifications.
+                                </p>
+                                
+                                <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 p-4 rounded">
+                                    <p class="text-sm text-blue-900">
+                                        <strong>✨ New Feature:</strong> Real-time notification system automatically checks for new PS requests 
+                                        every 60 seconds and notifies you instantly with the request type and account information.
+                                    </p>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Key Features:</h3>
+                                    <ul class="space-y-2 text-sm text-muted-foreground ml-4">
+                                        <li><strong>🔔 Dual Notification System:</strong> Receive alerts both in-browser (toast notifications) and as native desktop notifications</li>
+                                        <li><strong>🔊 Sound Alerts:</strong> Optional audio notification when new records are detected</li>
+                                        <li><strong>🔴 Visual Badge:</strong> Red badge counter on Provisioning Monitor nav item shows unread notifications</li>
+                                        <li><strong>🎯 Request Type Display:</strong> Each notification shows the specific request type (Product Addition, Removal, etc.)</li>
+                                        <li><strong>🖱️ One-Click Navigation:</strong> Click any notification to jump directly to Provisioning Monitor</li>
+                                        <li><strong>⚙️ Customizable:</strong> Toggle each notification type on/off individually in Settings</li>
+                                        <li><strong>⏱️ Automatic Monitoring:</strong> Checks for new records every 60 seconds while app is open</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Notification Types:</h3>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="border-l-4 border-green-500 pl-4">
+                                            <strong>📱 In-Browser Notifications:</strong>
+                                            <p class="text-muted-foreground">Toast-style notifications appear in the top-right corner with request details. Auto-dismiss after 10 seconds or click to navigate.</p>
+                                        </div>
+                                        <div class="border-l-4 border-blue-500 pl-4">
+                                            <strong>💻 Desktop/System Notifications:</strong>
+                                            <p class="text-muted-foreground">Native OS notifications (Windows Action Center, etc.) that appear even when the app is in the background. Requires browser permission.</p>
+                                        </div>
+                                        <div class="border-l-4 border-purple-500 pl-4">
+                                            <strong>🔊 Sound Alerts:</strong>
+                                            <p class="text-muted-foreground">Subtle audio beep plays when new records are detected. Can be toggled off if preferred.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-blue-900 mb-2">Quick Setup (30 seconds):</h4>
+                                    <ol class="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                                        <li>Navigate to <strong>Settings → Notifications</strong></li>
+                                        <li>All notifications are <strong>ON by default</strong> ✅</li>
+                                        <li>For desktop notifications, click <strong>"Allow"</strong> when your browser prompts for permission</li>
+                                        <li>Click <strong>"Send Test Notification"</strong> to verify it's working</li>
+                                        <li>That's it! You'll now receive alerts for new PS requests</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Using the Notification Badge:</h3>
+                                    <ul class="space-y-2 text-sm text-muted-foreground ml-4">
+                                        <li><strong>🔴 Red Badge:</strong> Appears on "Provisioning Monitor" nav item when new notifications arrive</li>
+                                        <li><strong>📊 Counter:</strong> Shows number of unread notifications (up to 99+)</li>
+                                        <li><strong>🧹 Auto-Clear:</strong> Badge automatically clears when you navigate to Provisioning Monitor</li>
+                                        <li><strong>🎯 Visual Cue:</strong> Pulsing animation draws attention to new notifications</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-yellow-900 mb-2">💡 Pro Tips:</h4>
+                                    <ul class="text-sm text-yellow-800 space-y-1">
+                                        <li>• <strong>Test it first:</strong> Use the "Send Test Notification" button to verify your settings</li>
+                                        <li>• <strong>Desktop permission denied?</strong> Click the lock icon in your browser's address bar to change notification permissions</li>
+                                        <li>• <strong>Too many notifications?</strong> Disable desktop or sound alerts in Settings while keeping in-browser notifications</li>
+                                        <li>• <strong>Focus Mode:</strong> Notifications only appear while the app is open in your browser</li>
+                                        <li>• <strong>Click to jump:</strong> Click any notification to go directly to the Provisioning Monitor page</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">Customization Options:</h3>
+                                    <p class="text-sm text-muted-foreground">All settings can be toggled independently in <strong>Settings → Notifications</strong>:</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div class="border rounded-lg p-3">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-green-500">✅</span>
+                                                <strong class="text-sm">In-Browser</strong>
+                                            </div>
+                                            <p class="text-xs text-muted-foreground">Toast notifications in top-right corner</p>
+                                        </div>
+                                        <div class="border rounded-lg p-3">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-blue-500">💻</span>
+                                                <strong class="text-sm">Desktop</strong>
+                                            </div>
+                                            <p class="text-xs text-muted-foreground">Native OS notifications</p>
+                                        </div>
+                                        <div class="border rounded-lg p-3">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-purple-500">🔊</span>
+                                                <strong class="text-sm">Sound</strong>
+                                            </div>
+                                            <p class="text-xs text-muted-foreground">Audio alert on new records</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-900 mb-2">What Triggers a Notification?</h4>
+                                    <ul class="text-sm text-green-800 space-y-1">
+                                        <li>✅ Any new PS request created in Salesforce</li>
+                                        <li>✅ Shows Request Type (Product Addition, Removal, etc.)</li>
+                                        <li>✅ Displays Account name and PS record number</li>
+                                        <li>✅ Notifications appear regardless of current page filters</li>
+                                        <li>✅ System checks every 60 seconds automatically</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- Troubleshooting -->
                     <section id="troubleshooting" class="mb-8">
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
@@ -1918,6 +2044,31 @@
                                                 <p class="text-yellow-700">
                                                     <strong>Solution:</strong> Check Atlassian API configuration and ensure 
                                                     assignee names are spelled correctly (e.g., "Kevin Yu").
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">🔔 Notifications Not Appearing</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Check Settings → Notifications to ensure they're enabled. 
+                                                    For desktop notifications, verify browser permission is granted (look for ✓ Granted badge). 
+                                                    Use "Send Test Notification" button to verify functionality.
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">🔕 Desktop Permission Denied</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Click the lock icon in your browser's address bar, 
+                                                    find "Notifications" in site settings, and change to "Allow". Refresh the page after changing.
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <h4 class="font-medium text-yellow-800">🔴 Badge Not Clearing</h4>
+                                                <p class="text-yellow-700">
+                                                    <strong>Solution:</strong> Navigate to Provisioning Monitor page to automatically clear the badge. 
+                                                    If it persists, refresh the browser page.
                                                 </p>
                                             </div>
                                         </div>
@@ -2112,6 +2263,120 @@
                                                 <option value="15">15 minutes</option>
                                                 <option value="30">30 minutes</option>
                                             </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification Settings Section -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <button 
+                                class="settings-section-toggle w-full p-6 text-left hover:bg-muted/50 transition-colors"
+                                data-section="notification-settings"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Notifications</h3>
+                                        <p class="text-sm text-muted-foreground">Configure notification preferences for new PS requests</p>
+                                    </div>
+                                    <svg class="section-chevron h-5 w-5 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                            
+                            <div id="notification-settings-content" class="settings-section-content hidden">
+                                <div class="px-6 pb-6">
+                                    <div class="space-y-6">
+                                        
+                                        <!-- Notification Status -->
+                                        <div class="rounded-lg border bg-muted/50 p-4">
+                                            <div class="flex items-start gap-3">
+                                                <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <div class="flex-1">
+                                                    <p class="text-sm font-medium">Real-time Notification Monitoring</p>
+                                                    <p class="text-xs text-muted-foreground mt-1">
+                                                        System checks for new PS requests every 60 seconds and notifies you instantly.
+                                                    </p>
+                                                    <div id="notification-status" class="mt-2 text-xs font-medium">
+                                                        Status: <span id="notification-status-text" class="text-green-600">Active</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- In-Browser Notifications -->
+                                        <div class="notification-settings-item">
+                                            <div class="flex-1">
+                                                <label class="text-sm font-medium">In-Browser Notifications</label>
+                                                <p class="text-xs text-muted-foreground mt-1">Show notification toasts in the top-right corner</p>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="in-browser-notifications-toggle" class="sr-only peer" checked>
+                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                            </label>
+                                        </div>
+                                        
+                                        <!-- Desktop Notifications -->
+                                        <div class="notification-settings-item">
+                                            <div class="flex-1">
+                                                <label class="text-sm font-medium">Desktop/System Notifications</label>
+                                                <p class="text-xs text-muted-foreground mt-1">
+                                                    Show native OS notifications
+                                                    <span id="desktop-permission-status"></span>
+                                                </p>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="desktop-notifications-toggle" class="sr-only peer" checked>
+                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                            </label>
+                                        </div>
+                                        
+                                        <!-- Sound Alerts -->
+                                        <div class="notification-settings-item">
+                                            <div class="flex-1">
+                                                <label class="text-sm font-medium">Sound Alerts</label>
+                                                <p class="text-xs text-muted-foreground mt-1">Play a sound when new requests are detected</p>
+                                            </div>
+                                            <label class="relative inline-flex items-cursor-pointer">
+                                                <input type="checkbox" id="sound-notifications-toggle" class="sr-only peer" checked>
+                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                            </label>
+                                        </div>
+                                        
+                                        <!-- Request Permission Button -->
+                                        <div id="request-permission-section" class="hidden">
+                                            <button 
+                                                id="request-notification-permission"
+                                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                            >
+                                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                                </svg>
+                                                Enable Desktop Notifications
+                                            </button>
+                                            <p class="text-xs text-muted-foreground mt-2">
+                                                Click to request permission for desktop notifications from your browser.
+                                            </p>
+                                        </div>
+                                        
+                                        <!-- Test Notification Button -->
+                                        <div class="pt-4 border-t">
+                                            <button 
+                                                id="test-notification-btn"
+                                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                            >
+                                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                                </svg>
+                                                Send Test Notification
+                                            </button>
+                                            <p class="text-xs text-muted-foreground mt-2">
+                                                Send a test notification to verify your settings are working correctly.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -2557,6 +2822,7 @@
     </div>
 
     <script src="validation-rules.js"></script>
+    <script src="notification-manager.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

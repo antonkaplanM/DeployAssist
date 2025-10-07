@@ -430,6 +430,7 @@ function showPage(pageId) {
             }
         }, 100);
     } else if (pageId === 'provisioning') {
+        clearProvisioningNotificationBadge();
         initializeProvisioning();
     } else if (pageId === 'expiration') {
         initializeExpiration();
@@ -1916,6 +1917,9 @@ function initializeSettings() {
     if (typeof initializeValidationRules === 'function') {
         initializeValidationRules();
     }
+    
+    // Initialize notification settings
+    initializeNotificationSettings();
 }
 
 // Setup Settings page event listeners
@@ -1979,6 +1983,175 @@ function setupCollapsibleSections() {
     });
 }
 
+
+// ============================================================================
+// NOTIFICATION SETTINGS FUNCTIONS
+// ============================================================================
+
+// Initialize notification settings UI
+function initializeNotificationSettings() {
+    console.log('Initializing notification settings...');
+    
+    // Load current settings from notification manager
+    if (typeof notificationManager === 'undefined') {
+        console.warn('Notification manager not loaded yet');
+        return;
+    }
+    
+    const settings = notificationManager.settings;
+    
+    // Set toggle states
+    const inBrowserToggle = document.getElementById('in-browser-notifications-toggle');
+    const desktopToggle = document.getElementById('desktop-notifications-toggle');
+    const soundToggle = document.getElementById('sound-notifications-toggle');
+    
+    if (inBrowserToggle) {
+        inBrowserToggle.checked = settings.inBrowserEnabled;
+    }
+    
+    if (desktopToggle) {
+        desktopToggle.checked = settings.desktopEnabled;
+    }
+    
+    if (soundToggle) {
+        soundToggle.checked = settings.soundEnabled;
+    }
+    
+    // Update permission status
+    updateNotificationPermissionStatus();
+    
+    // Setup event listeners
+    setupNotificationSettingsListeners();
+    
+    // Update status text
+    updateNotificationStatus();
+}
+
+// Setup notification settings event listeners
+function setupNotificationSettingsListeners() {
+    const inBrowserToggle = document.getElementById('in-browser-notifications-toggle');
+    const desktopToggle = document.getElementById('desktop-notifications-toggle');
+    const soundToggle = document.getElementById('sound-notifications-toggle');
+    const requestPermissionBtn = document.getElementById('request-notification-permission');
+    const testNotificationBtn = document.getElementById('test-notification-btn');
+    
+    // In-browser notifications toggle
+    if (inBrowserToggle) {
+        inBrowserToggle.addEventListener('change', function() {
+            notificationManager.saveSettings({ inBrowserEnabled: this.checked });
+            updateNotificationStatus();
+            console.log('In-browser notifications:', this.checked ? 'enabled' : 'disabled');
+        });
+    }
+    
+    // Desktop notifications toggle
+    if (desktopToggle) {
+        desktopToggle.addEventListener('change', async function() {
+            if (this.checked && Notification.permission !== 'granted') {
+                // Request permission first
+                const granted = await notificationManager.requestPermission();
+                if (!granted) {
+                    this.checked = false;
+                    alert('Desktop notification permission was denied. Please enable it in your browser settings.');
+                    return;
+                }
+            }
+            
+            notificationManager.saveSettings({ desktopEnabled: this.checked });
+            updateNotificationPermissionStatus();
+            updateNotificationStatus();
+            console.log('Desktop notifications:', this.checked ? 'enabled' : 'disabled');
+        });
+    }
+    
+    // Sound notifications toggle
+    if (soundToggle) {
+        soundToggle.addEventListener('change', function() {
+            notificationManager.saveSettings({ soundEnabled: this.checked });
+            console.log('Sound notifications:', this.checked ? 'enabled' : 'disabled');
+        });
+    }
+    
+    // Request permission button
+    if (requestPermissionBtn) {
+        requestPermissionBtn.addEventListener('click', async function() {
+            const granted = await notificationManager.requestPermission();
+            updateNotificationPermissionStatus();
+            
+            if (granted) {
+                const desktopToggle = document.getElementById('desktop-notifications-toggle');
+                if (desktopToggle) {
+                    desktopToggle.checked = true;
+                    notificationManager.saveSettings({ desktopEnabled: true });
+                }
+            }
+        });
+    }
+    
+    // Test notification button
+    if (testNotificationBtn) {
+        testNotificationBtn.addEventListener('click', function() {
+            console.log('Sending test notification...');
+            
+            const testRecord = {
+                id: 'TEST-001',
+                name: 'PS-TEST-001',
+                requestType: 'Product Addition',
+                account: 'Test Account Inc.',
+                accountSite: 'US',
+                status: 'Open',
+                createdDate: new Date().toISOString()
+            };
+            
+            notificationManager.showNotification(testRecord);
+        });
+    }
+}
+
+// Update notification permission status display
+function updateNotificationPermissionStatus() {
+    const statusElement = document.getElementById('desktop-permission-status');
+    const requestSection = document.getElementById('request-permission-section');
+    
+    if (!statusElement) return;
+    
+    const permission = Notification.permission;
+    
+    if (permission === 'granted') {
+        statusElement.innerHTML = '<span class="permission-badge granted">✓ Granted</span>';
+        if (requestSection) requestSection.classList.add('hidden');
+    } else if (permission === 'denied') {
+        statusElement.innerHTML = '<span class="permission-badge denied">✗ Denied</span>';
+        if (requestSection) requestSection.classList.add('hidden');
+    } else {
+        statusElement.innerHTML = '<span class="permission-badge default">? Not Set</span>';
+        if (requestSection) requestSection.classList.remove('hidden');
+    }
+}
+
+// Update notification status text
+function updateNotificationStatus() {
+    const statusText = document.getElementById('notification-status-text');
+    
+    if (!statusText || typeof notificationManager === 'undefined') return;
+    
+    const status = notificationManager.getStatus();
+    
+    if (status.isRunning && (status.settings.inBrowserEnabled || status.settings.desktopEnabled)) {
+        statusText.textContent = 'Active';
+        statusText.className = 'text-green-600';
+    } else {
+        statusText.textContent = 'Inactive';
+        statusText.className = 'text-muted-foreground';
+    }
+}
+
+// Clear badge when navigating to provisioning monitor
+function clearProvisioningNotificationBadge() {
+    if (typeof notificationManager !== 'undefined') {
+        notificationManager.clearUnreadCount();
+    }
+}
 
 // Test Web Connectivity
 async function testWebConnectivity() {
@@ -4681,6 +4854,7 @@ function showPage(pageId) {
     if (pageId === 'analytics') {
         initializeAnalytics();
     } else if (pageId === 'provisioning') {
+        clearProvisioningNotificationBadge();
         initializeProvisioning();
     } else if (pageId === 'expiration') {
         initializeExpiration();
