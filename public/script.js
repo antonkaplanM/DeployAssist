@@ -19,7 +19,6 @@ const navAnalytics = document.getElementById('nav-analytics');
 const navRoadmap = document.getElementById('nav-roadmap');
 const navProvisioning = document.getElementById('nav-provisioning');
 const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
-const navValidationRules = document.getElementById('nav-validation-rules');
 const navExpiration = document.getElementById('nav-expiration');
 const navCustomerProducts = document.getElementById('nav-customer-products');
 const navHelp = document.getElementById('nav-help');
@@ -28,7 +27,6 @@ const pageDashboard = document.getElementById('page-dashboard');
 const pageAnalytics = document.getElementById('page-analytics');
 const pageRoadmap = document.getElementById('page-roadmap');
 const pageProvisioning = document.getElementById('page-provisioning');
-const pageValidationRules = document.getElementById('page-validation-rules');
 const pageHelp = document.getElementById('page-help');
 const pageSettings = document.getElementById('page-settings');
 
@@ -165,7 +163,6 @@ function refreshInactivePages() {
         'analytics', 
         'account-history',
         'provisioning',
-        'validation-rules',
         'expiration',
         'customer-products',
         'roadmap'
@@ -188,9 +185,6 @@ function refreshInactivePages() {
                     break;
                 case 'provisioning':
                     refreshProvisioning();
-                    break;
-                case 'validation-rules':
-                    refreshValidationRules();
                     break;
                 case 'expiration':
                     refreshExpiration();
@@ -283,14 +277,6 @@ function refreshProvisioning() {
     }
 }
 
-function refreshValidationRules() {
-    console.log('Refreshing Validation Rules...');
-    // Reload validation rules configuration
-    if (typeof loadValidationRulesConfiguration === 'function') {
-        loadValidationRulesConfiguration();
-    }
-}
-
 function refreshExpiration() {
     console.log('Refreshing Expiration Monitor...');
     // Reload expiration data
@@ -379,7 +365,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration' || pageId === 'customer-products') {
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'customer-products') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -403,12 +389,6 @@ function showPage(pageId) {
         if (provisioningMonitorNav) {
             provisioningMonitorNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             provisioningMonitorNav.classList.remove('text-muted-foreground');
-        }
-    } else if (pageId === 'validation-rules') {
-        const validationRulesNav = document.getElementById('nav-validation-rules');
-        if (validationRulesNav) {
-            validationRulesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
-            validationRulesNav.classList.remove('text-muted-foreground');
         }
     } else if (pageId === 'expiration') {
         const expirationNav = document.getElementById('nav-expiration');
@@ -437,8 +417,6 @@ function showPage(pageId) {
         }, 100);
     } else if (pageId === 'provisioning') {
         initializeProvisioning();
-    } else if (pageId === 'validation-rules') {
-        initializeValidationRules();
     } else if (pageId === 'expiration') {
         initializeExpiration();
     } else if (pageId === 'customer-products') {
@@ -1786,7 +1764,6 @@ navAnalytics.addEventListener('click', handleAnalyticsNavigation);
 navRoadmap.addEventListener('click', handleNavigation);
 navProvisioning.addEventListener('click', handleProvisioningNavigation);
 navProvisioningMonitor.addEventListener('click', handleNavigation);
-navValidationRules.addEventListener('click', handleNavigation);
 navExpiration.addEventListener('click', handleNavigation);
 navCustomerProducts.addEventListener('click', handleNavigation);
 navHelp.addEventListener('click', handleNavigation);
@@ -1920,6 +1897,11 @@ observer.observe(document.documentElement, {
 function initializeSettings() {
     console.log('Settings page initialized');
     setupSettingsEventListeners();
+    
+    // Initialize validation rules section
+    if (typeof initializeValidationRules === 'function') {
+        initializeValidationRules();
+    }
 }
 
 // Setup Settings page event listeners
@@ -4642,7 +4624,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'validation-rules' || pageId === 'expiration' || pageId === 'customer-products') {
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'customer-products') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -4667,12 +4649,6 @@ function showPage(pageId) {
             provisioningMonitorNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             provisioningMonitorNav.classList.remove('text-muted-foreground');
         }
-    } else if (pageId === 'validation-rules') {
-        const validationRulesNav = document.getElementById('nav-validation-rules');
-        if (validationRulesNav) {
-            validationRulesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
-            validationRulesNav.classList.remove('text-muted-foreground');
-        }
     } else if (pageId === 'expiration') {
         const expirationNav = document.getElementById('nav-expiration');
         if (expirationNav) {
@@ -4692,8 +4668,6 @@ function showPage(pageId) {
         initializeAnalytics();
     } else if (pageId === 'provisioning') {
         initializeProvisioning();
-    } else if (pageId === 'validation-rules') {
-        initializeValidationRules();
     } else if (pageId === 'expiration') {
         initializeExpiration();
     } else if (pageId === 'customer-products') {
@@ -4799,7 +4773,6 @@ function setupNavigationEventListeners() {
     const navRoadmap = document.getElementById('nav-roadmap');
     const navProvisioning = document.getElementById('nav-provisioning');
     const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
-    const navValidationRules = document.getElementById('nav-validation-rules');
     const navHelp = document.getElementById('nav-help');
     const navSettings = document.getElementById('nav-settings');
     
@@ -4813,7 +4786,6 @@ function setupNavigationEventListeners() {
     if (navRoadmap) navRoadmap.addEventListener('click', handleNavigation);
     if (navProvisioning) navProvisioning.addEventListener('click', handleProvisioningNavigation);
     if (navProvisioningMonitor) navProvisioningMonitor.addEventListener('click', handleNavigation);
-    if (navValidationRules) navValidationRules.addEventListener('click', handleNavigation);
     if (navHelp) navHelp.addEventListener('click', handleNavigation);
     if (navSettings) navSettings.addEventListener('click', handleNavigation);
     

@@ -74,6 +74,9 @@ The application includes:
 - **👥 Customer Products**: View all active products for customers organized by region and category
 - **⏰ Expiration Monitor**: Track product entitlements expiring within configurable timeframes
 - **📈 Account History**: Chronological view of all Technical Team Requests for an account
+- **🔄 Auto-Refresh**: Automatic background refresh for all data pages with configurable intervals (1-30 min or Never)
+- **✅ Validation Rules**: Data validation system for Technical Team Requests (located in Settings)
+- **⚙️ Centralized Settings**: Unified settings page for app configuration, theme, auto-refresh, and validation rules
 - **🌙 Dark Mode**: Toggle between light and dark themes
 - **✨ Enhanced UI**: Cards, buttons, and inputs follow shadcn/ui patterns
 - **♿ Better Accessibility**: Focus indicators and screen reader support
@@ -83,17 +86,18 @@ The application includes:
 ## Navigation Features
 
 ### **Pages**
-1. **Dashboard**: Welcome page with greeting system
-2. **Analytics Dashboard**: Empty table ready for account data with columns:
-   - Account ID
-   - Account Name
-   - Number of Products
-3. **Roadmap**: Platform initiatives assigned to Kevin Yu with:
-   - Key, Summary, Status, Created/Updated dates, Description
-   - Filter by status (Proposed, Committed, Open)
-   - Search across all fields
-   - Sortable columns
-   - CSV export functionality
+1. **Dashboard**: System status overview with validation monitoring and PS request removals
+2. **Analytics Dashboard**: Technical Team Request activity and trends with validation failure tracking
+3. **Account History**: Chronological view of all Technical Team Requests for any account
+4. **Provisioning Monitor**: View and search deployment requests with pagination and filters
+5. **Expiration Monitor**: Track product entitlements expiring within 7-90 days
+6. **Customer Products**: View all active products for customers organized by region
+7. **Roadmap**: Platform initiatives with Jira integration
+8. **Settings**: 
+   - Salesforce OAuth configuration
+   - Application settings (Dark Mode, Auto-refresh)
+   - Data validation rules management
+9. **Help**: Comprehensive in-app documentation for all features
 
 ### **Keyboard Shortcuts**
 - `Ctrl/Cmd + D` - Toggle dark/light theme
@@ -106,8 +110,11 @@ The application includes:
 ### **Features**
 - **Persistent Navigation**: Remembers your last visited page
 - **Smooth Transitions**: Animated page switching
+- **Auto-Refresh System**: Background refresh for inactive pages
+- **Last Refresh Timestamps**: Each page shows when data was last updated
 - **Responsive Design**: Sidebar adapts to different screen sizes
 - **shadcn/ui Components**: Clean table and navigation components
+- **Collapsible Sections**: Organized settings with expandable sections
 
 ## Jira Integration
 

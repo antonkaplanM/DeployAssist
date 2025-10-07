@@ -111,8 +111,8 @@ Validation rules configuration is stored in browser localStorage with key: `depl
 
 ## User Interface
 
-### Validation Rules Page
-**Location**: Sub-page under Provisioning Monitor
+### Validation Rules Section
+**Location**: Settings Page → Data Validation Rules (collapsible section)
 
 **Features**:
 - List of all available validation rules
@@ -120,6 +120,7 @@ Validation rules configuration is stored in browser localStorage with key: `depl
 - Rule descriptions and logic explanations
 - Test button to validate current page data
 - JSON structure debug tool
+- Integrated with application settings for centralized configuration
 
 ### Provisioning Monitor Integration
 **Column**: "Data Validations" (between "Products" and "Status")

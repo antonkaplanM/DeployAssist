@@ -151,16 +151,6 @@
                                     Monitor
                                 </button>
                                 <button 
-                                    id="nav-validation-rules" 
-                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                >
-                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M9 12l2 2 4-4"></path>
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                    </svg>
-                                    Validation Rules
-                                </button>
-                                <button 
                                     id="nav-expiration" 
                                     class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 >
@@ -856,116 +846,6 @@
                 </div>
             </div>
 
-            <!-- Validation Rules Page -->
-            <div id="page-validation-rules" class="page-content hidden">
-                <div class="container mx-auto px-4 py-8 max-w-7xl">
-                    <!-- Header -->
-                    <header class="mb-8">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h1 class="text-3xl font-bold tracking-tight">Data Validation Rules</h1>
-                                <p class="text-muted-foreground mt-2">
-                                    Manage validation rules applied to Technical Team Request records
-                                </p>
-                                <div class="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <polyline points="12 6 12 12 16 14"></polyline>
-                                    </svg>
-                                    <span>Last refreshed: <span id="validation-rules-last-refresh">Never</span></span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <button 
-                                    id="test-validation-btn"
-                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                                >
-                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="m9 12 2 2 4-4"></path>
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                    </svg>
-                                    Test Rules
-                                </button>
-                                <button 
-                                    id="debug-json-btn"
-                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                                >
-                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                                    </svg>
-                                    Debug JSON
-                                </button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <!-- Rules Summary -->
-                    <div class="grid gap-4 md:grid-cols-3 mb-8">
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">Total Rules</h3>
-                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2v20m8-10H4"></path>
-                                </svg>
-                            </div>
-                            <div class="text-2xl font-bold" id="total-rules-count">0</div>
-                        </div>
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">Enabled Rules</h3>
-                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M9 12l2 2 4-4"></path>
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                </svg>
-                            </div>
-                            <div class="text-2xl font-bold text-green-600" id="enabled-rules-count">0</div>
-                        </div>
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">Last Updated</h3>
-                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12,6 12,12 16,14"></polyline>
-                                </svg>
-                            </div>
-                            <div class="text-sm text-muted-foreground" id="last-updated-time">Never</div>
-                        </div>
-                    </div>
-
-                    <!-- Validation Rules List -->
-                    <div class="space-y-4">
-                        <h2 class="text-xl font-semibold">Validation Rules</h2>
-                        <div id="validation-rules-container" class="space-y-4">
-                            <!-- Rules will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Test Results Section -->
-                    <div id="test-results-section" class="mt-8 hidden">
-                        <h2 class="text-xl font-semibold mb-4">Test Results</h2>
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6">
-                                <div id="test-results-content">
-                                    <!-- Test results will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Debug Results Section -->
-                    <div id="debug-results-section" class="mt-8 hidden">
-                        <h2 class="text-xl font-semibold mb-4">JSON Structure Analysis</h2>
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6">
-                                <div id="debug-results-content">
-                                    <!-- Debug results will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Expiration Monitor Page -->
             <div id="page-expiration" class="page-content hidden">
                 <div class="container mx-auto px-4 py-8 max-w-7xl">
@@ -1321,7 +1201,8 @@
                                     <ol class="list-decimal list-inside space-y-2 text-blue-800">
                                         <li>Navigate to <strong>Settings</strong> to configure Salesforce authentication</li>
                                         <li>Test connectivity to ensure all integrations are working</li>
-                                        <li>Visit <strong>Validation Rules</strong> to configure data validation preferences</li>
+                                        <li>In <strong>Settings</strong>, expand <strong>Data Validation Rules</strong> to configure validation preferences</li>
+                                        <li>Configure <strong>Auto-refresh Background Pages</strong> in Application Settings (default: 5 minutes)</li>
                                         <li>Explore the <strong>Dashboard</strong> for an overview of your system status</li>
                                     </ol>
                                 </div>
@@ -1761,11 +1642,17 @@
                                 <div class="space-y-3">
                                     <h3 class="font-semibold">How to Use:</h3>
                                     <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                                        <li>Navigate to <strong>Settings</strong> page</li>
+                                        <li>Click on <strong>Data Validation Rules</strong> to expand the section</li>
                                         <li>Toggle rules on/off using the switches next to each rule</li>
                                         <li>Click "Test Rules" to validate all current PS records</li>
                                         <li>View detailed results and error reports</li>
                                         <li>Settings automatically sync with the Dashboard validation monitor</li>
                                     </ol>
+                                    
+                                    <p class="text-sm text-muted-foreground mt-3">
+                                        <strong>Note:</strong> Validation rules are now located in Settings for centralized configuration management.
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -1933,6 +1820,17 @@
                                         <h3 class="font-semibold">Application Settings</h3>
                                         <p class="text-sm text-muted-foreground">
                                             General preferences including theme settings and auto-refresh options.
+                                        </p>
+                                        <ul class="list-disc list-inside text-sm text-muted-foreground mt-2">
+                                            <li><strong>Dark Mode:</strong> Toggle between light and dark themes</li>
+                                            <li><strong>Auto-refresh Background Pages:</strong> Automatically refresh inactive pages at selected intervals (Never, 1, 5, 10, 15, or 30 minutes)</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="border-l-4 border-green-500 pl-4">
+                                        <h3 class="font-semibold">Data Validation Rules</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Configure validation rules for Technical Team Request records to ensure data quality and compliance.
                                         </p>
                                     </div>
                                 </div>
@@ -2175,6 +2073,116 @@
                                                 <option value="15">15 minutes</option>
                                                 <option value="30">30 minutes</option>
                                             </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Validation Rules Section -->
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <button 
+                                class="settings-section-toggle w-full p-6 text-left hover:bg-muted/50 transition-colors"
+                                data-section="validation-rules"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Data Validation Rules</h3>
+                                        <p class="text-sm text-muted-foreground">Configure validation rules for Technical Team Request records</p>
+                                    </div>
+                                    <svg class="section-chevron h-5 w-5 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                            
+                            <div id="validation-rules-content" class="settings-section-content hidden">
+                                <div class="px-6 pb-6">
+                                    <!-- Action Buttons -->
+                                    <div class="flex items-center gap-4 mb-6">
+                                        <button 
+                                            id="test-validation-btn"
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                        >
+                                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="m9 12 2 2 4-4"></path>
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                            </svg>
+                                            Test Rules
+                                        </button>
+                                        <button 
+                                            id="debug-json-btn"
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                        >
+                                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                            </svg>
+                                            Debug JSON
+                                        </button>
+                                    </div>
+
+                                    <!-- Rules Summary -->
+                                    <div class="grid gap-4 md:grid-cols-3 mb-6">
+                                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <h3 class="tracking-tight text-sm font-medium">Total Rules</h3>
+                                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 2v20m8-10H4"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="text-2xl font-bold" id="total-rules-count">0</div>
+                                        </div>
+                                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <h3 class="tracking-tight text-sm font-medium">Enabled Rules</h3>
+                                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M9 12l2 2 4-4"></path>
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                </svg>
+                                            </div>
+                                            <div class="text-2xl font-bold text-green-600" id="enabled-rules-count">0</div>
+                                        </div>
+                                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <h3 class="tracking-tight text-sm font-medium">Last Updated</h3>
+                                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <polyline points="12,6 12,12 16,14"></polyline>
+                                                </svg>
+                                            </div>
+                                            <div class="text-sm text-muted-foreground" id="last-updated-time">Never</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Validation Rules List -->
+                                    <div class="space-y-4">
+                                        <h3 class="text-base font-semibold">Validation Rules</h3>
+                                        <div id="validation-rules-container" class="space-y-4">
+                                            <!-- Rules will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Test Results Section -->
+                                    <div id="test-results-section" class="mt-6 hidden">
+                                        <h3 class="text-base font-semibold mb-4">Test Results</h3>
+                                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                                            <div class="p-6">
+                                                <div id="test-results-content">
+                                                    <!-- Test results will be populated here -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Debug Results Section -->
+                                    <div id="debug-results-section" class="mt-6 hidden">
+                                        <h3 class="text-base font-semibold mb-4">JSON Structure Analysis</h3>
+                                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                                            <div class="p-6">
+                                                <div id="debug-results-content">
+                                                    <!-- Debug results will be populated here -->
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -42,5 +42,23 @@ test.describe('UI Navigation', () => {
     await page.click('#nav-account-history');
     await expect(page.locator('#page-account-history')).toBeVisible();
   });
+
+  test('accesses Validation Rules from Settings page', async ({ page }) => {
+    const base = process.env.E2E_BASE_URL || 'http://localhost:8080';
+    await page.goto(base);
+
+    // Navigate to Settings
+    await page.click('#nav-settings');
+    await expect(page.locator('#page-settings')).toBeVisible();
+
+    // Find and click Validation Rules section toggle
+    const validationRulesToggle = page.locator('[data-section="validation-rules"]');
+    await expect(validationRulesToggle).toBeVisible();
+    await validationRulesToggle.click();
+
+    // Verify Validation Rules content is visible
+    await expect(page.locator('#validation-rules-content')).toBeVisible();
+    await expect(page.locator('#validation-rules-container')).toBeVisible();
+  });
 });
 

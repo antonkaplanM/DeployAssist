@@ -1,291 +1,103 @@
 # Technical Documentation
 
-Welcome to the technical documentation for the Deployment Assistant application integrations.
+## Overview
+This directory contains comprehensive technical documentation for the Deployment Assistant application.
 
-## 📁 Documentation Files
+## Documentation Index
 
-### 🏗️ [Integration Architecture](./Integration-Architecture.md)
-**Complete technical reference**
-- Detailed architecture documentation
-- Implementation specifics for both Atlassian and Salesforce
-- Security considerations and best practices
-- Environment configuration details
-- Performance metrics and maintenance procedures
+### Setup & Configuration
+- **[Quick-Setup-Guide.md](./Quick-Setup-Guide.md)** - Fast setup instructions for environment configuration
+- **[Database-README.md](./Database-README.md)** - Database setup and management
+- **[PostgreSQL-Setup-Complete.md](./PostgreSQL-Setup-Complete.md)** - Complete PostgreSQL installation guide
 
-### ⚡ [Quick Setup Guide](./Quick-Setup-Guide.md)
-**Get up and running fast**
-- Step-by-step environment setup
-- Required configurations for both integrations
-- Common issues and quick solutions
-- Architecture overview diagram
-
-### 🔧 [Troubleshooting Checklist](./Troubleshooting-Checklist.md)
-**Systematic problem resolution**
-- Issue identification guides
-- Step-by-step troubleshooting procedures
-- Diagnostic tools and commands
-- Recovery procedures
-
-### 📊 [Account History Feature](./Account-History-Feature.md)
-**Track account product evolution**
-- Comprehensive feature documentation
-- User workflows and use cases
-- Technical implementation details
-- UX patterns and design principles
-- Testing coverage and strategies
-
-### ✅ [Validation Rules Documentation](./Validation-Rules-Documentation.md)
-**Payload validation system**
-- Validation rule descriptions
-- Implementation details
-- Testing and troubleshooting
-
-### 🗑️ [Product Removals Feature](./Product-Removals-Feature.md)
-**Product removal tracking and monitoring**
-- Feature overview and implementation
-- Monitoring dashboard details
-- API endpoints and usage
-
-### 🧪 [Testing Strategy](./Testing-Strategy.md)
-**Comprehensive test coverage**
-- Unit, integration, and E2E testing approach
-- Test execution guidelines
-- Coverage reports and best practices
-- Feature-specific test documentation
-
-### 📊 [Analytics Validation Integration](./Analytics-Validation-Integration.md)
-**Analytics dashboard validation features**
-- Validation failure tracking and analytics
-- Multi-request type trend chart (Update, Onboarding, Deprovision)
-- Interactive trend line toggles and preferences
-- Dynamic y-axis scaling and color-coded design
-- API endpoints and technical implementation
-
-### 🔗 [Jira Integration Guide](./Jira-Integration-Guide.md)
-**Atlassian Jira Cloud integration**
-- API token setup and authentication
-- JQL query customization
-- Environment configuration
-- Troubleshooting and security notes
-
-### 🗄️ [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md)
-**Database connection and configuration**
-- Complete PostgreSQL setup guide
-- Connection module documentation
-- API reference and best practices
-- Transaction management and security
-
-### 📚 [Database README](./Database-README.md)
-**Database directory overview**
-- Quick links to database documentation
-- Current setup status
-- Quick start examples
-
-### ⚡ [Database Quick Reference](./Database-Quick-Reference.md)
-**Fast lookup for common database operations**
-- Connection details
-- Common SQL operations
-- Environment variables
-- Useful commands
-
----
-
-## 📝 Change Logs
-
-### [Analytics Trend Enhancement](./CHANGELOG-Analytics-Trend-Enhancement.md)
-**Latest: September 30, 2025**
-- Multi-request type trend lines (Update, Onboarding, Deprovision)
-- Interactive trend line toggles with localStorage persistence
-- Dynamic y-axis rescaling for improved readability
-- Color-aligned design system across all visualizations
-- 16 comprehensive E2E tests
-
-### [Analytics Enhancement](./CHANGELOG-Analytics-Enhancement.md)
-**Validation failure tracking integration**
-- Request type tiles with validation metrics
-- Integration with validation rules system
-- API endpoint documentation
-
-### [Account History](./CHANGELOG-Account-History.md)
-**Account timeline and product evolution tracking**
-- Complete account history feature
-- Product change comparison
-- Search and navigation improvements
-
-## 🎯 Quick Navigation
-
-### For Developers
-- **New to the project?** → Start with [Quick Setup Guide](./Quick-Setup-Guide.md)
-- **Need implementation details?** → See [Integration Architecture](./Integration-Architecture.md)
-- **Something not working?** → Check [Troubleshooting Checklist](./Troubleshooting-Checklist.md)
-- **Database setup?** → See [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md)
-- **Quick database reference?** → See [Database Quick Reference](./Database-Quick-Reference.md)
-- **Account History feature?** → See [Account History Feature](./Account-History-Feature.md)
-- **Product Removals feature?** → See [Product Removals Feature](./Product-Removals-Feature.md)
-- **Analytics & Validation?** → See [Analytics Validation Integration](./Analytics-Validation-Integration.md)
-- **Jira integration?** → See [Jira Integration Guide](./Jira-Integration-Guide.md)
-- **Testing guidance?** → See [Testing Strategy](./Testing-Strategy.md)
-- **Recent changes?** → Check [Change Logs](#-change-logs)
-
-### For DevOps/Infrastructure
-- **Environment setup** → [Quick Setup Guide - Environment Setup](./Quick-Setup-Guide.md#environment-setup)
-- **Security configuration** → [Integration Architecture - Security Considerations](./Integration-Architecture.md#security-considerations)
-- **Performance monitoring** → [Integration Architecture - Performance Metrics](./Integration-Architecture.md#performance-metrics)
-
-### For Support Teams
-- **Common issues** → [Troubleshooting Checklist](./Troubleshooting-Checklist.md)
-- **Diagnostic tools** → [Troubleshooting Checklist - Diagnostic Tools](./Troubleshooting-Checklist.md#diagnostic-tools)
-- **Recovery procedures** → [Troubleshooting Checklist - Recovery Procedures](./Troubleshooting-Checklist.md#recovery-procedures)
-
-## 🔗 Integration Overview
-
-### Atlassian (Jira Cloud)
-- **Type**: Direct REST API
-- **Authentication**: Basic Auth with API tokens
-- **Purpose**: Fetch project initiatives, epics, stories, and tasks
-- **Status**: ✅ Operational with SSL bypass for corporate environments
-
-### Salesforce
-- **Type**: OAuth 2.0 Client Credentials Flow
-- **Authentication**: Server-to-server (no user interaction)
-- **Purpose**: Professional Services Request management
-- **Status**: ✅ Operational with automatic token management
-
-### PostgreSQL Database
-- **Type**: Connection Pool with pg driver
-- **Authentication**: Username/password
-- **Purpose**: Application data storage and persistence
-- **Version**: PostgreSQL 16.8 (64-bit)
-- **Status**: ✅ Connected and operational
-
-## 🚀 Current Status
-
-| Integration | Status | Last Updated | Records Available |
-|-------------|--------|--------------|-------------------|
-| Atlassian   | ✅ Active | 2025-09-24 | ~100 issues/query |
-| Salesforce  | ✅ Active | 2025-09-24 | 3,369 PS requests |
-| PostgreSQL  | ✅ Active | 2025-09-30 | deployment_assistant DB |
-
-## 🛠️ Built-in Diagnostics
-
-The application includes comprehensive diagnostic tools:
-
-### Salesforce Diagnostics
-- **Web Interface**: Settings page → "Test Salesforce" button
-- **API Endpoint**: `GET /api/test-salesforce`
-- **Tests**: Environment variables, OAuth configuration, authentication status, API connectivity
-
-### Atlassian Diagnostics
-- **Real-time logging**: Monitor terminal output during API calls
-- **Fallback mechanism**: Automatic degradation to mock data if API unavailable
-- **SSL status**: Clear indication of certificate handling
-
-### Database Diagnostics
-- **API Endpoint**: `GET /api/health/database`
-- **Tests**: Connection status, pool statistics, query execution
-- **Built-in Functions**: `testConnection()`, `getPoolStats()`
-
-## 📋 Pre-flight Checklist
-
-Before deploying or troubleshooting:
-
-- [ ] Environment variables configured in `.env` file
-- [ ] PostgreSQL database connection configured
-- [ ] Salesforce Connected App uses Client Credentials Flow only
-- [ ] Atlassian API token has appropriate permissions
-- [ ] SSL bypass configured for corporate networks
-- [ ] Application logs are being monitored
-- [ ] Database health check endpoint responding
-
-## 🔄 Maintenance Schedule
-
-### Weekly
-- [ ] Monitor application logs for authentication issues
-- [ ] Verify API response times are within acceptable limits
-
-### Monthly  
-- [ ] Review Salesforce token usage and renewal patterns
-- [ ] Check for Atlassian API deprecation notices
-- [ ] Validate SSL certificate handling still works
-
-### Quarterly
-- [ ] Rotate Atlassian API tokens per security policy
-- [ ] Review Salesforce Connected App permissions
-- [ ] Update documentation with any architectural changes
-
-## 📞 Support
-
-### Issue Priority Guidelines
-
-**🔴 Critical (Immediate Response)**
-- Authentication completely failing
-- Application crashes
-- Data corruption
-
-**🟡 High (Same Day Response)**
-- Partial authentication failures
-- Performance degradation
-- New deployment issues
-
-**🟢 Medium (Next Business Day)**
-- Feature requests
-- Documentation updates
-- Non-critical improvements
-
-### Escalation Path
-1. **Self-Service**: Use troubleshooting checklist and diagnostic tools
-2. **Team Lead**: For configuration and environment issues
-3. **DevOps**: For infrastructure and security concerns
-4. **Vendor Support**: For Salesforce/Atlassian platform issues
-
----
-
-## 📝 Documentation Standards
-
-All documentation in this folder follows these standards:
-- **Markdown format** for universal compatibility
-- **Clear section headers** with emoji indicators
-- **Code examples** with proper syntax highlighting
-- **Checklists** for procedural guidance
-- **Version tracking** with last updated dates
-
----
-
-*For questions about this documentation, please refer to the troubleshooting guide or contact the development team.*
-
----
-
-## 📂 Documentation Index
-
-### Core Documentation
-1. [Integration Architecture](./Integration-Architecture.md) - Complete technical reference
-2. [Quick Setup Guide](./Quick-Setup-Guide.md) - Fast-track setup instructions
-3. [Troubleshooting Checklist](./Troubleshooting-Checklist.md) - Problem resolution guide
-4. [Testing Strategy](./Testing-Strategy.md) - Test coverage and execution
+### Architecture & Integration
+- **[Integration-Architecture.md](./Integration-Architecture.md)** - System architecture and integration details
+- **[Jira-Integration-Guide.md](./Jira-Integration-Guide.md)** - Atlassian/Jira integration setup
 
 ### Feature Documentation
-5. [Account History Feature](./Account-History-Feature.md) - Account timeline tracking
-6. [Product Removals Feature](./Product-Removals-Feature.md) - Product removal monitoring
-7. [Analytics Validation Integration](./Analytics-Validation-Integration.md) - Validation analytics
-8. [Validation Rules Documentation](./Validation-Rules-Documentation.md) - Validation system
-9. [Jira Integration Guide](./Jira-Integration-Guide.md) - Atlassian Jira setup
+- **[Account-History-Feature.md](./Account-History-Feature.md)** - Account history tracking functionality
+- **[Analytics-Validation-Integration.md](./Analytics-Validation-Integration.md)** - Analytics and validation integration
+- **[Customer-Products-Feature.md](./Customer-Products-Feature.md)** - Customer products view
+- **[Expiration-Monitor-Feature.md](./Expiration-Monitor-Feature.md)** - Product expiration tracking
+- **[Expiration-Monitor-Filtering-Enhancement.md](./Expiration-Monitor-Filtering-Enhancement.md)** - Advanced filtering features
+- **[Product-Removals-Feature.md](./Product-Removals-Feature.md)** - Product removal tracking
+- **[Validation-Rules-Documentation.md](./Validation-Rules-Documentation.md)** - Data validation system
 
-### Database Documentation
-10. [PostgreSQL Setup Complete](./PostgreSQL-Setup-Complete.md) - Complete setup guide
-11. [Database README](./Database-README.md) - Database overview
-12. [Database Quick Reference](./Database-Quick-Reference.md) - Quick command reference
+### Testing & Quality
+- **[Testing-Strategy.md](./Testing-Strategy.md)** - Testing approach and methodology
+- **[Customer-Products-Testing-Summary.md](./Customer-Products-Testing-Summary.md)** - Customer products test results
 
-### Change Logs
-13. [CHANGELOG: Analytics Trend Enhancement](./CHANGELOG-Analytics-Trend-Enhancement.md) - Sep 30, 2025
-14. [CHANGELOG: Analytics Enhancement](./CHANGELOG-Analytics-Enhancement.md)
-15. [CHANGELOG: Account History](./CHANGELOG-Account-History.md)
+### Operations & Troubleshooting
+- **[Database-Quick-Reference.md](./Database-Quick-Reference.md)** - Quick database commands reference
+- **[Troubleshooting-Checklist.md](./Troubleshooting-Checklist.md)** - Common issues and solutions
 
-**Total Documentation Files**: 15 comprehensive guides
+### Changelogs
+- **[CHANGELOG-Account-History.md](./CHANGELOG-Account-History.md)** - Account history feature changes
+- **[CHANGELOG-Analytics-Enhancement.md](./CHANGELOG-Analytics-Enhancement.md)** - Analytics improvements
+- **[CHANGELOG-Analytics-Trend-Enhancement.md](./CHANGELOG-Analytics-Trend-Enhancement.md)** - Trend chart updates
+- **[CHANGELOG-Expiration-Monitor.md](./CHANGELOG-Expiration-Monitor.md)** - Expiration monitor updates
+- **[CHANGELOG-Settings-Enhancements.md](./CHANGELOG-Settings-Enhancements.md)** - Settings page and auto-refresh improvements
+
+### Implementation Summaries
+- **[Expiration-Monitor-Implementation-Summary.md](./Expiration-Monitor-Implementation-Summary.md)** - Complete expiration monitor implementation details
+
+## Recent Updates (January 2025)
+
+### Settings Page Enhancements
+- **Auto-Refresh System**: All data pages now support automatic background refresh
+  - Configurable intervals: Never, 1, 5 (default), 10, 15, or 30 minutes
+  - Smart refresh logic: refreshes inactive pages only (pauses on active page)
+  - Last refresh timestamps on each page
+  
+- **Validation Rules Relocation**: Moved from separate page to Settings section
+  - Centralized configuration management
+  - All functionality preserved
+  - Cleaner navigation structure
+
+See [CHANGELOG-Settings-Enhancements.md](./CHANGELOG-Settings-Enhancements.md) for complete details.
+
+## Quick Links
+
+### For Developers
+1. Start with [Integration-Architecture.md](./Integration-Architecture.md) for system overview
+2. Review [Testing-Strategy.md](./Testing-Strategy.md) for testing approach
+3. Check relevant feature documentation for implementation details
+
+### For Administrators  
+1. Follow [Quick-Setup-Guide.md](./Quick-Setup-Guide.md) for initial setup
+2. Use [Database-README.md](./Database-README.md) for database configuration
+3. Refer to [Troubleshooting-Checklist.md](./Troubleshooting-Checklist.md) for common issues
+
+### For Users
+1. Use the in-app Help page for feature guides
+2. Check [Validation-Rules-Documentation.md](./Validation-Rules-Documentation.md) for validation details
+3. Review feature-specific documentation for advanced usage
+
+## Documentation Standards
+
+All documentation follows these standards:
+- **Markdown Format**: All docs use GitHub-flavored Markdown
+- **Version Tracking**: Changelogs document all significant changes
+- **Code Examples**: Practical examples included where applicable
+- **Clear Structure**: Consistent headings and organization
+- **Up-to-Date**: Documentation updated with feature changes
+
+## Contributing
+
+When adding new features or making changes:
+1. Update relevant feature documentation
+2. Add entry to appropriate CHANGELOG
+3. Update this README index if new docs added
+4. Keep Quick-Setup-Guide current with any setup changes
+
+## Support
+
+For questions or issues:
+- Check [Troubleshooting-Checklist.md](./Troubleshooting-Checklist.md) first
+- Review feature-specific documentation
+- Consult the in-app Help page
+- Check recent changelogs for known issues
 
 ---
 
-*For questions about this documentation, please refer to the troubleshooting guide or contact the development team.*
-
-**Documentation Version**: 1.2  
-**Last Updated**: September 30, 2025  
-**Application Version**: Compatible with Deployment Assistant v1.0+
+*Last Updated: January 2025*
