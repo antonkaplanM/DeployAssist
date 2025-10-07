@@ -13,6 +13,11 @@ const removalsTimeFrameSelect = document.getElementById('removals-time-frame-sel
 const removalsStatus = document.getElementById('removals-status');
 const removalsList = document.getElementById('removals-list');
 
+// Expiration Monitor widget elements
+const expirationWindowSelect = document.getElementById('expiration-window-select');
+const expirationStatus = document.getElementById('expiration-status');
+const expirationSummary = document.getElementById('expiration-summary');
+
 // Navigation elements
 const navDashboard = document.getElementById('nav-dashboard');
 const navAnalytics = document.getElementById('nav-analytics');
@@ -247,6 +252,10 @@ function refreshDashboard() {
     // Refresh removals monitor
     if (typeof fetchPSRemovals === 'function') {
         fetchPSRemovals();
+    }
+    // Refresh expiration monitor widget
+    if (typeof fetchExpirationWidget === 'function') {
+        fetchExpirationWidget();
     }
 }
 
@@ -5070,6 +5079,18 @@ function initializePSRemovalsMonitoring() {
     fetchPSRemovals();
 }
 
+// Initialize Expiration Monitor widget
+function initializeExpirationWidget() {
+    console.log('[ExpirationWidget] Initializing expiration monitor widget...');
+    
+    if (expirationWindowSelect) {
+        expirationWindowSelect.addEventListener('change', fetchExpirationWidget);
+    }
+    
+    // Load initial expiration data
+    fetchExpirationWidget();
+}
+
 // Fetch PS requests with removals from the API
 async function fetchPSRemovals() {
     if (!removalsStatus || !removalsList || !removalsTimeFrameSelect) {
@@ -5308,6 +5329,315 @@ function displayRemovalsError(errorMessage) {
     removalsList.classList.add('hidden');
 }
 
+// ===== EXPIRATION MONITOR WIDGET (DASHBOARD) =====
+
+// Fetch expiration data for dashboard widget
+async function fetchExpirationWidget() {
+    if (!expirationStatus || !expirationSummary || !expirationWindowSelect) {
+        console.warn('[ExpirationWidget] Dashboard elements not found');
+        return;
+    }
+    
+    // Update timestamp when loading
+    updateLastRefreshTimestamp('dashboard');
+    
+    const expirationWindow = parseInt(expirationWindowSelect.value) || 7;
+    
+    try {
+        // Show loading state
+        expirationStatus.innerHTML = `
+            <div class="flex items-center gap-2">
+                <div class="loading-spinner"></div>
+                <span class="text-sm text-muted-foreground">Loading expiration data (${expirationWindow} days)...</span>
+            </div>
+        `;
+        expirationSummary.classList.add('hidden');
+        
+        console.log(`[ExpirationWidget] Fetching data for ${expirationWindow} day window`);
+        
+        const response = await fetch(`/api/expiration/monitor?expirationWindow=${expirationWindow}&showExtended=true`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayExpirationWidget(data);
+        } else {
+            displayExpirationWidgetError(data.error || 'Failed to load expiration data');
+        }
+        
+    } catch (error) {
+        console.error('[ExpirationWidget] Error fetching data:', error);
+        displayExpirationWidgetError('Failed to fetch expiration data. Please check your connection.');
+    }
+}
+
+// Display expiration widget results
+function displayExpirationWidget(data) {
+    const { summary, expirations, expirationWindow, lastAnalyzed, note } = data;
+    
+    console.log('[ExpirationWidget] Displaying data:', summary);
+    
+    // Check if this is a "no authentication" response
+    if (note && note.includes('No Salesforce authentication')) {
+        expirationStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-blue-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">Salesforce Authentication Required</p>
+                    <p class="text-sm text-muted-foreground">
+                        Please configure Salesforce authentication in Settings to view expiration data.
+                    </p>
+                </div>
+            </div>
+        `;
+        expirationSummary.classList.add('hidden');
+        return;
+    }
+    
+    // Check if analysis has been run
+    if (!lastAnalyzed) {
+        expirationStatus.innerHTML = `
+            <div class="flex items-center gap-3 text-yellow-700">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium">No Analysis Data Available</p>
+                    <p class="text-sm text-muted-foreground">
+                        Please run the analysis in the <a href="#" onclick="event.preventDefault(); showPage('expiration'); return false;" class="text-purple-600 hover:underline font-medium">Expiration Monitor</a> to view expiration data.
+                    </p>
+                </div>
+            </div>
+        `;
+        expirationSummary.classList.add('hidden');
+        return;
+    }
+    
+    // Display summary
+    const atRiskCount = summary.atRisk || 0;
+    const extendedCount = summary.extended || 0;
+    const totalExpiring = summary.totalExpiring || 0;
+    const accountsAffected = summary.accountsAffected || 0;
+    
+    // Filter at-risk expirations
+    const atRiskExpirations = (expirations || []).filter(exp => exp.status === 'at-risk');
+    
+    // Determine status color
+    let statusColor = 'green';
+    let statusIcon = '✓';
+    let statusText = 'All products extended';
+    
+    if (atRiskCount > 0) {
+        statusColor = 'red';
+        statusIcon = '⚠️';
+        statusText = `${atRiskCount} product${atRiskCount !== 1 ? 's' : ''} at risk`;
+    } else if (totalExpiring > 0) {
+        statusColor = 'green';
+        statusIcon = '✓';
+        statusText = `All ${totalExpiring} expiring product${totalExpiring !== 1 ? 's are' : ' is'} extended`;
+    }
+    
+    expirationStatus.innerHTML = `
+        <div class="flex items-center gap-3 text-${statusColor}-700">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    ${atRiskCount > 0 ? `
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                        <path d="M12 9v4"></path>
+                        <path d="M12 17h.01"></path>
+                    ` : `
+                        <path d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    `}
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">${statusText}</p>
+                <p class="text-sm text-muted-foreground">
+                    ${totalExpiring} total product${totalExpiring !== 1 ? 's' : ''} expiring in next ${expirationWindow} days across ${accountsAffected} account${accountsAffected !== 1 ? 's' : ''}
+                </p>
+            </div>
+        </div>
+    `;
+    
+    // Display detailed summary cards
+    if (totalExpiring > 0) {
+        let summaryHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <!-- Total Expiring -->
+                <div class="rounded-lg border bg-purple-50 p-3">
+                    <div class="text-2xl font-bold text-purple-700">${totalExpiring}</div>
+                    <div class="text-xs text-purple-600 mt-1">Total Expiring</div>
+                </div>
+                
+                <!-- At Risk -->
+                <div class="rounded-lg border ${atRiskCount > 0 ? 'bg-red-50 ring-2 ring-red-600' : 'bg-slate-50'} p-3">
+                    <div class="text-2xl font-bold ${atRiskCount > 0 ? 'text-red-700' : 'text-slate-600'}">${atRiskCount}</div>
+                    <div class="text-xs ${atRiskCount > 0 ? 'text-red-600' : 'text-slate-500'} mt-1">At Risk</div>
+                </div>
+                
+                <!-- Extended -->
+                <div class="rounded-lg border bg-green-50 p-3">
+                    <div class="text-2xl font-bold text-green-700">${extendedCount}</div>
+                    <div class="text-xs text-green-600 mt-1">Extended</div>
+                </div>
+                
+                <!-- Accounts -->
+                <div class="rounded-lg border bg-blue-50 p-3">
+                    <div class="text-2xl font-bold text-blue-700">${accountsAffected}</div>
+                    <div class="text-xs text-blue-600 mt-1">Accounts</div>
+                </div>
+            </div>
+        `;
+        
+        // Add expandable at-risk records section
+        if (atRiskCount > 0 && atRiskExpirations.length > 0) {
+            summaryHTML += `
+                <div class="border-t pt-3 mt-3">
+                    <button 
+                        id="expiration-expand-btn"
+                        onclick="toggleExpirationExpand(); return false;"
+                        class="flex items-center gap-2 text-sm font-medium text-red-700 hover:text-red-800 transition-colors"
+                    >
+                        <svg id="expiration-expand-icon" class="h-4 w-4 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
+                        <span id="expiration-expand-text">Show ${atRiskCount} at-risk record${atRiskCount !== 1 ? 's' : ''}</span>
+                    </button>
+                    
+                    <div id="expiration-at-risk-list" class="hidden mt-3 space-y-2">
+                        ${renderAtRiskRecords(atRiskExpirations)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        summaryHTML += `
+            <!-- View Full Details Button -->
+            <div class="flex items-center justify-between pt-2 border-t mt-3">
+                <div class="text-xs text-muted-foreground">
+                    Last analyzed: ${formatTimestamp(lastAnalyzed)}
+                </div>
+                <button 
+                    onclick="showPage('expiration'); return false;"
+                    class="inline-flex items-center gap-2 rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 transition-colors"
+                >
+                    View Full Details
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        expirationSummary.innerHTML = summaryHTML;
+        expirationSummary.classList.remove('hidden');
+    } else {
+        expirationSummary.classList.add('hidden');
+    }
+}
+
+// Render at-risk records for the expandable section
+function renderAtRiskRecords(atRiskExpirations) {
+    return atRiskExpirations.slice(0, 10).map(item => {
+        const { account, psRecord, expiringProducts, earliestExpiry } = item;
+        
+        // Count products by type that are at risk
+        const atRiskModels = (expiringProducts.models || []).filter(p => !p.isExtended).length;
+        const atRiskData = (expiringProducts.data || []).filter(p => !p.isExtended).length;
+        const atRiskApps = (expiringProducts.apps || []).filter(p => !p.isExtended).length;
+        const totalAtRisk = atRiskModels + atRiskData + atRiskApps;
+        
+        // Calculate days until expiry
+        const daysUntil = Math.ceil((new Date(earliestExpiry) - new Date()) / (1000 * 60 * 60 * 24));
+        
+        return `
+            <div class="rounded-lg border border-red-200 bg-red-50 p-3 hover:shadow-md transition-shadow">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium text-sm text-red-900">${account.name}</span>
+                            <span class="text-xs text-red-600">•</span>
+                            <span class="text-sm text-red-700">${psRecord.name}</span>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            ${atRiskModels > 0 ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">${atRiskModels} Model${atRiskModels !== 1 ? 's' : ''}</span>` : ''}
+                            ${atRiskData > 0 ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">${atRiskData} Data</span>` : ''}
+                            ${atRiskApps > 0 ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">${atRiskApps} App${atRiskApps !== 1 ? 's' : ''}</span>` : ''}
+                        </div>
+                        <div class="text-xs text-red-600 mt-1">
+                            Expires in ${daysUntil} day${daysUntil !== 1 ? 's' : ''} (${formatDate(earliestExpiry)})
+                        </div>
+                    </div>
+                    <button 
+                        onclick="showPage('expiration'); return false;"
+                        class="flex-shrink-0 inline-flex items-center gap-1 rounded-md bg-red-700 px-2 py-1 text-xs font-medium text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 transition-colors"
+                    >
+                        View
+                        <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('') + (atRiskExpirations.length > 10 ? `
+        <div class="text-center text-xs text-muted-foreground py-2">
+            Showing 10 of ${atRiskExpirations.length} at-risk records. <button onclick="showPage('expiration'); return false;" class="text-purple-600 hover:underline font-medium">View all in Expiration Monitor</button>
+        </div>
+    ` : '');
+}
+
+// Toggle expand/collapse for at-risk records
+function toggleExpirationExpand() {
+    const atRiskList = document.getElementById('expiration-at-risk-list');
+    const expandIcon = document.getElementById('expiration-expand-icon');
+    const expandText = document.getElementById('expiration-expand-text');
+    
+    if (!atRiskList) return;
+    
+    const isHidden = atRiskList.classList.contains('hidden');
+    
+    if (isHidden) {
+        atRiskList.classList.remove('hidden');
+        expandIcon.style.transform = 'rotate(90deg)';
+        expandText.textContent = expandText.textContent.replace('Show', 'Hide');
+    } else {
+        atRiskList.classList.add('hidden');
+        expandIcon.style.transform = 'rotate(0deg)';
+        expandText.textContent = expandText.textContent.replace('Hide', 'Show');
+    }
+}
+
+// Display expiration widget error
+function displayExpirationWidgetError(errorMessage) {
+    expirationStatus.innerHTML = `
+        <div class="flex items-center gap-3 text-red-700">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">Error loading expiration data</p>
+                <p class="text-sm text-muted-foreground">${errorMessage}</p>
+            </div>
+        </div>
+    `;
+    expirationSummary.classList.add('hidden');
+}
+
 // Toggle expand/collapse for additional removal records
 function toggleRemovalsExpand() {
     const additionalRecords = document.getElementById('removals-additional');
@@ -5496,6 +5826,9 @@ function initializeApp() {
     
     // Initialize PS Request Removals monitoring
     initializePSRemovalsMonitoring();
+    
+    // Initialize Expiration Monitor widget
+    initializeExpirationWidget();
     
     // Initialize navigation - restore saved page or default to dashboard
     const savedPage = localStorage.getItem('currentPage') || 'dashboard';
