@@ -1671,6 +1671,256 @@ app.get('/api/expiration/status', async (req, res) => {
     }
 });
 
+// ===== GHOST ACCOUNTS API ENDPOINTS =====
+
+// Get all ghost accounts with filters
+app.get('/api/ghost-accounts', async (req, res) => {
+    try {
+        console.log('👻 Ghost accounts API called...', req.query);
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            console.log('⚠️ No valid Salesforce authentication - returning empty data');
+            return res.json({
+                success: true,
+                ghostAccounts: [],
+                summary: {
+                    totalGhostAccounts: 0,
+                    unreviewed: 0,
+                    reviewed: 0
+                },
+                note: 'No Salesforce authentication - please configure in Settings',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        const filters = {
+            isReviewed: req.query.isReviewed !== undefined ? req.query.isReviewed === 'true' : undefined,
+            accountSearch: req.query.accountSearch,
+            expiryBefore: req.query.expiryBefore,
+            expiryAfter: req.query.expiryAfter
+        };
+        
+        // Remove undefined values
+        Object.keys(filters).forEach(key => {
+            if (filters[key] === undefined) {
+                delete filters[key];
+            }
+        });
+        
+        console.log(`📊 Fetching ghost accounts with filters:`, filters);
+        
+        const result = await db.getGhostAccounts(filters);
+        const summaryResult = await db.getGhostAccountsSummary();
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                ghostAccounts: result.ghostAccounts,
+                summary: summaryResult.success ? summaryResult.summary : {
+                    totalGhostAccounts: 0,
+                    unreviewed: 0,
+                    reviewed: 0
+                },
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                ghostAccounts: [],
+                summary: {
+                    totalGhostAccounts: 0,
+                    unreviewed: 0,
+                    reviewed: 0
+                }
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching ghost accounts:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch ghost accounts',
+            ghostAccounts: []
+        });
+    }
+});
+
+// Refresh ghost accounts analysis
+app.post('/api/ghost-accounts/refresh', async (req, res) => {
+    try {
+        console.log('🔄 Ghost accounts refresh requested...');
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            return res.status(401).json({
+                success: false,
+                error: 'No Salesforce authentication available'
+            });
+        }
+        
+        const analysisStarted = new Date();
+        
+        console.log('👻 Starting ghost accounts identification...');
+        
+        const result = await salesforce.identifyGhostAccounts();
+        
+        const analysisCompleted = new Date();
+        const durationSeconds = (analysisCompleted - analysisStarted) / 1000;
+        
+        if (result.success) {
+            console.log(`✅ Ghost accounts analysis complete: ${result.ghostCount} ghost accounts found`);
+            
+            res.json({
+                success: true,
+                message: 'Ghost accounts analysis completed successfully',
+                summary: {
+                    totalAnalyzed: result.totalAnalyzed,
+                    ghostAccountsFound: result.ghostCount,
+                    duration: durationSeconds
+                },
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                message: 'Ghost accounts analysis failed'
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error refreshing ghost accounts:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to refresh ghost accounts analysis',
+            details: err.message
+        });
+    }
+});
+
+// Mark ghost account as reviewed
+app.post('/api/ghost-accounts/:accountId/review', async (req, res) => {
+    try {
+        const { accountId } = req.params;
+        const { reviewedBy, notes } = req.body;
+        
+        if (!reviewedBy) {
+            return res.status(400).json({
+                success: false,
+                error: 'reviewedBy is required'
+            });
+        }
+        
+        console.log(`✅ Marking ghost account as reviewed: ${accountId}`);
+        
+        const result = await db.markGhostAccountReviewed(accountId, reviewedBy, notes);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Ghost account marked as reviewed',
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                error: result.error
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error marking ghost account as reviewed:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to mark ghost account as reviewed'
+        });
+    }
+});
+
+// Remove ghost account from tracking
+app.delete('/api/ghost-accounts/:accountId', async (req, res) => {
+    try {
+        const { accountId } = req.params;
+        
+        console.log(`🗑️ Removing ghost account: ${accountId}`);
+        
+        const result = await db.removeGhostAccount(accountId);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Ghost account removed from tracking',
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error removing ghost account:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to remove ghost account'
+        });
+    }
+});
+
+// Get recently deprovisioned accounts
+app.get('/api/deprovisioned-accounts', async (req, res) => {
+    try {
+        console.log('📋 Recently deprovisioned accounts API called...', req.query);
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            console.log('⚠️ No valid Salesforce authentication - returning empty data');
+            return res.json({
+                success: true,
+                deprovisionedAccounts: [],
+                daysBack: parseInt(req.query.daysBack) || 30,
+                count: 0,
+                note: 'No Salesforce authentication - please configure in Settings',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        const daysBack = parseInt(req.query.daysBack) || 30;
+        
+        console.log(`📊 Fetching accounts deprovisioned in last ${daysBack} days...`);
+        
+        const result = await salesforce.getRecentlyDeprovisionedAccounts(daysBack);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                deprovisionedAccounts: result.deprovisionedAccounts,
+                totalAnalyzed: result.totalAnalyzed,
+                daysBack: result.daysBack,
+                count: result.count,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                deprovisionedAccounts: [],
+                count: 0
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching deprovisioned accounts:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch deprovisioned accounts',
+            deprovisionedAccounts: [],
+            count: 0
+        });
+    }
+});
+
 // ===== CUSTOMER PRODUCTS API ENDPOINTS =====
 
 // Get aggregated customer products for an account

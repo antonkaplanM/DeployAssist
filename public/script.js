@@ -30,6 +30,7 @@ const navRoadmap = document.getElementById('nav-roadmap');
 const navProvisioning = document.getElementById('nav-provisioning');
 const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
 const navExpiration = document.getElementById('nav-expiration');
+const navGhostAccounts = document.getElementById('nav-ghost-accounts');
 const navCustomerProducts = document.getElementById('nav-customer-products');
 const navHelp = document.getElementById('nav-help');
 const navSettings = document.getElementById('nav-settings');
@@ -174,6 +175,7 @@ function refreshInactivePages() {
         'account-history',
         'provisioning',
         'expiration',
+        'ghost-accounts',
         'customer-products',
         'roadmap'
     ];
@@ -198,6 +200,9 @@ function refreshInactivePages() {
                     break;
                 case 'expiration':
                     refreshExpiration();
+                    break;
+                case 'ghost-accounts':
+                    refreshGhostAccountsPage();
                     break;
                 case 'customer-products':
                     refreshCustomerProducts();
@@ -299,6 +304,14 @@ function refreshExpiration() {
     }
 }
 
+function refreshGhostAccountsPage() {
+    console.log('Refreshing Ghost Accounts...');
+    // Reload ghost accounts data
+    if (typeof loadGhostAccountsData === 'function') {
+        loadGhostAccountsData();
+    }
+}
+
 function refreshCustomerProducts() {
     console.log('Refreshing Customer Products...');
     // Only refresh if there's an active search
@@ -379,7 +392,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'customer-products') {
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'customer-products') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -4811,7 +4824,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'customer-products') {
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'customer-products') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -7989,6 +8002,640 @@ async function refreshExpirationAnalysis() {
 }
 
 console.log('Expiration Monitor module loaded');
+
+// ===== GHOST ACCOUNTS MODULE =====
+
+let ghostAccountsData = [];
+let filteredGhostAccountsData = [];
+let deprovisionedAccountsData = [];
+let currentGhostView = 'ghost'; // 'ghost' or 'deprovisioned'
+
+// Load ghost accounts data
+async function loadGhostAccountsData() {
+    console.log('[GhostAccounts] Loading ghost accounts data...');
+    
+    const tableBody = document.getElementById('ghost-accounts-table-body');
+    const emptyState = document.getElementById('ghost-accounts-empty-state');
+    const statusEl = document.getElementById('ghost-accounts-page-status');
+    const tableSection = document.querySelector('#ghost-accounts-table-section .rounded-lg');
+    
+    if (!tableBody) return;
+    
+    // Show loading state
+    if (statusEl) statusEl.textContent = 'Loading...';
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="5" class="p-8 text-center">
+                <div class="loading-spinner mx-auto mb-2"></div>
+                <div class="text-sm text-muted-foreground">Loading ghost accounts...</div>
+            </td>
+        </tr>
+    `;
+    
+    try {
+        // Get filter values
+        const accountSearch = document.getElementById('ghost-account-search')?.value || '';
+        const reviewStatus = document.getElementById('ghost-review-status-filter')?.value || 'unreviewed';
+        
+        // Build query params
+        const params = new URLSearchParams();
+        if (accountSearch) params.append('accountSearch', accountSearch);
+        if (reviewStatus !== 'all') params.append('isReviewed', reviewStatus === 'reviewed');
+        
+        const response = await fetch(`/api/ghost-accounts?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            ghostAccountsData = data.ghostAccounts || [];
+            filteredGhostAccountsData = ghostAccountsData;
+            
+            console.log('[GhostAccounts] Loaded', ghostAccountsData.length, 'ghost accounts');
+            
+            // Update summary cards
+            updateGhostAccountsSummary(data.summary);
+            
+            // Update last refresh time
+            const lastRefreshEl = document.getElementById('ghost-accounts-last-refresh');
+            if (lastRefreshEl) {
+                lastRefreshEl.textContent = new Date().toLocaleTimeString();
+            }
+            
+            // Render table or show empty state
+            if (ghostAccountsData.length === 0) {
+                if (tableSection) tableSection.classList.add('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
+                if (statusEl) statusEl.textContent = 'No ghost accounts found';
+            } else {
+                if (tableSection) tableSection.classList.remove('hidden');
+                if (emptyState) emptyState.classList.add('hidden');
+                renderGhostAccountsTable();
+                if (statusEl) statusEl.textContent = `Showing ${ghostAccountsData.length} account(s)`;
+            }
+        } else {
+            console.error('[GhostAccounts] Error loading data:', data.error);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="p-8 text-center text-red-600">
+                        Error loading ghost accounts: ${data.error || 'Unknown error'}
+                    </td>
+                </tr>
+            `;
+            if (statusEl) statusEl.textContent = 'Error loading data';
+        }
+    } catch (error) {
+        console.error('[GhostAccounts] Error:', error);
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="p-8 text-center text-red-600">
+                    Failed to load ghost accounts. Check console for details.
+                </td>
+            </tr>
+        `;
+        if (statusEl) statusEl.textContent = 'Error';
+    }
+}
+
+// Update summary cards
+function updateGhostAccountsSummary(summary) {
+    const totalEl = document.getElementById('ghost-total');
+    const unreviewedEl = document.getElementById('ghost-unreviewed');
+    const reviewedEl = document.getElementById('ghost-reviewed');
+    
+    if (totalEl) totalEl.textContent = summary.total_ghost_accounts || 0;
+    if (unreviewedEl) unreviewedEl.textContent = summary.unreviewed || 0;
+    if (reviewedEl) reviewedEl.textContent = summary.reviewed || 0;
+}
+
+// Render ghost accounts table
+function renderGhostAccountsTable() {
+    console.log('[GhostAccounts] Rendering table with', filteredGhostAccountsData.length, 'accounts');
+    
+    const tableBody = document.getElementById('ghost-accounts-table-body');
+    if (!tableBody) return;
+    
+    if (filteredGhostAccountsData.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="p-8 text-center text-muted-foreground">
+                    No ghost accounts match the current filters.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const rows = filteredGhostAccountsData.map(account => {
+        const expiryDate = new Date(account.latest_expiry_date);
+        const daysSinceExpiry = Math.floor((new Date() - expiryDate) / (1000 * 60 * 60 * 24));
+        
+        return `
+            <tr class="border-b hover:bg-accent/50 transition-colors">
+                <td class="p-4">
+                    <div class="font-medium">${escapeHtml(account.account_name)}</div>
+                    <div class="text-xs text-muted-foreground">${daysSinceExpiry} days since latest expiry</div>
+                </td>
+                <td class="p-4 text-center">
+                    <span class="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+                        ${account.total_expired_products} products
+                    </span>
+                </td>
+                <td class="p-4">
+                    <div class="text-sm">${expiryDate.toLocaleDateString()}</div>
+                    <div class="text-xs text-muted-foreground">${daysSinceExpiry} days ago</div>
+                </td>
+                <td class="p-4">
+                    ${account.is_reviewed ? `
+                        <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                            <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                            Reviewed
+                        </span>
+                        ${account.reviewed_at ? `<div class="text-xs text-muted-foreground mt-1">${new Date(account.reviewed_at).toLocaleDateString()}</div>` : ''}
+                    ` : `
+                        <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">
+                            <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                <path d="M12 9v4"></path>
+                                <path d="M12 17h.01"></path>
+                            </svg>
+                            Needs Review
+                        </span>
+                    `}
+                </td>
+                <td class="p-4">
+                    <div class="flex items-center gap-2">
+                        ${!account.is_reviewed ? `
+                            <button 
+                                onclick="showReviewGhostAccountDialog('${account.account_id}', '${escapeHtml(account.account_name).replace(/'/g, "\\'")}')"
+                                class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                                title="Mark as Reviewed"
+                            >
+                                <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 12l2 2 4-4"></path>
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                </svg>
+                                Review
+                            </button>
+                        ` : ''}
+                        <button 
+                            onclick="viewGhostAccountDetails('${account.account_id}', '${escapeHtml(account.account_name).replace(/'/g, "\\'")}')"
+                            class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                            title="View Details"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = rows;
+}
+
+// Show review dialog
+function showReviewGhostAccountDialog(accountId, accountName) {
+    const dialogHTML = `
+        <div class="space-y-4">
+            <p class="text-sm text-muted-foreground">
+                Mark this ghost account as reviewed? This indicates that you have investigated this account and taken appropriate action.
+            </p>
+            <div>
+                <label class="text-sm font-medium mb-2 block">Reviewer Name:</label>
+                <input 
+                    type="text" 
+                    id="reviewer-name-input" 
+                    placeholder="Your name or email"
+                    class="w-full h-9 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+            </div>
+            <div>
+                <label class="text-sm font-medium mb-2 block">Notes (optional):</label>
+                <textarea 
+                    id="review-notes-input" 
+                    placeholder="Add any notes about this account..."
+                    rows="3"
+                    class="w-full px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                ></textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button 
+                    onclick="closeModal()"
+                    class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
+                    Cancel
+                </button>
+                <button 
+                    onclick="submitGhostAccountReview('${accountId}')"
+                    class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                    Mark as Reviewed
+                </button>
+            </div>
+        </div>
+    `;
+    
+    showModal(`Review Ghost Account: ${accountName}`, dialogHTML);
+}
+
+// Submit ghost account review
+async function submitGhostAccountReview(accountId) {
+    const reviewerNameInput = document.getElementById('reviewer-name-input');
+    const notesInput = document.getElementById('review-notes-input');
+    
+    if (!reviewerNameInput || !reviewerNameInput.value.trim()) {
+        alert('Please enter your name or email');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/ghost-accounts/${accountId}/review`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reviewedBy: reviewerNameInput.value.trim(),
+                notes: notesInput.value.trim() || null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('[GhostAccounts] Account marked as reviewed');
+            closeModal();
+            await loadGhostAccountsData(); // Reload data
+        } else {
+            alert(`Failed to mark as reviewed: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('[GhostAccounts] Error marking as reviewed:', error);
+        alert('Failed to mark account as reviewed. Check console for details.');
+    }
+}
+
+// View ghost account details (navigate to account history page)
+function viewGhostAccountDetails(accountId, accountName) {
+    console.log('[GhostAccounts] Viewing details for:', accountName);
+    
+    // Navigate to Account History page
+    showPage('account-history');
+    
+    // Set the search input value
+    const accountInput = document.getElementById('account-search-input');
+    if (accountInput) {
+        accountInput.value = accountName;
+    }
+    
+    // Load the account history directly
+    setTimeout(() => {
+        if (typeof loadAccountHistory === 'function') {
+            loadAccountHistory(accountName);
+        }
+    }, 100);
+}
+
+// Refresh ghost accounts analysis
+async function refreshGhostAccounts() {
+    console.log('[GhostAccounts] Starting ghost accounts analysis...');
+    
+    const refreshBtn = document.getElementById('refresh-ghost-accounts-btn');
+    const refreshEmptyBtn = document.getElementById('refresh-ghost-empty-btn');
+    const statusEl = document.getElementById('ghost-accounts-page-status');
+    
+    const originalBtnText = refreshBtn?.innerHTML || '';
+    const originalEmptyBtnText = refreshEmptyBtn?.textContent || '';
+    
+    try {
+        // Update button states
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = `
+                <svg class="h-4 w-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                    <path d="M21 3v5h-5"></path>
+                </svg>
+                Analyzing...
+            `;
+        }
+        
+        if (refreshEmptyBtn) {
+            refreshEmptyBtn.disabled = true;
+            refreshEmptyBtn.textContent = 'Analyzing...';
+        }
+        
+        if (statusEl) statusEl.textContent = 'Running analysis...';
+        
+        const response = await fetch('/api/ghost-accounts/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('[GhostAccounts] ✅ Analysis complete:', data.summary.ghostAccountsFound, 'ghost accounts found');
+            alert(`Analysis complete!\n\n${data.summary.ghostAccountsFound} ghost account(s) found\n${data.summary.totalAnalyzed} accounts analyzed`);
+            
+            // Reload data
+            await loadGhostAccountsData();
+        } else {
+            console.error('[GhostAccounts] ❌ Analysis failed:', data.error);
+            alert(`Analysis failed: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('[GhostAccounts] Error refreshing:', error);
+        alert('Failed to refresh ghost accounts analysis. Check console for details.');
+    } finally {
+        // Restore button states
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = originalBtnText;
+        }
+        
+        if (refreshEmptyBtn) {
+            refreshEmptyBtn.disabled = false;
+            refreshEmptyBtn.textContent = originalEmptyBtnText;
+        }
+    }
+}
+
+// Load deprovisioned accounts data
+async function loadDeprovisionedAccountsData() {
+    console.log('[Deprovisioned] Loading deprovisioned accounts data...');
+    
+    const tableBody = document.getElementById('deprovisioned-accounts-table-body');
+    const emptyState = document.getElementById('deprovisioned-accounts-empty-state');
+    const statusEl = document.getElementById('deprovisioned-accounts-status');
+    const tableSection = document.querySelector('#deprovisioned-accounts-section .rounded-lg');
+    
+    if (!tableBody) return;
+    
+    // Show loading state
+    if (statusEl) statusEl.textContent = 'Loading...';
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="6" class="p-8 text-center">
+                <div class="loading-spinner mx-auto mb-2"></div>
+                <div class="text-sm text-muted-foreground">Loading deprovisioned accounts...</div>
+            </td>
+        </tr>
+    `;
+    
+    try {
+        // Get filter values
+        const daysBack = document.getElementById('deprovisioned-timeframe-filter')?.value || '30';
+        
+        // Build query params
+        const params = new URLSearchParams();
+        params.append('daysBack', daysBack);
+        
+        const response = await fetch(`/api/deprovisioned-accounts?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            deprovisionedAccountsData = data.deprovisionedAccounts || [];
+            
+            console.log('[Deprovisioned] Loaded', deprovisionedAccountsData.length, 'deprovisioned accounts');
+            
+            // Update last refresh time
+            const lastRefreshEl = document.getElementById('ghost-accounts-last-refresh');
+            if (lastRefreshEl) {
+                lastRefreshEl.textContent = new Date().toLocaleTimeString();
+            }
+            
+            // Render table or show empty state
+            if (deprovisionedAccountsData.length === 0) {
+                if (tableSection) tableSection.classList.add('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
+                if (statusEl) statusEl.textContent = `No deprovisioned accounts in last ${daysBack} days`;
+            } else {
+                if (tableSection) tableSection.classList.remove('hidden');
+                if (emptyState) emptyState.classList.add('hidden');
+                renderDeprovisionedAccountsTable();
+                if (statusEl) statusEl.textContent = `Showing ${deprovisionedAccountsData.length} account(s)`;
+            }
+        } else {
+            console.error('[Deprovisioned] Error loading data:', data.error);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-red-600">
+                        Error loading deprovisioned accounts: ${data.error || 'Unknown error'}
+                    </td>
+                </tr>
+            `;
+            if (statusEl) statusEl.textContent = 'Error loading data';
+        }
+    } catch (error) {
+        console.error('[Deprovisioned] Error:', error);
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="p-8 text-center text-red-600">
+                    Failed to load deprovisioned accounts. Check console for details.
+                </td>
+            </tr>
+        `;
+        if (statusEl) statusEl.textContent = 'Error';
+    }
+}
+
+// Render deprovisioned accounts table
+function renderDeprovisionedAccountsTable() {
+    console.log('[Deprovisioned] Rendering table with', deprovisionedAccountsData.length, 'accounts');
+    
+    const tableBody = document.getElementById('deprovisioned-accounts-table-body');
+    if (!tableBody) return;
+    
+    if (deprovisionedAccountsData.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="p-8 text-center text-muted-foreground">
+                    No deprovisioned accounts found.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const rows = deprovisionedAccountsData.map(account => {
+        const expiryDate = new Date(account.latestExpiryDate);
+        const deprovDate = new Date(account.deprovisioningRecord.createdDate);
+        
+        return `
+            <tr class="border-b hover:bg-accent/50 transition-colors">
+                <td class="p-4">
+                    <div class="font-medium">${escapeHtml(account.accountName)}</div>
+                </td>
+                <td class="p-4 text-center">
+                    <span class="inline-flex items-center justify-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                        ${account.totalExpiredProducts} products
+                    </span>
+                </td>
+                <td class="p-4">
+                    <div class="text-sm">${expiryDate.toLocaleDateString()}</div>
+                </td>
+                <td class="p-4">
+                    <div class="font-medium text-sm">${account.deprovisioningRecord.name}</div>
+                    <div class="text-xs text-muted-foreground">${account.deprovisioningRecord.status || 'N/A'}</div>
+                </td>
+                <td class="p-4">
+                    <div class="text-sm">${deprovDate.toLocaleDateString()}</div>
+                    <div class="text-xs text-muted-foreground">${account.daysSinceDeprovisioning} days ago</div>
+                </td>
+                <td class="p-4">
+                    <button 
+                        onclick="viewGhostAccountDetails('${account.accountId}', '${escapeHtml(account.accountName).replace(/'/g, "\\'")}')"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                        title="View Details"
+                    >
+                        <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        View
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = rows;
+}
+
+// Toggle between ghost and deprovisioned views
+function toggleGhostView(view) {
+    console.log('[GhostAccounts] Switching to view:', view);
+    currentGhostView = view;
+    
+    // Update toggle buttons
+    const ghostBtn = document.getElementById('view-toggle-ghost');
+    const deprovisionedBtn = document.getElementById('view-toggle-deprovisioned');
+    
+    if (view === 'ghost') {
+        ghostBtn.classList.add('bg-primary', 'text-primary-foreground');
+        ghostBtn.classList.remove('border', 'border-input', 'bg-background');
+        deprovisionedBtn.classList.remove('bg-primary', 'text-primary-foreground');
+        deprovisionedBtn.classList.add('border', 'border-input', 'bg-background');
+        
+        // Show ghost filters and table
+        document.getElementById('ghost-filters')?.classList.remove('hidden');
+        document.getElementById('deprovisioned-filters')?.classList.add('hidden');
+        document.getElementById('ghost-accounts-table-section')?.classList.remove('hidden');
+        document.getElementById('deprovisioned-accounts-section')?.classList.add('hidden');
+        
+        // Load data if not loaded
+        if (ghostAccountsData.length === 0) {
+            loadGhostAccountsData();
+        }
+    } else {
+        deprovisionedBtn.classList.add('bg-primary', 'text-primary-foreground');
+        deprovisionedBtn.classList.remove('border', 'border-input', 'bg-background');
+        ghostBtn.classList.remove('bg-primary', 'text-primary-foreground');
+        ghostBtn.classList.add('border', 'border-input', 'bg-background');
+        
+        // Show deprovisioned filters and table
+        document.getElementById('ghost-filters')?.classList.add('hidden');
+        document.getElementById('deprovisioned-filters')?.classList.remove('hidden');
+        document.getElementById('ghost-accounts-table-section')?.classList.add('hidden');
+        document.getElementById('deprovisioned-accounts-section')?.classList.remove('hidden');
+        
+        // Load data
+        loadDeprovisionedAccountsData();
+    }
+}
+
+// Setup ghost accounts event listeners
+function setupGhostAccountsEventListeners() {
+    // View toggle buttons
+    const ghostToggle = document.getElementById('view-toggle-ghost');
+    const deprovisionedToggle = document.getElementById('view-toggle-deprovisioned');
+    
+    if (ghostToggle) {
+        ghostToggle.addEventListener('click', () => toggleGhostView('ghost'));
+    }
+    
+    if (deprovisionedToggle) {
+        deprovisionedToggle.addEventListener('click', () => toggleGhostView('deprovisioned'));
+    }
+    
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-ghost-accounts-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshGhostAccounts);
+    }
+    
+    // Refresh empty state button
+    const refreshEmptyBtn = document.getElementById('refresh-ghost-empty-btn');
+    if (refreshEmptyBtn) {
+        refreshEmptyBtn.addEventListener('click', refreshGhostAccounts);
+    }
+    
+    // Search filter
+    const searchInput = document.getElementById('ghost-account-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            // Debounce search
+            clearTimeout(searchInput.debounceTimer);
+            searchInput.debounceTimer = setTimeout(() => {
+                loadGhostAccountsData();
+            }, 300);
+        });
+    }
+    
+    // Review status filter
+    const statusFilter = document.getElementById('ghost-review-status-filter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', loadGhostAccountsData);
+    }
+    
+    // Clear filters button
+    const clearFiltersBtn = document.getElementById('clear-ghost-filters-btn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = 'unreviewed';
+            loadGhostAccountsData();
+        });
+    }
+    
+    // Deprovisioned timeframe filter
+    const timeframeFilter = document.getElementById('deprovisioned-timeframe-filter');
+    if (timeframeFilter) {
+        timeframeFilter.addEventListener('change', loadDeprovisionedAccountsData);
+    }
+    
+    // Navigation handler
+    if (navGhostAccounts) {
+        navGhostAccounts.addEventListener('click', () => {
+            showPage('ghost-accounts');
+            // Load data if not loaded yet
+            if (currentGhostView === 'ghost' && ghostAccountsData.length === 0) {
+                loadGhostAccountsData();
+            } else if (currentGhostView === 'deprovisioned' && deprovisionedAccountsData.length === 0) {
+                loadDeprovisionedAccountsData();
+            }
+        });
+    }
+    
+    console.log('[GhostAccounts] Event listeners setup complete');
+}
+
+// Initialize ghost accounts on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupGhostAccountsEventListeners);
+} else {
+    setupGhostAccountsEventListeners();
+}
+
+console.log('Ghost Accounts module loaded');
 
 // ===== MODAL FUNCTIONS =====
 

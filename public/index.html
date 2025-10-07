@@ -147,6 +147,17 @@
                                     </svg>
                                     Expiration Monitor
                                 </button>
+                                <button 
+                                    id="nav-ghost-accounts" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                        <path d="M12 9v9"></path>
+                                        <path d="M3 18a9 9 0 1 0 18 0"></path>
+                                    </svg>
+                                    Ghost Accounts
+                                </button>
                             </div>
                         </div>
                         
@@ -1051,6 +1062,245 @@
                             <button id="refresh-empty-btn" class="mt-4 inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                                 Run Analysis
                             </button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Ghost Accounts Page -->
+            <div id="page-ghost-accounts" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                    <path d="M12 9v9"></path>
+                                    <path d="M3 18a9 9 0 1 0 18 0"></path>
+                                </svg>
+                                <div>
+                                    <h1 class="text-3xl font-bold tracking-tight">Ghost Accounts</h1>
+                                    <p class="text-muted-foreground mt-2">
+                                        Accounts with all products expired but not deprovisioned
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span>Last refreshed: <span id="ghost-accounts-last-refresh">Never</span></span>
+                                </div>
+                                <button 
+                                    id="refresh-ghost-accounts-btn"
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                                        <path d="M21 3v5h-5"></path>
+                                    </svg>
+                                    Refresh Analysis
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- View Toggle -->
+                    <div class="bg-card rounded-lg border shadow-sm p-4 mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <button 
+                                id="view-toggle-ghost"
+                                class="view-toggle-btn active inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 bg-primary text-primary-foreground"
+                            >
+                                👻 Ghost Accounts
+                            </button>
+                            <button 
+                                id="view-toggle-deprovisioned"
+                                class="view-toggle-btn inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                            >
+                                ✅ Recently Deprovisioned
+                            </button>
+                        </div>
+                        
+                        <!-- Ghost Accounts Filters -->
+                        <div id="ghost-filters" class="grid gap-4 md:grid-cols-3">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-medium">Account Search:</label>
+                                <input 
+                                    type="text"
+                                    id="ghost-account-search" 
+                                    placeholder="Search by account name..."
+                                    class="h-9 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-medium">Review Status:</label>
+                                <select 
+                                    id="ghost-review-status-filter" 
+                                    class="h-9 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <option value="all">All Accounts</option>
+                                    <option value="unreviewed" selected>Unreviewed</option>
+                                    <option value="reviewed">Reviewed</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button 
+                                    id="clear-ghost-filters-btn"
+                                    class="h-9 px-4 rounded-md border border-input bg-background text-sm hover:bg-accent hover:text-accent-foreground"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Deprovisioned Accounts Filters -->
+                        <div id="deprovisioned-filters" class="hidden grid gap-4 md:grid-cols-3">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-medium">Timeframe:</label>
+                                <select 
+                                    id="deprovisioned-timeframe-filter" 
+                                    class="h-9 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <option value="7">Last 7 days</option>
+                                    <option value="30" selected>Last 30 days</option>
+                                    <option value="60">Last 60 days</option>
+                                    <option value="90">Last 90 days</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end col-span-2">
+                                <div class="text-sm text-muted-foreground">
+                                    Showing accounts deprovisioned after all products expired
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid gap-4 md:grid-cols-3 mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Total Ghost Accounts</h3>
+                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                    <path d="M12 9v9"></path>
+                                    <path d="M3 18a9 9 0 1 0 18 0"></path>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold" id="ghost-total">0</div>
+                            <p class="text-xs text-muted-foreground mt-1">Accounts needing attention</p>
+                        </div>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Unreviewed</h3>
+                                <svg class="h-4 w-4 text-orange-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                    <path d="M12 9v4"></path>
+                                    <path d="M12 17h.01"></path>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold text-orange-600" id="ghost-unreviewed">0</div>
+                            <p class="text-xs text-muted-foreground mt-1">Require review</p>
+                        </div>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Reviewed</h3>
+                                <svg class="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 12l2 2 4-4"></path>
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold text-green-600" id="ghost-reviewed">0</div>
+                            <p class="text-xs text-muted-foreground mt-1">Completed reviews</p>
+                        </div>
+                    </div>
+
+                    <!-- Ghost Accounts Table -->
+                    <section id="ghost-accounts-table-section">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-semibold">Ghost Accounts List</h2>
+                            <div id="ghost-accounts-page-status" class="text-sm text-muted-foreground">
+                                Ready
+                            </div>
+                        </div>
+                        
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b bg-muted/50">
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Account Name</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Expired Products</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Latest Expiry Date</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Review Status</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ghost-accounts-table-body">
+                                        <!-- Table rows will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="ghost-accounts-empty-state" class="hidden text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                            <h3 class="mt-4 text-lg font-semibold">No Ghost Accounts Found</h3>
+                            <p class="mt-2 text-sm text-muted-foreground">
+                                All accounts have either active products or proper deprovisioning records.
+                            </p>
+                            <button id="refresh-ghost-empty-btn" class="mt-4 inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                Run Analysis
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Recently Deprovisioned Accounts Section -->
+                    <section id="deprovisioned-accounts-section" class="hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-semibold">Recently Deprovisioned Accounts</h2>
+                            <div id="deprovisioned-accounts-status" class="text-sm text-muted-foreground">
+                                Ready
+                            </div>
+                        </div>
+                        
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b bg-muted/50">
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Account Name</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Expired Products</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Latest Expiry</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Deprovisioning Record</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Deprovisioned</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="deprovisioned-accounts-table-body">
+                                        <!-- Table rows will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="deprovisioned-accounts-empty-state" class="hidden text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                            <h3 class="mt-4 text-lg font-semibold">No Recently Deprovisioned Accounts</h3>
+                            <p class="mt-2 text-sm text-muted-foreground">
+                                No accounts have been deprovisioned in the selected timeframe.
+                            </p>
                         </div>
                     </section>
                 </div>

@@ -1830,6 +1830,555 @@ async function getCustomerProducts(accountName) {
     }
 }
 
+/**
+ * Sync all unique accounts from Salesforce to the database
+ * This pulls ALL accounts incrementally without full repopulation
+ */
+async function syncAllAccountsFromSalesforce() {
+    try {
+        console.log('🔄 Syncing all accounts from Salesforce...');
+        
+        const conn = await getConnection();
+        const db = require('./database');
+        
+        // Query ALL PS records (Salesforce doesn't allow GROUP BY on Account__c)
+        // We'll process them in Node.js to extract unique accounts
+        const soqlQuery = `
+            SELECT Account__c, CreatedDate
+            FROM Prof_Services_Request__c
+            WHERE Account__c != null
+            AND Name LIKE 'PS-%'
+            ORDER BY CreatedDate DESC
+        `;
+        
+        console.log('📊 Querying Salesforce for all PS records to extract accounts...');
+        const result = await conn.query(soqlQuery);
+        const records = result.records || [];
+        
+        console.log(`📊 Processing ${records.length} PS records...`);
+        
+        // Extract unique accounts and aggregate data in Node.js
+        const accountMap = new Map();
+        
+        for (const record of records) {
+            const accountId = record.Account__c;
+            if (!accountId) continue;
+            
+            if (!accountMap.has(accountId)) {
+                accountMap.set(accountId, {
+                    accountId: accountId,
+                    accountName: accountId, // Account__c IS the name in this setup
+                    totalPsRecords: 0,
+                    latestPsDate: null
+                });
+            }
+            
+            const accountData = accountMap.get(accountId);
+            accountData.totalPsRecords++;
+            
+            const recordDate = new Date(record.CreatedDate);
+            if (!accountData.latestPsDate || recordDate > accountData.latestPsDate) {
+                accountData.latestPsDate = recordDate;
+            }
+        }
+        
+        console.log(`✅ Found ${accountMap.size} unique accounts`);
+        
+        // Upsert each account to the database
+        let newAccounts = 0;
+        let updatedAccounts = 0;
+        
+        for (const accountData of accountMap.values()) {
+            const result = await db.upsertAllAccount(accountData);
+            
+            if (result.success) {
+                // Check if it was an insert or update
+                const timeDiff = new Date(result.account.updated_at) - new Date(result.account.first_seen);
+                if (timeDiff < 1000) { // Less than 1 second = new
+                    newAccounts++;
+                } else {
+                    updatedAccounts++;
+                }
+            }
+        }
+        
+        console.log(`✅ Sync complete: ${newAccounts} new, ${updatedAccounts} updated`);
+        
+        return {
+            success: true,
+            totalAccounts: accountMap.size,
+            newAccounts: newAccounts,
+            updatedAccounts: updatedAccounts
+        };
+        
+    } catch (err) {
+        console.error('❌ Error syncing accounts from Salesforce:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            totalAccounts: 0
+        };
+    }
+}
+
+/**
+ * Analyze a specific account to determine if it's a ghost account
+ * Ghost account = all products expired + no deprovisioning PS record after latest expiry
+ */
+async function analyzeAccountForGhostStatus(accountId, accountName) {
+    try {
+        console.log(`👻 Analyzing account for ghost status: ${accountName} (ID: ${accountId})`);
+        
+        const conn = await getConnection();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Query all PS requests for this account
+        // Account__c is the Account ID, not name
+        const soqlQuery = `
+            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+                   Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
+            FROM Prof_Services_Request__c
+            WHERE Account__c = '${accountId}'
+            ORDER BY CreatedDate DESC
+            LIMIT 1000
+        `;
+        
+        const result = await conn.query(soqlQuery);
+        const records = result.records || [];
+        
+        if (records.length === 0) {
+            return {
+                success: true,
+                isGhost: false,
+                reason: 'No PS records found'
+            };
+        }
+        
+        // Parse all entitlements across all PS records
+        let allExpired = true;
+        let hasAnyEntitlement = false;
+        let latestExpiryDate = null;
+        let totalExpiredProducts = 0;
+        
+        for (const record of records) {
+            const payload = parsePayloadData(record.Payload_Data__c);
+            
+            if (!payload || !payload.hasDetails) {
+                continue;
+            }
+            
+            // Check all entitlement types
+            const allEntitlements = [
+                ...(payload.modelEntitlements || []),
+                ...(payload.dataEntitlements || []),
+                ...(payload.appEntitlements || [])
+            ];
+            
+            for (const entitlement of allEntitlements) {
+                if (!entitlement.endDate) {
+                    continue; // Skip entitlements without end dates
+                }
+                
+                hasAnyEntitlement = true;
+                const endDate = new Date(entitlement.endDate);
+                
+                // Track the latest expiry date
+                if (!latestExpiryDate || endDate > latestExpiryDate) {
+                    latestExpiryDate = endDate;
+                }
+                
+                // If any entitlement is still active, not a ghost account
+                if (endDate >= today) {
+                    allExpired = false;
+                } else {
+                    totalExpiredProducts++;
+                }
+            }
+        }
+        
+        // If no entitlements found or not all expired, not a ghost account
+        if (!hasAnyEntitlement) {
+            return {
+                success: true,
+                isGhost: false,
+                reason: 'No entitlements found'
+            };
+        }
+        
+        if (!allExpired) {
+            return {
+                success: true,
+                isGhost: false,
+                reason: 'Has active entitlements'
+            };
+        }
+        
+        // All products are expired - now check for deprovisioning PS record
+        // after the latest expiry date
+        const deprovisioningRecords = records.filter(record => {
+            const requestType = record.Request_Type_RI__c?.toLowerCase() || '';
+            const isDeprovisioning = requestType.includes('deprovision');
+            const recordDate = new Date(record.CreatedDate);
+            return isDeprovisioning && recordDate > latestExpiryDate;
+        });
+        
+        if (deprovisioningRecords.length > 0) {
+            return {
+                success: true,
+                isGhost: false,
+                reason: 'Has deprovisioning record after latest expiry',
+                deprovisioningRecord: deprovisioningRecords[0].Name
+            };
+        }
+        
+        // This is a ghost account!
+        return {
+            success: true,
+            isGhost: true,
+            accountId: accountId,
+            accountName: accountName,
+            totalExpiredProducts: totalExpiredProducts,
+            latestExpiryDate: latestExpiryDate.toISOString().split('T')[0],
+            psRecordsAnalyzed: records.length
+        };
+        
+    } catch (err) {
+        console.error(`❌ Error analyzing account for ghost status: ${err.message}`);
+        return {
+            success: false,
+            error: err.message
+        };
+    }
+}
+
+/**
+ * Identify all ghost accounts from the expiration monitor data
+ */
+async function identifyGhostAccounts() {
+    try {
+        console.log('👻 Starting ghost accounts identification...');
+        
+        const db = require('./database');
+        
+        // STEP 1: Sync all accounts from Salesforce to database (incremental)
+        console.log('📥 Step 1: Syncing accounts from Salesforce...');
+        const syncResult = await syncAllAccountsFromSalesforce();
+        
+        if (!syncResult.success) {
+            console.error('❌ Failed to sync accounts from Salesforce');
+            return {
+                success: false,
+                error: 'Failed to sync accounts from Salesforce',
+                ghostAccounts: [],
+                totalAnalyzed: 0
+            };
+        }
+        
+        console.log(`✅ Synced ${syncResult.totalAccounts} accounts (${syncResult.newAccounts} new, ${syncResult.updatedAccounts} updated)`);
+        
+        // STEP 2: Get all accounts from database
+        console.log('📊 Step 2: Loading all accounts from database...');
+        const accountsResult = await db.getAllAccounts();
+        
+        if (!accountsResult.success || accountsResult.accounts.length === 0) {
+            return {
+                success: true,
+                ghostAccounts: [],
+                totalAnalyzed: 0,
+                message: 'No accounts found in database'
+            };
+        }
+        
+        console.log(`📊 Analyzing ${accountsResult.accounts.length} accounts...`);
+        
+        const ghostAccounts = [];
+        let analyzed = 0;
+        
+        // Clear existing ghost accounts
+        await db.clearGhostAccounts();
+        
+        // STEP 3: Analyze each account for ghost status
+        for (const account of accountsResult.accounts) {
+            analyzed++;
+            console.log(`[${analyzed}/${accountsResult.accounts.length}] Checking: ${account.account_name}`);
+            
+            const analysis = await analyzeAccountForGhostStatus(
+                account.account_id,
+                account.account_name
+            );
+            
+            if (analysis.success && analysis.isGhost) {
+                ghostAccounts.push(analysis);
+                
+                // Save to database
+                await db.upsertGhostAccount({
+                    accountId: analysis.accountId,
+                    accountName: analysis.accountName,
+                    totalExpiredProducts: analysis.totalExpiredProducts,
+                    latestExpiryDate: analysis.latestExpiryDate
+                });
+            }
+        }
+        
+        console.log(`✅ Ghost accounts identification complete: ${ghostAccounts.length} found out of ${analyzed} analyzed`);
+        
+        return {
+            success: true,
+            ghostAccounts: ghostAccounts,
+            totalAnalyzed: analyzed,
+            ghostCount: ghostAccounts.length
+        };
+        
+    } catch (err) {
+        console.error('❌ Error identifying ghost accounts:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            ghostAccounts: []
+        };
+    }
+}
+
+/**
+ * Get recently deprovisioned accounts
+ * Accounts where all products expired AND deprovisioning happened within timeframe
+ * 
+ * NEW APPROACH: Query Salesforce directly for recent deprovisioning records,
+ * then check if those accounts have all expired products
+ */
+async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
+    try {
+        console.log(`📋 Finding accounts deprovisioned in last ${daysBack} days...`);
+        
+        const conn = await getConnection();
+        const today = new Date();
+        const cutoffDate = new Date(today.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+        
+        // Query all deprovisioning PS records within the timeframe
+        const deprovQuery = `
+            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, Status__c, CreatedDate
+            FROM Prof_Services_Request__c
+            WHERE CreatedDate >= ${cutoffDateStr}T00:00:00Z
+            AND Name LIKE 'PS-%'
+            ORDER BY CreatedDate DESC
+            LIMIT 1000
+        `;
+        
+        console.log(`🔍 Querying ALL PS records since ${cutoffDateStr} to find deprovisioning...`);
+        const allRecordsResult = await conn.query(deprovQuery);
+        const allRecords = allRecordsResult.records || [];
+        
+        console.log(`📊 Found ${allRecords.length} total PS records in last ${daysBack} days`);
+        
+        // Show unique request types found
+        const uniqueTypes = [...new Set(allRecords.map(r => r.Request_Type_RI__c).filter(t => t))];
+        console.log(`   Available Request Types: ${uniqueTypes.join(', ')}`);
+        
+        // Filter for deprovisioning records (case-insensitive)
+        const deprovRecords = allRecords.filter(record => {
+            const requestType = (record.Request_Type_RI__c || '').toLowerCase();
+            return requestType.includes('deprovision');
+        });
+        
+        console.log(`📊 Found ${deprovRecords.length} deprovisioning records (filtered from ${allRecords.length} total)`);
+        if (deprovRecords.length > 0) {
+            console.log('   Sample deprovisioning records:');
+            deprovRecords.slice(0, 5).forEach(r => {
+                console.log(`     - ${r.Name}: ${r.Request_Type_RI__c} (${r.Account_Site__c})`);
+            });
+        }
+        
+        // Special debug: Look for PS-4853 specifically
+        const ps4853 = allRecords.find(r => r.Name === 'PS-4853');
+        if (ps4853) {
+            console.log('   🔍 FOUND PS-4853:');
+            console.log(`      Account_Site__c: ${ps4853.Account_Site__c}`);
+            console.log(`      Request_Type_RI__c: "${ps4853.Request_Type_RI__c}"`);
+            console.log(`      CreatedDate: ${ps4853.CreatedDate}`);
+            console.log(`      Is it deprovisioning? ${(ps4853.Request_Type_RI__c || '').toLowerCase().includes('deprovision')}`);
+        } else {
+            console.log('   ⚠️  PS-4853 NOT FOUND in query results');
+            console.log(`      Query date range: ${cutoffDateStr} to now`);
+            console.log(`      Total records found: ${allRecords.length}`);
+        }
+        
+        if (deprovRecords.length === 0) {
+            return {
+                success: true,
+                deprovisionedAccounts: [],
+                totalAnalyzed: 0,
+                daysBack: daysBack,
+                count: 0,
+                message: 'No deprovisioning records found in timeframe'
+            };
+        }
+        
+        const deprovisionedAccounts = [];
+        const processedAccounts = new Set(); // Avoid duplicates
+        
+        // For each deprovisioning record, check if the account has all expired products
+        for (const deprovRecord of deprovRecords) {
+            const accountId = deprovRecord.Account__c;
+            
+            // Skip if we already processed this account
+            if (processedAccounts.has(accountId)) {
+                continue;
+            }
+            processedAccounts.add(accountId);
+            
+            // Get all PS records for this account
+            const accountQuery = `
+                SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+                       Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
+                FROM Prof_Services_Request__c
+                WHERE Account__c = '${accountId}'
+                ORDER BY CreatedDate DESC
+                LIMIT 1000
+            `;
+            
+            const accountResult = await conn.query(accountQuery);
+            const accountRecords = accountResult.records || [];
+            
+            if (accountRecords.length === 0) continue;
+            
+            // Account__c already contains the account name (like "Citigroup Inc.")
+            // NOT an Account ID - it's the actual account name stored in the field
+            const accountName = accountId;
+            
+            console.log(`    ✅ Using Account__c as account name: "${accountName}"`);
+            
+            // Special focus on Intesa Sanpaolo
+            const isIntesa = accountName.toLowerCase().includes('intesa');
+            
+            if (isIntesa) {
+                console.log(`\n  🎯 ========== INTESA SANPAOLO FOUND (${deprovRecord.Name}) ==========`);
+            } else {
+                console.log(`\n  📌 Analyzing ${accountName} (deprovisioned by ${deprovRecord.Name})...`);
+            }
+            
+            // Parse all entitlements to check if all expired
+            let allExpired = true;
+            let hasAnyEntitlement = false;
+            let latestExpiryDate = null;
+            let totalExpiredProducts = 0;
+            
+            for (const record of accountRecords) {
+                const payload = parsePayloadData(record.Payload_Data__c);
+                
+                if (!payload || !payload.hasDetails) {
+                    if (isIntesa) console.log(`    Record ${record.Name}: No payload data`);
+                    continue;
+                }
+                
+                const allEntitlements = [
+                    ...(payload.modelEntitlements || []),
+                    ...(payload.dataEntitlements || []),
+                    ...(payload.appEntitlements || [])
+                ];
+                
+                if (isIntesa && allEntitlements.length > 0) {
+                    console.log(`    Record ${record.Name}: ${allEntitlements.length} entitlements found`);
+                }
+                
+                for (const entitlement of allEntitlements) {
+                    if (!entitlement.endDate) {
+                        if (isIntesa) console.log(`      - ${entitlement.productCode || entitlement.name}: NO END DATE`);
+                        continue;
+                    }
+                    
+                    hasAnyEntitlement = true;
+                    const endDate = new Date(entitlement.endDate);
+                    
+                    if (!latestExpiryDate || endDate > latestExpiryDate) {
+                        latestExpiryDate = endDate;
+                    }
+                    
+                    if (endDate >= today) {
+                        allExpired = false;
+                        console.log(`    ⚠️  Active product found: ${entitlement.productCode || entitlement.name} expires ${endDate.toISOString().split('T')[0]}`);
+                    } else {
+                        totalExpiredProducts++;
+                        if (isIntesa) {
+                            console.log(`      ✓ ${entitlement.productCode || entitlement.name}: expired ${endDate.toISOString().split('T')[0]}`);
+                        }
+                    }
+                }
+            }
+            
+            // Skip if no entitlements found
+            if (!hasAnyEntitlement) {
+                console.log(`    ⏭️  Skipping: No entitlements found`);
+                continue;
+            }
+            
+            // Skip if not all products are expired
+            if (!allExpired) {
+                console.log(`    ⏭️  Skipping: Has active entitlements (not a ghost)`);
+                continue;
+            }
+            
+            // Check if deprovisioning happened AFTER the latest expiry
+            const deprovDate = new Date(deprovRecord.CreatedDate);
+            const isAfterExpiry = deprovDate > latestExpiryDate;
+            
+            if (isIntesa) {
+                console.log(`    📅 All ${totalExpiredProducts} products expired. Latest expiry: ${latestExpiryDate.toISOString()}`);
+                console.log(`    📅 Deprovisioning date: ${deprovRecord.CreatedDate} (${deprovDate.toISOString()})`);
+                console.log(`    📅 Comparison: deprovDate (${deprovDate.getTime()}) > latestExpiryDate (${latestExpiryDate.getTime()}) = ${isAfterExpiry}`);
+            } else {
+                console.log(`    📅 All ${totalExpiredProducts} products expired. Latest expiry: ${latestExpiryDate.toISOString().split('T')[0]}`);
+                console.log(`    📅 Deprovisioned: ${deprovRecord.CreatedDate} (after expiry: ${isAfterExpiry})`);
+            }
+            
+            if (!isAfterExpiry) {
+                console.log(`    ⚠️  Skipping: Deprovisioning happened BEFORE products expired`);
+                continue;
+            }
+            
+            // This is a valid deprovisioned account!
+            if (isIntesa) {
+                console.log(`    ✅✅✅ INTESA SANPAOLO IS VALID - ADDING TO RESULTS ✅✅✅`);
+            } else {
+                console.log(`    ✅ VALID: Deprovisioned after all products expired`);
+            }
+            
+            deprovisionedAccounts.push({
+                accountId: accountId,
+                accountName: accountName,
+                totalExpiredProducts: totalExpiredProducts,
+                latestExpiryDate: latestExpiryDate.toISOString().split('T')[0],
+                deprovisioningRecord: {
+                    id: deprovRecord.Id,
+                    name: deprovRecord.Name,
+                    createdDate: deprovRecord.CreatedDate,
+                    status: deprovRecord.Status__c
+                },
+                daysSinceDeprovisioning: Math.floor((today - deprovDate) / (1000 * 60 * 60 * 24))
+            });
+        }
+        
+        console.log(`\n✅ Found ${deprovisionedAccounts.length} recently deprovisioned accounts (analyzed ${processedAccounts.size} unique accounts)`);
+        
+        return {
+            success: true,
+            deprovisionedAccounts: deprovisionedAccounts,
+            totalAnalyzed: processedAccounts.size,
+            daysBack: daysBack,
+            count: deprovisionedAccounts.length
+        };
+        
+    } catch (err) {
+        console.error('❌ Error finding deprovisioned accounts:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            deprovisionedAccounts: []
+        };
+    }
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -1854,5 +2403,10 @@ module.exports = {
     analyzeExpirations,
     getExpiringEntitlements,
     // Customer products
-    getCustomerProducts
+    getCustomerProducts,
+    // Ghost accounts
+    syncAllAccountsFromSalesforce,
+    analyzeAccountForGhostStatus,
+    identifyGhostAccounts,
+    getRecentlyDeprovisionedAccounts
 };

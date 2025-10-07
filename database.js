@@ -354,6 +354,293 @@ async function getLatestAnalysisStatus() {
     }
 }
 
+// ===== ALL ACCOUNTS DATABASE FUNCTIONS =====
+
+/**
+ * Upsert (insert or update) an account in the all_accounts table
+ */
+async function upsertAllAccount(accountData) {
+    try {
+        const query = `
+            INSERT INTO all_accounts (account_id, account_name, total_ps_records, latest_ps_date, last_synced, updated_at)
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (account_id) 
+            DO UPDATE SET
+                account_name = EXCLUDED.account_name,
+                total_ps_records = EXCLUDED.total_ps_records,
+                latest_ps_date = EXCLUDED.latest_ps_date,
+                last_synced = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING *
+        `;
+        
+        const values = [
+            accountData.accountId,
+            accountData.accountName,
+            accountData.totalPsRecords || 0,
+            accountData.latestPsDate || null
+        ];
+        
+        const result = await pool.query(query, values);
+        return { success: true, account: result.rows[0] };
+    } catch (error) {
+        console.error('❌ Error upserting account:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get all accounts from the all_accounts table
+ */
+async function getAllAccounts(filters = {}) {
+    try {
+        let query = `SELECT * FROM all_accounts WHERE 1=1`;
+        const values = [];
+        let paramCount = 1;
+        
+        // Add search filter
+        if (filters.search) {
+            query += ` AND account_name ILIKE $${paramCount}`;
+            values.push(`%${filters.search}%`);
+            paramCount++;
+        }
+        
+        query += ` ORDER BY account_name ASC`;
+        
+        const result = await pool.query(query, values);
+        return { success: true, accounts: result.rows, count: result.rows.length };
+    } catch (error) {
+        console.error('❌ Error fetching all accounts:', error.message);
+        return { success: false, error: error.message, accounts: [], count: 0 };
+    }
+}
+
+/**
+ * Get summary statistics for all accounts
+ */
+async function getAllAccountsSummary() {
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) as total_accounts,
+                MAX(last_synced) as last_sync_time
+            FROM all_accounts
+        `;
+        
+        const result = await pool.query(query);
+        return { success: true, summary: result.rows[0] };
+    } catch (error) {
+        console.error('❌ Error fetching all accounts summary:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// ===== GHOST ACCOUNTS DATABASE FUNCTIONS =====
+
+/**
+ * Get all unique accounts from expiration monitor
+ * @returns {Promise<Object>} List of unique accounts
+ */
+async function getUniqueAccountsFromExpiration() {
+    try {
+        const query = `
+            SELECT DISTINCT account_id, account_name
+            FROM expiration_monitor
+            ORDER BY account_name ASC
+        `;
+        
+        const result = await pool.query(query);
+        return { success: true, accounts: result.rows };
+    } catch (error) {
+        console.error('❌ Error getting unique accounts:', error.message);
+        return { success: false, error: error.message, accounts: [] };
+    }
+}
+
+/**
+ * Upsert ghost account data
+ * @param {Object} ghostAccountData - Ghost account information
+ * @returns {Promise<Object>} Result
+ */
+async function upsertGhostAccount(ghostAccountData) {
+    try {
+        const query = `
+            INSERT INTO ghost_accounts (
+                account_id, account_name, total_expired_products, 
+                latest_expiry_date, last_checked, updated_at
+            ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (account_id) 
+            DO UPDATE SET
+                account_name = EXCLUDED.account_name,
+                total_expired_products = EXCLUDED.total_expired_products,
+                latest_expiry_date = EXCLUDED.latest_expiry_date,
+                last_checked = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+        `;
+        
+        const values = [
+            ghostAccountData.accountId,
+            ghostAccountData.accountName,
+            ghostAccountData.totalExpiredProducts,
+            ghostAccountData.latestExpiryDate
+        ];
+        
+        const result = await pool.query(query, values);
+        return { success: true, id: result.rows[0].id };
+    } catch (error) {
+        console.error('❌ Error upserting ghost account:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get all ghost accounts with filters
+ * @param {Object} filters - Filter criteria
+ * @returns {Promise<Object>} List of ghost accounts
+ */
+async function getGhostAccounts(filters = {}) {
+    try {
+        let queryText = `
+            SELECT 
+                id, account_id, account_name, total_expired_products,
+                latest_expiry_date, last_checked, is_reviewed,
+                reviewed_at, reviewed_by, notes, created_at, updated_at
+            FROM ghost_accounts
+            WHERE 1=1
+        `;
+        const params = [];
+        let paramCount = 1;
+
+        // Filter by reviewed status
+        if (filters.isReviewed !== undefined) {
+            queryText += ` AND is_reviewed = $${paramCount}`;
+            params.push(filters.isReviewed);
+            paramCount++;
+        }
+
+        // Filter by account name search
+        if (filters.accountSearch) {
+            queryText += ` AND account_name ILIKE $${paramCount}`;
+            params.push(`%${filters.accountSearch}%`);
+            paramCount++;
+        }
+
+        // Filter by expiry date range
+        if (filters.expiryBefore) {
+            queryText += ` AND latest_expiry_date <= $${paramCount}`;
+            params.push(filters.expiryBefore);
+            paramCount++;
+        }
+
+        if (filters.expiryAfter) {
+            queryText += ` AND latest_expiry_date >= $${paramCount}`;
+            params.push(filters.expiryAfter);
+            paramCount++;
+        }
+
+        queryText += ' ORDER BY latest_expiry_date DESC, account_name ASC';
+
+        const result = await pool.query(queryText, params);
+        return { success: true, ghostAccounts: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting ghost accounts:', error.message);
+        return { success: false, error: error.message, ghostAccounts: [] };
+    }
+}
+
+/**
+ * Mark ghost account as reviewed
+ * @param {string} accountId - Account ID
+ * @param {string} reviewedBy - Username/email of reviewer
+ * @param {string} notes - Optional notes
+ * @returns {Promise<Object>} Result
+ */
+async function markGhostAccountReviewed(accountId, reviewedBy, notes = null) {
+    try {
+        const query = `
+            UPDATE ghost_accounts
+            SET 
+                is_reviewed = TRUE,
+                reviewed_at = CURRENT_TIMESTAMP,
+                reviewed_by = $2,
+                notes = $3,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE account_id = $1
+            RETURNING id
+        `;
+        
+        const values = [accountId, reviewedBy, notes];
+        const result = await pool.query(query, values);
+        
+        if (result.rowCount === 0) {
+            return { success: false, error: 'Account not found' };
+        }
+        
+        return { success: true, id: result.rows[0].id };
+    } catch (error) {
+        console.error('❌ Error marking ghost account as reviewed:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Remove ghost account from tracking (e.g., if it's been deprovisioned)
+ * @param {string} accountId - Account ID
+ * @returns {Promise<Object>} Result
+ */
+async function removeGhostAccount(accountId) {
+    try {
+        const query = `DELETE FROM ghost_accounts WHERE account_id = $1`;
+        const result = await pool.query(query, [accountId]);
+        
+        return { success: true, deleted: result.rowCount > 0 };
+    } catch (error) {
+        console.error('❌ Error removing ghost account:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Clear all ghost accounts (for refresh)
+ * @returns {Promise<Object>} Result
+ */
+async function clearGhostAccounts() {
+    try {
+        const result = await pool.query('DELETE FROM ghost_accounts');
+        console.log(`🗑️ Cleared ${result.rowCount} ghost accounts from cache`);
+        return { success: true, deletedCount: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error clearing ghost accounts:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get ghost accounts summary statistics
+ * @returns {Promise<Object>} Summary data
+ */
+async function getGhostAccountsSummary() {
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) as total_ghost_accounts,
+                COUNT(*) FILTER (WHERE is_reviewed = false) as unreviewed,
+                COUNT(*) FILTER (WHERE is_reviewed = true) as reviewed,
+                MIN(latest_expiry_date) as earliest_expiry,
+                MAX(latest_expiry_date) as most_recent_expiry,
+                SUM(total_expired_products) as total_expired_products
+            FROM ghost_accounts
+        `;
+        
+        const result = await pool.query(query);
+        return { success: true, summary: result.rows[0] };
+    } catch (error) {
+        console.error('❌ Error getting ghost accounts summary:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = {
     query,
     getClient,
@@ -368,5 +655,17 @@ module.exports = {
     getExpirationData,
     getExpirationSummary,
     logExpirationAnalysis,
-    getLatestAnalysisStatus
+    getLatestAnalysisStatus,
+    // All accounts functions
+    upsertAllAccount,
+    getAllAccounts,
+    getAllAccountsSummary,
+    // Ghost accounts functions
+    getUniqueAccountsFromExpiration,
+    upsertGhostAccount,
+    getGhostAccounts,
+    markGhostAccountReviewed,
+    removeGhostAccount,
+    clearGhostAccounts,
+    getGhostAccountsSummary
 };
