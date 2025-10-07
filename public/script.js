@@ -13,10 +13,15 @@ const removalsTimeFrameSelect = document.getElementById('removals-time-frame-sel
 const removalsStatus = document.getElementById('removals-status');
 const removalsList = document.getElementById('removals-list');
 
-// Expiration Monitor widget elements
-const expirationWindowSelect = document.getElementById('expiration-window-select');
-const expirationStatus = document.getElementById('expiration-status');
-const expirationSummary = document.getElementById('expiration-summary');
+// Expiration Monitor widget elements (dashboard widget only - NOT the full page)
+const expirationWindowSelect = document.getElementById('expiration-window-select'); // Dashboard dropdown
+const expirationStatus = document.getElementById('expiration-status'); // Dashboard widget status
+const expirationSummary = document.getElementById('expiration-summary'); // Dashboard summary cards
+
+// Note: Expiration Monitor PAGE uses different IDs:
+// - expiration-page-window-select (dropdown)
+// - expiration-page-status (status text)
+// - See setupExpirationEventListeners() for page-specific elements
 
 // Navigation elements
 const navDashboard = document.getElementById('nav-dashboard');
@@ -7284,7 +7289,7 @@ async function initializeExpiration() {
 function setupExpirationEventListeners() {
     const refreshBtn = document.getElementById('refresh-expiration-btn');
     const refreshEmptyBtn = document.getElementById('refresh-empty-btn');
-    const windowSelect = document.getElementById('expiration-window-select');
+    const windowSelect = document.getElementById('expiration-page-window-select'); // Page-specific dropdown
     const extendedCheckbox = document.getElementById('show-extended-checkbox');
     
     if (refreshBtn) {
@@ -7296,16 +7301,22 @@ function setupExpirationEventListeners() {
     }
     
     if (windowSelect) {
-        windowSelect.addEventListener('change', (e) => {
+        console.log('[Expiration] Window select element found, attaching listener');
+        windowSelect.addEventListener('change', async (e) => {
             expirationWindow = parseInt(e.target.value);
-            loadExpirationData();
+            console.log('[Expiration] Window changed to:', expirationWindow, 'days - triggering auto-refresh');
+            
+            // Auto-refresh the analysis with new window
+            await autoRefreshExpirationData();
         });
+    } else {
+        console.warn('[Expiration] Window select element NOT found - event listener not attached');
     }
     
     if (extendedCheckbox) {
         extendedCheckbox.addEventListener('change', (e) => {
             showExtended = e.target.checked;
-            loadExpirationData();
+            renderExpirationTable();
         });
     }
 }
@@ -7337,7 +7348,7 @@ async function loadExpirationData() {
     updateLastRefreshTimestamp('expiration');
     
     try {
-        const statusEl = document.getElementById('expiration-status');
+        const statusEl = document.getElementById('expiration-page-status');
         console.log('[Expiration] Status element found:', !!statusEl);
         if (statusEl) statusEl.textContent = 'Loading...';
         
@@ -7373,7 +7384,7 @@ async function loadExpirationData() {
     } catch (error) {
         console.error('[Expiration] Exception in loadExpirationData:', error);
         console.error('[Expiration] Stack:', error.stack);
-        const statusEl = document.getElementById('expiration-status');
+        const statusEl = document.getElementById('expiration-page-status');
         if (statusEl) statusEl.textContent = 'Error: ' + error.message;
     }
 }
@@ -7695,10 +7706,49 @@ function renderExpiringProduct(product) {
 }
 
 // Refresh expiration analysis
+// Auto-refresh expiration data (silent, no alert)
+async function autoRefreshExpirationData() {
+    const statusEl = document.getElementById('expiration-page-status');
+    
+    try {
+        if (statusEl) statusEl.textContent = 'Analyzing...';
+        
+        console.log('[Expiration] Auto-refreshing analysis for', expirationWindow, 'day window');
+        
+        const response = await fetch('/api/expiration/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lookbackYears: 5,
+                expirationWindow: expirationWindow
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('[Expiration] ✅ Auto-refresh complete:', data.summary.expirationsFound, 'expirations found');
+            
+            // Reload data and status (no alert)
+            await loadExpirationStatus();
+            await loadExpirationData();
+        } else {
+            console.error('[Expiration] ❌ Auto-refresh failed:', data.error);
+            if (statusEl) statusEl.textContent = `Error: ${data.error}`;
+        }
+    } catch (error) {
+        console.error('[Expiration] Error during auto-refresh:', error);
+        if (statusEl) statusEl.textContent = `Error: ${error.message}`;
+    }
+}
+
+// Manual refresh expiration analysis (with alert)
 async function refreshExpirationAnalysis() {
     const refreshBtn = document.getElementById('refresh-expiration-btn');
     const refreshEmptyBtn = document.getElementById('refresh-empty-btn');
-    const statusEl = document.getElementById('expiration-status');
+    const statusEl = document.getElementById('expiration-page-status');
     
     const originalBtnText = refreshBtn ? refreshBtn.innerHTML : '';
     const originalEmptyBtnText = refreshEmptyBtn ? refreshEmptyBtn.innerHTML : '';
