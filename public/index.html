@@ -244,6 +244,13 @@
                             <h1 class="text-4xl md:text-6xl font-bold tracking-tight">Dashboard</h1>
                         </div>
                         <p class="text-xl text-muted-foreground font-medium">Welcome to your application dashboard</p>
+                        <div class="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>Last refreshed: <span id="dashboard-last-refresh">Never</span></span>
+                        </div>
                     </header>
 
                     <!-- Main Content -->
@@ -387,7 +394,16 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Analytics Dashboard</h1>
                         </div>
-                        <p class="text-muted-foreground">Monitor Technical Team Request activity and trends</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-muted-foreground">Monitor Technical Team Request activity and trends</p>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Last refreshed: <span id="analytics-last-refresh">Never</span></span>
+                            </div>
+                        </div>
                     </header>
 
                     <!-- Analytics Content -->
@@ -492,7 +508,16 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Account History</h1>
                         </div>
-                        <p class="text-muted-foreground">View all Technical Team Requests and track product changes for any account</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-muted-foreground">View all Technical Team Requests and track product changes for any account</p>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Last refreshed: <span id="account-history-last-refresh">Never</span></span>
+                            </div>
+                        </div>
                     </header>
 
                     <!-- Search Section -->
@@ -653,7 +678,16 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Provisioning Monitor</h1>
                         </div>
-                        <p class="text-muted-foreground">Monitor deployment requests and product provisioning status</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-muted-foreground">Monitor deployment requests and product provisioning status</p>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Last refreshed: <span id="provisioning-last-refresh">Never</span></span>
+                            </div>
+                        </div>
                     </header>
 
                     <!-- Controls Section (Search, Filters, Actions) -->
@@ -833,6 +867,13 @@
                                 <p class="text-muted-foreground mt-2">
                                     Manage validation rules applied to Technical Team Request records
                                 </p>
+                                <div class="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span>Last refreshed: <span id="validation-rules-last-refresh">Never</span></span>
+                                </div>
                             </div>
                             <div class="flex items-center gap-4">
                                 <button 
@@ -943,16 +984,25 @@
                                     </p>
                                 </div>
                             </div>
-                            <button 
-                                id="refresh-expiration-btn"
-                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                            >
-                                <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
-                                    <path d="M21 3v5h-5"></path>
-                                </svg>
-                                Refresh Analysis
-                            </button>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span>Last refreshed: <span id="expiration-last-refresh">Never</span></span>
+                                </div>
+                                <button 
+                                    id="refresh-expiration-btn"
+                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                >
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                                        <path d="M21 3v5h-5"></path>
+                                    </svg>
+                                    Refresh Analysis
+                                </button>
+                            </div>
                         </div>
                     </header>
 
@@ -1100,7 +1150,16 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Customer Products</h1>
                         </div>
-                        <p class="text-muted-foreground">View all active products for a customer organized by geographic region</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-muted-foreground">View all active products for a customer organized by geographic region</p>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Last refreshed: <span id="customer-products-last-refresh">Never</span></span>
+                            </div>
+                        </div>
                     </header>
 
                     <!-- Search Section -->
@@ -2105,10 +2164,17 @@
                                         
                                         <div class="flex items-center justify-between">
                                             <div class="space-y-0.5">
-                                                <label class="text-sm font-medium">Auto-refresh Roadmap</label>
-                                                <p class="text-xs text-muted-foreground">Automatically refresh roadmap data every 5 minutes</p>
+                                                <label class="text-sm font-medium">Auto-refresh Background Pages</label>
+                                                <p class="text-xs text-muted-foreground">Automatically refresh inactive pages in the background (pauses on active page)</p>
                                             </div>
-                                            <input type="checkbox" id="auto-refresh-toggle" class="rounded border-input">
+                                            <select id="auto-refresh-interval" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                <option value="0">Never</option>
+                                                <option value="1">1 minute</option>
+                                                <option value="5" selected>5 minutes</option>
+                                                <option value="10">10 minutes</option>
+                                                <option value="15">15 minutes</option>
+                                                <option value="30">30 minutes</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -2133,7 +2199,16 @@
                             </svg>
                             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Platform Roadmap</h1>
                         </div>
-                        <p class="text-muted-foreground">Strategic initiatives to enhance the platform product</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-muted-foreground">Strategic initiatives to enhance the platform product</p>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Last refreshed: <span id="roadmap-last-refresh">Never</span></span>
+                            </div>
+                        </div>
                     </header>
 
                     <!-- Controls Section -->

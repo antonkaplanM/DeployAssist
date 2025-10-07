@@ -94,6 +94,249 @@ function toggleTheme() {
     }, 300);
 }
 
+// ============================================================================
+// AUTO-REFRESH MANAGEMENT
+// ============================================================================
+
+// Auto-refresh state
+let autoRefreshInterval = 5; // minutes (0 = disabled)
+let autoRefreshTimer = null;
+let lastRefreshTimes = {}; // pageId -> timestamp
+
+// Initialize auto-refresh settings from localStorage
+function initializeAutoRefresh() {
+    // Clean up old localStorage key from previous implementation
+    const oldEnabled = localStorage.getItem('autoRefreshEnabled');
+    if (oldEnabled !== null) {
+        // Migrate old setting: if it was disabled, set interval to 0 (Never)
+        if (oldEnabled === 'false') {
+            localStorage.setItem('autoRefreshInterval', '0');
+        }
+        localStorage.removeItem('autoRefreshEnabled');
+    }
+    
+    const savedInterval = localStorage.getItem('autoRefreshInterval');
+    autoRefreshInterval = savedInterval ? parseInt(savedInterval) : 5;
+    
+    // Update UI elements
+    const intervalSelect = document.getElementById('auto-refresh-interval');
+    
+    if (intervalSelect) {
+        intervalSelect.value = autoRefreshInterval.toString();
+    }
+    
+    // Start auto-refresh if interval is not 0 (Never)
+    if (autoRefreshInterval > 0) {
+        startAutoRefresh();
+    }
+}
+
+// Start auto-refresh timer
+function startAutoRefresh() {
+    stopAutoRefresh(); // Clear any existing timer
+    
+    if (autoRefreshInterval === 0) return; // Don't start if set to "Never"
+    
+    const intervalMs = autoRefreshInterval * 60 * 1000; // Convert minutes to milliseconds
+    
+    autoRefreshTimer = setInterval(() => {
+        refreshInactivePages();
+    }, intervalMs);
+    
+    console.log(`Auto-refresh started: ${autoRefreshInterval} minute interval`);
+}
+
+// Stop auto-refresh timer
+function stopAutoRefresh() {
+    if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+        console.log('Auto-refresh stopped');
+    }
+}
+
+// Refresh all inactive pages (NOT the current page)
+function refreshInactivePages() {
+    console.log(`Auto-refresh triggered - Current page: ${currentPage}`);
+    
+    // List of pages with Salesforce integration that should auto-refresh
+    const dataPages = [
+        'dashboard',
+        'analytics', 
+        'account-history',
+        'provisioning',
+        'validation-rules',
+        'expiration',
+        'customer-products',
+        'roadmap'
+    ];
+    
+    // Refresh all data pages EXCEPT the currently active one
+    dataPages.forEach(pageId => {
+        if (pageId !== currentPage) {
+            console.log(`Auto-refreshing inactive page: ${pageId}`);
+            
+            switch (pageId) {
+                case 'dashboard':
+                    refreshDashboard();
+                    break;
+                case 'analytics':
+                    refreshAnalytics();
+                    break;
+                case 'account-history':
+                    refreshAccountHistory();
+                    break;
+                case 'provisioning':
+                    refreshProvisioning();
+                    break;
+                case 'validation-rules':
+                    refreshValidationRules();
+                    break;
+                case 'expiration':
+                    refreshExpiration();
+                    break;
+                case 'customer-products':
+                    refreshCustomerProducts();
+                    break;
+                case 'roadmap':
+                    refreshRoadmap();
+                    break;
+            }
+            
+            updateLastRefreshTimestamp(pageId);
+        } else {
+            console.log(`Skipping auto-refresh for active page: ${pageId}`);
+        }
+    });
+}
+
+// Update last refresh timestamp display
+function updateLastRefreshTimestamp(pageId) {
+    const now = new Date();
+    lastRefreshTimes[pageId] = now;
+    
+    const timestampElement = document.getElementById(`${pageId}-last-refresh`);
+    if (timestampElement) {
+        timestampElement.textContent = formatTimestamp(now);
+    }
+}
+
+// Format timestamp for display
+function formatTimestamp(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) {
+        return 'Just now';
+    } else if (diffMins === 1) {
+        return '1 minute ago';
+    } else if (diffMins < 60) {
+        return `${diffMins} minutes ago`;
+    } else {
+        const hours = Math.floor(diffMins / 60);
+        if (hours === 1) {
+            return '1 hour ago';
+        } else {
+            return `${hours} hours ago`;
+        }
+    }
+}
+
+// Page-specific refresh functions
+function refreshDashboard() {
+    console.log('Refreshing Dashboard...');
+    // Refresh validation monitor
+    if (typeof fetchValidationErrors === 'function') {
+        fetchValidationErrors();
+    }
+    // Refresh removals monitor
+    if (typeof fetchPSRemovals === 'function') {
+        fetchPSRemovals();
+    }
+}
+
+function refreshAnalytics() {
+    console.log('Refreshing Analytics...');
+    // Reload analytics data
+    if (typeof loadAnalyticsData === 'function') {
+        loadAnalyticsData();
+    }
+}
+
+function refreshAccountHistory() {
+    console.log('Refreshing Account History...');
+    // Only refresh if there's an active search
+    const accountInput = document.getElementById('account-search-input');
+    if (accountInput && accountInput.value.trim()) {
+        if (typeof searchAccountHistory === 'function') {
+            searchAccountHistory();
+        }
+    }
+}
+
+function refreshProvisioning() {
+    console.log('Refreshing Provisioning Monitor...');
+    // Reload provisioning data
+    if (typeof loadProvisioningRequests === 'function') {
+        loadProvisioningRequests();
+    }
+}
+
+function refreshValidationRules() {
+    console.log('Refreshing Validation Rules...');
+    // Reload validation rules configuration
+    if (typeof loadValidationRulesConfiguration === 'function') {
+        loadValidationRulesConfiguration();
+    }
+}
+
+function refreshExpiration() {
+    console.log('Refreshing Expiration Monitor...');
+    // Reload expiration data
+    if (typeof loadExpirationData === 'function') {
+        loadExpirationData();
+    }
+}
+
+function refreshCustomerProducts() {
+    console.log('Refreshing Customer Products...');
+    // Only refresh if there's an active search
+    const customerInput = document.getElementById('customer-search-input');
+    if (customerInput && customerInput.value.trim()) {
+        if (typeof searchCustomerProducts === 'function') {
+            searchCustomerProducts();
+        }
+    }
+}
+
+function refreshRoadmap() {
+    console.log('Refreshing Roadmap...');
+    // Reload roadmap data
+    const assigneeInput = document.getElementById('assignee-input');
+    if (assigneeInput && assigneeInput.value.trim()) {
+        if (typeof loadJiraInitiatives === 'function') {
+            loadJiraInitiatives(assigneeInput.value.trim());
+        }
+    }
+}
+
+// Handle auto-refresh interval change
+function handleAutoRefreshIntervalChange(event) {
+    autoRefreshInterval = parseInt(event.target.value);
+    localStorage.setItem('autoRefreshInterval', autoRefreshInterval.toString());
+    
+    if (autoRefreshInterval === 0) {
+        // User selected "Never" - disable auto-refresh
+        stopAutoRefresh();
+        console.log('Auto-refresh disabled (Never)');
+    } else {
+        // User selected a time interval - start/restart auto-refresh
+        startAutoRefresh();
+        console.log(`Auto-refresh interval changed to ${autoRefreshInterval} minutes`);
+    }
+}
+
 // Navigation and routing
 function showPage(pageId) {
     // Hide all pages
@@ -305,6 +548,9 @@ function initializeAnalytics() {
 // Load analytics data for Technical Team Requests by type
 async function loadAnalyticsData() {
     try {
+        // Update timestamp when starting to load
+        updateLastRefreshTimestamp('analytics');
+        
         // Get enabled rules from localStorage (same as validation monitoring)
         let enabledRuleIds = [];
         try {
@@ -1557,6 +1803,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize theme
     initializeTheme();
     
+    // Initialize auto-refresh
+    initializeAutoRefresh();
+    
     // Initialize navigation - restore saved page or default to dashboard
     const savedPage = localStorage.getItem('currentPage') || 'dashboard';
     showPage(savedPage);
@@ -1568,6 +1817,16 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         addEntranceAnimations();
     }, 100);
+    
+    // Update relative timestamps every minute
+    setInterval(() => {
+        Object.keys(lastRefreshTimes).forEach(pageId => {
+            const timestampElement = document.getElementById(`${pageId}-last-refresh`);
+            if (timestampElement && lastRefreshTimes[pageId]) {
+                timestampElement.textContent = formatTimestamp(lastRefreshTimes[pageId]);
+            }
+        });
+    }, 60000); // Update every minute
     
     // Add hover effects
     setTimeout(() => {
@@ -1668,6 +1927,7 @@ function setupSettingsEventListeners() {
     const settingsThemeToggle = document.getElementById('settings-theme-toggle');
     const testConnectivityButton = document.getElementById('test-web-connectivity');
     const testSalesforceButton = document.getElementById('test-salesforce-connection');
+    const autoRefreshIntervalSelect = document.getElementById('auto-refresh-interval');
     
     if (settingsThemeToggle) {
         settingsThemeToggle.addEventListener('click', toggleTheme);
@@ -1679,6 +1939,11 @@ function setupSettingsEventListeners() {
     
     if (testSalesforceButton) {
         testSalesforceButton.addEventListener('click', testSalesforceConnection);
+    }
+    
+    // Auto-refresh interval control
+    if (autoRefreshIntervalSelect) {
+        autoRefreshIntervalSelect.addEventListener('change', handleAutoRefreshIntervalChange);
     }
 
     // Setup collapsible sections
@@ -2337,6 +2602,9 @@ async function loadProvisioningRequests(filters = {}) {
     if (provisioningPagination.isLoading) return;
     
     provisioningPagination.isLoading = true;
+    
+    // Update timestamp when loading
+    updateLastRefreshTimestamp('provisioning');
     
     try {
         console.log(`Loading provisioning requests (page ${provisioningPagination.currentPage})...`);
@@ -4636,6 +4904,9 @@ async function fetchValidationErrors() {
         return;
     }
     
+    // Update timestamp when loading
+    updateLastRefreshTimestamp('dashboard');
+    
     const timeFrame = timeFrameSelect.value || '1w';
     
     try {
@@ -4833,6 +5104,9 @@ async function fetchPSRemovals() {
         console.warn('PS Removals monitoring elements not found');
         return;
     }
+    
+    // Update timestamp when loading
+    updateLastRefreshTimestamp('dashboard');
     
     const timeFrame = removalsTimeFrameSelect.value || '1w';
     
@@ -6753,6 +7027,10 @@ async function loadExpirationStatus() {
 // Load expiration data from API
 async function loadExpirationData() {
     console.log('[Expiration] loadExpirationData() called');
+    
+    // Update timestamp when starting to load
+    updateLastRefreshTimestamp('expiration');
+    
     try {
         const statusEl = document.getElementById('expiration-status');
         console.log('[Expiration] Status element found:', !!statusEl);
