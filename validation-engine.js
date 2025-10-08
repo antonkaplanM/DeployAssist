@@ -373,16 +373,26 @@ class ValidationEngine {
                         continue;
                     }
                     
-                    // Check for overlap: end date of one falls between start and end of another
+                    // Check for overlap using proper date range overlap logic
+                    // Two ranges overlap if: start1 < end2 AND start2 < end1
+                    // This catches all overlaps including identical dates
                     let overlapFound = false;
                     let overlapDescription = '';
                     
-                    if (end1 > start2 && end1 < end2) {
+                    const hasOverlap = start1.getTime() < end2.getTime() && start2.getTime() < end1.getTime();
+                    
+                    if (hasOverlap) {
                         overlapFound = true;
-                        overlapDescription = `End date of ${ent1.type}-${ent1.index + 1} (${ent1.endDate}) falls within period of ${ent2.type}-${ent2.index + 1} (${ent2.startDate} to ${ent2.endDate})`;
-                    } else if (end2 > start1 && end2 < end1) {
-                        overlapFound = true;
-                        overlapDescription = `End date of ${ent2.type}-${ent2.index + 1} (${ent2.endDate}) falls within period of ${ent1.type}-${ent1.index + 1} (${ent1.startDate} to ${ent1.endDate})`;
+                        // Check for identical dates
+                        if (start1.getTime() === start2.getTime() && end1.getTime() === end2.getTime()) {
+                            overlapDescription = `${ent1.type}-${ent1.index + 1} and ${ent2.type}-${ent2.index + 1} have identical date ranges (${ent1.startDate} to ${ent1.endDate})`;
+                        } else if (start1.getTime() <= start2.getTime() && end1.getTime() >= end2.getTime()) {
+                            overlapDescription = `${ent1.type}-${ent1.index + 1} (${ent1.startDate} to ${ent1.endDate}) completely contains ${ent2.type}-${ent2.index + 1} (${ent2.startDate} to ${ent2.endDate})`;
+                        } else if (start2.getTime() <= start1.getTime() && end2.getTime() >= end1.getTime()) {
+                            overlapDescription = `${ent2.type}-${ent2.index + 1} (${ent2.startDate} to ${ent2.endDate}) completely contains ${ent1.type}-${ent1.index + 1} (${ent1.startDate} to ${ent1.endDate})`;
+                        } else {
+                            overlapDescription = `${ent1.type}-${ent1.index + 1} (${ent1.startDate} to ${ent1.endDate}) overlaps with ${ent2.type}-${ent2.index + 1} (${ent2.startDate} to ${ent2.endDate})`;
+                        }
                     }
                     
                     if (overlapFound) {

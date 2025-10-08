@@ -50,5 +50,37 @@ describe('ValidationEngine', () => {
     const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-overlap-validation');
     expect(rule.status).toBe('FAIL');
   });
+
+  it('entitlement-date-overlap-validation: identical dates fail (PS-4859 bug)', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'RI-RISKMODELER-EXPANSION', startDate: '2025-01-01', endDate: '2025-12-31' },
+          { productCode: 'RI-RISKMODELER-EXPANSION', startDate: '2025-01-01', endDate: '2025-12-31' }
+        ]
+      }
+    };
+    const record = { Id: '005', Name: 'PS-4859', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-overlap-validation');
+    expect(rule.status).toBe('FAIL');
+    expect(rule.details.overlapsFound).toBe(1);
+    expect(rule.details.overlaps[0].description).toContain('identical date ranges');
+  });
+
+  it('entitlement-date-overlap-validation: non-overlapping dates pass', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'X', startDate: '2025-01-01', endDate: '2025-02-01' },
+          { productCode: 'X', startDate: '2025-02-01', endDate: '2025-03-01' }
+        ]
+      }
+    };
+    const record = { Id: '006', Name: 'NoOverlap', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-overlap-validation');
+    expect(rule.status).toBe('PASS');
+  });
 });
 
