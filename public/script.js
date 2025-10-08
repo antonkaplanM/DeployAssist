@@ -6294,6 +6294,215 @@ async function viewPSRecord(recordId, recordName) {
     }, 100); // Start checking after a short delay
 }
 
+// ===== PACKAGE LOOKUP FUNCTIONALITY (Help Page) =====
+
+/**
+ * Search for a package from the Help page quick reference buttons
+ */
+function searchPackageFromHelp(packageName) {
+    const input = document.getElementById('package-lookup-input');
+    if (input) {
+        input.value = packageName;
+        performPackageLookup();
+    }
+}
+
+/**
+ * Perform the package lookup search
+ */
+async function performPackageLookup() {
+    const input = document.getElementById('package-lookup-input');
+    const resultContainer = document.getElementById('package-lookup-result');
+    
+    if (!input || !resultContainer) return;
+    
+    const searchTerm = input.value.trim();
+    if (!searchTerm) {
+        resultContainer.classList.add('hidden');
+        return;
+    }
+    
+    // Show loading state
+    resultContainer.classList.remove('hidden');
+    resultContainer.innerHTML = `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+            <svg class="animate-spin h-8 w-8 mx-auto mb-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-sm text-blue-800">Searching for "${searchTerm}"...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`/api/packages/${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        
+        if (data.success && data.package) {
+            const pkg = data.package;
+            displayPackageResult(pkg);
+        } else {
+            // Package not found
+            resultContainer.innerHTML = `
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="h-6 w-6 text-yellow-600 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <path d="M12 9v4"></path>
+                            <path d="M12 17h.01"></path>
+                        </svg>
+                        <div>
+                            <h3 class="font-semibold text-yellow-900">Package Not Found</h3>
+                            <p class="text-sm text-yellow-800 mt-1">
+                                No package found matching "${searchTerm}". Try searching by:
+                            </p>
+                            <ul class="text-sm text-yellow-800 mt-2 ml-4 list-disc">
+                                <li>Full package name (e.g., "RMS 2.0 P6", "P6 Expansion Pack")</li>
+                                <li>Package code (e.g., "P6", "X3", "U4")</li>
+                                <li>RI package name if available</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error searching for package:', error);
+        resultContainer.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div class="flex items-start gap-3">
+                    <svg class="h-6 w-6 text-red-600 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <div>
+                        <h3 class="font-semibold text-red-900">Error</h3>
+                        <p class="text-sm text-red-800 mt-1">
+                            Failed to search for package. Please try again or contact support if the problem persists.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Display the package lookup result
+ */
+function displayPackageResult(pkg) {
+    const resultContainer = document.getElementById('package-lookup-result');
+    if (!resultContainer) return;
+    
+    // Format numbers with commas
+    const formatNumber = (num) => {
+        if (num === null || num === undefined) return '—';
+        return num.toLocaleString();
+    };
+    
+    // Build capacity details HTML
+    let capacityDetails = '';
+    const capacityFields = [
+        { label: 'Locations', value: pkg.locations, format: formatNumber },
+        { label: 'Max Concurrent Model Jobs', value: pkg.max_concurrent_model, format: formatNumber },
+        { label: 'Max Concurrent Non-Model Jobs', value: pkg.max_concurrent_non_model, format: formatNumber },
+        { label: 'Max Concurrent Accumulation Jobs', value: pkg.max_concurrent_accumulation_jobs, format: formatNumber },
+        { label: 'Max Concurrent Non-Accumulation Jobs', value: pkg.max_concurrent_non_accumulation_jobs, format: formatNumber },
+        { label: 'Max Jobs per Day', value: pkg.max_jobs_day, format: formatNumber },
+        { label: 'Max Users', value: pkg.max_users, format: formatNumber },
+        { label: 'Number of EDMs', value: pkg.number_edms, format: formatNumber },
+        { label: 'Max Exposure Storage (TB)', value: pkg.max_exposure_storage_tb, format: (v) => v ? `${v} TB` : '—' },
+        { label: 'Max Other Storage (TB)', value: pkg.max_other_storage_tb, format: (v) => v ? `${v} TB` : '—' },
+        { label: 'Max Risks Accumulated per Day', value: pkg.max_risks_accumulated_day, format: formatNumber },
+        { label: 'Max Risks in Single Accumulation', value: pkg.max_risks_single_accumulation, format: formatNumber },
+        { label: 'API Requests Per Second', value: pkg.api_rps, format: formatNumber }
+    ];
+    
+    const hasCapacityData = capacityFields.some(field => field.value !== null && field.value !== undefined);
+    
+    if (hasCapacityData) {
+        capacityDetails = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">';
+        capacityFields.forEach(field => {
+            if (field.value !== null && field.value !== undefined) {
+                capacityDetails += `
+                    <div class="bg-gray-50 rounded p-3">
+                        <p class="text-xs text-muted-foreground">${field.label}</p>
+                        <p class="text-sm font-semibold mt-1">${field.format(field.value)}</p>
+                    </div>
+                `;
+            }
+        });
+        capacityDetails += '</div>';
+    }
+    
+    resultContainer.innerHTML = `
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-lg p-6">
+            <div class="flex items-start gap-3 mb-4">
+                <svg class="h-8 w-8 text-green-600 mt-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m7.5 4.27 9 5.15"></path>
+                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                    <path d="m3.3 7 8.7 5 8.7-5"></path>
+                    <path d="M12 22V12"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-green-900">${pkg.package_name || '—'}</h3>
+                    ${pkg.ri_package_name ? `<p class="text-sm text-green-700 mt-1">RI Package: ${pkg.ri_package_name}</p>` : ''}
+                    ${pkg.package_type ? `
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${
+                            pkg.package_type === 'Base' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                        }">
+                            ${pkg.package_type} Package
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${pkg.description ? `
+                <div class="bg-white rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-900 mb-2">Description</h4>
+                    <p class="text-sm text-gray-700">${pkg.description}</p>
+                </div>
+            ` : ''}
+            
+            ${hasCapacityData ? `
+                <div class="bg-white rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-900 mb-3">Capacity & Limits</h4>
+                    ${capacityDetails}
+                </div>
+            ` : ''}
+            
+            <div class="mt-4 pt-4 border-t border-green-200">
+                <p class="text-xs text-green-700">
+                    <strong>Last Synced:</strong> ${pkg.last_synced ? new Date(pkg.last_synced).toLocaleString() : 'Unknown'}
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Setup package lookup event listeners
+ */
+function setupPackageLookupListeners() {
+    const input = document.getElementById('package-lookup-input');
+    const button = document.getElementById('package-lookup-btn');
+    
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performPackageLookup();
+            }
+        });
+    }
+    
+    if (button) {
+        button.addEventListener('click', performPackageLookup);
+    }
+}
+
+// ===== END PACKAGE LOOKUP FUNCTIONALITY =====
+
 // Initialize the application
 function initializeApp() {
     console.log('Initializing Deployment Assistant...');
@@ -6313,6 +6522,9 @@ function initializeApp() {
     
     // Initialize Expiration Monitor widget
     initializeExpirationWidget();
+    
+    // Setup package lookup listeners (Help page)
+    setupPackageLookupListeners();
     
     // Initialize navigation - restore saved page or default to dashboard
     const savedPage = localStorage.getItem('currentPage') || 'dashboard';

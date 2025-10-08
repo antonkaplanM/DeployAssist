@@ -1444,6 +1444,7 @@
                             <a href="#provisioning" class="text-primary hover:underline">🔧 Provisioning Monitor</a>
                             <a href="#expiration" class="text-primary hover:underline">⏰ Expiration Monitor</a>
                             <a href="#customer-products-help" class="text-primary hover:underline">👥 Customer Products</a>
+                            <a href="#package-lookup" class="text-primary hover:underline">📦 Package Lookup</a>
                             <a href="#validation" class="text-primary hover:underline">✅ Validation Rules</a>
                             <a href="#analytics" class="text-primary hover:underline">📈 Analytics & Account History</a>
                             <a href="#roadmap" class="text-primary hover:underline">🗺️ Roadmap</a>
@@ -1865,6 +1866,146 @@
                                         <li><strong>Cross-Region Comparison:</strong> Compare product deployments across different regions</li>
                                         <li><strong>Resource Sizing:</strong> Check App PackageNames to verify resource allocations</li>
                                         <li><strong>Change Tracking:</strong> Use with Account History to understand product evolution</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Package Lookup -->
+                    <section id="package-lookup" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                📦 Package Lookup
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Look up any package to understand what it represents, including capacity limits, storage specifications, 
+                                    and typical use cases. All package information is synced from Salesforce.
+                                </p>
+                                
+                                <!-- Package Search -->
+                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-indigo-500 p-4 rounded">
+                                    <h3 class="font-semibold text-indigo-900 mb-3">Search for a Package</h3>
+                                    <div class="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            id="package-lookup-input"
+                                            class="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            placeholder="Enter package name or code (e.g., 'P6', 'RMS 2.0 P6', 'P6 Expansion Pack')"
+                                        />
+                                        <button 
+                                            id="package-lookup-btn"
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-6"
+                                        >
+                                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <path d="m21 21-4.3-4.3"></path>
+                                            </svg>
+                                            Search
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-indigo-700 mt-2">
+                                        💡 Tip: You can search by package name (e.g., "P6 Expansion Pack") or package code (e.g., "P6")
+                                    </p>
+                                </div>
+                                
+                                <!-- Package Result Display -->
+                                <div id="package-lookup-result" class="hidden"></div>
+                                
+                                <!-- Common Packages Quick Reference -->
+                                <div class="space-y-3 mt-6">
+                                    <h3 class="font-semibold">Common Packages Quick Reference:</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div class="border rounded-lg p-3">
+                                            <h4 class="font-medium text-blue-900 mb-1">🔵 RMS 2.0 Packages (P0-P9)</h4>
+                                            <p class="text-xs text-muted-foreground mb-2">Base packages for Risk Modeler with varying capacity levels</p>
+                                            <div class="flex flex-wrap gap-1">
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P0')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P0</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P1')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P1</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P2')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P2</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P3')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P3</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P4')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P4</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P5')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P5</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P6')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P6</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P7')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P7</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P8')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P8</button>
+                                                <button onclick="searchPackageFromHelp('RMS 2.0 P9')" class="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">P9</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-3">
+                                            <h4 class="font-medium text-purple-900 mb-1">🟣 Expansion Packs</h4>
+                                            <p class="text-xs text-muted-foreground mb-2">Increase capacity for existing packages</p>
+                                            <div class="flex flex-wrap gap-1">
+                                                <button onclick="searchPackageFromHelp('P6 Expansion Pack')" class="text-xs px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded border border-purple-200">P6 Exp</button>
+                                                <button onclick="searchPackageFromHelp('P7 Expansion Pack')" class="text-xs px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded border border-purple-200">P7 Exp</button>
+                                                <button onclick="searchPackageFromHelp('P8 Expansion Pack')" class="text-xs px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded border border-purple-200">P8 Exp</button>
+                                                <button onclick="searchPackageFromHelp('P9 Expansion Pack')" class="text-xs px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded border border-purple-200">P9 Exp</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-3">
+                                            <h4 class="font-medium text-green-900 mb-1">🟢 ExpIQ Packages (X1-X6)</h4>
+                                            <p class="text-xs text-muted-foreground mb-2">Exposure management and analytics packages</p>
+                                            <div class="flex flex-wrap gap-1">
+                                                <button onclick="searchPackageFromHelp('ExpIQ X1')" class="text-xs px-2 py-1 bg-green-50 hover:bg-green-100 rounded border border-green-200">X1</button>
+                                                <button onclick="searchPackageFromHelp('ExpIQ X2')" class="text-xs px-2 py-1 bg-green-50 hover:bg-green-100 rounded border border-green-200">X2</button>
+                                                <button onclick="searchPackageFromHelp('ExpIQ X3')" class="text-xs px-2 py-1 bg-green-50 hover:bg-green-100 rounded border border-green-200">X3</button>
+                                                <button onclick="searchPackageFromHelp('ExpIQ X4')" class="text-xs px-2 py-1 bg-green-50 hover:bg-green-100 rounded border border-green-200">X4</button>
+                                                <button onclick="searchPackageFromHelp('ExpIQ X5')" class="text-xs px-2 py-1 bg-green-50 hover:bg-green-100 rounded border border-green-200">X5</button>
+                                                <button onclick="searchPackageFromHelp('ExpIQ X6')" class="text-xs px-2 py-1 bg-green-50 hover:bg-green-100 rounded border border-green-200">X6</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-3">
+                                            <h4 class="font-medium text-orange-900 mb-1">🟠 UnderwriteIQ (U1-U7)</h4>
+                                            <p class="text-xs text-muted-foreground mb-2">Underwriting analysis packages</p>
+                                            <div class="flex flex-wrap gap-1">
+                                                <button onclick="searchPackageFromHelp('U1')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U1</button>
+                                                <button onclick="searchPackageFromHelp('U2')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U2</button>
+                                                <button onclick="searchPackageFromHelp('U3')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U3</button>
+                                                <button onclick="searchPackageFromHelp('U4')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U4</button>
+                                                <button onclick="searchPackageFromHelp('U5')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U5</button>
+                                                <button onclick="searchPackageFromHelp('U6')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U6</button>
+                                                <button onclick="searchPackageFromHelp('U7')" class="text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 rounded border border-orange-200">U7</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-blue-900 mb-2">How to Use:</h4>
+                                    <ol class="list-decimal list-inside space-y-1 text-sm text-blue-800">
+                                        <li>Enter a package name or code in the search box above</li>
+                                        <li>Click "Search" or press Enter</li>
+                                        <li>View the complete package details including capacity limits and description</li>
+                                        <li>Or click any quick reference button below to instantly lookup that package</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-900 mb-2">💡 What You'll See:</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-green-800">
+                                        <li><strong>Package Name & Code:</strong> Official name and RI package identifier</li>
+                                        <li><strong>Package Type:</strong> Base or Expansion package</li>
+                                        <li><strong>Description:</strong> What the package provides and typical use cases</li>
+                                        <li><strong>Capacity Limits:</strong> Locations, concurrent jobs, storage, API limits, etc.</li>
+                                        <li><strong>All Specifications:</strong> Complete technical details from Salesforce</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-purple-900 mb-2">📚 Package Categories:</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-purple-800">
+                                        <li><strong>RMS 2.0 (P0-P9):</strong> Risk Modeler base packages with increasing capacity</li>
+                                        <li><strong>Expansion Packs:</strong> Add capacity to existing base packages</li>
+                                        <li><strong>ExpIQ (X1-X6):</strong> Exposure management and analytics</li>
+                                        <li><strong>UnderwriteIQ (U1-U7):</strong> Underwriting analysis capabilities</li>
+                                        <li><strong>DataBridge (D-1, D-2, D-3):</strong> Hosted SQL Server instances</li>
+                                        <li><strong>Data Vault (DV-1, DV-3, DV-5, DV-7):</strong> Archive storage solutions</li>
+                                        <li><strong>RM-ExpAddOn (P0-P8):</strong> Accumulation functionality add-ons</li>
+                                        <li><strong>Climate on Demand (CoD C1):</strong> Climate risk analytics</li>
                                     </ul>
                                 </div>
                             </div>
