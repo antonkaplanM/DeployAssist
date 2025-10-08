@@ -392,7 +392,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'customer-products') {
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
@@ -3473,7 +3473,7 @@ function renderProductItems(items, groupType, validationResult = null) {
     } else if (groupType === 'apps') {
         columns = [
             { key: 'productCode', label: 'Product Code', get: getProductCode },
-            { key: 'packageName', label: 'Package Name', get: getPackageName },
+            { key: 'packageName', label: 'Package Name', get: getPackageName, showInfo: true }, // Flag to show info icon
             { key: 'quantity', label: 'Quantity', get: getQuantity },
             { key: 'startDate', label: 'Start Date', get: getStartDate },
             { key: 'endDate', label: 'End Date', get: getEndDate }
@@ -3503,7 +3503,30 @@ function renderProductItems(items, groupType, validationResult = null) {
         return `
             <tr class="${rowClass}" ${hasIssue ? 'title="This entitlement has a date overlap validation failure"' : ''}>
                 ${hasIssue ? '<td class="px-1 py-2 w-4"><svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="m12 17 .01 0"></path></svg></td>' : '<td class="px-1 py-2 w-4"></td>'}
-                ${columns.map(c => `<td class="${cellClass}">${escapeHtml(String(c.get(item)))}</td>`).join('')}
+                ${columns.map(c => {
+                    const value = escapeHtml(String(c.get(item)));
+                    // Add info icon for package names in apps modal
+                    if (c.showInfo && value !== '—' && value) {
+                        return `<td class="${cellClass}">
+                            <div class="flex items-center gap-2">
+                                <span>${value}</span>
+                                <button 
+                                    class="package-info-btn inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-1"
+                                    data-package-name="${value.replace(/"/g, '&quot;')}"
+                                    title="View package details"
+                                    onclick="event.stopPropagation(); showPackageInfo('${value.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')"
+                                >
+                                    <svg class="h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M12 16v-4"></path>
+                                        <path d="m12 8 .01 0"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>`;
+                    }
+                    return `<td class="${cellClass}">${value}</td>`;
+                }).join('')}
             </tr>
         `;
     }).join('');
@@ -3556,6 +3579,257 @@ function handleModalEscape(event) {
         if (modal) {
             closeProductModal();
         }
+        // Also close package info tooltip if open
+        const tooltip = document.getElementById('package-info-tooltip');
+        if (tooltip) {
+            closePackageInfo();
+        }
+    }
+}
+
+// ===== PACKAGE INFO HELPER FUNCTIONS =====
+
+// Cache for package data to avoid repeated API calls
+const packageCache = new Map();
+
+/**
+ * Fetch package details from the API
+ * @param {string} packageName - The package name to look up
+ * @returns {Promise<Object|null>} Package data or null if not found
+ */
+async function fetchPackageInfo(packageName) {
+    // Check cache first
+    if (packageCache.has(packageName)) {
+        return packageCache.get(packageName);
+    }
+    
+    try {
+        const response = await fetch(`/api/packages/${encodeURIComponent(packageName)}`);
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn(`Package not found: ${packageName}`);
+                return null;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.package) {
+            // Cache the result
+            packageCache.set(packageName, data.package);
+            return data.package;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error fetching package info:', error);
+        return null;
+    }
+}
+
+/**
+ * Show package information tooltip
+ * @param {string} packageName - The package name to display info for
+ */
+async function showPackageInfo(packageName) {
+    // Remove any existing tooltip
+    closePackageInfo();
+    
+    // Create loading tooltip
+    const loadingTooltip = document.createElement('div');
+    loadingTooltip.id = 'package-info-tooltip';
+    loadingTooltip.className = 'fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center';
+    loadingTooltip.style.zIndex = '9999'; // Ensure it's above the product modal
+    loadingTooltip.onclick = (e) => { if (e.target === loadingTooltip) closePackageInfo(); };
+    
+    loadingTooltip.innerHTML = `
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 p-6" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Package Information</h3>
+                <button onclick="closePackageInfo()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18"></path>
+                        <path d="M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex items-center justify-center py-8">
+                <div class="loading-spinner"></div>
+                <span class="ml-3 text-gray-600">Loading package details...</span>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(loadingTooltip);
+    
+    // Fetch package data
+    const packageData = await fetchPackageInfo(packageName);
+    
+    // Update tooltip with package data or error
+    const tooltipElement = document.getElementById('package-info-tooltip');
+    if (!tooltipElement) return; // User closed it while loading
+    
+    if (packageData) {
+        tooltipElement.innerHTML = `
+            <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+                <!-- Header -->
+                <div class="flex items-start justify-between p-6 border-b sticky top-0 bg-white z-10">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(packageData.package_name)}</h3>
+                        </div>
+                        ${packageData.ri_package_name ? `<p class="text-sm text-gray-500">RI Package: ${escapeHtml(packageData.ri_package_name)}</p>` : ''}
+                        ${packageData.package_type ? `<span class="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full ${packageData.package_type === 'Base' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">${escapeHtml(packageData.package_type)}</span>` : ''}
+                    </div>
+                    <button onclick="closePackageInfo()" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18"></path>
+                            <path d="M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Description -->
+                ${packageData.description ? `
+                    <div class="p-6 border-b">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Description</h4>
+                        <p class="text-sm text-gray-600 leading-relaxed">${escapeHtml(packageData.description)}</p>
+                    </div>
+                ` : ''}
+                
+                <!-- Capacity & Limits -->
+                <div class="p-6">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-4">Capacity & Limits</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${packageData.locations ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Locations</div>
+                                <div class="text-lg font-semibold text-gray-900">${Number(packageData.locations).toLocaleString()}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_concurrent_model ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Concurrent Model Jobs</div>
+                                <div class="text-lg font-semibold text-gray-900">${packageData.max_concurrent_model}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_concurrent_non_model ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Concurrent Non-Model Jobs</div>
+                                <div class="text-lg font-semibold text-gray-900">${packageData.max_concurrent_non_model}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_jobs_day ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Jobs per Day</div>
+                                <div class="text-lg font-semibold text-gray-900">${Number(packageData.max_jobs_day).toLocaleString()}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_users ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Users</div>
+                                <div class="text-lg font-semibold text-gray-900">${Number(packageData.max_users).toLocaleString()}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.api_rps ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">API Requests/Second</div>
+                                <div class="text-lg font-semibold text-gray-900">${packageData.api_rps}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_exposure_storage_tb ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Exposure Storage</div>
+                                <div class="text-lg font-semibold text-gray-900">${packageData.max_exposure_storage_tb} TB</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_other_storage_tb ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Other Storage</div>
+                                <div class="text-lg font-semibold text-gray-900">${packageData.max_other_storage_tb} TB</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_risks_accumulated_day ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Risks Accumulated/Day</div>
+                                <div class="text-lg font-semibold text-gray-900">${Number(packageData.max_risks_accumulated_day).toLocaleString()}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_risks_single_accumulation ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Risks Single Accumulation</div>
+                                <div class="text-lg font-semibold text-gray-900">${Number(packageData.max_risks_single_accumulation).toLocaleString()}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.max_concurrent_accumulation_jobs ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Max Concurrent Accumulation Jobs</div>
+                                <div class="text-lg font-semibold text-gray-900">${packageData.max_concurrent_accumulation_jobs}</div>
+                            </div>
+                        ` : ''}
+                        ${packageData.number_edms ? `
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-xs text-gray-500 mb-1">Number of EDMs</div>
+                                <div class="text-lg font-semibold text-gray-900">${Number(packageData.number_edms).toLocaleString()}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="flex justify-end gap-3 p-6 border-t bg-gray-50">
+                    <button onclick="closePackageInfo()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        tooltipElement.innerHTML = `
+            <div class="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 p-6" onclick="event.stopPropagation()">
+                <div class="flex items-start justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Package Not Found</h3>
+                    <button onclick="closePackageInfo()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18"></path>
+                            <path d="M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="text-center py-4">
+                    <svg class="h-16 w-16 text-gray-300 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="m15 9-6 6"></path>
+                        <path d="m9 9 6 6"></path>
+                    </svg>
+                    <p class="text-gray-600 mb-2">No information found for package:</p>
+                    <p class="font-semibold text-gray-900">${escapeHtml(packageName)}</p>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button onclick="closePackageInfo()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Close the package info tooltip
+ */
+function closePackageInfo() {
+    const tooltip = document.getElementById('package-info-tooltip');
+    if (tooltip) {
+        tooltip.remove();
     }
 }
 
@@ -4842,7 +5116,7 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'customer-products') {
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }

@@ -641,6 +641,302 @@ async function getGhostAccountsSummary() {
     }
 }
 
+// ===== PACKAGE FUNCTIONS =====
+
+/**
+ * Upsert a package (insert or update if exists)
+ */
+async function upsertPackage(packageData) {
+    const query = `
+        INSERT INTO packages (
+            sf_package_id, package_name, ri_package_name, package_type, parent_package_id,
+            locations, max_concurrent_model, max_concurrent_non_model,
+            max_concurrent_accumulation_jobs, max_concurrent_non_accumulation_jobs,
+            max_jobs_day, max_users, number_edms,
+            max_exposure_storage_tb, max_other_storage_tb,
+            max_risks_accumulated_day, max_risks_single_accumulation,
+            api_rps, description,
+            sf_owner_id, sf_created_by_id, sf_last_modified_by_id, is_deleted,
+            metadata, last_synced
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, CURRENT_TIMESTAMP
+        )
+        ON CONFLICT (sf_package_id) DO UPDATE SET
+            package_name = EXCLUDED.package_name,
+            ri_package_name = EXCLUDED.ri_package_name,
+            package_type = EXCLUDED.package_type,
+            parent_package_id = EXCLUDED.parent_package_id,
+            locations = EXCLUDED.locations,
+            max_concurrent_model = EXCLUDED.max_concurrent_model,
+            max_concurrent_non_model = EXCLUDED.max_concurrent_non_model,
+            max_concurrent_accumulation_jobs = EXCLUDED.max_concurrent_accumulation_jobs,
+            max_concurrent_non_accumulation_jobs = EXCLUDED.max_concurrent_non_accumulation_jobs,
+            max_jobs_day = EXCLUDED.max_jobs_day,
+            max_users = EXCLUDED.max_users,
+            number_edms = EXCLUDED.number_edms,
+            max_exposure_storage_tb = EXCLUDED.max_exposure_storage_tb,
+            max_other_storage_tb = EXCLUDED.max_other_storage_tb,
+            max_risks_accumulated_day = EXCLUDED.max_risks_accumulated_day,
+            max_risks_single_accumulation = EXCLUDED.max_risks_single_accumulation,
+            api_rps = EXCLUDED.api_rps,
+            description = EXCLUDED.description,
+            sf_owner_id = EXCLUDED.sf_owner_id,
+            sf_created_by_id = EXCLUDED.sf_created_by_id,
+            sf_last_modified_by_id = EXCLUDED.sf_last_modified_by_id,
+            is_deleted = EXCLUDED.is_deleted,
+            metadata = EXCLUDED.metadata,
+            last_synced = CURRENT_TIMESTAMP
+        RETURNING *;
+    `;
+    
+    const values = [
+        packageData.sf_package_id,
+        packageData.package_name,
+        packageData.ri_package_name || null,
+        packageData.package_type || null,
+        packageData.parent_package_id || null,
+        packageData.locations || null,
+        packageData.max_concurrent_model || null,
+        packageData.max_concurrent_non_model || null,
+        packageData.max_concurrent_accumulation_jobs || null,
+        packageData.max_concurrent_non_accumulation_jobs || null,
+        packageData.max_jobs_day || null,
+        packageData.max_users || null,
+        packageData.number_edms || null,
+        packageData.max_exposure_storage_tb || null,
+        packageData.max_other_storage_tb || null,
+        packageData.max_risks_accumulated_day || null,
+        packageData.max_risks_single_accumulation || null,
+        packageData.api_rps || null,
+        packageData.description || null,
+        packageData.sf_owner_id || null,
+        packageData.sf_created_by_id || null,
+        packageData.sf_last_modified_by_id || null,
+        packageData.is_deleted || false,
+        packageData.metadata ? JSON.stringify(packageData.metadata) : null
+    ];
+    
+    try {
+        const result = await pool.query(query, values);
+        return {
+            success: true,
+            package: result.rows[0]
+        };
+    } catch (error) {
+        console.error('Error upserting package:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Get a package by internal database ID
+ */
+async function getPackageById(id) {
+    const query = 'SELECT * FROM packages WHERE id = $1';
+    
+    try {
+        const result = await pool.query(query, [id]);
+        return {
+            success: true,
+            package: result.rows[0] || null
+        };
+    } catch (error) {
+        console.error('Error getting package by ID:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Get a package by Salesforce ID
+ */
+async function getPackageBySfId(sfPackageId) {
+    const query = 'SELECT * FROM packages WHERE sf_package_id = $1';
+    
+    try {
+        const result = await pool.query(query, [sfPackageId]);
+        return {
+            success: true,
+            package: result.rows[0] || null
+        };
+    } catch (error) {
+        console.error('Error getting package by SF ID:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Get a package by name (either package_name or ri_package_name)
+ */
+async function getPackageByName(name) {
+    const query = `
+        SELECT * FROM packages 
+        WHERE package_name ILIKE $1 OR ri_package_name ILIKE $1
+        AND is_deleted = FALSE
+        ORDER BY last_synced DESC
+        LIMIT 1
+    `;
+    
+    try {
+        const result = await pool.query(query, [name]);
+        return {
+            success: true,
+            package: result.rows[0] || null
+        };
+    } catch (error) {
+        console.error('Error getting package by name:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Get all packages (optionally filter by active/deleted)
+ */
+async function getAllPackages(options = {}) {
+    const { includeDeleted = false, sortBy = 'package_name', sortOrder = 'ASC' } = options;
+    
+    let query = 'SELECT * FROM packages';
+    const params = [];
+    
+    if (!includeDeleted) {
+        query += ' WHERE is_deleted = FALSE';
+    }
+    
+    query += ` ORDER BY ${sortBy} ${sortOrder}`;
+    
+    try {
+        const result = await pool.query(query, params);
+        return {
+            success: true,
+            packages: result.rows,
+            count: result.rows.length
+        };
+    } catch (error) {
+        console.error('Error getting all packages:', error);
+        return {
+            success: false,
+            error: error.message,
+            packages: []
+        };
+    }
+}
+
+/**
+ * Get base packages only
+ */
+async function getBasePackages() {
+    const query = `
+        SELECT * FROM packages 
+        WHERE package_type = 'Base' AND is_deleted = FALSE
+        ORDER BY locations ASC NULLS LAST, package_name ASC
+    `;
+    
+    try {
+        const result = await pool.query(query);
+        return {
+            success: true,
+            packages: result.rows,
+            count: result.rows.length
+        };
+    } catch (error) {
+        console.error('Error getting base packages:', error);
+        return {
+            success: false,
+            error: error.message,
+            packages: []
+        };
+    }
+}
+
+/**
+ * Get expansion packages only
+ */
+async function getExpansionPackages() {
+    const query = `
+        SELECT * FROM packages 
+        WHERE package_type = 'Expansion' AND is_deleted = FALSE
+        ORDER BY locations ASC NULLS LAST, package_name ASC
+    `;
+    
+    try {
+        const result = await pool.query(query);
+        return {
+            success: true,
+            packages: result.rows,
+            count: result.rows.length
+        };
+    } catch (error) {
+        console.error('Error getting expansion packages:', error);
+        return {
+            success: false,
+            error: error.message,
+            packages: []
+        };
+    }
+}
+
+/**
+ * Get packages summary statistics
+ */
+async function getPackagesSummary() {
+    const query = `
+        SELECT 
+            COUNT(*) as total_packages,
+            COUNT(*) FILTER (WHERE is_deleted = FALSE) as active_packages,
+            COUNT(*) FILTER (WHERE is_deleted = TRUE) as deleted_packages,
+            COUNT(*) FILTER (WHERE package_type = 'Base' AND is_deleted = FALSE) as base_packages,
+            COUNT(*) FILTER (WHERE package_type = 'Expansion' AND is_deleted = FALSE) as expansion_packages,
+            MAX(last_synced) as last_sync_time
+        FROM packages
+    `;
+    
+    try {
+        const result = await pool.query(query);
+        return {
+            success: true,
+            summary: result.rows[0]
+        };
+    } catch (error) {
+        console.error('Error getting packages summary:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Clear all packages (for re-sync)
+ */
+async function clearPackages() {
+    const query = 'DELETE FROM packages';
+    
+    try {
+        const result = await pool.query(query);
+        return {
+            success: true,
+            deleted: result.rowCount
+        };
+    } catch (error) {
+        console.error('Error clearing packages:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
 module.exports = {
     query,
     getClient,
@@ -667,5 +963,15 @@ module.exports = {
     markGhostAccountReviewed,
     removeGhostAccount,
     clearGhostAccounts,
-    getGhostAccountsSummary
+    getGhostAccountsSummary,
+    // Package functions
+    upsertPackage,
+    getPackageById,
+    getPackageBySfId,
+    getPackageByName,
+    getAllPackages,
+    getBasePackages,
+    getExpansionPackages,
+    getPackagesSummary,
+    clearPackages
 };

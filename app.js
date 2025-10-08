@@ -1983,6 +1983,136 @@ app.get('/api/customer-products', async (req, res) => {
     }
 });
 
+// ===== PACKAGE ENDPOINTS =====
+
+/**
+ * Get all packages
+ * GET /api/packages
+ * Optional query params: type (Base/Expansion), includeDeleted (boolean)
+ */
+app.get('/api/packages', async (req, res) => {
+    try {
+        const { type, includeDeleted } = req.query;
+        
+        console.log(`📦 Fetching packages (type: ${type || 'all'}, includeDeleted: ${includeDeleted || 'false'})`);
+        
+        let result;
+        
+        if (type === 'Base') {
+            result = await db.getBasePackages();
+        } else if (type === 'Expansion') {
+            result = await db.getExpansionPackages();
+        } else {
+            result = await db.getAllPackages({
+                includeDeleted: includeDeleted === 'true'
+            });
+        }
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                packages: result.packages,
+                count: result.count,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                packages: []
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching packages:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch packages',
+            packages: []
+        });
+    }
+});
+
+/**
+ * Get a specific package by name or ID
+ * GET /api/packages/:identifier
+ * Identifier can be: package name, RI package name, or Salesforce ID
+ */
+app.get('/api/packages/:identifier', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        
+        console.log(`🔍 Fetching package: ${identifier}`);
+        
+        // Try to find by name first (most common), then by SF ID
+        let result = await db.getPackageByName(identifier);
+        
+        if (!result.success || !result.package) {
+            // Try by Salesforce ID
+            result = await db.getPackageBySfId(identifier);
+        }
+        
+        if (result.success && result.package) {
+            res.json({
+                success: true,
+                package: result.package,
+                timestamp: new Date().toISOString()
+            });
+        } else if (result.success && !result.package) {
+            res.status(404).json({
+                success: false,
+                error: `Package not found: ${identifier}`,
+                package: null
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                package: null
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching package:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch package',
+            package: null
+        });
+    }
+});
+
+/**
+ * Get packages summary statistics
+ * GET /api/packages/summary/stats
+ */
+app.get('/api/packages/summary/stats', async (req, res) => {
+    try {
+        console.log('📊 Fetching packages summary...');
+        
+        const result = await db.getPackagesSummary();
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                summary: result.summary,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                summary: null
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching packages summary:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch packages summary',
+            summary: null
+        });
+    }
+});
+
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
