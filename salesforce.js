@@ -265,11 +265,11 @@ async function queryProfServicesRequests(filters = {}) {
         const offset = filters.offset || 0;
         
         let soql = `
-            SELECT Id, Name, Account__c, Status__c, Deployment__c,
+            SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
                    TenantRequestAction__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
-                   CreatedDate, LastModifiedDate
+                   CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
             WHERE Name LIKE 'PS-%'
         `;
@@ -535,11 +535,11 @@ async function getProfServicesRequestById(id) {
         const conn = await getConnection();
         
         const soql = `
-            SELECT Id, Name, Account__c, Status__c, Deployment__c,
+            SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
                    TenantRequestAction__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
-                   CreatedDate, LastModifiedDate
+                   CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
             WHERE Id = '${id}'
         `;

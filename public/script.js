@@ -2927,7 +2927,7 @@ function showProvisioningLoading() {
     
     tbody.innerHTML = `
         <tr>
-            <td colspan="7" class="px-4 py-8 text-center">
+            <td colspan="10" class="px-4 py-8 text-center">
                 <div class="space-y-4">
                     <div class="loading-spinner mx-auto"></div>
                     <p class="text-sm text-muted-foreground">Loading provisioning requests...</p>
@@ -2950,7 +2950,7 @@ function showProvisioningError(message) {
     
     tbody.innerHTML = `
         <tr>
-            <td colspan="7" class="px-4 py-8 text-center">
+            <td colspan="10" class="px-4 py-8 text-center">
                 <div class="space-y-4">
                     <svg class="h-12 w-12 mx-auto text-red-500 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -2981,7 +2981,7 @@ function renderProvisioningTable(data) {
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
                     <div class="flex flex-col items-center gap-2">
                         <svg class="h-12 w-12 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
@@ -3012,7 +3012,7 @@ function renderProvisioningTable(data) {
                 </span>
             </td>
             <td class="px-4 py-3">
-                <div class="text-sm">${request.Deployment__c || 'N/A'}</div>
+                <div class="text-sm">${request.Deployment__r?.Name || 'N/A'}</div>
             </td>
             <td class="px-4 py-3">
                 ${getProductsDisplay(request)}
@@ -3026,6 +3026,9 @@ function renderProvisioningTable(data) {
             <td class="px-4 py-3">
                 <div class="text-sm">${formatDate(request.CreatedDate)}</div>
                 ${request.LastModifiedDate ? `<div class="text-xs text-muted-foreground">Modified: ${formatDate(request.LastModifiedDate)}</div>` : ''}
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${request.CreatedBy?.Name || 'N/A'}</div>
             </td>
         </tr>
     `).join('');
@@ -3577,7 +3580,7 @@ function showProvisioningLoading() {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
                     <div class="flex flex-col items-center gap-2">
                         <div class="loading-spinner"></div>
                         <span>Loading provisioning data...</span>
@@ -3594,7 +3597,7 @@ function showProvisioningError(message) {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="px-4 py-8 text-center text-red-600">
+                <td colspan="10" class="px-4 py-8 text-center text-red-600">
                     <div class="flex flex-col items-center gap-2">
                         <svg class="h-12 w-12 text-red-500/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -3654,16 +3657,17 @@ function handleProvisioningExport() {
     }
     
     // Create CSV content
-    const headers = ['Technical Team Request', 'Account', 'Request Type', 'Deployment Number', 'Status', 'Created Date'];
+    const headers = ['Technical Team Request', 'Account', 'Request Type', 'Deployment Number', 'Status', 'Created Date', 'Created By'];
     const csvContent = [
         headers.join(','),
         ...filteredProvisioningData.map(request => [
             request.Name || '',
             request.Account__c || '',
             request.TenantRequestAction__c || '',
-            request.Deployment__c || '',
+            request.Deployment__r?.Name || '',
             request.Status__c || '',
-            formatDate(request.CreatedDate)
+            formatDate(request.CreatedDate),
+            request.CreatedBy?.Name || ''
         ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
     
@@ -3690,8 +3694,19 @@ function handleProvisioningSort(sortKey) {
     
     // Sort the data
     filteredProvisioningData.sort((a, b) => {
-        let aVal = a[sortKey] || '';
-        let bVal = b[sortKey] || '';
+        let aVal, bVal;
+        
+        // Handle nested objects separately
+        if (sortKey === 'createdBy') {
+            aVal = a.CreatedBy?.Name || '';
+            bVal = b.CreatedBy?.Name || '';
+        } else if (sortKey === 'deployment') {
+            aVal = a.Deployment__r?.Name || '';
+            bVal = b.Deployment__r?.Name || '';
+        } else {
+            aVal = a[sortKey] || '';
+            bVal = b[sortKey] || '';
+        }
         
         // Handle different data types
         if (sortKey === 'CreatedDate' || sortKey === 'LastModifiedDate') {
@@ -4129,7 +4144,7 @@ function renderProvisioningTable(data) {
     if (!data || data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="px-4 py-8 text-center">
+                <td colspan="10" class="px-4 py-8 text-center">
                     <div class="flex flex-col items-center gap-2">
                         <svg class="h-12 w-12 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 3v18h18V3H3z"></path>
@@ -4157,7 +4172,7 @@ function renderProvisioningTable(data) {
                 <div class="text-sm">${request.TenantRequestAction__c || 'N/A'}</div>
             </td>
             <td class="px-4 py-3">
-                <div class="text-sm">${request.Deployment__c || 'N/A'}</div>
+                <div class="text-sm">${request.Deployment__r?.Name || 'N/A'}</div>
             </td>
             <td class="px-4 py-3">
                 ${getProductsDisplay(request, validationResults.get(request.Id))}
@@ -4173,6 +4188,9 @@ function renderProvisioningTable(data) {
             <td class="px-4 py-3">
                 <div class="text-sm">${new Date(request.CreatedDate).toLocaleDateString()}</div>
                 <div class="text-xs text-muted-foreground">${new Date(request.CreatedDate).toLocaleTimeString()}</div>
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${request.CreatedBy?.Name || 'N/A'}</div>
             </td>
             <td class="px-4 py-3 text-center">
                 <button 
