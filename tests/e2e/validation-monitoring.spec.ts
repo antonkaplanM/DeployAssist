@@ -290,7 +290,7 @@ test.describe('Validation Monitoring Dashboard Tile', () => {
               Name: 'Test PS Request',
               Account__c: 'Test Account',
               Status__c: 'Active',
-              Request_Type_RI__c: 'Standard'
+              TenantRequestAction__c: 'Standard'
             }],
             pagination: {
               currentPage: 1,

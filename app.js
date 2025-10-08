@@ -1156,7 +1156,7 @@ app.get('/api/provisioning/new-records', async (req, res) => {
         const soqlTimestamp = sinceDate.toISOString().replace('.000Z', 'Z');
         
         const soqlQuery = `
-            SELECT Id, Name, Request_Type_RI__c, Account__c, Account_Site__c, 
+            SELECT Id, Name, TenantRequestAction__c, Account__c, Account_Site__c, 
                    Status__c, CreatedDate, LastModifiedDate
             FROM Prof_Services_Request__c
             WHERE CreatedDate > ${soqlTimestamp}
@@ -1173,7 +1173,7 @@ app.get('/api/provisioning/new-records', async (req, res) => {
         const newRecords = records.map(record => ({
             id: record.Id,
             name: record.Name,
-            requestType: record.Request_Type_RI__c || 'Unknown',
+            requestType: record.TenantRequestAction__c || 'Unknown',
             account: record.Account__c,
             accountSite: record.Account_Site__c,
             status: record.Status__c,
@@ -1314,7 +1314,7 @@ app.get('/api/validation/errors', async (req, res) => {
         
         // Build SOQL query for Professional Services Requests within time frame
         const soqlQuery = `
-            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, 
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c, 
                    Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
             FROM Prof_Services_Request__c
             WHERE CreatedDate >= ${startDateStr}T00:00:00Z AND Name LIKE 'PS-%'
@@ -1366,7 +1366,7 @@ app.get('/api/validation/errors', async (req, res) => {
                         recordId: record.Id,
                         recordName: record.Name,
                         account: record.Account__c,
-                        requestType: record.Request_Type_RI__c,
+                        requestType: record.TenantRequestAction__c,
                         createdDate: record.CreatedDate,
                         failedRules: validationResult.ruleResults
                             .filter(r => r.status === 'FAIL')

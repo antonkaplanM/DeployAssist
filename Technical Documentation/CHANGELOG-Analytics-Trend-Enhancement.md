@@ -98,14 +98,14 @@ Enhanced the Analytics Dashboard with a comprehensive validation trend chart tha
 
 **Query Before:**
 ```sql
-WHERE Request_Type_RI__c = 'Update'
+WHERE TenantRequestAction__c = 'Update'
 ```
 
 **Query After:**
 ```sql
-WHERE (Request_Type_RI__c = 'Update' 
-   OR Request_Type_RI__c = 'Onboarding' 
-   OR Request_Type_RI__c = 'Deprovision')
+WHERE (TenantRequestAction__c = 'Update' 
+   OR TenantRequestAction__c = 'Onboarding' 
+   OR TenantRequestAction__c = 'Deprovision')
 ```
 
 **Data Structure Before:**

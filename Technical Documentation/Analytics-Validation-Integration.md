@@ -35,13 +35,13 @@ When you load the Analytics page:
 
 The analytics endpoint uses the **exact same query pattern** as `/api/validation/errors`:
 ```sql
-SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, 
+SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c, 
        Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
 FROM Prof_Services_Request__c
 WHERE CreatedDate >= [1 year ago]
   AND CreatedDate <= [today]
   AND Name LIKE 'PS-%'
-  AND Request_Type_RI__c != null
+  AND TenantRequestAction__c != null
 ```
 
 This ensures consistency between:
@@ -141,7 +141,7 @@ fetch('/api/analytics/request-types-week?enabledRules=["app-quantity-validation"
 ```javascript
 // Process records by request type and validate them
 analyticsResult.records.forEach(record => {
-    const requestType = record.Request_Type_RI__c;
+    const requestType = record.TenantRequestAction__c;
     
     // Validate using the same logic as /api/validation/errors
     const validationResult = validationEngine.ValidationEngine.validateRecord(record, enabledRules);

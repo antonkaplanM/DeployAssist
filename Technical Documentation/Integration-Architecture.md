@@ -142,7 +142,7 @@ const authResult = await makeOAuthRequest('/services/oauth2/token', postData);
 // SOQL Query:
 SELECT Id, Name, Account__c, Status__c, Deployment__c,
        Account_Site__c, Billing_Status__c, RecordTypeId,
-       Request_Type_RI__c, Payload_Data__c,
+       TenantRequestAction__c, Payload_Data__c,
        Requested_Install_Date__c, RequestedGoLiveDate__c,
        CreatedDate, LastModifiedDate
 FROM Prof_Services_Request__c 

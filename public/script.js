@@ -3007,8 +3007,8 @@ function renderProvisioningTable(data) {
                 ${request.Account_Site__c ? `<div class="text-xs text-muted-foreground">Site: ${request.Account_Site__c}</div>` : ''}
             </td>
             <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getRequestTypeColor(request.Request_Type_RI__c)}">
-                    ${request.Request_Type_RI__c || 'N/A'}
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getRequestTypeColor(request.TenantRequestAction__c)}">
+                    ${request.TenantRequestAction__c || 'N/A'}
                 </span>
             </td>
             <td class="px-4 py-3">
@@ -3660,7 +3660,7 @@ function handleProvisioningExport() {
         ...filteredProvisioningData.map(request => [
             request.Name || '',
             request.Account__c || '',
-            request.Request_Type_RI__c || '',
+            request.TenantRequestAction__c || '',
             request.Deployment__c || '',
             request.Status__c || '',
             formatDate(request.CreatedDate)
@@ -4154,7 +4154,7 @@ function renderProvisioningTable(data) {
                 ${request.Account_Site__c ? `<div class="text-xs text-muted-foreground">${request.Account_Site__c}</div>` : ''}
             </td>
             <td class="px-4 py-3">
-                <div class="text-sm">${request.Request_Type_RI__c || 'N/A'}</div>
+                <div class="text-sm">${request.TenantRequestAction__c || 'N/A'}</div>
             </td>
             <td class="px-4 py-3">
                 <div class="text-sm">${request.Deployment__c || 'N/A'}</div>
@@ -6484,7 +6484,7 @@ function renderAccountHistoryTable() {
                     </span>
                 </td>
                 <td class="px-4 py-3 align-middle text-sm">
-                    ${request.Request_Type_RI__c || 'N/A'}
+                    ${request.TenantRequestAction__c || 'N/A'}
                 </td>
                 <td class="px-4 py-3 align-middle text-sm">
                     ${getProductsDisplay(request)}

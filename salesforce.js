@@ -267,7 +267,7 @@ async function queryProfServicesRequests(filters = {}) {
         let soql = `
             SELECT Id, Name, Account__c, Status__c, Deployment__c,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
-                   Request_Type_RI__c, Payload_Data__c,
+                   TenantRequestAction__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
                    CreatedDate, LastModifiedDate
             FROM Prof_Services_Request__c 
@@ -282,7 +282,7 @@ async function queryProfServicesRequests(filters = {}) {
             soql += ` AND CreatedDate <= ${filters.endDate}`;
         }
         if (filters.requestType) {
-            soql += ` AND Request_Type_RI__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
+            soql += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
         }
         if (filters.status) {
             soql += ` AND Status__c = '${filters.status.replace(/'/g, "\\'")}'`;
@@ -312,7 +312,7 @@ async function queryProfServicesRequests(filters = {}) {
             countSoql += ` AND CreatedDate <= ${filters.endDate}`;
         }
         if (filters.requestType) {
-            countSoql += ` AND Request_Type_RI__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
+            countSoql += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
         }
         if (filters.status) {
             countSoql += ` AND Status__c = '${filters.status.replace(/'/g, "\\'")}'`;
@@ -370,7 +370,7 @@ async function searchTechnicalTeamRequests(searchTerm, limit = 10) {
         }
         
         const soql = `
-            SELECT Id, Name, Account__c, Status__c, Request_Type_RI__c, CreatedDate
+            SELECT Id, Name, Account__c, Status__c, TenantRequestAction__c, CreatedDate
             FROM Prof_Services_Request__c 
             WHERE Name LIKE 'PS-%' 
             AND Name LIKE '%${searchTerm.replace(/'/g, "\\'")}%'
@@ -388,7 +388,7 @@ async function searchTechnicalTeamRequests(searchTerm, limit = 10) {
                 name: record.Name,
                 account: record.Account__c,
                 status: record.Status__c,
-                requestType: record.Request_Type_RI__c,
+                requestType: record.TenantRequestAction__c,
                 type: 'technical_request'
             }))
         };
@@ -537,7 +537,7 @@ async function getProfServicesRequestById(id) {
         const soql = `
             SELECT Id, Name, Account__c, Status__c, Deployment__c,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
-                   Request_Type_RI__c, Payload_Data__c,
+                   TenantRequestAction__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
                    CreatedDate, LastModifiedDate
             FROM Prof_Services_Request__c 
@@ -665,11 +665,11 @@ async function getProfServicesFilterOptions() {
         
         // Get unique request types
         const requestTypeQuery = `
-            SELECT Request_Type_RI__c 
+            SELECT TenantRequestAction__c 
             FROM Prof_Services_Request__c 
-            WHERE Request_Type_RI__c != null 
-            GROUP BY Request_Type_RI__c 
-            ORDER BY Request_Type_RI__c 
+            WHERE TenantRequestAction__c != null 
+            GROUP BY TenantRequestAction__c 
+            ORDER BY TenantRequestAction__c 
             LIMIT 50
         `;
         
@@ -690,7 +690,7 @@ async function getProfServicesFilterOptions() {
         
         return {
             success: true,
-            requestTypes: requestTypeResult.records.map(r => r.Request_Type_RI__c).filter(Boolean),
+            requestTypes: requestTypeResult.records.map(r => r.TenantRequestAction__c).filter(Boolean),
             statuses: statusResult.records.map(r => r.Status__c).filter(Boolean),
             accounts: [] // Will be populated by search as needed
         };
@@ -761,24 +761,24 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate, enabledRuleIds 
 
         // First, get all possible request types
         const allTypesQuery = `
-            SELECT Request_Type_RI__c 
+            SELECT TenantRequestAction__c 
             FROM Prof_Services_Request__c 
-            WHERE Request_Type_RI__c != null 
-            GROUP BY Request_Type_RI__c 
-            ORDER BY Request_Type_RI__c
+            WHERE TenantRequestAction__c != null 
+            GROUP BY TenantRequestAction__c 
+            ORDER BY TenantRequestAction__c
         `;
 
         // Then, get all records for the specific time period (need full records for validation)
         // Match the same query pattern as /api/validation/errors endpoint
         const analyticsQuery = `
-            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, 
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c, 
                    Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
             FROM Prof_Services_Request__c 
             WHERE CreatedDate >= ${startDateStr}T00:00:00.000Z 
             AND CreatedDate <= ${endDateStr}T23:59:59.999Z
             AND Name LIKE 'PS-%'
-            AND Request_Type_RI__c != null 
-            ORDER BY Request_Type_RI__c, CreatedDate DESC
+            AND TenantRequestAction__c != null 
+            ORDER BY TenantRequestAction__c, CreatedDate DESC
         `;
 
         console.log('📊 Fetching all request types:', allTypesQuery);
@@ -803,7 +803,7 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate, enabledRuleIds 
         const typeStatsMap = new Map();
         
         analyticsResult.records.forEach(record => {
-            const requestType = record.Request_Type_RI__c;
+            const requestType = record.TenantRequestAction__c;
             
             if (!typeStatsMap.has(requestType)) {
                 typeStatsMap.set(requestType, {
@@ -830,7 +830,7 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate, enabledRuleIds 
 
         // Build data array with all request types, filling in 0 for missing ones
         const data = allTypesResult.records.map(record => {
-            const requestType = record.Request_Type_RI__c;
+            const requestType = record.TenantRequestAction__c;
             const stats = typeStatsMap.get(requestType) || { count: 0, validationFailures: 0 };
             
             return {
@@ -907,12 +907,12 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
         
         // Get all Update, Onboarding, and Deprovision requests for the extended period
         const query = `
-            SELECT Id, Name, Request_Type_RI__c, Payload_Data__c, CreatedDate
+            SELECT Id, Name, TenantRequestAction__c, Payload_Data__c, CreatedDate
             FROM Prof_Services_Request__c 
             WHERE CreatedDate >= ${startDateStr}T00:00:00.000Z 
             AND CreatedDate <= ${endDateStr}T23:59:59.999Z
             AND Name LIKE 'PS-%'
-            AND (Request_Type_RI__c = 'Update' OR Request_Type_RI__c = 'Onboarding' OR Request_Type_RI__c = 'Deprovision')
+            AND (TenantRequestAction__c = 'Update' OR TenantRequestAction__c = 'Onboarding' OR TenantRequestAction__c = 'Deprovision')
             ORDER BY CreatedDate ASC
         `;
         
@@ -947,7 +947,7 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
                 console.warn(`⚠️ Error validating record ${record.Id}:`, error.message);
             }
             
-            const requestType = record.Request_Type_RI__c;
+            const requestType = record.TenantRequestAction__c;
             if (validatedRecordsByType[requestType]) {
                 validatedRecordsByType[requestType].push({
                     createdDate: new Date(record.CreatedDate),
@@ -1061,7 +1061,7 @@ async function getPSRequestsWithRemovals(timeFrame = '1w') {
         
         // Get all PS requests in the time period
         const currentPeriodQuery = `
-            SELECT Id, Name, Account__c, Status__c, Request_Type_RI__c,
+            SELECT Id, Name, Account__c, Status__c, TenantRequestAction__c,
                    CreatedDate, LastModifiedDate, Payload_Data__c
             FROM Prof_Services_Request__c
             WHERE CreatedDate >= ${startDateStr}T00:00:00Z 
@@ -1128,7 +1128,7 @@ async function getPSRequestsWithRemovals(timeFrame = '1w') {
                                     name: currentRequest.Name,
                                     account: currentRequest.Account__c,
                                     status: currentRequest.Status__c,
-                                    requestType: currentRequest.Request_Type_RI__c,
+                                    requestType: currentRequest.TenantRequestAction__c,
                                     createdDate: currentRequest.CreatedDate
                                 },
                                 previousRequest: {
@@ -1265,7 +1265,7 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
         // Query all PS records from lookback period
         // Account__c contains the actual account name (not Account_Site__c which is the site location)
         const query = `
-            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
                    Status__c, CreatedDate, Payload_Data__c
             FROM Prof_Services_Request__c
             WHERE CreatedDate >= ${lookbackDateStr}T00:00:00Z
@@ -1634,7 +1634,7 @@ async function getCustomerProducts(accountName) {
         
         // Query all PS requests for this account
         const soqlQuery = `
-            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
                    Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
             FROM Prof_Services_Request__c
             WHERE Account__c = '${accountName.replace(/'/g, "\\'")}'
@@ -1936,7 +1936,7 @@ async function analyzeAccountForGhostStatus(accountId, accountName) {
         // Query all PS requests for this account
         // Account__c is the Account ID, not name
         const soqlQuery = `
-            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
                    Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
             FROM Prof_Services_Request__c
             WHERE Account__c = '${accountId}'
@@ -2017,7 +2017,7 @@ async function analyzeAccountForGhostStatus(accountId, accountName) {
         // All products are expired - now check for deprovisioning PS record
         // after the latest expiry date
         const deprovisioningRecords = records.filter(record => {
-            const requestType = record.Request_Type_RI__c?.toLowerCase() || '';
+            const requestType = record.TenantRequestAction__c?.toLowerCase() || '';
             const isDeprovisioning = requestType.includes('deprovision');
             const recordDate = new Date(record.CreatedDate);
             return isDeprovisioning && recordDate > latestExpiryDate;
@@ -2158,7 +2158,7 @@ async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
         
         // Query all deprovisioning PS records within the timeframe
         const deprovQuery = `
-            SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c, Status__c, CreatedDate
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c, Status__c, CreatedDate
             FROM Prof_Services_Request__c
             WHERE CreatedDate >= ${cutoffDateStr}T00:00:00Z
             AND Name LIKE 'PS-%'
@@ -2173,12 +2173,12 @@ async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
         console.log(`📊 Found ${allRecords.length} total PS records in last ${daysBack} days`);
         
         // Show unique request types found
-        const uniqueTypes = [...new Set(allRecords.map(r => r.Request_Type_RI__c).filter(t => t))];
+        const uniqueTypes = [...new Set(allRecords.map(r => r.TenantRequestAction__c).filter(t => t))];
         console.log(`   Available Request Types: ${uniqueTypes.join(', ')}`);
         
         // Filter for deprovisioning records (case-insensitive)
         const deprovRecords = allRecords.filter(record => {
-            const requestType = (record.Request_Type_RI__c || '').toLowerCase();
+            const requestType = (record.TenantRequestAction__c || '').toLowerCase();
             return requestType.includes('deprovision');
         });
         
@@ -2186,7 +2186,7 @@ async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
         if (deprovRecords.length > 0) {
             console.log('   Sample deprovisioning records:');
             deprovRecords.slice(0, 5).forEach(r => {
-                console.log(`     - ${r.Name}: ${r.Request_Type_RI__c} (${r.Account_Site__c})`);
+                console.log(`     - ${r.Name}: ${r.TenantRequestAction__c} (${r.Account_Site__c})`);
             });
         }
         
@@ -2195,9 +2195,9 @@ async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
         if (ps4853) {
             console.log('   🔍 FOUND PS-4853:');
             console.log(`      Account_Site__c: ${ps4853.Account_Site__c}`);
-            console.log(`      Request_Type_RI__c: "${ps4853.Request_Type_RI__c}"`);
+            console.log(`      TenantRequestAction__c: "${ps4853.TenantRequestAction__c}"`);
             console.log(`      CreatedDate: ${ps4853.CreatedDate}`);
-            console.log(`      Is it deprovisioning? ${(ps4853.Request_Type_RI__c || '').toLowerCase().includes('deprovision')}`);
+            console.log(`      Is it deprovisioning? ${(ps4853.TenantRequestAction__c || '').toLowerCase().includes('deprovision')}`);
         } else {
             console.log('   ⚠️  PS-4853 NOT FOUND in query results');
             console.log(`      Query date range: ${cutoffDateStr} to now`);
@@ -2230,7 +2230,7 @@ async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
             
             // Get all PS records for this account
             const accountQuery = `
-                SELECT Id, Name, Account__c, Account_Site__c, Request_Type_RI__c,
+                SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
                        Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
                 FROM Prof_Services_Request__c
                 WHERE Account__c = '${accountId}'

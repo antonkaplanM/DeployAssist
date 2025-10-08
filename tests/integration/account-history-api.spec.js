@@ -103,7 +103,7 @@ describe('Account History API Integration Tests', () => {
         expect(firstRecord).toHaveProperty('Name');
         expect(firstRecord).toHaveProperty('Account__c');
         expect(firstRecord).toHaveProperty('Status__c');
-        expect(firstRecord).toHaveProperty('Request_Type_RI__c');
+        expect(firstRecord).toHaveProperty('TenantRequestAction__c');
         expect(firstRecord).toHaveProperty('CreatedDate');
         expect(firstRecord).toHaveProperty('parsedPayload');
         
@@ -217,7 +217,7 @@ describe('Account History API Integration Tests', () => {
             if (ps4331) {
               expect(ps4331.Account__c).toBe(psRequest.account);
               expect(ps4331.Status__c).toBeDefined();
-              expect(ps4331.Request_Type_RI__c).toBeDefined();
+              expect(ps4331.TenantRequestAction__c).toBeDefined();
             }
           }
         }
