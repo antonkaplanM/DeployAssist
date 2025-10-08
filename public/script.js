@@ -6132,7 +6132,8 @@ let currentAccountHistory = {
     accountName: null,
     requests: [],
     showComparison: false,
-    limit: 5  // Default to showing latest 5 requests
+    limit: 5,  // Default to showing latest 5 requests
+    tenantFilter: ''  // Tenant name filter
 };
 
 // Initialize Account History page
@@ -6141,6 +6142,7 @@ function initializeAccountHistory() {
     const clearButton = document.getElementById('account-history-clear');
     const comparisonToggle = document.getElementById('show-comparison-toggle');
     const limitSelector = document.getElementById('account-history-limit');
+    const tenantFilter = document.getElementById('account-history-tenant-filter');
     const tableBody = document.getElementById('account-history-table-body');
     
     if (searchInput) {
@@ -6169,6 +6171,13 @@ function initializeAccountHistory() {
         limitSelector.addEventListener('change', (e) => {
             const value = e.target.value;
             currentAccountHistory.limit = value === 'all' ? null : parseInt(value);
+            renderAccountHistoryTable();
+        });
+    }
+    
+    if (tenantFilter) {
+        tenantFilter.addEventListener('change', (e) => {
+            currentAccountHistory.tenantFilter = e.target.value;
             renderAccountHistoryTable();
         });
     }
@@ -6370,13 +6379,17 @@ async function loadAccountHistory(accountName) {
             accountName: accountName,
             requests: requests,
             showComparison: document.getElementById('show-comparison-toggle')?.checked || false,
-            limit: currentLimit === 'all' ? null : parseInt(currentLimit)
+            limit: currentLimit === 'all' ? null : parseInt(currentLimit),
+            tenantFilter: '' // Reset tenant filter
         };
         
         // Ensure the limit selector is set to the current value
         if (limitSelector && !limitSelector.value) {
             limitSelector.value = '5';
         }
+        
+        // Populate tenant filter dropdown
+        populateTenantFilter(requests);
         
         // Update UI
         displayAccountSummary(accountName, requests);
@@ -6390,6 +6403,34 @@ async function loadAccountHistory(accountName) {
         alert('Failed to load account history: ' + error.message);
         showAccountHistoryLoading(false);
     }
+}
+
+// Populate tenant filter dropdown with unique tenant names
+function populateTenantFilter(requests) {
+    const tenantFilter = document.getElementById('account-history-tenant-filter');
+    if (!tenantFilter) return;
+    
+    // Extract unique tenant names from requests
+    const tenantNames = new Set();
+    requests.forEach(request => {
+        const tenantName = request.parsedPayload?.tenantName;
+        if (tenantName && tenantName !== 'N/A') {
+            tenantNames.add(tenantName);
+        }
+    });
+    
+    // Sort tenant names alphabetically
+    const sortedTenantNames = Array.from(tenantNames).sort();
+    
+    // Build options HTML
+    let optionsHtml = '<option value="">All Tenants</option>';
+    sortedTenantNames.forEach(tenantName => {
+        optionsHtml += `<option value="${tenantName}">${tenantName}</option>`;
+    });
+    
+    tenantFilter.innerHTML = optionsHtml;
+    
+    console.log(`Populated tenant filter with ${sortedTenantNames.length} unique tenant(s)`);
 }
 
 // Show/hide loading state
@@ -6438,7 +6479,7 @@ function renderAccountHistoryTable() {
     if (!currentAccountHistory.requests || currentAccountHistory.requests.length === 0) {
         tableBody.innerHTML = `
             <tr class="border-b transition-colors">
-                <td class="p-4 align-middle text-center text-muted-foreground" colspan="7">
+                <td class="p-4 align-middle text-center text-muted-foreground" colspan="9">
                     <div class="flex flex-col items-center gap-2 py-8">
                         <p class="text-sm">No requests found for this account</p>
                     </div>
@@ -6452,23 +6493,45 @@ function renderAccountHistoryTable() {
     if (tableSection) tableSection.classList.remove('hidden');
     
     // Sort requests by date descending (most recent first)
-    const allRequests = [...currentAccountHistory.requests].sort((a, b) => {
+    let allRequests = [...currentAccountHistory.requests].sort((a, b) => {
         return new Date(b.CreatedDate) - new Date(a.CreatedDate);
     });
     
+    // Apply tenant filter if set
+    const tenantFilter = currentAccountHistory.tenantFilter;
+    if (tenantFilter) {
+        allRequests = allRequests.filter(request => {
+            const tenantName = request.parsedPayload?.tenantName || 'N/A';
+            return tenantName === tenantFilter;
+        });
+    }
+    
     // Apply limit if set
     const totalCount = allRequests.length;
+    const unfilteredCount = currentAccountHistory.requests.length;
     const limit = currentAccountHistory.limit;
     const requests = limit ? allRequests.slice(0, limit) : allRequests;
     
     // Update count indicator
     const countIndicator = document.getElementById('account-history-count-indicator');
     if (countIndicator) {
-        if (limit && limit < totalCount) {
-            countIndicator.textContent = `Showing latest ${requests.length} of ${totalCount} requests`;
+        let countText = '';
+        if (tenantFilter) {
+            // Filtering is active
+            if (limit && limit < totalCount) {
+                countText = `Showing latest ${requests.length} of ${totalCount} filtered requests (${unfilteredCount} total)`;
+            } else {
+                countText = `Showing all ${totalCount} filtered requests (${unfilteredCount} total)`;
+            }
         } else {
-            countIndicator.textContent = `Showing all ${totalCount} requests`;
+            // No filtering
+            if (limit && limit < totalCount) {
+                countText = `Showing latest ${requests.length} of ${totalCount} requests`;
+            } else {
+                countText = `Showing all ${totalCount} requests`;
+            }
         }
+        countIndicator.textContent = countText;
     }
     
     let html = '';
@@ -6476,9 +6539,24 @@ function renderAccountHistoryTable() {
     requests.forEach((request, index) => {
         const createdDate = new Date(request.CreatedDate);
         
+        // Extract tenantName from parsed payload if available
+        const tenantName = request.parsedPayload?.tenantName || 'N/A';
+        const deploymentNumber = request.Deployment__r?.Name || 'N/A';
+        
+        // Find the previous request with the same tenant name (for comparison)
+        // Since requests are sorted by date descending (newest first), we look forward in the array
+        let previousRequestSameTenant = null;
+        for (let i = index + 1; i < requests.length; i++) {
+            const candidateTenantName = requests[i].parsedPayload?.tenantName || 'N/A';
+            if (candidateTenantName === tenantName) {
+                previousRequestSameTenant = requests[i];
+                break;
+            }
+        }
+        
         // Main row
         html += `
-            <tr class="border-b transition-colors hover:bg-muted/50" data-request-name="${request.Name}">
+            <tr class="border-b transition-colors hover:bg-muted/50" data-request-name="${request.Name}" data-tenant-name="${tenantName}">
                 <td class="px-4 py-3 align-middle">
                     <button 
                         class="text-muted-foreground hover:text-foreground transition-colors"
@@ -6495,6 +6573,12 @@ function renderAccountHistoryTable() {
                 </td>
                 <td class="px-4 py-3 align-middle text-sm text-muted-foreground">
                     ${createdDate.toLocaleDateString()}
+                </td>
+                <td class="px-4 py-3 align-middle text-sm">
+                    ${deploymentNumber}
+                </td>
+                <td class="px-4 py-3 align-middle text-sm">
+                    ${tenantName}
                 </td>
                 <td class="px-4 py-3 align-middle">
                     <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
@@ -6539,9 +6623,9 @@ function renderAccountHistoryTable() {
                 </td>
             </tr>
             <tr id="details-row-${request.Id}" class="hidden border-b bg-muted/30">
-                <td colspan="7" class="p-0">
+                <td colspan="9" class="p-0">
                     <div class="p-6">
-                        ${renderRequestDetails(request, index < requests.length - 1 ? requests[index + 1] : null)}
+                        ${renderRequestDetails(request, previousRequestSameTenant)}
                     </div>
                 </td>
             </tr>
@@ -6605,40 +6689,59 @@ function renderRequestDetails(request, previousRequest) {
         </div>
     `;
     
-    // Add comparison section if enabled and previous request exists
-    if (showComparison && previousRequest) {
-        // Parse previous request payload
-        let previousParsedPayload = {};
-        if (previousRequest.Payload_Data__c) {
-            try {
-                const prevPayload = JSON.parse(previousRequest.Payload_Data__c);
-                const prevEntitlements = prevPayload.properties?.provisioningDetail?.entitlements || {};
-                previousParsedPayload = {
-                    hasDetails: true,
-                    modelEntitlements: prevEntitlements.modelEntitlements || [],
-                    dataEntitlements: prevEntitlements.dataEntitlements || [],
-                    appEntitlements: prevEntitlements.appEntitlements || []
-                };
-            } catch (e) {
-                console.error('Error parsing previous payload:', e);
+    // Add comparison section if enabled
+    if (showComparison) {
+        if (previousRequest) {
+            // Parse previous request payload
+            let previousParsedPayload = {};
+            if (previousRequest.Payload_Data__c) {
+                try {
+                    const prevPayload = JSON.parse(previousRequest.Payload_Data__c);
+                    const prevEntitlements = prevPayload.properties?.provisioningDetail?.entitlements || {};
+                    previousParsedPayload = {
+                        hasDetails: true,
+                        modelEntitlements: prevEntitlements.modelEntitlements || [],
+                        dataEntitlements: prevEntitlements.dataEntitlements || [],
+                        appEntitlements: prevEntitlements.appEntitlements || []
+                    };
+                } catch (e) {
+                    console.error('Error parsing previous payload:', e);
+                }
             }
+            
+            const currentTenantName = parsedPayload.tenantName || 'N/A';
+            html += `
+                <div class="mt-6 pt-6 border-t">
+                    <h4 class="font-semibold mb-3 flex items-center gap-2">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"></polyline>
+                            <line x1="4" x2="21" y1="20" y2="3"></line>
+                            <polyline points="21 16 21 21 16 21"></polyline>
+                            <line x1="15" x2="10" y1="15" y2="15"></line>
+                            <line x1="15" x2="10" y1="19" y2="19"></line>
+                        </svg>
+                        Changes from Previous Request for ${currentTenantName} (${previousRequest.Name})
+                    </h4>
+                    ${renderProductComparison(parsedPayload, previousParsedPayload)}
+                </div>
+            `;
+        } else {
+            // No previous request for the same tenant
+            const currentTenantName = parsedPayload.tenantName || 'N/A';
+            html += `
+                <div class="mt-6 pt-6 border-t">
+                    <h4 class="font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" x2="12" y1="8" y2="12"></line>
+                            <line x1="12" x2="12.01" y1="16" y2="16"></line>
+                        </svg>
+                        No Previous Request for ${currentTenantName}
+                    </h4>
+                    <p class="text-sm text-muted-foreground">This is the first or only request for this tenant in the current view.</p>
+                </div>
+            `;
         }
-        
-        html += `
-            <div class="mt-6 pt-6 border-t">
-                <h4 class="font-semibold mb-3 flex items-center gap-2">
-                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="16 3 21 3 21 8"></polyline>
-                        <line x1="4" x2="21" y1="20" y2="3"></line>
-                        <polyline points="21 16 21 21 16 21"></polyline>
-                        <line x1="15" x2="10" y1="15" y2="15"></line>
-                        <line x1="15" x2="10" y1="19" y2="19"></line>
-                    </svg>
-                    Changes from Previous Request (${previousRequest.Name})
-                </h4>
-                ${renderProductComparison(parsedPayload, previousParsedPayload)}
-            </div>
-        `;
     }
     
     return html;
@@ -6895,7 +6998,8 @@ function clearAccountHistory() {
         accountName: null,
         requests: [],
         showComparison: false,
-        limit: 5  // Reset to default
+        limit: 5,  // Reset to default
+        tenantFilter: ''
     };
     
     const searchInput = document.getElementById('account-history-search');
@@ -6905,6 +7009,7 @@ function clearAccountHistory() {
     const tableSection = document.getElementById('account-history-table-section');
     const comparisonToggle = document.getElementById('show-comparison-toggle');
     const limitSelector = document.getElementById('account-history-limit');
+    const tenantFilter = document.getElementById('account-history-tenant-filter');
     
     if (searchInput) searchInput.value = '';
     if (searchResults) searchResults.classList.add('hidden');
@@ -6913,6 +7018,7 @@ function clearAccountHistory() {
     if (tableSection) tableSection.classList.add('hidden');
     if (comparisonToggle) comparisonToggle.checked = false;
     if (limitSelector) limitSelector.value = '5';  // Reset to default
+    if (tenantFilter) tenantFilter.value = '';  // Reset tenant filter
 }
 
 // HTML escape helper
