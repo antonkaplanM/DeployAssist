@@ -78,3 +78,6 @@ test-sf-prod.js
 secrets-cleanup.txt
 ..bfg-report/
 .git.bfg-report/
+
+# Generated CSS files
+public/tailwind.css

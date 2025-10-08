@@ -17,12 +17,22 @@ A deployment assistant application built with Node.js and Express, featuring a m
    npm install
    ```
 
-2. **Start the Server**:
+2. **Build CSS** (first time or after CSS changes):
+   ```bash
+   npm run build:css
+   ```
+
+3. **Start the Server**:
    ```bash
    npm start
    ```
+   
+   Or use the dev command which builds CSS automatically:
+   ```bash
+   npm run dev
+   ```
 
-3. **Open in Browser**:
+4. **Open in Browser**:
    Navigate to [http://localhost:8080](http://localhost:8080)
 
 ## Project Structure
@@ -65,6 +75,17 @@ The application includes:
 - ✨ Interactive elements with visual feedback
 - 🎯 Accessibility-focused components
 - ⌨️ Keyboard shortcuts and navigation
+
+### CSS Development
+
+The project uses Tailwind CSS (v3) for styling:
+
+- **Build CSS**: `npm run build:css` - Compiles and minifies Tailwind CSS
+- **Watch CSS**: `npm run watch:css` - Auto-recompiles CSS on file changes (useful during development)
+- **Source files**: 
+  - `src/input.css` - Main Tailwind CSS source file
+  - `tailwind.config.js` - Tailwind configuration with custom theme
+  - `public/tailwind.css` - Generated CSS file (git-ignored)
 
 ## New Features
 

@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+.font-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Ensure smooth transitions */
+* {
+  @apply transition-colors duration-200;
+}
+
