@@ -3412,6 +3412,7 @@ function renderProductItems(items, groupType, validationResult = null) {
     const getEndDate = (it) => it.endDate || it.end_date || it.EndDate || '—';
     const getQuantity = (it) => (it.quantity !== undefined ? it.quantity : (it.Quantity !== undefined ? it.Quantity : '—'));
     const getModifier = (it) => it.productModifier || it.ProductModifier || '—';
+    const getPackageName = (it) => it.packageName || it.package_name || it.PackageName || '—';
 
     // Helper function to check if an entitlement has validation issues
     const hasValidationIssue = (item, index) => {
@@ -3472,6 +3473,7 @@ function renderProductItems(items, groupType, validationResult = null) {
     } else if (groupType === 'apps') {
         columns = [
             { key: 'productCode', label: 'Product Code', get: getProductCode },
+            { key: 'packageName', label: 'Package Name', get: getPackageName },
             { key: 'quantity', label: 'Quantity', get: getQuantity },
             { key: 'startDate', label: 'Start Date', get: getStartDate },
             { key: 'endDate', label: 'End Date', get: getEndDate }

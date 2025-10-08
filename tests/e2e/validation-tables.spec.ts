@@ -13,9 +13,9 @@ test('provisioning entitlements modal renders tables', async ({ page }) => {
     const tbody = document.querySelector('#provisioning-table-body');
     if (!tbody) return;
     const fakeEntitlements = [
-      { productCode: 'IC-DATABRIDGE', quantity: 3, startDate: '2025-01-01', endDate: '2025-06-01' },
-      { productCode: 'APP-X', quantity: 1, startDate: '2025-02-01', endDate: '2025-07-01' },
-      { productCode: 'APP-Y', quantity: 2, startDate: '2025-03-01', endDate: '2025-08-01' },
+      { productCode: 'IC-DATABRIDGE', packageName: 'com.icertis.databridge', quantity: 3, startDate: '2025-01-01', endDate: '2025-06-01' },
+      { productCode: 'APP-X', packageName: 'com.icertis.appx', quantity: 1, startDate: '2025-02-01', endDate: '2025-07-01' },
+      { productCode: 'APP-Y', packageName: 'com.icertis.appy', quantity: 2, startDate: '2025-03-01', endDate: '2025-08-01' },
     ];
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -35,14 +35,14 @@ test('provisioning entitlements modal renders tables', async ({ page }) => {
   const modal = page.locator('#product-modal');
   await expect(modal).toBeVisible();
   await expect(modal.locator('table')).toBeVisible();
-  await expect(modal.locator('thead th')).toContainText(['Product Code', 'Quantity', 'Start Date', 'End Date']);
+  await expect(modal.locator('thead th')).toContainText(['Product Code', 'Package Name', 'Quantity', 'Start Date', 'End Date']);
 
   // Verify sorting toggles by Quantity
   const getQuantities = async () => {
     const count = await modal.locator('tbody tr').count();
     const vals: number[] = [];
     for (let i = 1; i <= count; i++) {
-      const txt = await modal.locator(`tbody tr:nth-child(${i}) td:nth-child(2)`).innerText();
+      const txt = await modal.locator(`tbody tr:nth-child(${i}) td:nth-child(3)`).innerText();
       const num = Number(String(txt).trim());
       if (!Number.isNaN(num)) vals.push(num);
     }
