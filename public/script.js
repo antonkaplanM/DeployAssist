@@ -3000,7 +3000,6 @@ function renderProvisioningTable(data) {
         <tr class="hover:bg-muted/50 transition-colors">
             <td class="px-4 py-3">
                 <div class="font-medium text-sm">${request.Name || 'N/A'}</div>
-                <div class="text-xs text-muted-foreground">ID: ${request.Id}</div>
             </td>
             <td class="px-4 py-3">
                 <div class="text-sm">${request.Account__c || 'N/A'}</div>
@@ -4162,7 +4161,6 @@ function renderProvisioningTable(data) {
         <tr class="border-b hover:bg-muted/50">
             <td class="px-4 py-3">
                 <div class="font-medium">${request.Name || 'N/A'}</div>
-                <div class="text-sm text-muted-foreground">${request.Id}</div>
             </td>
             <td class="px-4 py-3">
                 <div class="text-sm">${request.Account__c || 'N/A'}</div>
