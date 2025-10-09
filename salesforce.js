@@ -267,7 +267,7 @@ async function queryProfServicesRequests(filters = {}) {
         let soql = `
             SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
-                   TenantRequestAction__c, Payload_Data__c,
+                   TenantRequestAction__c, Tenant_Name__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
                    CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
@@ -325,10 +325,17 @@ async function queryProfServicesRequests(filters = {}) {
         const totalCount = countResult.totalSize;
         
         // Process the results to parse JSON payload
-        const processedRecords = result.records.map(record => ({
-            ...record,
-            parsedPayload: parsePayloadData(record.Payload_Data__c)
-        }));
+        const processedRecords = result.records.map(record => {
+            const parsedPayload = parsePayloadData(record.Payload_Data__c);
+            // Override tenantName with the Salesforce field value if available
+            if (record.Tenant_Name__c) {
+                parsedPayload.tenantName = record.Tenant_Name__c;
+            }
+            return {
+                ...record,
+                parsedPayload: parsedPayload
+            };
+        });
         
         const hasMore = (offset + pageSize) < totalCount;
         const currentPage = Math.floor(offset / pageSize) + 1;
@@ -537,7 +544,7 @@ async function getProfServicesRequestById(id) {
         const soql = `
             SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
-                   TenantRequestAction__c, Payload_Data__c,
+                   TenantRequestAction__c, Tenant_Name__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
                    CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
@@ -554,11 +561,18 @@ async function getProfServicesRequestById(id) {
         }
         
         const record = result.records[0];
+        const parsedPayload = parsePayloadData(record.Payload_Data__c);
+        
+        // Override tenantName with the Salesforce field value if available
+        if (record.Tenant_Name__c) {
+            parsedPayload.tenantName = record.Tenant_Name__c;
+        }
+        
         return {
             success: true,
             record: {
                 ...record,
-                parsedPayload: parsePayloadData(record.Payload_Data__c)
+                parsedPayload: parsedPayload
             }
         };
         
@@ -630,6 +644,28 @@ function parsePayloadData(jsonString) {
             ? summaryParts.join(', ')
             : 'No entitlements';
         
+        // Extract tenant name from multiple possible locations
+        // Check: 1) properties.provisioningDetail.tenantName (newer structure)
+        //        2) properties.tenantName (older/alternative structure)
+        //        3) preferredSubdomain1 (found in PS-4652)
+        //        4) preferredSubdomain2 (alternative subdomain field)
+        //        5) properties.preferredSubdomain1 (nested variant)
+        //        6) tenantName at root level (fallback)
+        const tenantName = payload.properties?.provisioningDetail?.tenantName 
+            || payload.properties?.tenantName 
+            || payload.preferredSubdomain1
+            || payload.preferredSubdomain2
+            || payload.properties?.preferredSubdomain1
+            || payload.properties?.preferredSubdomain2
+            || payload.tenantName 
+            || null;
+        
+        // Extract region from multiple possible locations
+        const region = payload.properties?.provisioningDetail?.region 
+            || payload.properties?.region 
+            || payload.region 
+            || null;
+        
         return {
             productEntitlements: allModelEntitlements, // Keep for backward compatibility
             modelEntitlements: allModelEntitlements,
@@ -639,8 +675,8 @@ function parsePayloadData(jsonString) {
             summary,
             hasDetails: totalCount > 0,
             rawPayload: payload,
-            tenantName: payload.properties?.provisioningDetail?.tenantName,
-            region: payload.properties?.provisioningDetail?.region
+            tenantName: tenantName,
+            region: region
         };
         
     } catch (err) {

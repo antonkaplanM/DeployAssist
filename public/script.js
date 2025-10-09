@@ -7025,6 +7025,52 @@ function renderAccountHistoryTable() {
     requests.forEach((request, index) => {
         const createdDate = new Date(request.CreatedDate);
         
+        // DEBUG: Log PS-4652 data
+        if (request.Name === 'PS-4652') {
+            console.log('🔍 DEBUG PS-4652:', {
+                name: request.Name,
+                account: request.Account__c,
+                tenantNameField: request.Tenant_Name__c,
+                parsedPayloadTenantName: request.parsedPayload?.tenantName,
+                parsedPayloadKeys: request.parsedPayload ? Object.keys(request.parsedPayload) : 'no parsedPayload',
+                hasPayloadData: !!request.Payload_Data__c,
+                payloadDataLength: request.Payload_Data__c?.length
+            });
+            
+            // Try to parse raw payload if available
+            if (request.Payload_Data__c) {
+                try {
+                    const rawPayload = JSON.parse(request.Payload_Data__c);
+                    console.log('🔍 PS-4652 Payload structure check:', {
+                        'Salesforce Tenant_Name__c field': request.Tenant_Name__c,
+                        'properties.provisioningDetail.tenantName': rawPayload.properties?.provisioningDetail?.tenantName,
+                        'properties.tenantName': rawPayload.properties?.tenantName,
+                        'preferredSubdomain1': rawPayload.preferredSubdomain1,
+                        'preferredSubdomain2': rawPayload.preferredSubdomain2,
+                        'tenantName (root)': rawPayload.tenantName,
+                        'properties keys': rawPayload.properties ? Object.keys(rawPayload.properties) : 'no properties'
+                    });
+                    
+                    // Search for "ajg-eudev" in the entire payload
+                    const payloadStr = JSON.stringify(rawPayload);
+                    if (payloadStr.includes('ajg-eudev')) {
+                        console.log('✅ Found "ajg-eudev" in payload, searching for location...');
+                        // Find the key path
+                        const lines = JSON.stringify(rawPayload, null, 2).split('\n');
+                        lines.forEach((line, idx) => {
+                            if (line.includes('ajg-eudev')) {
+                                console.log('  Line', idx, ':', line.trim());
+                            }
+                        });
+                    } else {
+                        console.log('❌ "ajg-eudev" NOT found in payload at all!');
+                    }
+                } catch (e) {
+                    console.error('❌ Error parsing PS-4652 payload:', e);
+                }
+            }
+        }
+        
         // Extract tenantName from parsed payload if available
         const tenantName = request.parsedPayload?.tenantName || 'N/A';
         const deploymentNumber = request.Deployment__r?.Name || 'N/A';
@@ -7129,11 +7175,30 @@ function renderRequestDetails(request, previousRequest) {
         try {
             const payload = JSON.parse(request.Payload_Data__c);
             const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
+            
+            // Extract tenant name from multiple possible locations (matches backend logic)
+            const tenantName = payload.properties?.provisioningDetail?.tenantName 
+                || payload.properties?.tenantName 
+                || payload.preferredSubdomain1
+                || payload.preferredSubdomain2
+                || payload.properties?.preferredSubdomain1
+                || payload.properties?.preferredSubdomain2
+                || payload.tenantName 
+                || null;
+            
+            // Extract region from multiple possible locations
+            const region = payload.properties?.provisioningDetail?.region 
+                || payload.properties?.region 
+                || payload.region 
+                || null;
+            
             parsedPayload = {
                 hasDetails: true,
                 modelEntitlements: entitlements.modelEntitlements || [],
                 dataEntitlements: entitlements.dataEntitlements || [],
-                appEntitlements: entitlements.appEntitlements || []
+                appEntitlements: entitlements.appEntitlements || [],
+                tenantName: tenantName,
+                region: region
             };
         } catch (e) {
             console.error('Error parsing payload:', e);

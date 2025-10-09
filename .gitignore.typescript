@@ -1,0 +1,20 @@
+# TypeScript build output
+dist/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Add these to your existing .gitignore:
+# dist/
+# logs/
+# *.tsbuildinfo
+
