@@ -434,3 +434,42 @@ table tbody tr:hover {
     background: hsl(var(--muted));
     color: hsl(var(--muted-foreground));
 }
+
+/* Product Group Expandable Rows */
+.group-row {
+    user-select: none;
+}
+
+.group-row.cursor-pointer:hover {
+    background-color: hsl(var(--accent));
+}
+
+.child-row {
+    animation: fadeInDown 0.2s ease-out;
+}
+
+.expand-icon {
+    transition: transform 0.2s ease;
+}
+
+/* Red background for validation issues */
+.bg-red-25 {
+    background-color: #fef2f2;
+}
+
+.border-red-200 {
+    border-color: #fecaca;
+}
+
+.hover\:bg-red-50:hover {
+    background-color: #fef2f2;
+}
+
+/* Instance badge styling */
+.bg-blue-50 {
+    background-color: #eff6ff;
+}
+
+.text-blue-600 {
+    color: #2563eb;
+}

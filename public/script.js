@@ -3414,6 +3414,36 @@ function renderProductItems(items, groupType, validationResult = null) {
     const getModifier = (it) => it.productModifier || it.ProductModifier || '—';
     const getPackageName = (it) => it.packageName || it.package_name || it.PackageName || '—';
 
+    // Group items by product code (name) to consolidate duplicate products with different dates
+    const groupedProducts = new Map();
+    items.forEach((item, originalIndex) => {
+        const productCode = getProductCode(item);
+        const startDate = getStartDate(item);
+        const endDate = getEndDate(item);
+        
+        if (!groupedProducts.has(productCode)) {
+            groupedProducts.set(productCode, {
+                productCode: productCode,
+                items: [],
+                minStartDate: startDate,
+                maxEndDate: endDate,
+                // Store first item's other fields as defaults
+                defaultItem: item
+            });
+        }
+        
+        const group = groupedProducts.get(productCode);
+        group.items.push({ ...item, originalIndex });
+        
+        // Update min/max dates
+        if (startDate !== '—' && (group.minStartDate === '—' || new Date(startDate) < new Date(group.minStartDate))) {
+            group.minStartDate = startDate;
+        }
+        if (endDate !== '—' && (group.maxEndDate === '—' || new Date(endDate) > new Date(group.maxEndDate))) {
+            group.maxEndDate = endDate;
+        }
+    });
+
     // Helper function to check if an entitlement has validation issues
     const hasValidationIssue = (item, index) => {
         if (!validationResult || validationResult.overallStatus !== 'FAIL') return false;
@@ -3495,21 +3525,53 @@ function renderProductItems(items, groupType, validationResult = null) {
         </tr>
     `;
 
-    const rowsHtml = items.map((item, index) => {
-        const hasIssue = hasValidationIssue(item, index);
-        const rowClass = hasIssue ? 'border-b last:border-0 bg-red-25 border-red-200' : 'border-b last:border-0';
-        const cellClass = hasIssue ? 'px-3 py-2 text-sm relative' : 'px-3 py-2 text-sm';
+    // Render grouped products with expandable rows
+    const rowsHtml = Array.from(groupedProducts.values()).map((group, groupIndex) => {
+        const isMultiple = group.items.length > 1;
+        const groupId = `product-group-${groupIndex}`;
         
-        return `
-            <tr class="${rowClass}" ${hasIssue ? 'title="This entitlement has a date overlap validation failure"' : ''}>
-                ${hasIssue ? '<td class="px-1 py-2 w-4"><svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="m12 17 .01 0"></path></svg></td>' : '<td class="px-1 py-2 w-4"></td>'}
+        // Check if any item in the group has validation issues
+        const hasGroupIssue = group.items.some(item => hasValidationIssue(item, item.originalIndex));
+        
+        // Build main row (consolidated view)
+        const mainRowClass = hasGroupIssue 
+            ? 'border-b group-row bg-red-25 border-red-200 hover:bg-red-50 transition-colors' 
+            : 'border-b group-row hover:bg-gray-50 transition-colors';
+        
+        const mainRow = `
+            <tr class="${mainRowClass}" data-group-id="${groupId}" ${isMultiple ? `style="cursor: pointer;" onclick="toggleProductGroup('${groupId}')"` : ''} ${hasGroupIssue ? 'title="This product group contains validation issues"' : ''}>
+                <td class="px-1 py-2 w-4 text-center">
+                    ${isMultiple ? `
+                        <svg class="h-4 w-4 text-gray-500 expand-icon transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    ` : hasGroupIssue ? `
+                        <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <path d="M12 9v4"></path>
+                            <path d="m12 17 .01 0"></path>
+                        </svg>
+                    ` : ''}
+                </td>
                 ${columns.map(c => {
-                    const value = escapeHtml(String(c.get(item)));
+                    let value;
+                    if (c.key === 'startDate') {
+                        value = escapeHtml(String(group.minStartDate));
+                    } else if (c.key === 'endDate') {
+                        value = escapeHtml(String(group.maxEndDate));
+                    } else {
+                        value = escapeHtml(String(c.get(group.defaultItem)));
+                    }
+                    
+                    const cellContent = isMultiple && (c.key === 'productCode') 
+                        ? `<span class="font-medium">${value}</span><span class="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">${group.items.length} instances</span>`
+                        : value;
+                    
                     // Add info icon for package names in apps modal
                     if (c.showInfo && value !== '—' && value) {
-                        return `<td class="${cellClass}">
+                        return `<td class="px-3 py-2 text-sm">
                             <div class="flex items-center gap-2">
-                                <span>${value}</span>
+                                <span>${cellContent}</span>
                                 <button 
                                     class="package-info-btn inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-1"
                                     data-package-name="${value.replace(/"/g, '&quot;')}"
@@ -3525,10 +3587,58 @@ function renderProductItems(items, groupType, validationResult = null) {
                             </div>
                         </td>`;
                     }
-                    return `<td class="${cellClass}">${value}</td>`;
+                    return `<td class="px-3 py-2 text-sm">${cellContent}</td>`;
                 }).join('')}
             </tr>
         `;
+        
+        // Build child rows (individual instances) - hidden by default
+        const childRows = isMultiple ? group.items.map((item, itemIndex) => {
+            const hasIssue = hasValidationIssue(item, item.originalIndex);
+            const childRowClass = hasIssue 
+                ? 'child-row bg-red-25 border-red-200 border-b' 
+                : 'child-row bg-gray-50 border-b';
+            
+            return `
+                <tr class="${childRowClass}" data-parent-group="${groupId}" style="display: none;" ${hasIssue ? 'title="This entitlement has a validation failure"' : ''}>
+                    <td class="px-1 py-2 w-4 text-center pl-6">
+                        ${hasIssue ? `
+                            <svg class="h-3 w-3 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                <path d="M12 9v4"></path>
+                                <path d="m12 17 .01 0"></path>
+                            </svg>
+                        ` : `<span class="text-xs text-gray-400">${itemIndex + 1}</span>`}
+                    </td>
+                    ${columns.map(c => {
+                        const value = escapeHtml(String(c.get(item)));
+                        // Add info icon for package names in apps modal
+                        if (c.showInfo && value !== '—' && value) {
+                            return `<td class="px-3 py-2 text-sm text-gray-700">
+                                <div class="flex items-center gap-2">
+                                    <span>${value}</span>
+                                    <button 
+                                        class="package-info-btn inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-1"
+                                        data-package-name="${value.replace(/"/g, '&quot;')}"
+                                        title="View package details"
+                                        onclick="event.stopPropagation(); showPackageInfo('${value.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')"
+                                    >
+                                        <svg class="h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 16v-4"></path>
+                                            <path d="m12 8 .01 0"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>`;
+                        }
+                        return `<td class="px-3 py-2 text-sm text-gray-700">${value}</td>`;
+                    }).join('')}
+                </tr>
+            `;
+        }).join('') : '';
+        
+        return mainRow + childRows;
     }).join('');
 
     return `
@@ -3555,6 +3665,31 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// Toggle expand/collapse for product groups
+function toggleProductGroup(groupId) {
+    const mainRow = document.querySelector(`tr[data-group-id="${groupId}"]`);
+    const childRows = document.querySelectorAll(`tr[data-parent-group="${groupId}"]`);
+    const expandIcon = mainRow?.querySelector('.expand-icon');
+    
+    if (!mainRow || childRows.length === 0) return;
+    
+    const isExpanded = childRows[0].style.display !== 'none';
+    
+    // Toggle visibility of child rows
+    childRows.forEach(row => {
+        row.style.display = isExpanded ? 'none' : 'table-row';
+    });
+    
+    // Rotate the expand icon
+    if (expandIcon) {
+        if (isExpanded) {
+            expandIcon.style.transform = 'rotate(0deg)';
+        } else {
+            expandIcon.style.transform = 'rotate(90deg)';
+        }
+    }
 }
 
 // Close product modal
