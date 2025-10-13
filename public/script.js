@@ -6619,7 +6619,7 @@ let currentAccountHistory = {
     requests: [],
     showComparison: false,
     limit: 5,  // Default to showing latest 5 requests
-    tenantFilter: ''  // Tenant name filter
+    deploymentFilter: ''  // Deployment number filter
 };
 
 // Initialize Account History page
@@ -6628,7 +6628,7 @@ function initializeAccountHistory() {
     const clearButton = document.getElementById('account-history-clear');
     const comparisonToggle = document.getElementById('show-comparison-toggle');
     const limitSelector = document.getElementById('account-history-limit');
-    const tenantFilter = document.getElementById('account-history-tenant-filter');
+    const deploymentFilter = document.getElementById('account-history-deployment-filter');
     const tableBody = document.getElementById('account-history-table-body');
     
     if (searchInput) {
@@ -6661,9 +6661,9 @@ function initializeAccountHistory() {
         });
     }
     
-    if (tenantFilter) {
-        tenantFilter.addEventListener('change', (e) => {
-            currentAccountHistory.tenantFilter = e.target.value;
+    if (deploymentFilter) {
+        deploymentFilter.addEventListener('change', (e) => {
+            currentAccountHistory.deploymentFilter = e.target.value;
             renderAccountHistoryTable();
         });
     }
@@ -6866,7 +6866,7 @@ async function loadAccountHistory(accountName) {
             requests: requests,
             showComparison: document.getElementById('show-comparison-toggle')?.checked || false,
             limit: currentLimit === 'all' ? null : parseInt(currentLimit),
-            tenantFilter: '' // Reset tenant filter
+            deploymentFilter: '' // Reset deployment filter
         };
         
         // Ensure the limit selector is set to the current value
@@ -6874,8 +6874,8 @@ async function loadAccountHistory(accountName) {
             limitSelector.value = '5';
         }
         
-        // Populate tenant filter dropdown
-        populateTenantFilter(requests);
+        // Populate deployment filter dropdown
+        populateDeploymentFilter(requests);
         
         // Update UI
         displayAccountSummary(accountName, requests);
@@ -6891,32 +6891,32 @@ async function loadAccountHistory(accountName) {
     }
 }
 
-// Populate tenant filter dropdown with unique tenant names
-function populateTenantFilter(requests) {
-    const tenantFilter = document.getElementById('account-history-tenant-filter');
-    if (!tenantFilter) return;
+// Populate deployment filter dropdown with unique deployment numbers
+function populateDeploymentFilter(requests) {
+    const deploymentFilter = document.getElementById('account-history-deployment-filter');
+    if (!deploymentFilter) return;
     
-    // Extract unique tenant names from requests
-    const tenantNames = new Set();
+    // Extract unique deployment numbers from requests
+    const deploymentNumbers = new Set();
     requests.forEach(request => {
-        const tenantName = request.parsedPayload?.tenantName;
-        if (tenantName && tenantName !== 'N/A') {
-            tenantNames.add(tenantName);
+        const deploymentNumber = request.Deployment__r?.Name;
+        if (deploymentNumber && deploymentNumber !== 'N/A') {
+            deploymentNumbers.add(deploymentNumber);
         }
     });
     
-    // Sort tenant names alphabetically
-    const sortedTenantNames = Array.from(tenantNames).sort();
+    // Sort deployment numbers alphabetically
+    const sortedDeploymentNumbers = Array.from(deploymentNumbers).sort();
     
     // Build options HTML
-    let optionsHtml = '<option value="">All Tenants</option>';
-    sortedTenantNames.forEach(tenantName => {
-        optionsHtml += `<option value="${tenantName}">${tenantName}</option>`;
+    let optionsHtml = '<option value="">All Deployments</option>';
+    sortedDeploymentNumbers.forEach(deploymentNumber => {
+        optionsHtml += `<option value="${deploymentNumber}">${deploymentNumber}</option>`;
     });
     
-    tenantFilter.innerHTML = optionsHtml;
+    deploymentFilter.innerHTML = optionsHtml;
     
-    console.log(`Populated tenant filter with ${sortedTenantNames.length} unique tenant(s)`);
+    console.log(`Populated deployment filter with ${sortedDeploymentNumbers.length} unique deployment(s)`);
 }
 
 // Show/hide loading state
@@ -6983,12 +6983,12 @@ function renderAccountHistoryTable() {
         return new Date(b.CreatedDate) - new Date(a.CreatedDate);
     });
     
-    // Apply tenant filter if set
-    const tenantFilter = currentAccountHistory.tenantFilter;
-    if (tenantFilter) {
+    // Apply deployment filter if set
+    const deploymentFilter = currentAccountHistory.deploymentFilter;
+    if (deploymentFilter) {
         allRequests = allRequests.filter(request => {
-            const tenantName = request.parsedPayload?.tenantName || 'N/A';
-            return tenantName === tenantFilter;
+            const deploymentNumber = request.Deployment__r?.Name || 'N/A';
+            return deploymentNumber === deploymentFilter;
         });
     }
     
@@ -7002,7 +7002,7 @@ function renderAccountHistoryTable() {
     const countIndicator = document.getElementById('account-history-count-indicator');
     if (countIndicator) {
         let countText = '';
-        if (tenantFilter) {
+        if (deploymentFilter) {
             // Filtering is active
             if (limit && limit < totalCount) {
                 countText = `Showing latest ${requests.length} of ${totalCount} filtered requests (${unfilteredCount} total)`;
@@ -7071,17 +7071,17 @@ function renderAccountHistoryTable() {
             }
         }
         
-        // Extract tenantName from parsed payload if available
+        // Extract tenantName and deploymentNumber
         const tenantName = request.parsedPayload?.tenantName || 'N/A';
         const deploymentNumber = request.Deployment__r?.Name || 'N/A';
         
-        // Find the previous request with the same tenant name (for comparison)
+        // Find the previous request with the same deployment number (for comparison)
         // Since requests are sorted by date descending (newest first), we look forward in the array
-        let previousRequestSameTenant = null;
+        let previousRequestSameDeployment = null;
         for (let i = index + 1; i < requests.length; i++) {
-            const candidateTenantName = requests[i].parsedPayload?.tenantName || 'N/A';
-            if (candidateTenantName === tenantName) {
-                previousRequestSameTenant = requests[i];
+            const candidateDeploymentNumber = requests[i].Deployment__r?.Name || 'N/A';
+            if (candidateDeploymentNumber === deploymentNumber && deploymentNumber !== 'N/A') {
+                previousRequestSameDeployment = requests[i];
                 break;
             }
         }
@@ -7157,7 +7157,7 @@ function renderAccountHistoryTable() {
             <tr id="details-row-${request.Id}" class="hidden border-b bg-muted/30">
                 <td colspan="9" class="p-0">
                     <div class="p-6">
-                        ${renderRequestDetails(request, previousRequestSameTenant)}
+                        ${renderRequestDetails(request, previousRequestSameDeployment)}
                     </div>
                 </td>
             </tr>
@@ -7200,6 +7200,16 @@ function renderRequestDetails(request, previousRequest) {
                 tenantName: tenantName,
                 region: region
             };
+            
+            // Debug logging for app entitlements to help understand discrepancies
+            if (parsedPayload.appEntitlements.length > 0) {
+                const appsWithCode = parsedPayload.appEntitlements.filter(e => e.productCode || e.name).length;
+                const appsWithoutCode = parsedPayload.appEntitlements.length - appsWithCode;
+                if (appsWithoutCode > 0) {
+                    console.log(`⚠️ ${request.Name}: ${appsWithoutCode} app(s) missing productCode/name (Total: ${parsedPayload.appEntitlements.length}, With codes: ${appsWithCode})`);
+                    console.log('Apps without codes:', parsedPayload.appEntitlements.filter(e => !e.productCode && !e.name));
+                }
+            }
         } catch (e) {
             console.error('Error parsing payload:', e);
         }
@@ -7260,25 +7270,37 @@ function renderRequestDetails(request, previousRequest) {
                 }
             }
             
-            const currentTenantName = parsedPayload.tenantName || 'N/A';
+            const currentDeploymentNumber = request.Deployment__r?.Name || 'N/A';
             html += `
                 <div class="mt-6 pt-6 border-t">
-                    <h4 class="font-semibold mb-3 flex items-center gap-2">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="16 3 21 3 21 8"></polyline>
-                            <line x1="4" x2="21" y1="20" y2="3"></line>
-                            <polyline points="21 16 21 21 16 21"></polyline>
-                            <line x1="15" x2="10" y1="15" y2="15"></line>
-                            <line x1="15" x2="10" y1="19" y2="19"></line>
-                        </svg>
-                        Changes from Previous Request for ${currentTenantName} (${previousRequest.Name})
-                    </h4>
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold flex items-center gap-2">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 3 21 3 21 8"></polyline>
+                                <line x1="4" x2="21" y1="20" y2="3"></line>
+                                <polyline points="21 16 21 21 16 21"></polyline>
+                                <line x1="15" x2="10" y1="15" y2="15"></line>
+                                <line x1="15" x2="10" y1="19" y2="19"></line>
+                            </svg>
+                            Changes from Previous Request for Deployment ${currentDeploymentNumber} (${previousRequest.Name})
+                        </h4>
+                        <button 
+                            onclick="showDetailedComparisonModal('${request.Id}', '${previousRequest.Id}')"
+                            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                <line x1="9" x2="9" y1="3" y2="21"></line>
+                            </svg>
+                            View Side-by-Side
+                        </button>
+                    </div>
                     ${renderProductComparison(parsedPayload, previousParsedPayload)}
                 </div>
             `;
         } else {
-            // No previous request for the same tenant
-            const currentTenantName = parsedPayload.tenantName || 'N/A';
+            // No previous request for the same deployment
+            const currentDeploymentNumber = request.Deployment__r?.Name || 'N/A';
             html += `
                 <div class="mt-6 pt-6 border-t">
                     <h4 class="font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
@@ -7287,9 +7309,9 @@ function renderRequestDetails(request, previousRequest) {
                             <line x1="12" x2="12" y1="8" y2="12"></line>
                             <line x1="12" x2="12.01" y1="16" y2="16"></line>
                         </svg>
-                        No Previous Request for ${currentTenantName}
+                        No Previous Request for Deployment ${currentDeploymentNumber}
                     </h4>
-                    <p class="text-sm text-muted-foreground">This is the first or only request for this tenant in the current view.</p>
+                    <p class="text-sm text-muted-foreground">This is the first or only request for this deployment in the current view.</p>
                 </div>
             `;
         }
@@ -7417,15 +7439,18 @@ function renderProductComparison(currentPayload, previousPayload) {
     const changes = {
         models: {
             added: current.models.filter(p => !previous.models.includes(p)),
-            removed: previous.models.filter(p => !current.models.includes(p))
+            removed: previous.models.filter(p => !current.models.includes(p)),
+            unchanged: current.models.filter(p => previous.models.includes(p))
         },
         data: {
             added: current.data.filter(p => !previous.data.includes(p)),
-            removed: previous.data.filter(p => !current.data.includes(p))
+            removed: previous.data.filter(p => !current.data.includes(p)),
+            unchanged: current.data.filter(p => previous.data.includes(p))
         },
         apps: {
             added: current.apps.filter(p => !previous.apps.includes(p)),
-            removed: previous.apps.filter(p => !current.apps.includes(p))
+            removed: previous.apps.filter(p => !current.apps.includes(p)),
+            unchanged: current.apps.filter(p => previous.apps.includes(p))
         }
     };
     
@@ -7438,24 +7463,38 @@ function renderProductComparison(currentPayload, previousPayload) {
         return '<p class="text-sm text-muted-foreground">No changes in product entitlements</p>';
     }
     
-    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">';
+    // Count summary
+    let html = '<div class="mb-4 p-3 bg-muted/30 rounded-md text-xs space-y-1">';
+    html += '<p class="font-semibold text-muted-foreground">Change Summary:</p>';
+    if (previous.models.length > 0 || current.models.length > 0) {
+        html += `<p><strong>Models:</strong> Previous: ${previous.models.length}, Current: ${current.models.length}, Unchanged: ${changes.models.unchanged.length}</p>`;
+    }
+    if (previous.data.length > 0 || current.data.length > 0) {
+        html += `<p><strong>Data:</strong> Previous: ${previous.data.length}, Current: ${current.data.length}, Unchanged: ${changes.data.unchanged.length}</p>`;
+    }
+    if (previous.apps.length > 0 || current.apps.length > 0) {
+        html += `<p><strong>Apps:</strong> Previous: ${previous.apps.length}, Current: ${current.apps.length}, Unchanged: ${changes.apps.unchanged.length}</p>`;
+    }
+    html += '</div>';
+    
+    html += '<div class="grid grid-cols-1 gap-4 text-sm">';
     
     // Added products
     const hasAdded = changes.models.added.length > 0 || changes.data.added.length > 0 || changes.apps.added.length > 0;
     if (hasAdded) {
-        html += '<div class="space-y-2">';
-        html += '<h5 class="font-medium text-green-700 flex items-center gap-2">';
+        html += '<div class="space-y-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800">';
+        html += '<h5 class="font-medium text-green-700 dark:text-green-400 flex items-center gap-2">';
         html += '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>';
         html += 'Added</h5>';
         
         if (changes.models.added.length > 0) {
-            html += `<p><span class="font-medium">Models:</span> ${changes.models.added.join(', ')}</p>`;
+            html += `<p><span class="font-medium">Models (${changes.models.added.length}):</span> ${changes.models.added.join(', ')}</p>`;
         }
         if (changes.data.added.length > 0) {
-            html += `<p><span class="font-medium">Data:</span> ${changes.data.added.join(', ')}</p>`;
+            html += `<p><span class="font-medium">Data (${changes.data.added.length}):</span> ${changes.data.added.join(', ')}</p>`;
         }
         if (changes.apps.added.length > 0) {
-            html += `<p><span class="font-medium">Apps:</span> ${changes.apps.added.join(', ')}</p>`;
+            html += `<p><span class="font-medium">Apps (${changes.apps.added.length}):</span> ${changes.apps.added.join(', ')}</p>`;
         }
         html += '</div>';
     }
@@ -7463,25 +7502,434 @@ function renderProductComparison(currentPayload, previousPayload) {
     // Removed products
     const hasRemoved = changes.models.removed.length > 0 || changes.data.removed.length > 0 || changes.apps.removed.length > 0;
     if (hasRemoved) {
-        html += '<div class="space-y-2">';
-        html += '<h5 class="font-medium text-red-700 flex items-center gap-2">';
+        html += '<div class="space-y-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">';
+        html += '<h5 class="font-medium text-red-700 dark:text-red-400 flex items-center gap-2">';
         html += '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line></svg>';
         html += 'Removed</h5>';
         
         if (changes.models.removed.length > 0) {
-            html += `<p><span class="font-medium">Models:</span> ${changes.models.removed.join(', ')}</p>`;
+            html += `<p><span class="font-medium">Models (${changes.models.removed.length}):</span> ${changes.models.removed.join(', ')}</p>`;
         }
         if (changes.data.removed.length > 0) {
-            html += `<p><span class="font-medium">Data:</span> ${changes.data.removed.join(', ')}</p>`;
+            html += `<p><span class="font-medium">Data (${changes.data.removed.length}):</span> ${changes.data.removed.join(', ')}</p>`;
         }
         if (changes.apps.removed.length > 0) {
-            html += `<p><span class="font-medium">Apps:</span> ${changes.apps.removed.join(', ')}</p>`;
+            html += `<p><span class="font-medium">Apps (${changes.apps.removed.length}):</span> ${changes.apps.removed.join(', ')}</p>`;
         }
         html += '</div>';
     }
     
+    // Unchanged products (new section)
+    const hasUnchanged = changes.models.unchanged.length > 0 || changes.data.unchanged.length > 0 || changes.apps.unchanged.length > 0;
+    if (hasUnchanged) {
+        html += '<details class="space-y-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">';
+        html += '<summary class="font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2 cursor-pointer hover:text-blue-800 dark:hover:text-blue-300">';
+        html += '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        html += `Unchanged (${changes.models.unchanged.length + changes.data.unchanged.length + changes.apps.unchanged.length} items - click to expand)</summary>`;
+        html += '<div class="mt-2 space-y-2 text-muted-foreground">';
+        
+        if (changes.models.unchanged.length > 0) {
+            html += `<p><span class="font-medium">Models (${changes.models.unchanged.length}):</span> ${changes.models.unchanged.join(', ')}</p>`;
+        }
+        if (changes.data.unchanged.length > 0) {
+            html += `<p><span class="font-medium">Data (${changes.data.unchanged.length}):</span> ${changes.data.unchanged.join(', ')}</p>`;
+        }
+        if (changes.apps.unchanged.length > 0) {
+            html += `<p><span class="font-medium">Apps (${changes.apps.unchanged.length}):</span> ${changes.apps.unchanged.join(', ')}</p>`;
+        }
+        html += '</div>';
+        html += '</details>';
+    }
+    
     html += '</div>';
     return html;
+}
+
+// Show detailed side-by-side comparison modal
+function showDetailedComparisonModal(currentRequestId, previousRequestId) {
+    // Find both requests
+    const currentRequest = currentAccountHistory.requests.find(r => r.Id === currentRequestId);
+    const previousRequest = currentAccountHistory.requests.find(r => r.Id === previousRequestId);
+    
+    if (!currentRequest || !previousRequest) {
+        console.error('Could not find requests for comparison');
+        return;
+    }
+    
+    // Store request names for use in table headers
+    window._comparisonCurrentName = currentRequest.Name;
+    window._comparisonPreviousName = previousRequest.Name;
+    
+    // Parse both payloads
+    const currentPayload = parseRequestPayload(currentRequest);
+    const previousPayload = parseRequestPayload(previousRequest);
+    
+    // Helper to create a matching key for an app (without index)
+    const createAppKey = (app) => {
+        const parts = [];
+        if (app.productCode) parts.push(`code:${app.productCode}`);
+        if (app.packageName) parts.push(`pkg:${app.packageName}`);
+        if (app.quantity) parts.push(`qty:${app.quantity}`);
+        if (app.licensedTransactions) parts.push(`txn:${app.licensedTransactions}`);
+        if (app.startDate) parts.push(`start:${app.startDate}`);
+        if (app.endDate) parts.push(`end:${app.endDate}`);
+        return parts.join('|');
+    };
+    
+    // Helper to create display string for an app
+    const createAppDisplay = (app, index) => {
+        const parts = [];
+        if (app.productCode) parts.push(app.productCode);
+        if (app.packageName) parts.push(`Pkg:${app.packageName}`);
+        if (app.quantity && app.quantity !== 1) parts.push(`Qty:${app.quantity}`);
+        if (app.licensedTransactions) parts.push(`Txn:${app.licensedTransactions.toLocaleString()}`);
+        
+        const display = parts.length > 0 ? parts.join(' | ') : `App`;
+        return index !== undefined ? `[${index + 1}] ${display}` : display;
+    };
+    
+    // Extract apps - keep them as objects with matching keys
+    const currentApps = (currentPayload.appEntitlements || []).map((e, i) => ({
+        obj: e,
+        key: createAppKey(e),
+        display: createAppDisplay(e, i),
+        index: i
+    }));
+    
+    const previousApps = (previousPayload.appEntitlements || []).map((e, i) => ({
+        obj: e,
+        key: createAppKey(e),
+        display: createAppDisplay(e, i),
+        index: i
+    }));
+    
+    // For models and data, use simple product codes
+    const current = {
+        models: (currentPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean).sort(),
+        data: (currentPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean).sort(),
+        apps: currentApps
+    };
+    
+    const previous = {
+        models: (previousPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean).sort(),
+        data: (previousPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean).sort(),
+        apps: previousApps
+    };
+    
+    // Match apps between previous and current based on their keys
+    const previousKeys = new Set(previous.apps.map(a => a.key));
+    const currentKeys = new Set(current.apps.map(a => a.key));
+    
+    const allApps = [];
+    const processedCurrentKeys = new Set();
+    
+    // Process previous apps
+    previous.apps.forEach(prevApp => {
+        const matchingCurrent = current.apps.find(currApp => currApp.key === prevApp.key && !processedCurrentKeys.has(currApp.key));
+        
+        if (matchingCurrent) {
+            // Found a match - Unchanged
+            processedCurrentKeys.add(matchingCurrent.key);
+            allApps.push({
+                key: prevApp.key,
+                display: createAppDisplay(prevApp.obj), // Display without index for unchanged
+                prevDisplay: prevApp.display,
+                currDisplay: matchingCurrent.display,
+                status: 'Unchanged'
+            });
+        } else {
+            // No match - Removed
+            allApps.push({
+                key: prevApp.key,
+                display: prevApp.display,
+                prevDisplay: prevApp.display,
+                currDisplay: null,
+                status: 'Removed'
+            });
+        }
+    });
+    
+    // Process current apps that weren't matched
+    current.apps.forEach(currApp => {
+        if (!processedCurrentKeys.has(currApp.key)) {
+            // New app - Added
+            allApps.push({
+                key: currApp.key,
+                display: currApp.display,
+                prevDisplay: null,
+                currDisplay: currApp.display,
+                status: 'Added'
+            });
+        }
+    });
+    
+    // Create union of all products for each category
+    const allProducts = {
+        models: [...new Set([...previous.models, ...current.models])].sort(),
+        data: [...new Set([...previous.data, ...current.data])].sort(),
+        apps: allApps
+    };
+    
+    // Build modal content
+    const modalHTML = `
+        <div id="comparison-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onclick="closeComparisonModal(event)">
+            <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b dark:border-gray-700 flex-shrink-0">
+                    <div>
+                        <h2 class="text-xl font-semibold">Side-by-Side Product Comparison</h2>
+                        <p class="text-sm text-muted-foreground mt-1">
+                            ${previousRequest.Name} → ${currentRequest.Name}
+                        </p>
+                    </div>
+                    <button onclick="closeComparisonModal()" class="text-muted-foreground hover:text-foreground">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18"></path>
+                            <path d="M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Body - Scrollable -->
+                <div class="flex-1 overflow-y-auto p-6" style="overscroll-behavior: contain;">
+                    <div class="space-y-4">
+                        ${renderComparisonTable('Model Entitlements', 'models', allProducts.models, previous.models, current.models)}
+                        ${renderComparisonTable('Data Entitlements', 'data', allProducts.data, previous.data, current.data)}
+                        ${renderComparisonTable('App Entitlements', 'apps', allProducts.apps, previous.apps, current.apps)}
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex justify-between items-center gap-3 p-6 border-t dark:border-gray-700 bg-muted/20 flex-shrink-0">
+                    <div class="flex items-center gap-4 text-xs">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700"></span>
+                            Added
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700"></span>
+                            Removed
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700"></span>
+                            Unchanged
+                        </span>
+                    </div>
+                    <button onclick="closeComparisonModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to document
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    
+    // Add escape key listener
+    document.addEventListener('keydown', handleComparisonModalEscape);
+}
+
+// Helper to parse request payload
+function parseRequestPayload(request) {
+    if (!request.Payload_Data__c) return {};
+    
+    try {
+        const payload = JSON.parse(request.Payload_Data__c);
+        const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
+        return {
+            modelEntitlements: entitlements.modelEntitlements || [],
+            dataEntitlements: entitlements.dataEntitlements || [],
+            appEntitlements: entitlements.appEntitlements || []
+        };
+    } catch (e) {
+        console.error('Error parsing payload:', e);
+        return {};
+    }
+}
+
+// Render comparison table for a product category
+function renderComparisonTable(title, category, allProducts, previousProducts, currentProducts) {
+    if (allProducts.length === 0) {
+        return `
+            <div>
+                <h3 class="text-lg font-semibold mb-2">${title}</h3>
+                <p class="text-sm text-muted-foreground">No products in this category</p>
+            </div>
+        `;
+    }
+    
+    let rows = '';
+    
+    // Special handling for apps (which are objects)
+    if (category === 'apps') {
+        allProducts.forEach(item => {
+            const status = item.status;
+            let rowClass = '';
+            
+            if (status === 'Added') {
+                rowClass = 'bg-green-50 dark:bg-green-900/20';
+            } else if (status === 'Removed') {
+                rowClass = 'bg-red-50 dark:bg-red-900/20';
+            } else {
+                rowClass = 'bg-blue-50 dark:bg-blue-900/20';
+            }
+            
+            // Escape HTML in display strings
+            const prevDisplayEscaped = item.prevDisplay ? item.prevDisplay.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') : '';
+            const currDisplayEscaped = item.currDisplay ? item.currDisplay.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') : '';
+            
+            rows += `
+                <tr class="${rowClass}">
+                    <td class="px-4 py-3 text-sm font-mono ${item.prevDisplay ? '' : 'text-muted-foreground text-center'}">
+                        ${item.prevDisplay ? prevDisplayEscaped : '—'}
+                    </td>
+                    <td class="px-4 py-3 text-sm font-mono ${item.currDisplay ? '' : 'text-muted-foreground text-center'}">
+                        ${item.currDisplay ? currDisplayEscaped : '—'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            status === 'Added' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            status === 'Removed' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        }">
+                            ${status}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    } else {
+        // Standard handling for models and data (strings)
+        allProducts.forEach(product => {
+            const inPrevious = previousProducts.includes(product);
+            const inCurrent = currentProducts.includes(product);
+            
+            let status = '';
+            let rowClass = '';
+            if (!inPrevious && inCurrent) {
+                status = 'Added';
+                rowClass = 'bg-green-50 dark:bg-green-900/20';
+            } else if (inPrevious && !inCurrent) {
+                status = 'Removed';
+                rowClass = 'bg-red-50 dark:bg-red-900/20';
+            } else {
+                status = 'Unchanged';
+                rowClass = 'bg-gray-50/50 dark:bg-gray-800/50';
+            }
+            
+            // Escape HTML in product string
+            const escapedProduct = product.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            
+            rows += `
+                <tr class="${rowClass}">
+                    <td class="px-4 py-3 text-sm font-mono ${inPrevious ? '' : 'text-muted-foreground'}">
+                        ${inPrevious ? escapedProduct : '—'}
+                    </td>
+                    <td class="px-4 py-3 text-sm font-mono ${inCurrent ? '' : 'text-muted-foreground'}">
+                        ${inCurrent ? escapedProduct : '—'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            status === 'Added' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            status === 'Removed' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        }">
+                            ${status}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    const columnHeader = category === 'apps' ? 'Product Details' : 'Product Code';
+    
+    // Calculate counts - for apps, count by status
+    let prevCount, currCount;
+    if (category === 'apps') {
+        prevCount = allProducts.filter(p => p.status === 'Removed' || p.status === 'Unchanged').length;
+        currCount = allProducts.filter(p => p.status === 'Added' || p.status === 'Unchanged').length;
+    } else {
+        prevCount = previousProducts.length;
+        currCount = currentProducts.length;
+    }
+    
+    const sectionId = `comparison-${category}`;
+    const previousName = window._comparisonPreviousName || 'Previous';
+    const currentName = window._comparisonCurrentName || 'Current';
+    
+    return `
+        <div class="border rounded-lg dark:border-gray-700">
+            <button 
+                onclick="toggleComparisonSection('${sectionId}')"
+                class="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
+            >
+                <h3 class="text-lg font-semibold">${title}</h3>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-muted-foreground">
+                        ${previousName}: ${prevCount} | ${currentName}: ${currCount}
+                    </span>
+                    <svg id="${sectionId}-icon" class="h-5 w-5 transform transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </button>
+            <div id="${sectionId}" class="hidden border-t dark:border-gray-700">
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-muted/50 sticky top-0">
+                            <tr class="border-b dark:border-gray-700">
+                                <th class="px-4 py-3 text-left font-medium">${previousName}<br/><span class="text-xs text-muted-foreground font-normal">(${prevCount} items)</span></th>
+                                <th class="px-4 py-3 text-left font-medium">${currentName}<br/><span class="text-xs text-muted-foreground font-normal">(${currCount} items)</span></th>
+                                <th class="px-4 py-3 text-center font-medium w-40">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y dark:divide-gray-700">
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Toggle comparison section visibility
+function toggleComparisonSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(`${sectionId}-icon`);
+    
+    if (section && icon) {
+        const isHidden = section.classList.contains('hidden');
+        if (isHidden) {
+            section.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            section.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    }
+}
+
+// Close comparison modal
+function closeComparisonModal(event) {
+    if (event && event.target.id !== 'comparison-modal') return;
+    
+    const modal = document.getElementById('comparison-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleComparisonModalEscape);
+    }
+}
+
+// Handle escape key for comparison modal
+function handleComparisonModalEscape(e) {
+    if (e.key === 'Escape') {
+        closeComparisonModal();
+    }
 }
 
 // Toggle request details row
@@ -7550,7 +7998,7 @@ function clearAccountHistory() {
         requests: [],
         showComparison: false,
         limit: 5,  // Reset to default
-        tenantFilter: ''
+        deploymentFilter: ''
     };
     
     const searchInput = document.getElementById('account-history-search');
@@ -7560,7 +8008,7 @@ function clearAccountHistory() {
     const tableSection = document.getElementById('account-history-table-section');
     const comparisonToggle = document.getElementById('show-comparison-toggle');
     const limitSelector = document.getElementById('account-history-limit');
-    const tenantFilter = document.getElementById('account-history-tenant-filter');
+    const deploymentFilter = document.getElementById('account-history-deployment-filter');
     
     if (searchInput) searchInput.value = '';
     if (searchResults) searchResults.classList.add('hidden');
@@ -7569,7 +8017,7 @@ function clearAccountHistory() {
     if (tableSection) tableSection.classList.add('hidden');
     if (comparisonToggle) comparisonToggle.checked = false;
     if (limitSelector) limitSelector.value = '5';  // Reset to default
-    if (tenantFilter) tenantFilter.value = '';  // Reset tenant filter
+    if (deploymentFilter) deploymentFilter.value = '';  // Reset deployment filter
 }
 
 // HTML escape helper

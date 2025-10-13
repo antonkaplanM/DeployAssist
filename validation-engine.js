@@ -10,8 +10,8 @@ const DEFAULT_VALIDATION_RULES = [
     {
         id: 'app-quantity-validation',
         name: 'App Quantity Validation',
-        description: 'For Apps section: quantity must be 1, except IC-DATABRIDGE products are always valid',
-        longDescription: 'Validates each app entitlement in the payload data. Rule passes if quantity equals 1 OR productCode equals "IC-DATABRIDGE". All app entitlements must pass for the record to pass.',
+        description: 'For Apps section: quantity must be 1, except IC-DATABRIDGE and RI-RISKMODELER-EXPANSION products are always valid',
+        longDescription: 'Validates each app entitlement in the payload data. Rule passes if quantity equals 1 OR productCode equals "IC-DATABRIDGE" OR productCode equals "RI-RISKMODELER-EXPANSION". All app entitlements must pass for the record to pass.',
         enabled: true,
         category: 'product-validation',
         version: '1.0',
@@ -131,7 +131,7 @@ class ValidationEngine {
 
     /**
      * Validates app quantities according to the app quantity rule
-     * Rule: quantity must be 1, except IC-DATABRIDGE products are always valid
+     * Rule: quantity must be 1, except IC-DATABRIDGE and RI-RISKMODELER-EXPANSION products are always valid
      */
     static validateAppQuantities(payload, record) {
         // Navigate to appEntitlements - try multiple possible paths
@@ -171,13 +171,13 @@ class ValidationEngine {
 
             console.log(`[VALIDATION] Checking app: ${appName}, quantity: ${quantity}, productCode: ${productCode}`);
 
-            // Rule logic: Pass if quantity === 1 OR productCode === "IC-DATABRIDGE"
-            if (quantity === 1 || productCode === "IC-DATABRIDGE") {
+            // Rule logic: Pass if quantity === 1 OR productCode === "IC-DATABRIDGE" OR productCode === "RI-RISKMODELER-EXPANSION"
+            if (quantity === 1 || productCode === "IC-DATABRIDGE" || productCode === "RI-RISKMODELER-EXPANSION") {
                 details.passCount++;
                 console.log(`[VALIDATION] App ${appName} passed: quantity=${quantity}, productCode=${productCode}`);
             } else {
                 details.failCount++;
-                const failureMessage = `${appName}: quantity ${quantity}, expected 1 or IC-DATABRIDGE`;
+                const failureMessage = `${appName}: quantity ${quantity}, expected 1 or IC-DATABRIDGE or RI-RISKMODELER-EXPANSION`;
                 failures.push(failureMessage);
                 details.failures.push({
                     appName,
