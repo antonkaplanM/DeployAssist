@@ -29,6 +29,32 @@ export class SalesforceService {
   /**
    * Query Professional Services Requests with filters and pagination
    */
+  /**
+   * Helper: Compute effective status based on SMLErrorMessage__c
+   */
+  private getEffectiveStatus(record: any): string {
+    // If SMLErrorMessage__c has a value, the effective status is "Provisioning Failed"
+    if (record.SMLErrorMessage__c && record.SMLErrorMessage__c.trim() !== '') {
+      return 'Provisioning Failed';
+    }
+    // Otherwise, use the actual Status__c field
+    return record.Status__c;
+  }
+
+  /**
+   * Helper: Filter records by effective status
+   */
+  private filterByEffectiveStatus(records: any[], statusFilter: string): any[] {
+    if (!statusFilter) {
+      return records; // No filter
+    }
+    
+    return records.filter(record => {
+      const effectiveStatus = this.getEffectiveStatus(record);
+      return effectiveStatus === statusFilter;
+    });
+  }
+
   async queryProfServicesRequests(
     filters: ProfServicesQueryFilters
   ): Promise<ProfServicesQueryResult> {
@@ -41,26 +67,39 @@ export class SalesforceService {
       const pageSize = filters.pageSize || 25;
       const offset = filters.offset || 0;
 
-      // Build SOQL query with proper escaping
-      let soql = this.buildProfServicesQuery(filters, pageSize, offset);
+      // For status filtering, we need to fetch more records and filter server-side
+      // because SMLErrorMessage__c cannot be filtered in SOQL WHERE clause
+      const shouldFetchMore = !!filters.status;
+      const fetchPageSize = shouldFetchMore ? 1000 : pageSize; // Fetch more records when status filter is active
+      const fetchOffset = shouldFetchMore ? 0 : offset; // Always start from 0 when we need to filter server-side
+
+      // Build SOQL query with proper escaping (without status filter in SOQL)
+      let soql = this.buildProfServicesQuery(filters, fetchPageSize, fetchOffset);
       
       // Execute query
       const result = await this.repository.query<ProfServicesRequest>(soql);
-      
-      // Get total count
-      const countSoql = this.buildProfServicesCountQuery(filters);
-      const countResult = await this.repository.query(countSoql);
-      const totalCount = countResult.totalSize;
 
       // Process records
-      const processedRecords = result.records.map((record: any) => this.processRecord(record));
+      let processedRecords = result.records.map((record: any) => this.processRecord(record));
 
+      // Apply status filter server-side
+      if (filters.status) {
+        processedRecords = this.filterByEffectiveStatus(processedRecords, filters.status);
+        Logger.salesforce('Applied server-side status filter', { 
+          status: filters.status, 
+          remaining: processedRecords.length 
+        });
+      }
+
+      // Calculate pagination for filtered results
+      const totalCount = processedRecords.length;
+      const paginatedRecords = shouldFetchMore ? processedRecords.slice(offset, offset + pageSize) : processedRecords;
       const hasMore = (offset + pageSize) < totalCount;
       const currentPage = Math.floor(offset / pageSize) + 1;
       const totalPages = Math.ceil(totalCount / pageSize);
 
       Logger.salesforce('Query completed', {
-        found: processedRecords.length,
+        found: paginatedRecords.length,
         page: currentPage,
         totalPages,
         totalCount
@@ -68,7 +107,7 @@ export class SalesforceService {
 
       return {
         success: true,
-        records: processedRecords,
+        records: paginatedRecords,
         totalCount,
         pageSize,
         offset,
@@ -169,10 +208,14 @@ export class SalesforceService {
         this.repository.query(statusQuery)
       ]);
       
+      // Add "Provisioning Failed" as a custom status option (for records with SMLErrorMessage__c)
+      const statuses = statusResult.records.map((r: any) => r.Status__c).filter(Boolean);
+      statuses.push('Provisioning Failed');
+      
       return {
         success: true,
         requestTypes: requestTypeResult.records.map((r: any) => r.TenantRequestAction__c).filter(Boolean),
-        statuses: statusResult.records.map((r: any) => r.Status__c).filter(Boolean),
+        statuses: statuses,
         accounts: []
       };
     } catch (error) {
@@ -204,6 +247,7 @@ export class SalesforceService {
              Account_Site__c, Billing_Status__c, RecordTypeId,
              TenantRequestAction__c, Tenant_Name__c, Payload_Data__c,
              Requested_Install_Date__c, RequestedGoLiveDate__c,
+             SMLErrorMessage__c,
              CreatedDate, LastModifiedDate, CreatedBy.Name
       FROM Prof_Services_Request__c 
       WHERE Name LIKE 'PS-%'
@@ -219,9 +263,8 @@ export class SalesforceService {
     if (filters.requestType) {
       soql += ` AND TenantRequestAction__c = '${this.escapeSOQL(filters.requestType)}'`;
     }
-    if (filters.status) {
-      soql += ` AND Status__c = '${this.escapeSOQL(filters.status)}'`;
-    }
+    // Note: Status filtering is now done server-side after fetching records
+    // because SMLErrorMessage__c cannot be filtered in SOQL WHERE clause
     if (filters.search) {
       soql += ` AND (Name LIKE '%${this.escapeSOQL(filters.search)}%' OR Account__c LIKE '%${this.escapeSOQL(filters.search)}%')`;
     }
@@ -251,9 +294,8 @@ export class SalesforceService {
     if (filters.requestType) {
       soql += ` AND TenantRequestAction__c = '${this.escapeSOQL(filters.requestType)}'`;
     }
-    if (filters.status) {
-      soql += ` AND Status__c = '${this.escapeSOQL(filters.status)}'`;
-    }
+    // Note: Status filtering is now done server-side after fetching records
+    // because SMLErrorMessage__c cannot be filtered in SOQL WHERE clause
     if (filters.search) {
       soql += ` AND (Name LIKE '%${this.escapeSOQL(filters.search)}%' OR Account__c LIKE '%${this.escapeSOQL(filters.search)}%')`;
     }

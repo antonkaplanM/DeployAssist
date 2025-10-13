@@ -242,6 +242,28 @@ async function handleOAuthCallback(code) {
     }
 }
 
+// Helper function to compute effective status based on SMLErrorMessage__c
+function getEffectiveStatus(record) {
+    // If SMLErrorMessage__c has a value, the effective status is "Provisioning Failed"
+    if (record.SMLErrorMessage__c && record.SMLErrorMessage__c.trim() !== '') {
+        return 'Provisioning Failed';
+    }
+    // Otherwise, use the actual Status__c field
+    return record.Status__c;
+}
+
+// Helper function to filter records by effective status
+function filterByEffectiveStatus(records, statusFilter) {
+    if (!statusFilter) {
+        return records; // No filter
+    }
+    
+    return records.filter(record => {
+        const effectiveStatus = getEffectiveStatus(record);
+        return effectiveStatus === statusFilter;
+    });
+}
+
 // Query Professional Services Requests with pagination and filtering
 async function queryProfServicesRequests(filters = {}) {
     try {
@@ -264,17 +286,24 @@ async function queryProfServicesRequests(filters = {}) {
         const pageSize = filters.pageSize || 25;
         const offset = filters.offset || 0;
         
+        // For status filtering, we need to fetch more records and filter server-side
+        // because SMLErrorMessage__c cannot be filtered in SOQL WHERE clause
+        const shouldFetchMore = !!filters.status;
+        const fetchPageSize = shouldFetchMore ? 1000 : pageSize; // Fetch more records when status filter is active
+        const fetchOffset = shouldFetchMore ? 0 : offset; // Always start from 0 when we need to filter server-side
+        
         let soql = `
             SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
                    TenantRequestAction__c, Tenant_Name__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
+                   SMLErrorMessage__c,
                    CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
             WHERE Name LIKE 'PS-%'
         `;
         
-        // Add filters
+        // Add filters (but NOT status - we'll filter that server-side)
         if (filters.startDate) {
             soql += ` AND CreatedDate >= ${filters.startDate}`;
         }
@@ -284,48 +313,18 @@ async function queryProfServicesRequests(filters = {}) {
         if (filters.requestType) {
             soql += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
         }
-        if (filters.status) {
-            soql += ` AND Status__c = '${filters.status.replace(/'/g, "\\'")}'`;
-        }
         if (filters.search) {
             soql += ` AND (Name LIKE '%${filters.search.replace(/'/g, "\\'")}%' OR Account__c LIKE '%${filters.search.replace(/'/g, "\\'")}%')`;
         }
         
-        soql += ` ORDER BY CreatedDate DESC LIMIT ${pageSize} OFFSET ${offset}`;
+        soql += ` ORDER BY CreatedDate DESC LIMIT ${fetchPageSize} OFFSET ${fetchOffset}`;
         
         console.log('📊 Executing SOQL for Prof Services Requests:', soql);
         const result = await conn.query(soql);
         console.log('✅ SOQL executed successfully, found records:', result.records.length);
         
-        // Get total count for pagination (separate query without LIMIT/OFFSET)
-        let countSoql = `
-            SELECT COUNT() 
-            FROM Prof_Services_Request__c 
-            WHERE Name LIKE 'PS-%'
-        `;
-        
-        // Add same filters to count query
-        if (filters.startDate) {
-            countSoql += ` AND CreatedDate >= ${filters.startDate}`;
-        }
-        if (filters.endDate) {
-            countSoql += ` AND CreatedDate <= ${filters.endDate}`;
-        }
-        if (filters.requestType) {
-            countSoql += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
-        }
-        if (filters.status) {
-            countSoql += ` AND Status__c = '${filters.status.replace(/'/g, "\\'")}'`;
-        }
-        if (filters.search) {
-            countSoql += ` AND (Name LIKE '%${filters.search.replace(/'/g, "\\'")}%' OR Account__c LIKE '%${filters.search.replace(/'/g, "\\'")}%')`;
-        }
-        
-        const countResult = await conn.query(countSoql);
-        const totalCount = countResult.totalSize;
-        
         // Process the results to parse JSON payload
-        const processedRecords = result.records.map(record => {
+        let processedRecords = result.records.map(record => {
             const parsedPayload = parsePayloadData(record.Payload_Data__c);
             // Override tenantName with the Salesforce field value if available
             if (record.Tenant_Name__c) {
@@ -337,15 +336,24 @@ async function queryProfServicesRequests(filters = {}) {
             };
         });
         
+        // Apply status filter server-side
+        if (filters.status) {
+            processedRecords = filterByEffectiveStatus(processedRecords, filters.status);
+            console.log(`🔍 Applied server-side status filter: ${filters.status}, remaining records: ${processedRecords.length}`);
+        }
+        
+        // Calculate pagination for filtered results
+        const totalCount = processedRecords.length;
+        const paginatedRecords = shouldFetchMore ? processedRecords.slice(offset, offset + pageSize) : processedRecords;
         const hasMore = (offset + pageSize) < totalCount;
         const currentPage = Math.floor(offset / pageSize) + 1;
         const totalPages = Math.ceil(totalCount / pageSize);
         
-        console.log(`✅ Found ${processedRecords.length} records (page ${currentPage} of ${totalPages}, ${offset + 1}-${offset + processedRecords.length} of ${totalCount})`);
+        console.log(`✅ Found ${paginatedRecords.length} records (page ${currentPage} of ${totalPages}, ${offset + 1}-${offset + paginatedRecords.length} of ${totalCount})`);
         
         return {
             success: true,
-            records: processedRecords,
+            records: paginatedRecords,
             totalCount: totalCount,
             pageSize: pageSize,
             offset: offset,
@@ -724,10 +732,14 @@ async function getProfServicesFilterOptions() {
             conn.query(statusQuery)
         ]);
         
+        // Add "Provisioning Failed" as a custom status option (for records with SMLErrorMessage__c)
+        const statuses = statusResult.records.map(r => r.Status__c).filter(Boolean);
+        statuses.push('Provisioning Failed');
+        
         return {
             success: true,
             requestTypes: requestTypeResult.records.map(r => r.TenantRequestAction__c).filter(Boolean),
-            statuses: statusResult.records.map(r => r.Status__c).filter(Boolean),
+            statuses: statuses,
             accounts: [] // Will be populated by search as needed
         };
         

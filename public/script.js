@@ -3017,9 +3017,7 @@ function renderProvisioningTable(data) {
                 ${getProductsDisplay(request)}
             </td>
             <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(request.Status__c)}">
-                    ${request.Status__c || 'N/A'}
-                </span>
+                ${getStatusDisplay(request)}
                 ${request.Billing_Status__c ? `<div class="text-xs text-muted-foreground mt-1">Billing: ${request.Billing_Status__c}</div>` : ''}
             </td>
             <td class="px-4 py-3">
@@ -4090,7 +4088,7 @@ function handleProvisioningExport() {
             request.Account__c || '',
             request.TenantRequestAction__c || '',
             request.Deployment__r?.Name || '',
-            request.Status__c || '',
+            (request.SMLErrorMessage__c && request.SMLErrorMessage__c.trim() !== '') ? 'Provisioning Failed' : (request.Status__c || ''),
             formatDate(request.CreatedDate),
             request.CreatedBy?.Name || ''
         ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
@@ -4605,9 +4603,7 @@ function renderProvisioningTable(data) {
                 ${renderValidationColumn(request)}
             </td>
             <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(request.Status__c)}">
-                    ${request.Status__c || 'Unknown'}
-                </span>
+                ${getStatusDisplay(request)}
             </td>
             <td class="px-4 py-3">
                 <div class="text-sm">${new Date(request.CreatedDate).toLocaleDateString()}</div>
@@ -4732,9 +4728,32 @@ function getStatusColor(status) {
             return 'bg-yellow-100 text-yellow-800';
         case 'on hold':
             return 'bg-gray-100 text-gray-800';
+        case 'provisioning failed':
+            return 'bg-red-100 text-red-800';
         default:
             return 'bg-gray-100 text-gray-800';
     }
+}
+
+// Get status display with error handling
+function getStatusDisplay(request) {
+    // Check if SMLErrorMessage__c has a value - this indicates a provisioning failure
+    if (request.SMLErrorMessage__c && request.SMLErrorMessage__c.trim() !== '') {
+        const errorMessage = request.SMLErrorMessage__c.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return `
+            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor('Provisioning Failed')}" 
+                  title="${errorMessage}">
+                Provisioning Failed
+            </span>
+        `;
+    }
+    
+    // Otherwise, use the current status mapping
+    return `
+        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(request.Status__c)}">
+            ${request.Status__c || 'Unknown'}
+        </span>
+    `;
 }
 
 function getProductsDisplay(request, validationResult = null) {
@@ -7389,9 +7408,7 @@ function renderAccountHistoryTable() {
                     ${tenantName}
                 </td>
                 <td class="px-4 py-3 align-middle">
-                    <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
-                        ${request.Status__c || 'Unknown'}
-                    </span>
+                    ${getStatusDisplay(request)}
                 </td>
                 <td class="px-4 py-3 align-middle text-sm">
                     ${request.TenantRequestAction__c || 'N/A'}

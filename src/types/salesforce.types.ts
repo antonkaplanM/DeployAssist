@@ -19,6 +19,7 @@ export interface ProfServicesRequest {
   Payload_Data__c: string | null;
   Requested_Install_Date__c: string | null;
   RequestedGoLiveDate__c: string | null;
+  SMLErrorMessage__c: string | null;
   CreatedDate: string;
   LastModifiedDate: string;
   CreatedBy?: {
