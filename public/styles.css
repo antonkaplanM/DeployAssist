@@ -473,3 +473,12 @@ table tbody tr:hover {
 .text-blue-600 {
     color: #2563eb;
 }
+
+/* Details chevron rotation for comparison sections */
+details .details-chevron {
+    transition: transform 0.2s ease;
+}
+
+details[open] .details-chevron {
+    transform: rotate(90deg);
+}

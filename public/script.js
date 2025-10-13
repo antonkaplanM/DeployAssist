@@ -6754,7 +6754,8 @@ let currentAccountHistory = {
     requests: [],
     showComparison: false,
     limit: 5,  // Default to showing latest 5 requests
-    deploymentFilter: ''  // Deployment number filter
+    deploymentFilter: '',  // Deployment number filter
+    selectedRecords: []  // For flexible side-by-side comparison (max 2)
 };
 
 // Initialize Account History page
@@ -6829,6 +6830,93 @@ function initializeAccountHistory() {
     }
     
     console.log('Account History page initialized');
+}
+
+// Toggle record selection for comparison
+function toggleRecordSelection(requestId, checkbox) {
+    const index = currentAccountHistory.selectedRecords.indexOf(requestId);
+    
+    if (checkbox.checked) {
+        // Add record if not already selected and limit not reached
+        if (index === -1 && currentAccountHistory.selectedRecords.length < 2) {
+            currentAccountHistory.selectedRecords.push(requestId);
+        } else if (currentAccountHistory.selectedRecords.length >= 2) {
+            // Prevent selecting more than 2
+            checkbox.checked = false;
+            alert('You can only select 2 records for comparison. Please unselect one first.');
+            return;
+        }
+    } else {
+        // Remove record if it was selected
+        if (index > -1) {
+            currentAccountHistory.selectedRecords.splice(index, 1);
+        }
+    }
+    
+    updateComparisonButtonState();
+}
+
+// Update the state of the comparison button based on selected records
+function updateComparisonButtonState() {
+    const compareButton = document.getElementById('flexible-compare-button');
+    if (compareButton) {
+        if (currentAccountHistory.selectedRecords.length === 2) {
+            compareButton.disabled = false;
+            compareButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            compareButton.classList.add('hover:bg-primary/90');
+        } else {
+            compareButton.disabled = true;
+            compareButton.classList.add('opacity-50', 'cursor-not-allowed');
+            compareButton.classList.remove('hover:bg-primary/90');
+        }
+    }
+}
+
+// Show flexible comparison modal with selected records
+function showFlexibleComparison() {
+    if (currentAccountHistory.selectedRecords.length !== 2) {
+        alert('Please select exactly 2 records for comparison.');
+        return;
+    }
+    
+    const [recordId1, recordId2] = currentAccountHistory.selectedRecords;
+    
+    // Find the request records to get their names
+    const request1 = currentAccountHistory.requests.find(r => r.Id === recordId1);
+    const request2 = currentAccountHistory.requests.find(r => r.Id === recordId2);
+    
+    if (!request1 || !request2) {
+        alert('Could not find selected records.');
+        return;
+    }
+    
+    // Extract PS numbers from request names (e.g., "PS-4280" -> 4280)
+    const extractPSNumber = (name) => {
+        const match = name.match(/PS-(\d+)/i);
+        return match ? parseInt(match[1]) : 0;
+    };
+    
+    const psNumber1 = extractPSNumber(request1.Name);
+    const psNumber2 = extractPSNumber(request2.Name);
+    
+    // Higher PS number should be "current" (first parameter), lower should be "previous" (second parameter)
+    if (psNumber1 > psNumber2) {
+        showDetailedComparisonModal(recordId1, recordId2);
+    } else {
+        showDetailedComparisonModal(recordId2, recordId1);
+    }
+}
+
+// Clear all selected records
+function clearRecordSelection() {
+    currentAccountHistory.selectedRecords = [];
+    
+    // Uncheck all checkboxes
+    document.querySelectorAll('.record-select-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    updateComparisonButtonState();
 }
 
 // Handle account history search with smart detection
@@ -7001,7 +7089,8 @@ async function loadAccountHistory(accountName) {
             requests: requests,
             showComparison: document.getElementById('show-comparison-toggle')?.checked || false,
             limit: currentLimit === 'all' ? null : parseInt(currentLimit),
-            deploymentFilter: '' // Reset deployment filter
+            deploymentFilter: '', // Reset deployment filter
+            selectedRecords: [] // Reset selected records for comparison
         };
         
         // Ensure the limit selector is set to the current value
@@ -7100,7 +7189,7 @@ function renderAccountHistoryTable() {
     if (!currentAccountHistory.requests || currentAccountHistory.requests.length === 0) {
         tableBody.innerHTML = `
             <tr class="border-b transition-colors">
-                <td class="p-4 align-middle text-center text-muted-foreground" colspan="9">
+                <td class="p-4 align-middle text-center text-muted-foreground" colspan="10">
                     <div class="flex flex-col items-center gap-2 py-8">
                         <p class="text-sm">No requests found for this account</p>
                     </div>
@@ -7221,9 +7310,21 @@ function renderAccountHistoryTable() {
             }
         }
         
+        // Check if this record is selected
+        const isSelected = currentAccountHistory.selectedRecords.includes(request.Id);
+        
         // Main row
         html += `
             <tr class="border-b transition-colors hover:bg-muted/50" data-request-name="${request.Name}" data-tenant-name="${tenantName}">
+                <td class="px-4 py-3 align-middle text-center">
+                    <input 
+                        type="checkbox" 
+                        class="record-select-checkbox h-4 w-4 rounded border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
+                        ${isSelected ? 'checked' : ''}
+                        onchange="toggleRecordSelection('${request.Id}', this)"
+                        title="Select for comparison"
+                    >
+                </td>
                 <td class="px-4 py-3 align-middle">
                     <button 
                         class="text-muted-foreground hover:text-foreground transition-colors"
@@ -7290,7 +7391,7 @@ function renderAccountHistoryTable() {
                 </td>
             </tr>
             <tr id="details-row-${request.Id}" class="hidden border-b bg-muted/30">
-                <td colspan="9" class="p-0">
+                <td colspan="10" class="p-0">
                     <div class="p-6">
                         ${renderRequestDetails(request, previousRequestSameDeployment)}
                     </div>
@@ -7300,6 +7401,9 @@ function renderAccountHistoryTable() {
     });
     
     tableBody.innerHTML = html;
+    
+    // Update the comparison button state after rendering
+    updateComparisonButtonState();
 }
 
 // Render request details (for expandable row)
@@ -7680,6 +7784,218 @@ function renderProductComparison(currentPayload, previousPayload) {
     return html;
 }
 
+// Render enhanced comparison table with attribute-level details
+function renderEnhancedComparisonTable(title, type, comparison, prevName, currName) {
+    const { added, removed, updated, unchanged } = comparison;
+    const total = added.length + removed.length + updated.length + unchanged.length;
+    
+    if (total === 0) {
+        return `
+            <div class="border rounded-lg p-4">
+                <h3 class="font-semibold mb-2">${title}</h3>
+                <p class="text-sm text-muted-foreground">No ${title.toLowerCase()} found in either request.</p>
+            </div>
+        `;
+    }
+    
+    // Helper to format attribute value
+    const formatValue = (value) => {
+        if (value === null || value === undefined) return '<span class="text-muted-foreground italic text-xs">-</span>';
+        if (typeof value === 'number') return value.toLocaleString();
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        return escapeHtml(String(value));
+    };
+    
+    // Define columns based on product type (excluding productCode as it's the identifier)
+    let columns = [];
+    if (type === 'models') {
+        columns = [
+            { key: 'startDate', label: 'Start Date' },
+            { key: 'endDate', label: 'End Date' },
+            { key: 'productModifier', label: 'Product Modifier' }
+        ];
+    } else if (type === 'data') {
+        columns = [
+            { key: 'startDate', label: 'Start Date' },
+            { key: 'endDate', label: 'End Date' },
+            { key: 'productModifier', label: 'Product Modifier' }
+        ];
+    } else if (type === 'apps') {
+        columns = [
+            { key: 'packageName', label: 'Package Name' },
+            { key: 'quantity', label: 'Quantity' },
+            { key: 'startDate', label: 'Start Date' },
+            { key: 'endDate', label: 'End Date' },
+            { key: 'productModifier', label: 'Product Modifier' }
+        ];
+    }
+    
+    // Build all products with their comparison data
+    const allProducts = [];
+    
+    // Added products
+    added.forEach(item => {
+        allProducts.push({
+            productCode: item.id,
+            prev: null,
+            curr: item.product,
+            status: 'added',
+            changes: []
+        });
+    });
+    
+    // Removed products
+    removed.forEach(item => {
+        allProducts.push({
+            productCode: item.id,
+            prev: item.product,
+            curr: null,
+            status: 'removed',
+            changes: []
+        });
+    });
+    
+    // Updated products
+    updated.forEach(item => {
+        allProducts.push({
+            productCode: item.id,
+            prev: item.prev,
+            curr: item.curr,
+            status: 'updated',
+            changes: item.changes.map(c => c.field)
+        });
+    });
+    
+    // Unchanged products
+    unchanged.forEach(item => {
+        allProducts.push({
+            productCode: item.id,
+            prev: item.product,
+            curr: item.product,
+            status: 'unchanged',
+            changes: []
+        });
+    });
+    
+    // Sort products by product code
+    allProducts.sort((a, b) => String(a.productCode).localeCompare(String(b.productCode)));
+    
+    // Determine if section should be collapsed (only if ALL products are unchanged)
+    const hasChanges = added.length > 0 || removed.length > 0 || updated.length > 0;
+    const openAttribute = hasChanges ? 'open' : '';
+    
+    let html = `
+        <div class="border rounded-lg overflow-hidden">
+            <details ${openAttribute}>
+                <summary class="bg-muted/50 p-4 border-b cursor-pointer hover:bg-muted/70 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold inline-flex items-center gap-2">
+                                <svg class="h-4 w-4 transition-transform details-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                                ${title}
+                            </h3>
+                            <p class="text-xs text-muted-foreground mt-1">
+                                Total: ${total} | <span class="text-green-700 dark:text-green-400">Added: ${added.length}</span> | 
+                                <span class="text-red-700 dark:text-red-400">Removed: ${removed.length}</span> | 
+                                <span class="text-yellow-700 dark:text-yellow-400">Updated: ${updated.length}</span> | 
+                                <span class="text-blue-700 dark:text-blue-400">Unchanged: ${unchanged.length}</span>
+                            </p>
+                        </div>
+                        ${hasChanges ? '<span class="text-xs font-medium text-yellow-700 dark:text-yellow-400">Has Changes</span>' : '<span class="text-xs font-medium text-blue-700 dark:text-blue-400">No Changes</span>'}
+                    </div>
+                </summary>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-muted/30 border-b-2 border-gray-300 dark:border-gray-600">
+                            <tr>
+                                <th class="px-2 py-2 text-left font-semibold text-muted-foreground border-r border-gray-300 dark:border-gray-600" rowspan="2">Product Code</th>
+                                <th class="px-2 py-2 text-center font-semibold text-muted-foreground border-r border-gray-300 dark:border-gray-600" colspan="${columns.length}">${prevName}</th>
+                                <th class="px-2 py-2 text-center font-semibold text-muted-foreground border-r border-gray-300 dark:border-gray-600" colspan="${columns.length}">${currName}</th>
+                                <th class="px-2 py-2 text-center font-semibold text-muted-foreground" rowspan="2">Status</th>
+                            </tr>
+                            <tr>
+    `;
+    
+    // Add column headers for previous version
+    columns.forEach(col => {
+        html += `<th class="px-2 py-1.5 text-left text-xs font-medium text-muted-foreground border-r border-gray-200 dark:border-gray-700">${col.label}</th>`;
+    });
+    
+    // Add column headers for current version
+    columns.forEach((col, idx) => {
+        const borderClass = idx === columns.length - 1 ? 'border-r border-gray-300 dark:border-gray-600' : 'border-r border-gray-200 dark:border-gray-700';
+        html += `<th class="px-2 py-1.5 text-left text-xs font-medium text-muted-foreground ${borderClass}">${col.label}</th>`;
+    });
+    
+    html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    // Render all products
+    allProducts.forEach(product => {
+        const changedFieldsSet = new Set(product.changes);
+        let statusColor = '';
+        let statusIcon = '';
+        let statusText = '';
+        
+        if (product.status === 'added') {
+            statusColor = 'bg-green-50 dark:bg-green-900/10';
+            statusIcon = '<svg class="h-3 w-3 text-green-700 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>';
+            statusText = '<span class="text-green-700 dark:text-green-400 text-xs font-medium">Added</span>';
+        } else if (product.status === 'removed') {
+            statusColor = 'bg-red-50 dark:bg-red-900/10';
+            statusIcon = '<svg class="h-3 w-3 text-red-700 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line></svg>';
+            statusText = '<span class="text-red-700 dark:text-red-400 text-xs font-medium">Removed</span>';
+        } else if (product.status === 'updated') {
+            statusColor = 'bg-yellow-50 dark:bg-yellow-900/10';
+            statusIcon = '<svg class="h-3 w-3 text-yellow-700 dark:text-yellow-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>';
+            statusText = '<span class="text-yellow-700 dark:text-yellow-400 text-xs font-medium">Updated</span>';
+        } else if (product.status === 'unchanged') {
+            statusColor = 'bg-blue-50 dark:bg-blue-900/10';
+            statusIcon = '<svg class="h-3 w-3 text-blue-700 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            statusText = '<span class="text-blue-700 dark:text-blue-400 text-xs font-medium">Unchanged</span>';
+        }
+        
+        html += `<tr class="${statusColor} border-b border-gray-200 dark:border-gray-700">`;
+        html += `<td class="px-2 py-2 font-medium border-r border-gray-300 dark:border-gray-600">${formatValue(product.productCode)}</td>`;
+        
+        // Previous version columns
+        columns.forEach(col => {
+            const value = product.prev ? product.prev[col.key] : null;
+            const isChanged = changedFieldsSet.has(col.key);
+            const cellClass = isChanged ? 'bg-yellow-100 dark:bg-yellow-900/30' : '';
+            html += `<td class="px-2 py-2 border-r border-gray-200 dark:border-gray-700 ${cellClass}">${formatValue(value)}</td>`;
+        });
+        
+        // Current version columns
+        columns.forEach((col, idx) => {
+            const value = product.curr ? product.curr[col.key] : null;
+            const isChanged = changedFieldsSet.has(col.key);
+            const cellClass = isChanged ? 'bg-yellow-100 dark:bg-yellow-900/30' : '';
+            const borderClass = idx === columns.length - 1 ? 'border-r border-gray-300 dark:border-gray-600' : 'border-r border-gray-200 dark:border-gray-700';
+            html += `<td class="px-2 py-2 ${borderClass} ${cellClass}">${formatValue(value)}</td>`;
+        });
+        
+        // Status column
+        html += `<td class="px-2 py-2 text-center"><div class="flex items-center justify-center gap-1">${statusIcon}${statusText}</div></td>`;
+        html += `</tr>`;
+    });
+    
+    html += `
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+    `;
+    
+    return html;
+}
+
 // Show detailed side-by-side comparison modal
 function showDetailedComparisonModal(currentRequestId, previousRequestId) {
     // Find both requests
@@ -7699,111 +8015,121 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
     const currentPayload = parseRequestPayload(currentRequest);
     const previousPayload = parseRequestPayload(previousRequest);
     
-    // Helper to create a matching key for an app (without index)
-    const createAppKey = (app) => {
-        const parts = [];
-        if (app.productCode) parts.push(`code:${app.productCode}`);
-        if (app.packageName) parts.push(`pkg:${app.packageName}`);
-        if (app.quantity) parts.push(`qty:${app.quantity}`);
-        if (app.licensedTransactions) parts.push(`txn:${app.licensedTransactions}`);
-        if (app.startDate) parts.push(`start:${app.startDate}`);
-        if (app.endDate) parts.push(`end:${app.endDate}`);
-        return parts.join('|');
-    };
-    
-    // Helper to create display string for an app
-    const createAppDisplay = (app, index) => {
-        const parts = [];
-        if (app.productCode) parts.push(app.productCode);
-        if (app.packageName) parts.push(`Pkg:${app.packageName}`);
-        if (app.quantity && app.quantity !== 1) parts.push(`Qty:${app.quantity}`);
-        if (app.licensedTransactions) parts.push(`Txn:${app.licensedTransactions.toLocaleString()}`);
+    // Helper function to compare products and detect changes
+    const compareProducts = (prevProducts, currProducts, getIdentifier, compareAttributes) => {
+        const result = {
+            added: [],
+            removed: [],
+            updated: [],
+            unchanged: []
+        };
         
-        const display = parts.length > 0 ? parts.join(' | ') : `App`;
-        return index !== undefined ? `[${index + 1}] ${display}` : display;
-    };
-    
-    // Extract apps - keep them as objects with matching keys
-    const currentApps = (currentPayload.appEntitlements || []).map((e, i) => ({
-        obj: e,
-        key: createAppKey(e),
-        display: createAppDisplay(e, i),
-        index: i
-    }));
-    
-    const previousApps = (previousPayload.appEntitlements || []).map((e, i) => ({
-        obj: e,
-        key: createAppKey(e),
-        display: createAppDisplay(e, i),
-        index: i
-    }));
-    
-    // For models and data, use simple product codes
-    const current = {
-        models: (currentPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean).sort(),
-        data: (currentPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean).sort(),
-        apps: currentApps
-    };
-    
-    const previous = {
-        models: (previousPayload.modelEntitlements || []).map(e => e.productCode).filter(Boolean).sort(),
-        data: (previousPayload.dataEntitlements || []).map(e => e.productCode || e.name).filter(Boolean).sort(),
-        apps: previousApps
-    };
-    
-    // Match apps between previous and current based on their keys
-    const previousKeys = new Set(previous.apps.map(a => a.key));
-    const currentKeys = new Set(current.apps.map(a => a.key));
-    
-    const allApps = [];
-    const processedCurrentKeys = new Set();
-    
-    // Process previous apps
-    previous.apps.forEach(prevApp => {
-        const matchingCurrent = current.apps.find(currApp => currApp.key === prevApp.key && !processedCurrentKeys.has(currApp.key));
+        // Create maps for easy lookup
+        const prevMap = new Map();
+        const currMap = new Map();
         
-        if (matchingCurrent) {
-            // Found a match - Unchanged
-            processedCurrentKeys.add(matchingCurrent.key);
-            allApps.push({
-                key: prevApp.key,
-                display: createAppDisplay(prevApp.obj), // Display without index for unchanged
-                prevDisplay: prevApp.display,
-                currDisplay: matchingCurrent.display,
-                status: 'Unchanged'
-            });
-        } else {
-            // No match - Removed
-            allApps.push({
-                key: prevApp.key,
-                display: prevApp.display,
-                prevDisplay: prevApp.display,
-                currDisplay: null,
-                status: 'Removed'
-            });
-        }
-    });
-    
-    // Process current apps that weren't matched
-    current.apps.forEach(currApp => {
-        if (!processedCurrentKeys.has(currApp.key)) {
-            // New app - Added
-            allApps.push({
-                key: currApp.key,
-                display: currApp.display,
-                prevDisplay: null,
-                currDisplay: currApp.display,
-                status: 'Added'
-            });
-        }
-    });
-    
-    // Create union of all products for each category
-    const allProducts = {
-        models: [...new Set([...previous.models, ...current.models])].sort(),
-        data: [...new Set([...previous.data, ...current.data])].sort(),
-        apps: allApps
+        prevProducts.forEach(p => {
+            const id = getIdentifier(p);
+            if (id) prevMap.set(id, p);
+        });
+        
+        currProducts.forEach(p => {
+            const id = getIdentifier(p);
+            if (id) currMap.set(id, p);
+        });
+        
+        // Check all previous products
+        prevMap.forEach((prevProduct, id) => {
+            if (currMap.has(id)) {
+                // Product exists in both - check if attributes changed
+                const currProduct = currMap.get(id);
+                const changes = compareAttributes(prevProduct, currProduct);
+                
+                if (changes.length > 0) {
+                    result.updated.push({
+                        id,
+                        prev: prevProduct,
+                        curr: currProduct,
+                        changes
+                    });
+                } else {
+                    result.unchanged.push({
+                        id,
+                        product: prevProduct
+                    });
+                }
+            } else {
+                // Product only in previous - removed
+                result.removed.push({
+                    id,
+                    product: prevProduct
+                });
+            }
+        });
+        
+        // Check for products only in current - added
+        currMap.forEach((currProduct, id) => {
+            if (!prevMap.has(id)) {
+                result.added.push({
+                    id,
+                    product: currProduct
+                });
+            }
+        });
+        
+        return result;
     };
+    
+    // Compare Models
+    const modelComparison = compareProducts(
+        previousPayload.modelEntitlements || [],
+        currentPayload.modelEntitlements || [],
+        (m) => m.productCode,
+        (prev, curr) => {
+            const changes = [];
+            const fields = ['startDate', 'endDate', 'productModifier'];
+            fields.forEach(field => {
+                if (prev[field] !== curr[field]) {
+                    changes.push({ field, prev: prev[field], curr: curr[field] });
+                }
+            });
+            return changes;
+        }
+    );
+    
+    // Compare Data Entitlements
+    const dataComparison = compareProducts(
+        previousPayload.dataEntitlements || [],
+        currentPayload.dataEntitlements || [],
+        (d) => d.productCode || d.name,
+        (prev, curr) => {
+            const changes = [];
+            const fields = ['startDate', 'endDate', 'productModifier'];
+            fields.forEach(field => {
+                if (prev[field] !== curr[field]) {
+                    changes.push({ field, prev: prev[field], curr: curr[field] });
+                }
+            });
+            return changes;
+        }
+    );
+    
+    // Compare App Entitlements
+    const appComparison = compareProducts(
+        previousPayload.appEntitlements || [],
+        currentPayload.appEntitlements || [],
+        (app) => app.productCode || app.name,
+        (prev, curr) => {
+            const changes = [];
+            const fields = ['packageName', 'quantity', 'startDate', 'endDate', 'productModifier'];
+            fields.forEach(field => {
+                if (prev[field] !== curr[field]) {
+                    changes.push({ field, prev: prev[field], curr: curr[field] });
+                }
+            });
+            return changes;
+        }
+    );
     
     // Build modal content
     const modalHTML = `
@@ -7827,10 +8153,10 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
                 
                 <!-- Modal Body - Scrollable -->
                 <div class="flex-1 overflow-y-auto p-6" style="overscroll-behavior: contain;">
-                    <div class="space-y-4">
-                        ${renderComparisonTable('Model Entitlements', 'models', allProducts.models, previous.models, current.models)}
-                        ${renderComparisonTable('Data Entitlements', 'data', allProducts.data, previous.data, current.data)}
-                        ${renderComparisonTable('App Entitlements', 'apps', allProducts.apps, previous.apps, current.apps)}
+                    <div class="space-y-6">
+                        ${renderEnhancedComparisonTable('Model Entitlements', 'models', modelComparison, previousRequest.Name, currentRequest.Name)}
+                        ${renderEnhancedComparisonTable('Data Entitlements', 'data', dataComparison, previousRequest.Name, currentRequest.Name)}
+                        ${renderEnhancedComparisonTable('App Entitlements', 'apps', appComparison, previousRequest.Name, currentRequest.Name)}
                     </div>
                 </div>
                 
@@ -7844,6 +8170,10 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
                         <span class="flex items-center gap-1.5">
                             <span class="w-3 h-3 rounded bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700"></span>
                             Removed
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700"></span>
+                            Updated
                         </span>
                         <span class="flex items-center gap-1.5">
                             <span class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700"></span>
@@ -8133,7 +8463,8 @@ function clearAccountHistory() {
         requests: [],
         showComparison: false,
         limit: 5,  // Reset to default
-        deploymentFilter: ''
+        deploymentFilter: '',
+        selectedRecords: []
     };
     
     const searchInput = document.getElementById('account-history-search');

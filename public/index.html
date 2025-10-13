@@ -618,6 +618,29 @@
                                             <span>Show Product Changes</span>
                                         </label>
                                     </div>
+                                    
+                                    <!-- Flexible Comparison Controls -->
+                                    <div class="flex items-center gap-3 pt-4 border-t">
+                                        <button 
+                                            id="flexible-compare-button"
+                                            onclick="showFlexibleComparison()"
+                                            disabled
+                                            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground h-10 px-4 py-2 opacity-50 cursor-not-allowed"
+                                        >
+                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                                <line x1="9" x2="9" y1="3" y2="21"></line>
+                                            </svg>
+                                            View Side-by-Side
+                                        </button>
+                                        <button 
+                                            onclick="clearRecordSelection()"
+                                            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                        >
+                                            Clear Selection
+                                        </button>
+                                        <span class="text-sm text-muted-foreground">Select any 2 records to compare</span>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -626,6 +649,7 @@
                                     <table class="w-full caption-bottom text-sm">
                                         <thead class="[&_tr]:border-b bg-muted/50">
                                             <tr class="border-b transition-colors">
+                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-10">Select</th>
                                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-10"></th>
                                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Request ID</th>
                                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
@@ -640,7 +664,7 @@
                                         <tbody id="account-history-table-body" class="[&_tr:last-child]:border-0">
                                             <!-- Dynamic rows will be populated here -->
                                             <tr class="border-b transition-colors">
-                                                <td class="p-4 align-middle text-center text-muted-foreground" colspan="9">
+                                                <td class="p-4 align-middle text-center text-muted-foreground" colspan="10">
                                                     <div class="flex flex-col items-center gap-2 py-8">
                                                         <svg class="h-8 w-8 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                             <circle cx="12" cy="12" r="10"></circle>
