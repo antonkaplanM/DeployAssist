@@ -102,5 +102,111 @@ describe('ValidationEngine', () => {
     const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-overlap-validation');
     expect(rule.status).toBe('PASS');
   });
+
+  it('entitlement-date-gap-validation: gap between dates fails', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'PROD-A', startDate: '2025-01-01', endDate: '2025-01-31' },
+          { productCode: 'PROD-A', startDate: '2025-02-05', endDate: '2025-02-28' }
+        ]
+      }
+    };
+    const record = { Id: '007', Name: 'DateGap', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-gap-validation');
+    expect(rule.status).toBe('FAIL');
+    expect(rule.details.gapsFound).toBe(1);
+    expect(rule.details.gaps[0].gapDays).toBe(4); // Gap from Feb 1-4 (4 days)
+    expect(rule.details.gaps[0].productCode).toBe('PROD-A');
+  });
+
+  it('entitlement-date-gap-validation: consecutive dates with no gap pass', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'PROD-B', startDate: '2025-01-01', endDate: '2025-01-31' },
+          { productCode: 'PROD-B', startDate: '2025-02-01', endDate: '2025-02-28' }
+        ]
+      }
+    };
+    const record = { Id: '008', Name: 'NoGap', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-gap-validation');
+    expect(rule.status).toBe('PASS');
+    expect(rule.details.gapsFound).toBe(0);
+  });
+
+  it('entitlement-date-gap-validation: single date range passes', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'PROD-C', startDate: '2025-01-01', endDate: '2025-12-31' }
+        ]
+      }
+    };
+    const record = { Id: '009', Name: 'SingleRange', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-gap-validation');
+    expect(rule.status).toBe('PASS');
+    expect(rule.details.gapsFound).toBe(0);
+  });
+
+  it('entitlement-date-gap-validation: checks gaps only within same product code', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'PROD-D', startDate: '2025-01-01', endDate: '2025-01-31' },
+          { productCode: 'PROD-D', startDate: '2025-03-01', endDate: '2025-03-31' }, // Gap in PROD-D
+          { productCode: 'PROD-E', startDate: '2025-01-01', endDate: '2025-01-31' },
+          { productCode: 'PROD-E', startDate: '2025-02-01', endDate: '2025-02-28' }  // No gap in PROD-E
+        ]
+      }
+    };
+    const record = { Id: '010', Name: 'MultiProduct', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-gap-validation');
+    expect(rule.status).toBe('FAIL');
+    expect(rule.details.gapsFound).toBe(1);
+    expect(rule.details.gaps[0].productCode).toBe('PROD-D');
+  });
+
+  it('entitlement-date-gap-validation: multiple gaps detected', () => {
+    const payload = {
+      entitlements: {
+        modelEntitlements: [
+          { productCode: 'MODEL-X', startDate: '2025-01-01', endDate: '2025-01-10' },
+          { productCode: 'MODEL-X', startDate: '2025-01-15', endDate: '2025-01-20' }, // Gap 1: 4 days
+          { productCode: 'MODEL-X', startDate: '2025-02-01', endDate: '2025-02-10' }  // Gap 2: 11 days
+        ]
+      }
+    };
+    const record = { Id: '011', Name: 'MultipleGaps', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-gap-validation');
+    expect(rule.status).toBe('FAIL');
+    expect(rule.details.gapsFound).toBe(2);
+  });
+
+  it('entitlement-date-gap-validation: works across different entitlement types', () => {
+    const payload = {
+      entitlements: {
+        appEntitlements: [
+          { productCode: 'SHARED-PROD', startDate: '2025-01-01', endDate: '2025-01-31' }
+        ],
+        modelEntitlements: [
+          { productCode: 'SHARED-PROD', startDate: '2025-03-01', endDate: '2025-03-31' }
+        ],
+        dataEntitlements: [
+          { productCode: 'SHARED-PROD', startDate: '2025-05-01', endDate: '2025-05-31' }
+        ]
+      }
+    };
+    const record = { Id: '012', Name: 'CrossType', Payload_Data__c: JSON.stringify(payload) };
+    const result = ValidationEngine.validateRecord(record, enabledRules);
+    const rule = result.ruleResults.find(r => r.ruleId === 'entitlement-date-gap-validation');
+    expect(rule.status).toBe('FAIL');
+    expect(rule.details.gapsFound).toBe(2); // Gap between app-model and model-data
+  });
 });
 

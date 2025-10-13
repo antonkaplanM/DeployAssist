@@ -36,6 +36,16 @@ const DEFAULT_VALIDATION_RULES = [
         category: 'date-validation',
         version: '1.0',
         createdDate: '2025-01-24'
+    },
+    {
+        id: 'entitlement-date-gap-validation',
+        name: 'Entitlement Date Gap Validation',
+        description: 'Fails if a product code has multiple date ranges with gaps between them',
+        longDescription: 'Validates that for any product code with multiple date ranges, there are no gaps between consecutive entitlement periods. The start date of each subsequent entitlement should immediately follow or equal the end date of the previous entitlement.',
+        enabled: true,
+        category: 'date-validation',
+        version: '1.0',
+        createdDate: '2025-10-13'
     }
 ];
 
@@ -108,6 +118,8 @@ class ValidationEngine {
                     return this.validateModelCount(payload, record);
                 case 'entitlement-date-overlap-validation':
                     return this.validateEntitlementDateOverlap(payload, record);
+                case 'entitlement-date-gap-validation':
+                    return this.validateEntitlementDateGaps(payload, record);
                 default:
                     console.warn(`[VALIDATION] Unknown rule: ${rule.id}`);
                     return { 
@@ -430,6 +442,175 @@ class ValidationEngine {
 
         return {
             ruleId: 'entitlement-date-overlap-validation',
+            status,
+            message,
+            details
+        };
+    }
+
+    /**
+     * Validates entitlement date gaps according to the date gap rule
+     * Rule: Fail if a product code has multiple date ranges with gaps between them
+     * @param {Object} payload - Parsed payload data
+     * @param {Object} record - Full record object for context
+     * @returns {Object} Validation result
+     */
+    static validateEntitlementDateGaps(payload, record) {
+        // Collect all entitlements from different entitlement types
+        const allEntitlements = [];
+        
+        // Get entitlements from all possible locations
+        const entitlementsObj = payload?.properties?.provisioningDetail?.entitlements ||
+                              payload?.entitlements ||
+                              {};
+        
+        // Collect model entitlements
+        const modelEntitlements = entitlementsObj.modelEntitlements || [];
+        if (Array.isArray(modelEntitlements)) {
+            modelEntitlements.forEach((ent, index) => {
+                allEntitlements.push({
+                    ...ent,
+                    type: 'model',
+                    index: index,
+                    productCode: ent.productCode || ent.product_code || ent.ProductCode,
+                    startDate: ent.startDate || ent.start_date || ent.StartDate,
+                    endDate: ent.endDate || ent.end_date || ent.EndDate
+                });
+            });
+        }
+        
+        // Collect app entitlements
+        const appEntitlements = entitlementsObj.appEntitlements || [];
+        if (Array.isArray(appEntitlements)) {
+            appEntitlements.forEach((ent, index) => {
+                allEntitlements.push({
+                    ...ent,
+                    type: 'app',
+                    index: index,
+                    productCode: ent.productCode || ent.product_code || ent.ProductCode,
+                    startDate: ent.startDate || ent.start_date || ent.StartDate,
+                    endDate: ent.endDate || ent.end_date || ent.EndDate
+                });
+            });
+        }
+        
+        // Collect data entitlements
+        const dataEntitlements = entitlementsObj.dataEntitlements || [];
+        if (Array.isArray(dataEntitlements)) {
+            dataEntitlements.forEach((ent, index) => {
+                allEntitlements.push({
+                    ...ent,
+                    type: 'data',
+                    index: index,
+                    productCode: ent.productCode || ent.product_code || ent.ProductCode,
+                    startDate: ent.startDate || ent.start_date || ent.StartDate,
+                    endDate: ent.endDate || ent.end_date || ent.EndDate
+                });
+            });
+        }
+
+        if (allEntitlements.length === 0) {
+            console.log(`[VALIDATION] No entitlements found for record ${record.Id}, defaulting to PASS`);
+            return {
+                ruleId: 'entitlement-date-gap-validation',
+                status: 'PASS',
+                message: 'No entitlements found',
+                details: {
+                    totalCount: 0,
+                    gapsFound: 0,
+                    gaps: []
+                }
+            };
+        }
+
+        const gaps = [];
+        const details = {
+            totalCount: allEntitlements.length,
+            gapsFound: 0,
+            gaps: []
+        };
+
+        // Group entitlements by productCode
+        const entitlementsByProduct = {};
+        for (const ent of allEntitlements) {
+            if (!ent.productCode) continue; // Skip entitlements without productCode
+            
+            // Skip if missing date information
+            if (!ent.startDate || !ent.endDate) continue;
+            
+            if (!entitlementsByProduct[ent.productCode]) {
+                entitlementsByProduct[ent.productCode] = [];
+            }
+            entitlementsByProduct[ent.productCode].push(ent);
+        }
+
+        // Check for date gaps within each productCode group
+        for (const [productCode, entitlements] of Object.entries(entitlementsByProduct)) {
+            if (entitlements.length < 2) continue; // Need at least 2 entitlements to have a gap
+            
+            // Sort entitlements by start date
+            const sortedEntitlements = [...entitlements].sort((a, b) => {
+                const dateA = new Date(a.startDate);
+                const dateB = new Date(b.startDate);
+                return dateA.getTime() - dateB.getTime();
+            });
+            
+            // Check for gaps between consecutive entitlements
+            for (let i = 0; i < sortedEntitlements.length - 1; i++) {
+                const current = sortedEntitlements[i];
+                const next = sortedEntitlements[i + 1];
+                
+                const currentEnd = new Date(current.endDate);
+                const nextStart = new Date(next.startDate);
+                
+                // Check if dates are valid
+                if (isNaN(currentEnd.getTime()) || isNaN(nextStart.getTime())) {
+                    continue;
+                }
+                
+                // Calculate the gap in days
+                // Add 1 day to current end date to get the expected next start date
+                const expectedNextStart = new Date(currentEnd);
+                expectedNextStart.setDate(expectedNextStart.getDate() + 1);
+                
+                // Check if there's a gap (next start date is after the day following current end date)
+                if (nextStart.getTime() > expectedNextStart.getTime()) {
+                    const gapDays = Math.floor((nextStart.getTime() - expectedNextStart.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    const gap = {
+                        productCode: productCode,
+                        entitlement1: {
+                            type: current.type,
+                            index: current.index + 1,
+                            startDate: current.startDate,
+                            endDate: current.endDate
+                        },
+                        entitlement2: {
+                            type: next.type,
+                            index: next.index + 1,
+                            startDate: next.startDate,
+                            endDate: next.endDate
+                        },
+                        gapDays: gapDays,
+                        description: `Gap of ${gapDays} day${gapDays > 1 ? 's' : ''} between ${current.type}-${current.index + 1} (ends ${current.endDate}) and ${next.type}-${next.index + 1} (starts ${next.startDate})`
+                    };
+                    
+                    gaps.push(gap);
+                    details.gaps.push(gap);
+                    
+                    console.log(`[VALIDATION] Date gap found for productCode ${productCode}: ${gap.description}`);
+                }
+            }
+        }
+
+        details.gapsFound = gaps.length;
+        const status = gaps.length === 0 ? 'PASS' : 'FAIL';
+        const message = status === 'PASS' 
+            ? `No date gaps found across ${details.totalCount} entitlements`
+            : `${details.gapsFound} date gap${details.gapsFound > 1 ? 's' : ''} found`;
+
+        return {
+            ruleId: 'entitlement-date-gap-validation',
             status,
             message,
             details

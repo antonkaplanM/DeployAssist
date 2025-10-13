@@ -3448,19 +3448,19 @@ function renderProductItems(items, groupType, validationResult = null) {
     const hasValidationIssue = (item, index) => {
         if (!validationResult || validationResult.overallStatus !== 'FAIL') return false;
         
+        // Map UI groupType to validation engine type
+        const validationGroupType = {
+            'models': 'model',
+            'apps': 'app', 
+            'data': 'data'
+        }[groupType] || groupType;
+        
         // Look for date overlap validation failures
         const dateOverlapRule = validationResult.ruleResults?.find(rule => 
             rule.ruleId === 'entitlement-date-overlap-validation' && rule.status === 'FAIL'
         );
         
         if (dateOverlapRule?.details?.overlaps) {
-            // Map UI groupType to validation engine type
-            const validationGroupType = {
-                'models': 'model',
-                'apps': 'app', 
-                'data': 'data'
-            }[groupType] || groupType;
-            
             // Check if this item is involved in any overlaps
             const hasOverlap = dateOverlapRule.details.overlaps.some(overlap => 
                 (overlap.entitlement1.type === validationGroupType && overlap.entitlement1.index === (index + 1)) ||
@@ -3468,6 +3468,21 @@ function renderProductItems(items, groupType, validationResult = null) {
             );
             
             if (hasOverlap) return true;
+        }
+        
+        // Look for date gap validation failures
+        const dateGapRule = validationResult.ruleResults?.find(rule => 
+            rule.ruleId === 'entitlement-date-gap-validation' && rule.status === 'FAIL'
+        );
+        
+        if (dateGapRule?.details?.gaps) {
+            // Check if this item is involved in any gaps
+            const hasGap = dateGapRule.details.gaps.some(gap => 
+                (gap.entitlement1.type === validationGroupType && gap.entitlement1.index === (index + 1)) ||
+                (gap.entitlement2.type === validationGroupType && gap.entitlement2.index === (index + 1))
+            );
+            
+            if (hasGap) return true;
         }
         
         // Look for app quantity validation failures (only for apps groupType)
@@ -3481,8 +3496,8 @@ function renderProductItems(items, groupType, validationResult = null) {
                 const productCode = item.productCode || item.product_code || item.ProductCode;
                 const quantity = item.quantity;
                 
-                // An app fails if quantity !== 1 AND productCode !== "IC-DATABRIDGE"
-                if (quantity !== 1 && productCode !== "IC-DATABRIDGE") {
+                // An app fails if quantity !== 1 AND productCode !== "IC-DATABRIDGE" AND productCode !== "RI-RISKMODELER-EXPANSION"
+                if (quantity !== 1 && productCode !== "IC-DATABRIDGE" && productCode !== "RI-RISKMODELER-EXPANSION") {
                     return true;
                 }
             }
@@ -4755,6 +4770,19 @@ function getProductsDisplay(request, validationResult = null) {
             }
         }
         
+        // Check for date gap validation failures
+        let hasDateGapFailure = false;
+        let dateGapDetails = null;
+        if (validationResult && validationResult.overallStatus === 'FAIL') {
+            const dateGapRule = validationResult.ruleResults.find(rule => 
+                rule.ruleId === 'entitlement-date-gap-validation' && rule.status === 'FAIL'
+            );
+            if (dateGapRule) {
+                hasDateGapFailure = true;
+                dateGapDetails = dateGapRule.details;
+            }
+        }
+        
         // Helper function to check if an entitlement type/index has overlap issues
         const hasOverlapIssue = (type, index) => {
             if (!hasDateOverlapFailure || !dateOverlapDetails?.overlaps) return false;
@@ -4764,11 +4792,21 @@ function getProductsDisplay(request, validationResult = null) {
             );
         };
         
+        // Helper function to check if an entitlement type/index has gap issues
+        const hasGapIssue = (type, index) => {
+            if (!hasDateGapFailure || !dateGapDetails?.gaps) return false;
+            return dateGapDetails.gaps.some(gap => 
+                (gap.entitlement1.type === type && gap.entitlement1.index === (index + 1)) ||
+                (gap.entitlement2.type === type && gap.entitlement2.index === (index + 1))
+            );
+        };
+        
         // Create interactive summary with expandable groups
         const groups = [];
         
         if (modelEntitlements.length > 0) {
             const hasModelOverlap = modelEntitlements.some((_, index) => hasOverlapIssue('model', index));
+            const hasModelGap = modelEntitlements.some((_, index) => hasGapIssue('model', index));
             
             // Check for model count validation failures
             let hasModelCountFailure = false;
@@ -4781,7 +4819,7 @@ function getProductsDisplay(request, validationResult = null) {
                 }
             }
             
-            const outliveClass = (hasModelOverlap || hasModelCountFailure) ? 'ring-2 ring-red-400' : '';
+            const outliveClass = (hasModelOverlap || hasModelGap || hasModelCountFailure) ? 'ring-2 ring-red-400' : '';
             
             groups.push(`
                 <button 
@@ -4801,7 +4839,8 @@ function getProductsDisplay(request, validationResult = null) {
         
         if (dataEntitlements.length > 0) {
             const hasDataOverlap = dataEntitlements.some((_, index) => hasOverlapIssue('data', index));
-            const outliveClass = hasDataOverlap ? 'ring-2 ring-red-400' : '';
+            const hasDataGap = dataEntitlements.some((_, index) => hasGapIssue('data', index));
+            const outliveClass = (hasDataOverlap || hasDataGap) ? 'ring-2 ring-red-400' : '';
             
             groups.push(`
                 <button 
@@ -4820,6 +4859,7 @@ function getProductsDisplay(request, validationResult = null) {
         
         if (appEntitlements.length > 0) {
             const hasAppOverlap = appEntitlements.some((_, index) => hasOverlapIssue('app', index));
+            const hasAppGap = appEntitlements.some((_, index) => hasGapIssue('app', index));
             
             // Check for app quantity validation failures
             let hasAppQuantityFailure = false;
@@ -4832,7 +4872,7 @@ function getProductsDisplay(request, validationResult = null) {
                 }
             }
             
-            const outliveClass = (hasAppOverlap || hasAppQuantityFailure) ? 'ring-2 ring-red-400' : '';
+            const outliveClass = (hasAppOverlap || hasAppGap || hasAppQuantityFailure) ? 'ring-2 ring-red-400' : '';
             
             groups.push(`
                 <button 

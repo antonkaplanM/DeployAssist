@@ -71,6 +71,122 @@ For each app entitlement in the `appEntitlements` array:
 - Validation logic errors → PASS
 - Only explicit rule failures result in FAIL status
 
+### 2. Model Count Validation
+
+**Rule ID**: `model-count-validation`
+
+**Purpose**: Ensures the number of model entitlements does not exceed the maximum allowed limit.
+
+**Logic**: 
+- **PASS Condition**: Number of model entitlements ≤ 100
+- **FAIL Condition**: Number of model entitlements > 100
+
+**Overall Result**: 
+- **PASS**: Total model count is within limit
+- **FAIL**: Total model count exceeds 100
+
+**Implementation Details**:
+- Counts all model entitlements in the payload
+- Provides detailed information about models found
+- Simple count-based validation
+
+### 3. Entitlement Date Overlap Validation
+
+**Rule ID**: `entitlement-date-overlap-validation`
+
+**Purpose**: Prevents overlapping date ranges for entitlements with the same product code.
+
+**Logic**:
+For entitlements with the same `productCode`:
+- **FAIL Condition**: Date ranges overlap (start1 < end2 AND start2 < end1)
+- **PASS Condition**: No date range overlaps detected
+
+**Overall Result**:
+- **PASS**: No overlapping date ranges found
+- **FAIL**: One or more overlapping date ranges detected
+
+**Data Structure**:
+```json
+{
+  "entitlements": {
+    "appEntitlements": [
+      {
+        "productCode": "PRODUCT-A",
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      }
+    ],
+    "modelEntitlements": [...],
+    "dataEntitlements": [...]
+  }
+}
+```
+
+**Implementation Details**:
+- Groups entitlements by product code
+- Checks all combinations within each product code group
+- Works across different entitlement types (app, model, data)
+- Detects identical dates, partial overlaps, and complete containment
+- Provides detailed overlap descriptions
+
+### 4. Entitlement Date Gap Validation
+
+**Rule ID**: `entitlement-date-gap-validation`
+
+**Purpose**: Ensures continuous coverage when a product code has multiple date ranges with no gaps between consecutive entitlements.
+
+**Logic**:
+For entitlements with the same `productCode`:
+- Sorts entitlements by start date
+- Checks if consecutive date ranges are continuous
+- **PASS Condition**: Each subsequent entitlement starts on or immediately after the previous entitlement ends (e.g., ends Jan 31, next starts Feb 1)
+- **FAIL Condition**: Gap exists between consecutive date ranges (e.g., ends Jan 31, next starts Feb 5 = 4-day gap)
+
+**Overall Result**:
+- **PASS**: No gaps found in date ranges for any product code
+- **FAIL**: One or more gaps detected between consecutive date ranges
+
+**Data Structure**:
+```json
+{
+  "entitlements": {
+    "appEntitlements": [
+      {
+        "productCode": "PRODUCT-A",
+        "startDate": "2025-01-01",
+        "endDate": "2025-01-31"
+      },
+      {
+        "productCode": "PRODUCT-A",
+        "startDate": "2025-02-01",
+        "endDate": "2025-02-28"
+      }
+    ]
+  }
+}
+```
+
+**Implementation Details**:
+- Groups entitlements by product code
+- Sorts by start date within each product code
+- Calculates gaps in days between consecutive ranges
+- Only validates product codes with 2+ date ranges
+- Works across different entitlement types (app, model, data)
+- Provides detailed gap information including number of days
+- Expected continuous coverage: end date + 1 day = next start date
+
+**Error Handling**:
+- Single date range → PASS (no gap possible)
+- Missing dates → Skipped (not validated)
+- Invalid dates → Skipped (not validated)
+- Different product codes validated independently
+
+**Example Scenarios**:
+- ✅ **PASS**: Range 1 ends 2025-01-31, Range 2 starts 2025-02-01 (continuous)
+- ❌ **FAIL**: Range 1 ends 2025-01-31, Range 2 starts 2025-02-05 (4-day gap: Feb 1-4)
+- ✅ **PASS**: Single date range 2025-01-01 to 2025-12-31 (no other ranges to compare)
+- ❌ **FAIL**: Product A has gap, Product B has no gap → FAIL overall (Product A failed)
+
 ## Configuration Management
 
 ### Storage Location
@@ -279,9 +395,18 @@ Updates enabled state of a specific rule.
 
 ## Version History
 
+### Version 1.1 (2025-10-13)
+- Added Entitlement Date Gap Validation rule
+- Validates continuous date coverage for product codes
+- Detects gaps between consecutive date ranges
+- Works across all entitlement types (app, model, data)
+- Comprehensive unit tests with 7 test scenarios
+
 ### Version 1.0 (2025-01-24)
 - Initial implementation
 - App Quantity Validation rule
+- Model Count Validation rule
+- Entitlement Date Overlap Validation rule
 - LocalStorage configuration management
 - Provisioning Monitor table integration
 - Debug and testing tools
