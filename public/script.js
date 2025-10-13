@@ -9424,6 +9424,174 @@ function viewGhostAccountDetails(accountId, accountName) {
     }, 100);
 }
 
+// Export ghost accounts to Excel with formatting
+function exportGhostAccountsToExcel() {
+    console.log('[GhostAccounts] Exporting to Excel...');
+    
+    if (ghostAccountsData.length === 0) {
+        alert('No ghost accounts data to export. Please load the data first.');
+        return;
+    }
+    
+    try {
+        // Prepare data for export
+        const exportData = ghostAccountsData.map((account, index) => {
+            const expiryDate = new Date(account.latest_expiry_date);
+            const daysSinceExpiry = Math.floor((new Date() - expiryDate) / (1000 * 60 * 60 * 24));
+            
+            return {
+                'No.': index + 1,
+                'Account Name': account.account_name || '',
+                'Account ID': account.account_id || '',
+                'Expired Products': account.total_expired_products || 0,
+                'Latest Expiry Date': expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+                'Days Since Expiry': daysSinceExpiry,
+                'Review Status': account.is_reviewed ? 'Reviewed' : 'Needs Review',
+                'Reviewed By': account.reviewed_by || '',
+                'Reviewed At': account.reviewed_at ? new Date(account.reviewed_at).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '',
+                'Notes': account.notes || '',
+                'Created At': account.created_at ? new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '',
+                'Updated At': account.updated_at ? new Date(account.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            };
+        });
+        
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        
+        // Set column widths
+        const colWidths = [
+            { wch: 5 },   // No.
+            { wch: 40 },  // Account Name
+            { wch: 20 },  // Account ID
+            { wch: 16 },  // Expired Products
+            { wch: 18 },  // Latest Expiry Date
+            { wch: 18 },  // Days Since Expiry
+            { wch: 15 },  // Review Status
+            { wch: 20 },  // Reviewed By
+            { wch: 15 },  // Reviewed At
+            { wch: 50 },  // Notes
+            { wch: 15 },  // Created At
+            { wch: 15 }   // Updated At
+        ];
+        ws['!cols'] = colWidths;
+        
+        // Style the header row
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let col = range.s.c; col <= range.e.c; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (!ws[cellAddress]) continue;
+            
+            ws[cellAddress].s = {
+                font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "4472C4" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                border: {
+                    top: { style: "thin", color: { rgb: "000000" } },
+                    bottom: { style: "thin", color: { rgb: "000000" } },
+                    left: { style: "thin", color: { rgb: "000000" } },
+                    right: { style: "thin", color: { rgb: "000000" } }
+                }
+            };
+        }
+        
+        // Apply alternating row colors and borders to data rows
+        for (let row = range.s.r + 1; row <= range.e.r; row++) {
+            const isEvenRow = (row % 2 === 0);
+            
+            for (let col = range.s.c; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                if (!ws[cellAddress]) ws[cellAddress] = { v: '' };
+                
+                ws[cellAddress].s = {
+                    fill: { fgColor: { rgb: isEvenRow ? "F2F2F2" : "FFFFFF" } },
+                    alignment: { 
+                        horizontal: col === 1 || col === 9 ? "left" : "center",
+                        vertical: "center",
+                        wrapText: col === 9 // Wrap text for Notes column
+                    },
+                    border: {
+                        top: { style: "thin", color: { rgb: "D0D0D0" } },
+                        bottom: { style: "thin", color: { rgb: "D0D0D0" } },
+                        left: { style: "thin", color: { rgb: "D0D0D0" } },
+                        right: { style: "thin", color: { rgb: "D0D0D0" } }
+                    }
+                };
+                
+                // Highlight unreviewed accounts in orange
+                if (col === 6 && ws[cellAddress].v === 'Needs Review') {
+                    ws[cellAddress].s.fill = { fgColor: { rgb: "FFF4E6" } };
+                    ws[cellAddress].s.font = { color: { rgb: "F97316" }, bold: true };
+                }
+                
+                // Highlight reviewed accounts in green
+                if (col === 6 && ws[cellAddress].v === 'Reviewed') {
+                    ws[cellAddress].s.fill = { fgColor: { rgb: "ECFDF5" } };
+                    ws[cellAddress].s.font = { color: { rgb: "22C55E" }, bold: true };
+                }
+            }
+        }
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Ghost Accounts');
+        
+        // Create summary sheet
+        const summary = [
+            { 'Metric': 'Report Generated', 'Value': new Date().toLocaleString('en-US') },
+            { 'Metric': 'Total Ghost Accounts', 'Value': ghostAccountsData.length },
+            { 'Metric': 'Unreviewed Accounts', 'Value': ghostAccountsData.filter(a => !a.is_reviewed).length },
+            { 'Metric': 'Reviewed Accounts', 'Value': ghostAccountsData.filter(a => a.is_reviewed).length }
+        ];
+        
+        const wsSummary = XLSX.utils.json_to_sheet(summary);
+        wsSummary['!cols'] = [{ wch: 25 }, { wch: 30 }];
+        
+        // Style summary sheet header
+        ['A1', 'B1'].forEach(cell => {
+            if (wsSummary[cell]) {
+                wsSummary[cell].s = {
+                    font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "16A34A" } },
+                    alignment: { horizontal: "center", vertical: "center" }
+                };
+            }
+        });
+        
+        XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `Ghost_Accounts_Report_${timestamp}.xlsx`;
+        
+        // Write file
+        XLSX.writeFile(wb, filename);
+        
+        console.log('[GhostAccounts] ✅ Excel export complete:', filename);
+        
+        // Show success message
+        const exportBtn = document.getElementById('export-ghost-accounts-btn');
+        if (exportBtn) {
+            const originalHTML = exportBtn.innerHTML;
+            exportBtn.innerHTML = `
+                <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 12l2 2 4-4"></path>
+                    <circle cx="12" cy="12" r="10"></circle>
+                </svg>
+                Exported!
+            `;
+            exportBtn.classList.add('bg-green-50', 'text-green-700', 'border-green-200');
+            
+            setTimeout(() => {
+                exportBtn.innerHTML = originalHTML;
+                exportBtn.classList.remove('bg-green-50', 'text-green-700', 'border-green-200');
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('[GhostAccounts] Error exporting to Excel:', error);
+        alert('Failed to export to Excel. Check console for details.');
+    }
+}
+
 // Refresh ghost accounts analysis
 async function refreshGhostAccounts() {
     console.log('[GhostAccounts] Starting ghost accounts analysis...');
