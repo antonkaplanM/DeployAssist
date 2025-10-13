@@ -1,6 +1,6 @@
 # Database Documentation
 
-This directory contains database-related configuration, scripts, and documentation for the hello-world-nodejs application.
+This directory contains database-related configuration, scripts, and documentation for the DeployAssist application.
 
 ## Quick Links
 

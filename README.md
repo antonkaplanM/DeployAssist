@@ -1,4 +1,4 @@
-# Deployment Assistant 🚀
+# DeployAssist 🚀
 
 A deployment assistant application built with Node.js and Express, featuring a modern, responsive UI and comprehensive integrations for DevOps workflows.
 
@@ -38,7 +38,7 @@ A deployment assistant application built with Node.js and Express, featuring a m
 ## Project Structure
 
 ```
-deployment-assistant/
+deploy-assist/
 ├── app.js              # Express server
 ├── package.json        # Project configuration
 ├── public/            # Static files

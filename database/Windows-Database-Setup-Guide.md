@@ -163,7 +163,7 @@ BACKGROUND_SYNC_INTERVAL=300000
 
 ```bash
 # Navigate to your project directory
-cd C:\Users\kaplana\source\repos\hello-world-nodejs
+cd C:\Users\kaplana\source\repos\DeployAssist
 
 # Install required database packages
 npm install pg @types/pg pg-pool redis @types/redis db-migrate db-migrate-pg knex uuid @types/uuid

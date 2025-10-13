@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides technical details for the Atlassian and Salesforce integrations in the hello-world-nodejs application.
+This document provides technical details for the Atlassian and Salesforce integrations in the DeployAssist application.
 
 ---
 

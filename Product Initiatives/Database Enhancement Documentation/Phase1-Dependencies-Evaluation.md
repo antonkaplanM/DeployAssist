@@ -131,7 +131,7 @@ redis-server --version
 
 ```bash
 # Navigate to project directory
-cd C:\Users\kaplana\source\repos\hello-world-nodejs
+cd C:\Users\kaplana\source\repos\DeployAssist
 
 # Install new database dependencies
 npm install pg @types/pg pg-pool redis @types/redis db-migrate db-migrate-pg knex uuid @types/uuid

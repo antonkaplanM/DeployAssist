@@ -155,7 +155,7 @@ save 60 10000
 
 ```bash
 # Navigate to application directory
-cd /path/to/hello-world-nodejs
+cd /path/to/DeployAssist
 
 # Install PostgreSQL driver
 npm install pg @types/pg

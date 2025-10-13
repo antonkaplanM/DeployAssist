@@ -294,7 +294,7 @@ External APIs (Salesforce, Jira)
 
 ```powershell
 # From project root
-cd "C:\Users\kaplana\source\repos\hello-world-nodejs"
+cd "C:\Users\kaplana\source\repos\DeployAssist"
 
 # Archive database documentation
 New-Item -ItemType Directory -Force -Path "archive/database-initiative"

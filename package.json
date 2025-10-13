@@ -1,5 +1,5 @@
 {
-  "name": "deployment-assistant",
+  "name": "deploy-assist",
   "version": "1.0.0",
   "description": "A deployment assistant app with Node.js and modern UI",
   "main": "app.js",
@@ -64,7 +64,7 @@
   "keywords": [
     "nodejs",
     "express",
-    "deployment-assistant",
+    "deploy-assist",
     "integrations"
   ],
   "author": "",
