@@ -13,6 +13,7 @@ import { errorHandler, notFoundHandler } from './middleware/errors';
 
 // Import routes
 import salesforceRoutes from './routes/salesforce.routes';
+import smlRoutes from './routes/sml.routes';
 
 /**
  * Initialize and configure the Express application
@@ -62,6 +63,9 @@ async function createApp(): Promise<Express> {
 
   // Salesforce routes
   app.use('/api/salesforce', salesforceRoutes);
+
+  // SML routes
+  app.use('/api/sml', smlRoutes);
 
   // ===== Error Handling =====
 

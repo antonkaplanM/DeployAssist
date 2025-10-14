@@ -1954,6 +1954,18 @@ function setupSettingsEventListeners() {
         testSalesforceButton.addEventListener('click', testSalesforceConnection);
     }
     
+    // SML Integration event listeners
+    const saveSMLConfigButton = document.getElementById('save-sml-config');
+    const testSMLConnectionButton = document.getElementById('test-sml-connection');
+    
+    if (saveSMLConfigButton) {
+        saveSMLConfigButton.addEventListener('click', saveSMLConfiguration);
+    }
+    
+    if (testSMLConnectionButton) {
+        testSMLConnectionButton.addEventListener('click', testSMLConnection);
+    }
+    
     // Auto-refresh interval control
     if (autoRefreshIntervalSelect) {
         autoRefreshIntervalSelect.addEventListener('change', handleAutoRefreshIntervalChange);
@@ -4257,6 +4269,245 @@ async function testSalesforceConnection() {
                 <path d="M9.5 12.5 11 14l4-4"></path>
             </svg>
             Test Salesforce
+        `;
+    }
+}
+
+// ============================================================================
+// SML INTEGRATION FUNCTIONS
+// ============================================================================
+
+// Save SML Configuration
+async function saveSMLConfiguration() {
+    const button = document.getElementById('save-sml-config');
+    const resultsDiv = document.getElementById('sml-config-results');
+    const environmentSelect = document.getElementById('sml-environment');
+    const authCookieInput = document.getElementById('sml-auth-cookie');
+    
+    if (!button || !resultsDiv || !environmentSelect || !authCookieInput) return;
+    
+    const environment = environmentSelect.value;
+    const authCookie = authCookieInput.value.trim();
+    
+    // Validate input
+    if (!authCookie) {
+        resultsDiv.classList.remove('hidden');
+        resultsDiv.innerHTML = `
+            <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 class="font-medium text-destructive">Validation Error</h4>
+                </div>
+                <p class="text-sm text-muted-foreground">Please provide a Bearer token.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Clean up token if user accidentally included "Bearer " prefix
+    const cleanToken = authCookie.trim().replace(/^Bearer\s+/i, '');
+    
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = `
+        <div class="loading-spinner w-4 h-4 mr-2"></div>
+        Saving...
+    `;
+    
+    resultsDiv.classList.remove('hidden');
+    resultsDiv.innerHTML = `
+        <div class="text-center py-4">
+            <div class="loading-spinner mx-auto mb-2"></div>
+            <p class="text-sm text-muted-foreground">Saving configuration...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/sml/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                environment,
+                authCookie: cleanToken
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <h4 class="font-medium text-green-900">Configuration Saved</h4>
+                    </div>
+                    <p class="text-sm text-green-800">SML authentication configured for ${data.environment.toUpperCase()}</p>
+                    <p class="text-xs text-green-700 mt-2">✅ You can now test the connection</p>
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 class="font-medium text-destructive">Save Failed</h4>
+                    </div>
+                    <p class="text-sm text-muted-foreground">${data.error || 'Unknown error occurred'}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('SML configuration save failed:', error);
+        resultsDiv.innerHTML = `
+            <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 class="font-medium text-destructive">Connection Error</h4>
+                </div>
+                <p class="text-sm text-muted-foreground">Failed to save configuration: ${error.message}</p>
+            </div>
+        `;
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+        button.innerHTML = `
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save Configuration
+        `;
+    }
+}
+
+// Test SML Connection
+async function testSMLConnection() {
+    const button = document.getElementById('test-sml-connection');
+    const resultsDiv = document.getElementById('sml-config-results');
+    const environmentSelect = document.getElementById('sml-environment');
+    const authCookieInput = document.getElementById('sml-auth-cookie');
+    
+    if (!button || !resultsDiv || !environmentSelect || !authCookieInput) return;
+    
+    const environment = environmentSelect.value;
+    const authCookie = authCookieInput.value.trim();
+    
+    // Validate
+    if (!authCookie) {
+        resultsDiv.classList.remove('hidden');
+        resultsDiv.innerHTML = `
+            <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p class="text-sm text-muted-foreground">Please provide a Bearer token first.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Clean up token
+    const cleanToken = authCookie.trim().replace(/^Bearer\s+/i, '');
+    
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = `
+        <div class="loading-spinner w-4 h-4 mr-2"></div>
+        Testing...
+    `;
+    
+    resultsDiv.classList.remove('hidden');
+    resultsDiv.innerHTML = `
+        <div class="text-center py-4">
+            <div class="loading-spinner mx-auto mb-2"></div>
+            <p class="text-sm text-muted-foreground">Testing SML connection...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/sml/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                environment,
+                authCookie: cleanToken
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <h4 class="font-medium text-green-900">Connection Successful</h4>
+                    </div>
+                    <div class="text-sm space-y-1">
+                        <p class="text-green-800"><strong>Environment:</strong> ${data.environment?.toUpperCase()}</p>
+                        <p class="text-green-800"><strong>Base URL:</strong> ${data.baseUrl}</p>
+                        <p class="text-green-800"><strong>Authenticated:</strong> Yes</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            let detailsHtml = '';
+            if (data.details) {
+                if (data.details.statusCode) {
+                    detailsHtml += `<p class="text-xs mt-2">Status Code: ${data.details.statusCode}</p>`;
+                }
+                if (data.details.responsePreview) {
+                    detailsHtml += `<details class="mt-2"><summary class="text-xs cursor-pointer">API Response Preview</summary><pre class="text-xs mt-1 p-2 bg-muted rounded overflow-x-auto">${data.details.responsePreview}</pre></details>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 class="font-medium text-destructive">Connection Failed</h4>
+                    </div>
+                    <p class="text-sm text-muted-foreground">${data.error || 'Unable to connect to SML API'}</p>
+                    ${data.error && data.error.includes('expired') ? '<p class="text-sm text-yellow-800 mt-2">💡 The Bearer token may have expired. Please get a fresh token from the Network tab.</p>' : ''}
+                    ${detailsHtml}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('SML connection test failed:', error);
+        resultsDiv.innerHTML = `
+            <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="h-4 w-4 text-destructive" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 class="font-medium text-destructive">Connection Error</h4>
+                </div>
+                <p class="text-sm text-muted-foreground">Failed to test connection: ${error.message}</p>
+            </div>
+        `;
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+        button.innerHTML = `
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
+                <path d="M9.5 12.5 11 14l4-4"></path>
+            </svg>
+            Test Connection
         `;
     }
 }
@@ -8770,27 +9021,136 @@ async function loadCustomerProducts(accountName) {
         showCustomerProductsLoading(true);
         hideCustomerProductsSearchResults();
         
-        const response = await fetch(`/api/customer-products?account=${encodeURIComponent(accountName)}`);
-        const data = await response.json();
+        // First, get tenant information from Salesforce
+        const sfResponse = await fetch(`/api/provisioning/requests?search=${encodeURIComponent(accountName)}&pageSize=10`);
+        const sfData = await sfResponse.json();
+        
+        if (!sfData.success || !sfData.records || sfData.records.length === 0) {
+            throw new Error('No records found for this account');
+        }
+        
+        // Find tenant name from the most recent record
+        let tenantName = null;
+        let tenantId = null;
+        
+        for (const record of sfData.records) {
+            if (record.Tenant_Name__c) {
+                tenantName = record.Tenant_Name__c;
+                tenantId = record.Tenant_Name__c; // In many cases, tenant ID is same as tenant name
+                break;
+            } else if (record.parsedPayload && record.parsedPayload.tenantName) {
+                tenantName = record.parsedPayload.tenantName;
+                tenantId = record.parsedPayload.tenantName;
+                break;
+            }
+        }
+        
+        if (!tenantId) {
+            throw new Error('Could not find tenant information for this account');
+        }
+        
+        console.log(`Found tenant: ${tenantName} (${tenantId})`);
+        
+        // Fetch SML data through server proxy
+        const smlResponse = await fetch(`/api/sml/tenant/${encodeURIComponent(tenantId)}/products?tenantName=${encodeURIComponent(tenantName || tenantId)}`);
+        const smlData = await smlResponse.json();
         
         showCustomerProductsLoading(false);
         
-        if (data.success) {
+        if (smlData.success) {
+            // Transform SML data to match the existing UI structure
+            const transformedData = transformSMLDataForUI(accountName, tenantName, smlData);
+            
             currentCustomerProducts = {
                 accountName: accountName,
-                data: data
+                tenantName: tenantName,
+                data: transformedData
             };
             
-            renderCustomerProducts(data);
+            renderCustomerProducts(transformedData);
         } else {
-            console.error('Error loading customer products:', data.error);
-            showCustomerProductsError(data.error);
+            console.error('Error loading SML products:', smlData.error);
+            
+            // Show error with helpful message
+            if (smlData.error && smlData.error.includes('not configured')) {
+                showCustomerProductsError('SML integration not configured. Please configure it in Settings.');
+            } else if (smlData.error && smlData.error.includes('expired')) {
+                showCustomerProductsError('SML authentication expired. Please refresh the Bearer token in Settings.');
+            } else {
+                showCustomerProductsError(smlData.error || 'Failed to load products from SML');
+            }
         }
     } catch (error) {
         console.error('Error loading customer products:', error);
         showCustomerProductsLoading(false);
-        showCustomerProductsError('Failed to load customer products');
+        showCustomerProductsError(error.message || 'Failed to load customer products');
     }
+}
+
+// Transform SML data to match existing UI structure
+function transformSMLDataForUI(accountName, tenantName, smlData) {
+    // The SML data structure has products organized by category
+    const { products, summary, fetchedAt } = smlData;
+    
+    // Group products by region (if we have region info, otherwise use "Unknown")
+    const productsByRegion = {};
+    
+    ['apps', 'models', 'data'].forEach(category => {
+        const categoryProducts = products[category] || [];
+        
+        categoryProducts.forEach(product => {
+            // For now, we'll use a single "SML Environment" region since region info might not be in the product
+            // You can enhance this later if region information becomes available
+            const region = 'SML Environment';
+            
+            if (!productsByRegion[region]) {
+                productsByRegion[region] = {
+                    models: [],
+                    data: [],
+                    apps: []
+                };
+            }
+            
+            // Transform the product to match the existing UI structure
+            const transformedProduct = {
+                productCode: product.productCode,
+                productName: product.productName || product.productCode,
+                packageName: null,
+                category: category,
+                region: region,
+                startDate: product.startDate,
+                endDate: product.endDate,
+                status: product.status,
+                daysRemaining: product.daysRemaining,
+                sourcePSRecords: [], // SML doesn't provide PS record references
+                isDataBridge: false,
+                source: 'SML' // Mark as coming from SML
+            };
+            
+            productsByRegion[region][category].push(transformedProduct);
+        });
+    });
+    
+    return {
+        success: true,
+        account: accountName,
+        tenantName: tenantName,
+        summary: {
+            totalActive: summary.totalActive,
+            byCategory: {
+                models: summary.byCategory.models,
+                data: summary.byCategory.data,
+                apps: summary.byCategory.apps
+            }
+        },
+        productsByRegion: productsByRegion,
+        lastUpdated: {
+            psRecordId: 'SML',
+            date: fetchedAt
+        },
+        psRecordsAnalyzed: 0,
+        source: 'SML'
+    };
 }
 
 // Show/hide loading state

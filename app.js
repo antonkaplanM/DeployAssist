@@ -12,6 +12,7 @@ const { spawn } = require('child_process');
 const https = require('https');
 const salesforce = require('./salesforce');
 const db = require('./database');
+const smlRoutes = require('./sml-routes');
 
 // Environment variables helper
 function getMissingAtlassianEnvVars() {
@@ -690,6 +691,9 @@ app.get('/api/test-salesforce', async (req, res) => {
         });
     }
 });
+
+// SML Integration Routes
+app.use('/api/sml', smlRoutes);
 
 // Test web connectivity endpoint
 app.get('/api/test-web-connectivity', async (req, res) => {
