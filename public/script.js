@@ -3522,8 +3522,8 @@ function renderProductItems(items, groupType, validationResult = null) {
                 const packageName = item.packageName || item.package_name || item.PackageName;
                 const productCode = item.productCode || item.product_code || item.ProductCode;
                 
-                // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA don't require package names
-                const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || productCode === 'RI-COMETA';
+                // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, RI-COMETA, and DATAAPI-BULK-GEOCODE don't require package names
+                const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || productCode === 'RI-COMETA' || productCode === 'DATAAPI-BULK-GEOCODE';
                 
                 // An app fails if packageName is missing or empty, UNLESS it's an exception product
                 if ((!packageName || packageName.trim() === '') && !isException) {
@@ -5161,7 +5161,18 @@ function getProductsDisplay(request, validationResult = null) {
                 }
             }
             
-            const outliveClass = (hasAppOverlap || hasAppGap || hasAppQuantityFailure) ? 'ring-2 ring-red-400' : '';
+            // Check for app package name validation failures
+            let hasAppPackageNameFailure = false;
+            if (validationResult && validationResult.overallStatus === 'FAIL') {
+                const appPackageNameRule = validationResult.ruleResults.find(rule => 
+                    rule.ruleId === 'app-package-name-validation' && rule.status === 'FAIL'
+                );
+                if (appPackageNameRule) {
+                    hasAppPackageNameFailure = true;
+                }
+            }
+            
+            const outliveClass = (hasAppOverlap || hasAppGap || hasAppQuantityFailure || hasAppPackageNameFailure) ? 'ring-2 ring-red-400' : '';
             
             groups.push(`
                 <button 

@@ -292,6 +292,34 @@ async function queryProfServicesRequests(filters = {}) {
         const fetchPageSize = shouldFetchMore ? 1000 : pageSize; // Fetch more records when status filter is active
         const fetchOffset = shouldFetchMore ? 0 : offset; // Always start from 0 when we need to filter server-side
         
+        // Build WHERE clause for filters
+        let whereClause = `WHERE Name LIKE 'PS-%'`;
+        
+        // Add filters (but NOT status - we'll filter that server-side)
+        if (filters.startDate) {
+            whereClause += ` AND CreatedDate >= ${filters.startDate}`;
+        }
+        if (filters.endDate) {
+            whereClause += ` AND CreatedDate <= ${filters.endDate}`;
+        }
+        if (filters.requestType) {
+            whereClause += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
+        }
+        if (filters.search) {
+            whereClause += ` AND (Name LIKE '%${filters.search.replace(/'/g, "\\'")}%' OR Account__c LIKE '%${filters.search.replace(/'/g, "\\'")}%')`;
+        }
+        
+        // First, get total count (only when not filtering by status)
+        let totalRecordsCount = 0;
+        if (!shouldFetchMore) {
+            const countSoql = `SELECT COUNT() FROM Prof_Services_Request__c ${whereClause}`;
+            console.log('📊 Executing COUNT query:', countSoql);
+            const countResult = await conn.query(countSoql);
+            totalRecordsCount = countResult.totalSize;
+            console.log(`✅ Total records matching filters: ${totalRecordsCount}`);
+        }
+        
+        // Build main query
         let soql = `
             SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
@@ -300,24 +328,9 @@ async function queryProfServicesRequests(filters = {}) {
                    SMLErrorMessage__c,
                    CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
-            WHERE Name LIKE 'PS-%'
+            ${whereClause}
+            ORDER BY CreatedDate DESC LIMIT ${fetchPageSize} OFFSET ${fetchOffset}
         `;
-        
-        // Add filters (but NOT status - we'll filter that server-side)
-        if (filters.startDate) {
-            soql += ` AND CreatedDate >= ${filters.startDate}`;
-        }
-        if (filters.endDate) {
-            soql += ` AND CreatedDate <= ${filters.endDate}`;
-        }
-        if (filters.requestType) {
-            soql += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
-        }
-        if (filters.search) {
-            soql += ` AND (Name LIKE '%${filters.search.replace(/'/g, "\\'")}%' OR Account__c LIKE '%${filters.search.replace(/'/g, "\\'")}%')`;
-        }
-        
-        soql += ` ORDER BY CreatedDate DESC LIMIT ${fetchPageSize} OFFSET ${fetchOffset}`;
         
         console.log('📊 Executing SOQL for Prof Services Requests:', soql);
         const result = await conn.query(soql);
@@ -343,7 +356,8 @@ async function queryProfServicesRequests(filters = {}) {
         }
         
         // Calculate pagination for filtered results
-        const totalCount = processedRecords.length;
+        // Use the count query result when not filtering by status, otherwise use the filtered records length
+        const totalCount = shouldFetchMore ? processedRecords.length : totalRecordsCount;
         const paginatedRecords = shouldFetchMore ? processedRecords.slice(offset, offset + pageSize) : processedRecords;
         const hasMore = (offset + pageSize) < totalCount;
         const currentPage = Math.floor(offset / pageSize) + 1;

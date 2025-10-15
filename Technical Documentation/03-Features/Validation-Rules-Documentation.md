@@ -199,7 +199,8 @@ For each app entitlement in the `appEntitlements` array:
   - Package name field exists and is not empty, OR
   - Product code equals "DATAAPI-LOCINTEL" (exception - no package name required), OR
   - Product code equals "IC-RISKDATALAKE" (exception - no package name required), OR
-  - Product code equals "RI-COMETA" (exception - no package name required)
+  - Product code equals "RI-COMETA" (exception - no package name required), OR
+  - Product code equals "DATAAPI-BULK-GEOCODE" (exception - no package name required)
 - **FAIL Condition**: Package name is missing, null, undefined, or empty string AND product code is NOT an exception
 
 **Overall Result**:
@@ -248,6 +249,7 @@ For each app entitlement in the `appEntitlements` array:
 - ✅ **PASS**: App with productCode = "DATAAPI-LOCINTEL" has no package name (exception)
 - ✅ **PASS**: App with productCode = "IC-RISKDATALAKE" has no package name (exception)
 - ✅ **PASS**: App with productCode = "RI-COMETA" has no package name (exception)
+- ✅ **PASS**: App with productCode = "DATAAPI-BULK-GEOCODE" has no package name (exception)
 - ✅ **PASS**: No app entitlements in payload (nothing to validate)
 
 **UI Highlighting**:

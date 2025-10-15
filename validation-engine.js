@@ -50,8 +50,8 @@ const DEFAULT_VALIDATION_RULES = [
     {
         id: 'app-package-name-validation',
         name: 'App Package Name Validation',
-        description: 'Fails if an app entitlement is missing a package name, except DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA',
-        longDescription: 'Validates that each app entitlement in the payload has a package name field with a non-empty value. This ensures that all app deployments have the required package information. Exception: DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA products do not require a package name.',
+        description: 'Fails if an app entitlement is missing a package name, except DATAAPI-LOCINTEL, IC-RISKDATALAKE, RI-COMETA, and DATAAPI-BULK-GEOCODE',
+        longDescription: 'Validates that each app entitlement in the payload has a package name field with a non-empty value. This ensures that all app deployments have the required package information. Exception: DATAAPI-LOCINTEL, IC-RISKDATALAKE, RI-COMETA, and DATAAPI-BULK-GEOCODE products do not require a package name.',
         enabled: true,
         category: 'product-validation',
         version: '1.0',
@@ -671,8 +671,8 @@ class ValidationEngine {
 
             console.log(`[VALIDATION] Checking app package name: ${appName}, packageName: ${packageName}, productCode: ${productCode}`);
 
-            // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA don't require package names
-            const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || productCode === 'RI-COMETA';
+            // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, RI-COMETA, and DATAAPI-BULK-GEOCODE don't require package names
+            const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || productCode === 'RI-COMETA' || productCode === 'DATAAPI-BULK-GEOCODE';
             
             // Rule logic: Fail if packageName is missing, null, undefined, or empty string
             // BUT pass if it's an exception product
