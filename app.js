@@ -1719,9 +1719,23 @@ app.get('/api/ghost-accounts', async (req, res) => {
         const summaryResult = await db.getGhostAccountsSummary();
         
         if (result.success) {
+            // Fetch MA Account IDs for all ghost accounts
+            const accountNames = result.ghostAccounts.map(acc => acc.account_name);
+            const externalIdsResult = await salesforce.getAccountExternalIds(accountNames);
+            
+            // Enrich ghost accounts with MA SF Links
+            // accountIds contains MA Account IDs from Account.MA_AccountID__c field
+            const enrichedGhostAccounts = result.ghostAccounts.map(account => ({
+                ...account,
+                ma_sf_account_id: externalIdsResult.accountIds[account.account_name] || null,
+                ma_sf_link: externalIdsResult.accountIds[account.account_name] 
+                    ? `https://moodysanalytics.my.salesforce.com/${externalIdsResult.accountIds[account.account_name]}`
+                    : null
+            }));
+            
             res.json({
                 success: true,
-                ghostAccounts: result.ghostAccounts,
+                ghostAccounts: enrichedGhostAccounts,
                 summary: summaryResult.success ? summaryResult.summary : {
                     totalGhostAccounts: 0,
                     unreviewed: 0,

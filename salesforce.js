@@ -2427,6 +2427,118 @@ async function getRecentlyDeprovisionedAccounts(daysBack = 30) {
     }
 }
 
+/**
+ * Get MA Account IDs from Account object (now that we have access)
+ * This is used to generate links to the MA Salesforce instance
+ * @param {Array<string>} accountNames - Array of account names to look up
+ * @returns {Object} - Map of account names to their MA Account IDs
+ */
+async function getAccountExternalIds(accountNames) {
+    try {
+        if (!accountNames || accountNames.length === 0) {
+            return { success: true, accountIds: {} };
+        }
+
+        console.log(`🔍 Looking up MA Account IDs for ${accountNames.length} account(s)...`);
+        
+        const conn = await getConnection();
+        
+        // Step 1: Get PS records with Account_Salesforce_ID__c for each account
+        // Account_Salesforce_ID__c is the Account object's Id
+        const escapedNames = accountNames.map(name => 
+            `'${name.replace(/'/g, "\\'")}'`
+        ).join(', ');
+        
+        const psQuery = `
+            SELECT Account__c, Account_Salesforce_ID__c, CreatedDate
+            FROM Prof_Services_Request__c
+            WHERE Account__c IN (${escapedNames})
+            AND Account_Salesforce_ID__c != null
+            AND Name LIKE 'PS-%'
+            ORDER BY CreatedDate DESC
+            LIMIT 1000
+        `;
+        
+        console.log(`📊 Step 1: Fetching PS records with Account_Salesforce_ID__c...`);
+        const psResult = await conn.query(psQuery);
+        const psRecords = psResult.records || [];
+        
+        console.log(`✅ Found ${psRecords.length} PS record(s) with Account IDs`);
+        
+        // Build map of account name to Account Id (use most recent)
+        const accountToIdMap = {};
+        psRecords.forEach(record => {
+            const accountName = record.Account__c;
+            if (!accountToIdMap[accountName] && record.Account_Salesforce_ID__c) {
+                accountToIdMap[accountName] = record.Account_Salesforce_ID__c;
+            }
+        });
+        
+        // Step 2: Query Account object to get MA_AccountID__c
+        const accountIds = Object.values(accountToIdMap);
+        
+        if (accountIds.length === 0) {
+            console.log('⚠️  No Account IDs found for any accounts');
+            return { success: true, accountIds: {} };
+        }
+        
+        const escapedAccountIds = accountIds.map(id => `'${id}'`).join(', ');
+        
+        const accountQuery = `
+            SELECT Id, Name, MA_AccountID__c
+            FROM Account
+            WHERE Id IN (${escapedAccountIds})
+            AND MA_AccountID__c != null
+        `;
+        
+        console.log(`📊 Step 2: Querying Account object for MA_AccountID__c...`);
+        const accountResult = await conn.query(accountQuery);
+        const accounts = accountResult.records || [];
+        
+        console.log(`✅ Found ${accounts.length} Account record(s) with MA_AccountID__c`);
+        
+        // Build map of Account Id to MA_AccountID__c
+        const accountIdToMAIdMap = {};
+        accounts.forEach(account => {
+            if (account.MA_AccountID__c) {
+                accountIdToMAIdMap[account.Id] = account.MA_AccountID__c;
+                console.log(`   📌 ${account.Name} -> ${account.MA_AccountID__c}`);
+            }
+        });
+        
+        // Step 3: Map account names to MA Account IDs
+        const accountIdsMap = {};
+        Object.entries(accountToIdMap).forEach(([accountName, accountId]) => {
+            if (accountIdToMAIdMap[accountId]) {
+                accountIdsMap[accountName] = accountIdToMAIdMap[accountId];
+                console.log(`   🔗 ${accountName} -> ${accountIdToMAIdMap[accountId]}`);
+            } else {
+                console.log(`   ⚠️  ${accountName} has no MA_AccountID__c`);
+            }
+        });
+        
+        // Log accounts that weren't found
+        accountNames.forEach(name => {
+            if (!accountIdsMap[name]) {
+                console.log(`   ⚠️  ${name} has no MA Account ID`);
+            }
+        });
+        
+        return {
+            success: true,
+            accountIds: accountIdsMap
+        };
+        
+    } catch (error) {
+        console.error('❌ Error fetching MA Account IDs:', error.message);
+        return {
+            success: false,
+            error: error.message,
+            accountIds: {}
+        };
+    }
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -2456,5 +2568,6 @@ module.exports = {
     syncAllAccountsFromSalesforce,
     analyzeAccountForGhostStatus,
     identifyGhostAccounts,
-    getRecentlyDeprovisionedAccounts
+    getRecentlyDeprovisionedAccounts,
+    getAccountExternalIds
 };

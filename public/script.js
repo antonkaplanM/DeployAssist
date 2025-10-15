@@ -10031,7 +10031,7 @@ async function loadGhostAccountsData() {
     if (statusEl) statusEl.textContent = 'Loading...';
     tableBody.innerHTML = `
         <tr>
-            <td colspan="5" class="p-8 text-center">
+            <td colspan="6" class="p-8 text-center">
                 <div class="loading-spinner mx-auto mb-2"></div>
                 <div class="text-sm text-muted-foreground">Loading ghost accounts...</div>
             </td>
@@ -10081,7 +10081,7 @@ async function loadGhostAccountsData() {
             console.error('[GhostAccounts] Error loading data:', data.error);
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="p-8 text-center text-red-600">
+                    <td colspan="6" class="p-8 text-center text-red-600">
                         Error loading ghost accounts: ${data.error || 'Unknown error'}
                     </td>
                 </tr>
@@ -10092,7 +10092,7 @@ async function loadGhostAccountsData() {
         console.error('[GhostAccounts] Error:', error);
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="p-8 text-center text-red-600">
+                <td colspan="6" class="p-8 text-center text-red-600">
                     Failed to load ghost accounts. Check console for details.
                 </td>
             </tr>
@@ -10122,7 +10122,7 @@ function renderGhostAccountsTable() {
     if (filteredGhostAccountsData.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="p-8 text-center text-muted-foreground">
+                <td colspan="6" class="p-8 text-center text-muted-foreground">
                     No ghost accounts match the current filters.
                 </td>
             </tr>
@@ -10148,6 +10148,26 @@ function renderGhostAccountsTable() {
                 <td class="p-4">
                     <div class="text-sm">${expiryDate.toLocaleDateString()}</div>
                     <div class="text-xs text-muted-foreground">${daysSinceExpiry} days ago</div>
+                </td>
+                <td class="p-4">
+                    ${account.ma_sf_link ? `
+                        <a 
+                            href="${account.ma_sf_link}" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                            title="Open in MA Salesforce"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            View in MA SF
+                        </a>
+                    ` : `
+                        <span class="text-xs text-muted-foreground">Not found</span>
+                    `}
                 </td>
                 <td class="p-4">
                     ${account.is_reviewed ? `
@@ -10329,6 +10349,8 @@ function exportGhostAccountsToExcel() {
                 'Expired Products': account.total_expired_products || 0,
                 'Latest Expiry Date': expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
                 'Days Since Expiry': daysSinceExpiry,
+                'MA SF Account ID': account.ma_sf_account_id || '',
+                'MA SF Link': account.ma_sf_link || '',
                 'Review Status': account.is_reviewed ? 'Reviewed' : 'Needs Review',
                 'Reviewed By': account.reviewed_by || '',
                 'Reviewed At': account.reviewed_at ? new Date(account.reviewed_at).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '',
@@ -10350,6 +10372,8 @@ function exportGhostAccountsToExcel() {
             { wch: 16 },  // Expired Products
             { wch: 18 },  // Latest Expiry Date
             { wch: 18 },  // Days Since Expiry
+            { wch: 20 },  // MA SF Account ID
+            { wch: 60 },  // MA SF Link
             { wch: 15 },  // Review Status
             { wch: 20 },  // Reviewed By
             { wch: 15 },  // Reviewed At
