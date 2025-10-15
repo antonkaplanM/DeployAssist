@@ -3511,6 +3511,25 @@ function renderProductItems(items, groupType, validationResult = null) {
                     return true;
                 }
             }
+            
+            // Look for app package name validation failures (only for apps groupType)
+            const appPackageNameRule = validationResult.ruleResults?.find(rule => 
+                rule.ruleId === 'app-package-name-validation' && rule.status === 'FAIL'
+            );
+            
+            if (appPackageNameRule?.details?.failures && appPackageNameRule.details.failures.length > 0) {
+                // Check if this specific app failed - missing package name
+                const packageName = item.packageName || item.package_name || item.PackageName;
+                const productCode = item.productCode || item.product_code || item.ProductCode;
+                
+                // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA don't require package names
+                const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || productCode === 'RI-COMETA';
+                
+                // An app fails if packageName is missing or empty, UNLESS it's an exception product
+                if ((!packageName || packageName.trim() === '') && !isException) {
+                    return true;
+                }
+            }
         }
         
         return false;

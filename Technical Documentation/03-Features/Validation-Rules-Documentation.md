@@ -187,6 +187,72 @@ For entitlements with the same `productCode`:
 - ✅ **PASS**: Single date range 2025-01-01 to 2025-12-31 (no other ranges to compare)
 - ❌ **FAIL**: Product A has gap, Product B has no gap → FAIL overall (Product A failed)
 
+### 5. App Package Name Validation
+
+**Rule ID**: `app-package-name-validation`
+
+**Purpose**: Ensures all app entitlements have a package name specified, which is required for proper deployment configuration.
+
+**Logic**:
+For each app entitlement in the `appEntitlements` array:
+- **PASS Conditions**:
+  - Package name field exists and is not empty, OR
+  - Product code equals "DATAAPI-LOCINTEL" (exception - no package name required), OR
+  - Product code equals "IC-RISKDATALAKE" (exception - no package name required), OR
+  - Product code equals "RI-COMETA" (exception - no package name required)
+- **FAIL Condition**: Package name is missing, null, undefined, or empty string AND product code is NOT an exception
+
+**Overall Result**:
+- **PASS**: All app entitlements have package names OR are exception products
+- **FAIL**: One or more app entitlements (non-exception) missing package name
+
+**Data Structure**:
+```json
+{
+  "properties": {
+    "provisioningDetail": {
+      "entitlements": {
+        "appEntitlements": [
+          {
+            "productCode": "RI-COD-STN",
+            "packageName": "com.company.app",
+            "quantity": 1,
+            "startDate": "2025-01-01",
+            "endDate": "2025-12-31"
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+**Implementation Details**:
+- Checks multiple possible field name variations (`packageName`, `package_name`, `PackageName`)
+- Validates that the package name is not empty or whitespace-only
+- Provides detailed failure information including product code and app name
+- Highlights failed app entries in the Monitor page with red background
+- Works with the same data structure as other app-level validations
+
+**Error Handling**:
+- Missing `Payload_Data__c` field → PASS
+- Malformed JSON → PASS
+- Missing `appEntitlements` array → PASS
+- Validation logic errors → PASS
+- Only explicit missing package names result in FAIL status
+
+**Example Scenarios**:
+- ✅ **PASS**: App has packageName = "com.company.product"
+- ❌ **FAIL**: App has packageName = null or empty string "" (non-exception product)
+- ❌ **FAIL**: App has no packageName field at all (non-exception product)
+- ✅ **PASS**: App with productCode = "DATAAPI-LOCINTEL" has no package name (exception)
+- ✅ **PASS**: App with productCode = "IC-RISKDATALAKE" has no package name (exception)
+- ✅ **PASS**: App with productCode = "RI-COMETA" has no package name (exception)
+- ✅ **PASS**: No app entitlements in payload (nothing to validate)
+
+**UI Highlighting**:
+When this rule fails, the affected app entitlement rows in the Monitor page product modal will be highlighted with a red background (`bg-red-25 border-red-200`), making it easy to identify which specific apps are missing package names.
+
 ## Configuration Management
 
 ### Storage Location
@@ -394,6 +460,13 @@ Updates enabled state of a specific rule.
 - `enabled`: New enabled state (boolean)
 
 ## Version History
+
+### Version 1.2 (2025-10-15)
+- Added App Package Name Validation rule
+- Validates that all app entitlements have package names
+- Highlights missing package names in Monitor page UI
+- Prevents deployment issues from missing package configuration
+- Added to Settings page validation rules section
 
 ### Version 1.1 (2025-10-13)
 - Added Entitlement Date Gap Validation rule

@@ -46,6 +46,16 @@ const DEFAULT_VALIDATION_RULES = [
         category: 'date-validation',
         version: '1.0',
         createdDate: '2025-10-13'
+    },
+    {
+        id: 'app-package-name-validation',
+        name: 'App Package Name Validation',
+        description: 'Fails if an app entitlement is missing a package name, except DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA',
+        longDescription: 'Validates that each app entitlement in the payload has a package name field with a non-empty value. This ensures that all app deployments have the required package information. Exception: DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA products do not require a package name.',
+        enabled: true,
+        category: 'product-validation',
+        version: '1.0',
+        createdDate: '2025-10-15'
     }
 ];
 
@@ -120,6 +130,8 @@ class ValidationEngine {
                     return this.validateEntitlementDateOverlap(payload, record);
                 case 'entitlement-date-gap-validation':
                     return this.validateEntitlementDateGaps(payload, record);
+                case 'app-package-name-validation':
+                    return this.validateAppPackageNames(payload, record);
                 default:
                     console.warn(`[VALIDATION] Unknown rule: ${rule.id}`);
                     return { 
@@ -611,6 +623,88 @@ class ValidationEngine {
 
         return {
             ruleId: 'entitlement-date-gap-validation',
+            status,
+            message,
+            details
+        };
+    }
+
+    /**
+     * Validates app package names according to the package name rule
+     * Rule: Fail if any app entitlement is missing a package name
+     */
+    static validateAppPackageNames(payload, record) {
+        // Navigate to appEntitlements - try multiple possible paths
+        const appEntitlements = payload?.properties?.provisioningDetail?.entitlements?.appEntitlements ||
+                               payload?.entitlements?.appEntitlements ||
+                               payload?.appEntitlements ||
+                               [];
+
+        if (!Array.isArray(appEntitlements)) {
+            console.log(`[VALIDATION] No app entitlements array found for record ${record.Id}, defaulting to PASS`);
+            return {
+                ruleId: 'app-package-name-validation',
+                status: 'PASS',
+                message: 'No app entitlements found',
+                details: {
+                    totalCount: 0,
+                    passCount: 0,
+                    failCount: 0,
+                    failures: []
+                }
+            };
+        }
+
+        const failures = [];
+        const details = {
+            totalCount: appEntitlements.length,
+            passCount: 0,
+            failCount: 0,
+            failures: []
+        };
+
+        for (let i = 0; i < appEntitlements.length; i++) {
+            const app = appEntitlements[i];
+            const packageName = app.packageName || app.package_name || app.PackageName;
+            const productCode = app.productCode || app.product_code || app.ProductCode;
+            const appName = app.name || app.productName || productCode || `App-${i + 1}`;
+
+            console.log(`[VALIDATION] Checking app package name: ${appName}, packageName: ${packageName}, productCode: ${productCode}`);
+
+            // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, and RI-COMETA don't require package names
+            const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || productCode === 'RI-COMETA';
+            
+            // Rule logic: Fail if packageName is missing, null, undefined, or empty string
+            // BUT pass if it's an exception product
+            if (!packageName || packageName.trim() === '') {
+                if (isException) {
+                    details.passCount++;
+                    console.log(`[VALIDATION] App ${appName} passed: exception product (${productCode}) does not require package name`);
+                } else {
+                    details.failCount++;
+                    const failureMessage = `${appName} (${productCode || 'Unknown'}): missing package name`;
+                    failures.push(failureMessage);
+                    details.failures.push({
+                        appName,
+                        productCode,
+                        index: i,
+                        reason: 'Package name is missing or empty'
+                    });
+                    console.log(`[VALIDATION] App ${appName} failed: ${failureMessage}`);
+                }
+            } else {
+                details.passCount++;
+                console.log(`[VALIDATION] App ${appName} passed: packageName=${packageName}`);
+            }
+        }
+
+        const status = failures.length === 0 ? 'PASS' : 'FAIL';
+        const message = status === 'PASS' 
+            ? `All ${details.totalCount} app entitlements have package names`
+            : `${details.failCount} of ${details.totalCount} app entitlements missing package name: ${failures.join('; ')}`;
+
+        return {
+            ruleId: 'app-package-name-validation',
             status,
             message,
             details
