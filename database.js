@@ -937,6 +937,431 @@ async function clearPackages() {
     }
 }
 
+// ===== PACKAGE CHANGE ANALYSIS FUNCTIONS =====
+
+/**
+ * Clear package change cache
+ * @returns {Promise<Object>} Result
+ */
+async function clearPackageChangeCache() {
+    try {
+        const result = await pool.query('DELETE FROM package_change_analysis');
+        console.log(`🗑️ Cleared ${result.rowCount} rows from package_change_analysis cache`);
+        return { success: true, deletedCount: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error clearing package change cache:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Insert package change data (bulk)
+ * @param {Array} packageChangeData - Array of package change objects
+ * @returns {Promise<Object>} Result
+ */
+async function insertPackageChangeData(packageChangeData) {
+    if (!packageChangeData || packageChangeData.length === 0) {
+        return { success: true, insertedCount: 0 };
+    }
+
+    const client = await getClient();
+    try {
+        await client.query('BEGIN');
+
+        const insertPromises = packageChangeData.map(item => {
+            const query = `
+                INSERT INTO package_change_analysis (
+                    analysis_date, ps_record_id, ps_record_name,
+                    previous_ps_record_id, previous_ps_record_name,
+                    deployment_number, account_id, account_name, account_site,
+                    product_code, product_name, previous_package, new_package,
+                    change_type, previous_start_date, previous_end_date,
+                    new_start_date, new_end_date, ps_created_date
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+            `;
+            const values = [
+                item.analysisDate || new Date(),
+                item.psRecordId,
+                item.psRecordName,
+                item.previousPsRecordId,
+                item.previousPsRecordName,
+                item.deploymentNumber,
+                item.accountId || null,
+                item.accountName,
+                item.accountSite || null,
+                item.productCode,
+                item.productName || null,
+                item.previousPackage,
+                item.newPackage,
+                item.changeType, // 'upgrade' or 'downgrade'
+                item.previousStartDate || null,
+                item.previousEndDate || null,
+                item.newStartDate || null,
+                item.newEndDate || null,
+                item.psCreatedDate || null
+            ];
+            return client.query(query, values);
+        });
+
+        await Promise.all(insertPromises);
+        await client.query('COMMIT');
+
+        console.log(`✅ Inserted ${packageChangeData.length} package change records into cache`);
+        return { success: true, insertedCount: packageChangeData.length };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('❌ Error inserting package change data:', error.message);
+        return { success: false, error: error.message };
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Log package change analysis run
+ * @param {Object} logData - Analysis log data
+ * @returns {Promise<Object>} Result
+ */
+async function logPackageChangeAnalysis(logData) {
+    try {
+        const query = `
+            INSERT INTO package_change_analysis_log (
+                analysis_started, analysis_completed, records_analyzed,
+                deployments_processed, changes_found, upgrades_found,
+                downgrades_found, ps_records_with_changes, accounts_affected,
+                lookback_years, start_date, end_date, status, error_message
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            RETURNING id
+        `;
+        
+        const values = [
+            logData.analysisStarted,
+            logData.analysisCompleted,
+            logData.recordsAnalyzed || 0,
+            logData.deploymentsProcessed || 0,
+            logData.changesFound || 0,
+            logData.upgradesFound || 0,
+            logData.downgradesFound || 0,
+            logData.psRecordsWithChanges || 0,
+            logData.accountsAffected || 0,
+            logData.lookbackYears || 2,
+            logData.startDate || null,
+            logData.endDate || null,
+            logData.status || 'completed',
+            logData.errorMessage || null
+        ];
+        
+        const result = await pool.query(query, values);
+        console.log(`📝 Logged package change analysis run (ID: ${result.rows[0].id})`);
+        return { success: true, logId: result.rows[0].id };
+    } catch (error) {
+        console.error('❌ Error logging package change analysis:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get latest package change analysis status
+ * @returns {Promise<Object>} Latest analysis log
+ */
+async function getLatestPackageChangeAnalysisStatus() {
+    try {
+        const query = `
+            SELECT * FROM package_change_analysis_log
+            WHERE status != 'schema_initialized'
+            ORDER BY created_at DESC
+            LIMIT 1
+        `;
+        
+        const result = await pool.query(query);
+        
+        if (result.rows.length === 0) {
+            return {
+                success: true,
+                hasAnalysis: false
+            };
+        }
+        
+        return {
+            success: true,
+            hasAnalysis: true,
+            analysis: result.rows[0]
+        };
+    } catch (error) {
+        console.error('❌ Error getting latest package change analysis status:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get package change summary statistics
+ * @param {string} timeFrame - Time frame filter (30d, 90d, 6m, 1y, 2y)
+ * @returns {Promise<Object>} Summary data
+ */
+async function getPackageChangeSummary(timeFrame = '1y') {
+    try {
+        // Calculate date range based on time frame
+        const endDate = new Date();
+        let startDate = new Date();
+        
+        switch (timeFrame) {
+            case '30d':
+                startDate.setDate(endDate.getDate() - 30);
+                break;
+            case '90d':
+                startDate.setDate(endDate.getDate() - 90);
+                break;
+            case '6m':
+                startDate.setMonth(endDate.getMonth() - 6);
+                break;
+            case '1y':
+                startDate.setFullYear(endDate.getFullYear() - 1);
+                break;
+            case '2y':
+                startDate.setFullYear(endDate.getFullYear() - 2);
+                break;
+            default:
+                startDate.setFullYear(endDate.getFullYear() - 1);
+        }
+        
+        const query = `
+            SELECT 
+                COUNT(*) as total_changes,
+                COUNT(*) FILTER (WHERE change_type = 'upgrade') as total_upgrades,
+                COUNT(*) FILTER (WHERE change_type = 'downgrade') as total_downgrades,
+                COUNT(DISTINCT ps_record_id) as ps_records_with_changes,
+                COUNT(DISTINCT account_name) as accounts_affected,
+                COUNT(DISTINCT deployment_number) as deployments_affected,
+                COUNT(DISTINCT product_code) as products_changed
+            FROM package_change_analysis
+            WHERE ps_created_date >= $1 AND ps_created_date <= $2
+        `;
+        
+        const result = await pool.query(query, [startDate, endDate]);
+        return {
+            success: true,
+            summary: result.rows[0],
+            timeFrame: timeFrame,
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+        };
+    } catch (error) {
+        console.error('❌ Error getting package change summary:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get package changes grouped by product
+ * @param {string} timeFrame - Time frame filter
+ * @returns {Promise<Object>} Product breakdown
+ */
+async function getPackageChangesByProduct(timeFrame = '1y') {
+    try {
+        // Calculate date range
+        const endDate = new Date();
+        let startDate = new Date();
+        
+        switch (timeFrame) {
+            case '30d': startDate.setDate(endDate.getDate() - 30); break;
+            case '90d': startDate.setDate(endDate.getDate() - 90); break;
+            case '6m': startDate.setMonth(endDate.getMonth() - 6); break;
+            case '1y': startDate.setFullYear(endDate.getFullYear() - 1); break;
+            case '2y': startDate.setFullYear(endDate.getFullYear() - 2); break;
+            default: startDate.setFullYear(endDate.getFullYear() - 1);
+        }
+        
+        const query = `
+            SELECT 
+                product_code,
+                product_name,
+                COUNT(*) as total_changes,
+                COUNT(*) FILTER (WHERE change_type = 'upgrade') as upgrades,
+                COUNT(*) FILTER (WHERE change_type = 'downgrade') as downgrades,
+                COUNT(DISTINCT ps_record_id) as ps_records,
+                COUNT(DISTINCT account_name) as accounts
+            FROM package_change_analysis
+            WHERE ps_created_date >= $1 AND ps_created_date <= $2
+            GROUP BY product_code, product_name
+            ORDER BY total_changes DESC
+        `;
+        
+        const result = await pool.query(query, [startDate, endDate]);
+        return {
+            success: true,
+            data: result.rows,
+            count: result.rowCount,
+            timeFrame: timeFrame
+        };
+    } catch (error) {
+        console.error('❌ Error getting package changes by product:', error.message);
+        return { success: false, error: error.message, data: [] };
+    }
+}
+
+/**
+ * Get package changes grouped by account
+ * @param {string} timeFrame - Time frame filter
+ * @param {number} limit - Optional limit (default: null = no limit, show all accounts)
+ * @returns {Promise<Object>} Account breakdown
+ */
+async function getPackageChangesByAccount(timeFrame = '1y', limit = null) {
+    try {
+        // Calculate date range
+        const endDate = new Date();
+        let startDate = new Date();
+        
+        switch (timeFrame) {
+            case '30d': startDate.setDate(endDate.getDate() - 30); break;
+            case '90d': startDate.setDate(endDate.getDate() - 90); break;
+            case '6m': startDate.setMonth(endDate.getMonth() - 6); break;
+            case '1y': startDate.setFullYear(endDate.getFullYear() - 1); break;
+            case '2y': startDate.setFullYear(endDate.getFullYear() - 2); break;
+            default: startDate.setFullYear(endDate.getFullYear() - 1);
+        }
+        
+        // Get account-level summary
+        // No limit - show all accounts with changes
+        const accountQuery = `
+            SELECT 
+                account_name,
+                account_id,
+                COUNT(*) as total_changes,
+                COUNT(*) FILTER (WHERE change_type = 'upgrade') as upgrades,
+                COUNT(*) FILTER (WHERE change_type = 'downgrade') as downgrades,
+                COUNT(DISTINCT ps_record_id) as ps_records,
+                COUNT(DISTINCT deployment_number) as deployments,
+                COUNT(DISTINCT product_code) as products_changed
+            FROM package_change_analysis
+            WHERE ps_created_date >= $1 AND ps_created_date <= $2
+            GROUP BY account_name, account_id
+            ORDER BY total_changes DESC
+        `;
+        
+        const accountResult = await pool.query(accountQuery, [startDate, endDate]);
+        
+        // Get deployment-level breakdown for each account
+        const deploymentQuery = `
+            SELECT 
+                account_name,
+                account_id,
+                deployment_number,
+                COUNT(*) as total_changes,
+                COUNT(*) FILTER (WHERE change_type = 'upgrade') as upgrades,
+                COUNT(*) FILTER (WHERE change_type = 'downgrade') as downgrades,
+                COUNT(DISTINCT ps_record_id) as ps_records,
+                COUNT(DISTINCT product_code) as products_changed
+            FROM package_change_analysis
+            WHERE ps_created_date >= $1 AND ps_created_date <= $2
+            GROUP BY account_name, account_id, deployment_number
+            ORDER BY account_name, total_changes DESC
+        `;
+        
+        const deploymentResult = await pool.query(deploymentQuery, [startDate, endDate]);
+        
+        // Get product-level breakdown for each account and deployment
+        const productQuery = `
+            SELECT 
+                account_name,
+                account_id,
+                deployment_number,
+                product_code,
+                product_name,
+                COUNT(*) as total_changes,
+                COUNT(*) FILTER (WHERE change_type = 'upgrade') as upgrades,
+                COUNT(*) FILTER (WHERE change_type = 'downgrade') as downgrades,
+                COUNT(DISTINCT ps_record_id) as ps_records
+            FROM package_change_analysis
+            WHERE ps_created_date >= $1 AND ps_created_date <= $2
+            GROUP BY account_name, account_id, deployment_number, product_code, product_name
+            ORDER BY account_name, deployment_number, total_changes DESC
+        `;
+        
+        const productResult = await pool.query(productQuery, [startDate, endDate]);
+        
+        // Nest products under deployments under accounts
+        const accountsWithDeployments = accountResult.rows.map(account => {
+            // Get deployments for this account
+            const deployments = deploymentResult.rows
+                .filter(d => d.account_name === account.account_name)
+                .map(deployment => {
+                    // Get products for this deployment
+                    const products = productResult.rows.filter(
+                        p => p.account_name === account.account_name && 
+                             p.deployment_number === deployment.deployment_number
+                    );
+                    return {
+                        ...deployment,
+                        products: products
+                    };
+                });
+            
+            return {
+                ...account,
+                deployments: deployments
+            };
+        });
+        
+        return {
+            success: true,
+            data: accountsWithDeployments,
+            count: accountResult.rowCount,
+            timeFrame: timeFrame
+        };
+    } catch (error) {
+        console.error('❌ Error getting package changes by account:', error.message);
+        return { success: false, error: error.message, data: [] };
+    }
+}
+
+/**
+ * Get recent package changes
+ * @param {string} timeFrame - Time frame filter
+ * @param {number} limit - Maximum number of changes to return
+ * @returns {Promise<Object>} Recent changes
+ */
+async function getRecentPackageChanges(timeFrame = '1y', limit = 20) {
+    try {
+        // Calculate date range
+        const endDate = new Date();
+        let startDate = new Date();
+        
+        switch (timeFrame) {
+            case '30d': startDate.setDate(endDate.getDate() - 30); break;
+            case '90d': startDate.setDate(endDate.getDate() - 90); break;
+            case '6m': startDate.setMonth(endDate.getMonth() - 6); break;
+            case '1y': startDate.setFullYear(endDate.getFullYear() - 1); break;
+            case '2y': startDate.setFullYear(endDate.getFullYear() - 2); break;
+            default: startDate.setFullYear(endDate.getFullYear() - 1);
+        }
+        
+        const query = `
+            SELECT 
+                ps_record_id, ps_record_name,
+                previous_ps_record_id, previous_ps_record_name,
+                deployment_number, account_name,
+                product_code, product_name,
+                previous_package, new_package, change_type,
+                ps_created_date
+            FROM package_change_analysis
+            WHERE ps_created_date >= $1 AND ps_created_date <= $2
+            ORDER BY ps_created_date DESC
+            LIMIT $3
+        `;
+        
+        const result = await pool.query(query, [startDate, endDate, limit]);
+        return {
+            success: true,
+            data: result.rows,
+            count: result.rowCount,
+            timeFrame: timeFrame
+        };
+    } catch (error) {
+        console.error('❌ Error getting recent package changes:', error.message);
+        return { success: false, error: error.message, data: [] };
+    }
+}
+
 module.exports = {
     query,
     getClient,
@@ -973,5 +1398,14 @@ module.exports = {
     getBasePackages,
     getExpansionPackages,
     getPackagesSummary,
-    clearPackages
+    clearPackages,
+    // Package change analysis functions
+    clearPackageChangeCache,
+    insertPackageChangeData,
+    logPackageChangeAnalysis,
+    getLatestPackageChangeAnalysisStatus,
+    getPackageChangeSummary,
+    getPackageChangesByProduct,
+    getPackageChangesByAccount,
+    getRecentPackageChanges
 };

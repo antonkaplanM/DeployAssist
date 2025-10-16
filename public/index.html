@@ -75,6 +75,17 @@
                                     </svg>
                                     Account History
                                 </button>
+                                <button 
+                                    id="nav-package-changes" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect>
+                                        <polyline points="9 11 12 14 15 11"></polyline>
+                                        <line x1="12" x2="12" y1="6" y2="14"></line>
+                                    </svg>
+                                    Package Changes
+                                </button>
                             </div>
                         </div>
                         
@@ -702,6 +713,233 @@
                             </div>
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <!-- Package Changes Analytics Page -->
+            <div id="page-package-changes" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect>
+                                <polyline points="9 11 12 14 15 11"></polyline>
+                                <line x1="12" x2="12" y1="6" y2="14"></line>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Package Change Analytics</h1>
+                        </div>
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <p class="text-muted-foreground">Track customer package upgrades and downgrades across deployments</p>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span>Last analyzed: <span id="package-changes-last-refresh">Never</span></span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button
+                                        id="export-package-changes-btn"
+                                        class="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                                    >
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" x2="12" y1="15" y2="3"></line>
+                                        </svg>
+                                        Export to Excel
+                                    </button>
+                                    <button
+                                        id="refresh-package-changes-btn"
+                                        class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                                    >
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                                        </svg>
+                                        Refresh Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Time Frame Selector -->
+                    <div class="mb-6">
+                        <div class="flex items-center gap-3">
+                            <label for="package-changes-timeframe" class="text-sm font-medium">Time Frame:</label>
+                            <select 
+                                id="package-changes-timeframe" 
+                                class="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                                <option value="30d">Last 30 Days</option>
+                                <option value="90d">Last 90 Days</option>
+                                <option value="6m">Last 6 Months</option>
+                                <option value="1y" selected>Last 1 Year</option>
+                                <option value="2y">Last 2 Years</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="package-changes-loading" class="hidden">
+                        <div class="flex items-center justify-center py-12">
+                            <div class="flex flex-col items-center gap-3">
+                                <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                                <p class="text-sm text-muted-foreground">Loading package change data...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div id="package-changes-content">
+                        <!-- Summary Widget -->
+                        <section class="mb-8">
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                                <div class="flex flex-col space-y-1.5 p-6">
+                                    <h3 class="text-2xl font-semibold leading-none tracking-tight">Summary</h3>
+                                    <p class="text-sm text-muted-foreground">Overall package change statistics</p>
+                                </div>
+                                <div class="p-6 pt-0">
+                                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                        <!-- Total PS Records -->
+                                        <div class="rounded-lg border bg-card p-4">
+                                            <div class="flex flex-col gap-1">
+                                                <p class="text-sm font-medium text-muted-foreground">PS Records with Changes</p>
+                                                <p class="text-3xl font-bold" id="summary-ps-records">-</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Total Changes -->
+                                        <div class="rounded-lg border bg-card p-4">
+                                            <div class="flex flex-col gap-1">
+                                                <p class="text-sm font-medium text-muted-foreground">Total Package Changes</p>
+                                                <p class="text-3xl font-bold" id="summary-total-changes">-</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Upgrades -->
+                                        <div class="rounded-lg border bg-green-50 p-4">
+                                            <div class="flex flex-col gap-1">
+                                                <p class="text-sm font-medium text-green-700">Upgrades</p>
+                                                <p class="text-3xl font-bold text-green-700" id="summary-upgrades">-</p>
+                                                <p class="text-xs text-green-600" id="summary-upgrades-pct">-</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Downgrades -->
+                                        <div class="rounded-lg border bg-orange-50 p-4">
+                                            <div class="flex flex-col gap-1">
+                                                <p class="text-sm font-medium text-orange-700">Downgrades</p>
+                                                <p class="text-3xl font-bold text-orange-700" id="summary-downgrades">-</p>
+                                                <p class="text-xs text-orange-600" id="summary-downgrades-pct">-</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Accounts Affected -->
+                                        <div class="rounded-lg border bg-card p-4 md:col-span-2">
+                                            <div class="flex flex-col gap-1">
+                                                <p class="text-sm font-medium text-muted-foreground">Accounts Affected</p>
+                                                <p class="text-3xl font-bold" id="summary-accounts">-</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Products Changed -->
+                                        <div class="rounded-lg border bg-card p-4 md:col-span-2">
+                                            <div class="flex flex-col gap-1">
+                                                <p class="text-sm font-medium text-muted-foreground">Products Changed</p>
+                                                <p class="text-3xl font-bold" id="summary-products">-</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Changes by Product Widget -->
+                        <section class="mb-8">
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                                <div class="flex flex-col space-y-1.5 p-6">
+                                    <h3 class="text-2xl font-semibold leading-none tracking-tight">Package Changes by Product</h3>
+                                    <p class="text-sm text-muted-foreground">Breakdown of upgrades and downgrades per product</p>
+                                </div>
+                                <div class="p-6 pt-0">
+                                    <div class="relative w-full overflow-auto">
+                                        <table class="w-full caption-bottom text-sm">
+                                            <thead class="border-b">
+                                                <tr class="border-b transition-colors hover:bg-muted/50">
+                                                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Product</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Total Changes</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Upgrades</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Downgrades</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">PS Records</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Accounts</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="product-changes-tbody" class="[&_tr:last-child]:border-0">
+                                                <tr>
+                                                    <td colspan="6" class="p-8 text-center text-muted-foreground">
+                                                        No data available. Click "Refresh Analysis" to analyze package changes.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Changes by Account Widget -->
+                        <section class="mb-8">
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                                <div class="flex flex-col space-y-1.5 p-6">
+                                    <h3 class="text-2xl font-semibold leading-none tracking-tight">Accounts - Package Changes</h3>
+                                    <p class="text-sm text-muted-foreground">All accounts with package changes in the selected time frame</p>
+                                </div>
+                                <div class="p-6 pt-0">
+                                    <div class="relative w-full overflow-auto">
+                                        <table class="w-full caption-bottom text-sm">
+                                            <thead class="border-b">
+                                                <tr class="border-b transition-colors hover:bg-muted/50">
+                                                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Account</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Total Changes</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Upgrades</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Downgrades</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">PS Records</th>
+                                                    <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Products</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="account-changes-tbody" class="[&_tr:last-child]:border-0">
+                                                <tr>
+                                                    <td colspan="6" class="p-8 text-center text-muted-foreground">
+                                                        No data available. Click "Refresh Analysis" to analyze package changes.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Recent Changes Widget -->
+                        <section class="mb-8">
+                            <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                                <div class="flex flex-col space-y-1.5 p-6">
+                                    <h3 class="text-2xl font-semibold leading-none tracking-tight">Recent Package Changes</h3>
+                                    <p class="text-sm text-muted-foreground">Latest package upgrades and downgrades</p>
+                                </div>
+                                <div class="p-6 pt-0">
+                                    <div id="recent-changes-list" class="space-y-3">
+                                        <p class="text-center text-muted-foreground py-8">
+                                            No data available. Click "Refresh Analysis" to analyze package changes.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
 

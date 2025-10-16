@@ -10905,3 +10905,587 @@ document.addEventListener('keydown', (e) => {
         closeModal();
     }
 });
+
+
+// ==================== PACKAGE CHANGES ANALYTICS PAGE ====================
+
+// Initialize Package Changes page when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for Package Changes navigation
+    const navPackageChanges = document.getElementById('nav-package-changes');
+    if (navPackageChanges) {
+        navPackageChanges.addEventListener('click', function(e) {
+            e.preventDefault();
+            showPage('package-changes');
+            loadPackageChangesData();
+            loadPackageChangesStatus();
+        });
+    }
+    
+    // Add event listener for time frame selector
+    const timeFrameSelector = document.getElementById('package-changes-timeframe');
+    if (timeFrameSelector) {
+        timeFrameSelector.addEventListener('change', function() {
+            loadPackageChangesData();
+        });
+    }
+    
+    // Add event listener for refresh button
+    const refreshBtn = document.getElementById('refresh-package-changes-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            refreshPackageChangesAnalysis();
+        });
+    }
+    
+    // Export to Excel button
+    const exportBtn = document.getElementById('export-package-changes-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportPackageChangesToExcel();
+        });
+    }
+});
+
+// Load package changes status
+async function loadPackageChangesStatus() {
+    try {
+        const response = await fetch('/api/analytics/package-changes/status');
+        const data = await response.json();
+        
+        if (data.success && data.hasAnalysis) {
+            const lastRefreshEl = document.getElementById('package-changes-last-refresh');
+            if (lastRefreshEl) {
+                lastRefreshEl.textContent = data.analysis.lastRunAgo;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading package changes status:', error);
+    }
+}
+
+// Load package changes data
+async function loadPackageChangesData() {
+    console.log('[PackageChanges] Loading package changes data...');
+    
+    const loadingEl = document.getElementById('package-changes-loading');
+    const contentEl = document.getElementById('package-changes-content');
+    
+    // Show loading state
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (contentEl) contentEl.classList.add('hidden');
+    
+    try {
+        const timeFrame = document.getElementById('package-changes-timeframe')?.value || '1y';
+        
+        // Fetch all data in parallel
+        const [summaryResponse, productResponse, accountResponse, recentResponse] = await Promise.all([
+            fetch(`/api/analytics/package-changes/summary?timeFrame=${timeFrame}`),
+            fetch(`/api/analytics/package-changes/by-product?timeFrame=${timeFrame}`),
+            fetch(`/api/analytics/package-changes/by-account?timeFrame=${timeFrame}`),
+            fetch('/api/analytics/package-changes/recent?limit=20')
+        ]);
+        
+        const summaryData = await summaryResponse.json();
+        const productData = await productResponse.json();
+        const accountData = await accountResponse.json();
+        const recentData = await recentResponse.json();
+        
+        // Update summary widget
+        if (summaryData.success) {
+            updatePackageChangesSummary(summaryData.summary);
+        }
+        
+        // Update product changes table
+        if (productData.success) {
+            updateProductChangesTable(productData.data);
+        }
+        
+        // Update account changes table
+        if (accountData.success) {
+            updateAccountChangesTable(accountData.data);
+        }
+        
+        // Update recent changes list
+        if (recentData.success) {
+            updateRecentChangesList(recentData.data);
+        }
+        
+        console.log('[PackageChanges] Data loaded successfully');
+        
+    } catch (error) {
+        console.error('Error loading package changes data:', error);
+        showNotification('Failed to load package changes data', 'error');
+    } finally {
+        // Hide loading state
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (contentEl) contentEl.classList.remove('hidden');
+    }
+}
+
+// Update summary widget
+function updatePackageChangesSummary(summary) {
+    // PS Records with Changes
+    const psRecordsEl = document.getElementById('summary-ps-records');
+    if (psRecordsEl) {
+        psRecordsEl.textContent = parseInt(summary.ps_records_with_changes || 0).toLocaleString();
+    }
+    
+    // Total Changes
+    const totalChangesEl = document.getElementById('summary-total-changes');
+    if (totalChangesEl) {
+        totalChangesEl.textContent = parseInt(summary.total_changes || 0).toLocaleString();
+    }
+    
+    // Upgrades
+    const upgradesEl = document.getElementById('summary-upgrades');
+    const upgradesPctEl = document.getElementById('summary-upgrades-pct');
+    const totalChanges = parseInt(summary.total_changes || 0);
+    const upgrades = parseInt(summary.total_upgrades || 0);
+    if (upgradesEl) {
+        upgradesEl.textContent = upgrades.toLocaleString();
+    }
+    if (upgradesPctEl) {
+        const pct = totalChanges > 0 ? ((upgrades / totalChanges) * 100).toFixed(1) : '0.0';
+        upgradesPctEl.textContent = `${pct}% of total`;
+    }
+    
+    // Downgrades
+    const downgradesEl = document.getElementById('summary-downgrades');
+    const downgradesPctEl = document.getElementById('summary-downgrades-pct');
+    const downgrades = parseInt(summary.total_downgrades || 0);
+    if (downgradesEl) {
+        downgradesEl.textContent = downgrades.toLocaleString();
+    }
+    if (downgradesPctEl) {
+        const pct = totalChanges > 0 ? ((downgrades / totalChanges) * 100).toFixed(1) : '0.0';
+        downgradesPctEl.textContent = `${pct}% of total`;
+    }
+    
+    // Accounts Affected
+    const accountsEl = document.getElementById('summary-accounts');
+    if (accountsEl) {
+        accountsEl.textContent = parseInt(summary.accounts_affected || 0).toLocaleString();
+    }
+    
+    // Products Changed
+    const productsEl = document.getElementById('summary-products');
+    if (productsEl) {
+        productsEl.textContent = parseInt(summary.products_changed || 0).toLocaleString();
+    }
+}
+
+// Update product changes table
+function updateProductChangesTable(products) {
+    const tbody = document.getElementById('product-changes-tbody');
+    if (!tbody) return;
+    
+    if (!products || products.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="p-8 text-center text-muted-foreground">
+                    No package changes found for the selected time frame.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = products.map(product => `
+        <tr class="border-b transition-colors hover:bg-muted/50">
+            <td class="p-4 align-middle">
+                <div class="font-medium">${escapeHtml(product.product_code)}</div>
+                ${product.product_name ? `<div class="text-xs text-muted-foreground">${escapeHtml(product.product_name)}</div>` : ''}
+            </td>
+            <td class="p-4 align-middle text-right font-semibold">${parseInt(product.total_changes).toLocaleString()}</td>
+            <td class="p-4 align-middle text-right">
+                <span class="inline-flex items-center gap-1 text-green-700">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                    ${parseInt(product.upgrades).toLocaleString()}
+                </span>
+            </td>
+            <td class="p-4 align-middle text-right">
+                <span class="inline-flex items-center gap-1 text-orange-700">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    ${parseInt(product.downgrades).toLocaleString()}
+                </span>
+            </td>
+            <td class="p-4 align-middle text-right text-muted-foreground">${parseInt(product.ps_records).toLocaleString()}</td>
+            <td class="p-4 align-middle text-right text-muted-foreground">${parseInt(product.accounts).toLocaleString()}</td>
+        </tr>
+    `).join('');
+}
+
+// Update account changes table with 3-level hierarchy: Account → Deployment → Product
+function updateAccountChangesTable(accounts) {
+    const tbody = document.getElementById('account-changes-tbody');
+    if (!tbody) return;
+    
+    if (!accounts || accounts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="p-8 text-center text-muted-foreground">
+                    No package changes found for the selected time frame.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    accounts.forEach((account, accountIndex) => {
+        const accountId = `account-${accountIndex}`;
+        const hasDeployments = account.deployments && account.deployments.length > 0;
+        
+        // Account row (clickable to expand deployments) - No indentation (top level)
+        html += `
+            <tr class="border-b transition-colors hover:bg-muted/50 cursor-pointer account-row" 
+                data-account-id="${accountId}"
+                onclick="toggleAccountDeployments('${accountId}')">
+                <td class="p-4 align-middle">
+                    <div class="flex items-center gap-2">
+                        ${hasDeployments ? `
+                            <svg class="h-4 w-4 transition-transform expand-icon" data-expanded="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        ` : '<span class="w-4"></span>'}
+                        <span class="font-medium text-base">${escapeHtml(account.account_name)}</span>
+                    </div>
+                </td>
+            <td class="p-4 align-middle text-right font-semibold">${parseInt(account.total_changes).toLocaleString()}</td>
+            <td class="p-4 align-middle text-right">
+                <span class="inline-flex items-center gap-1 text-green-700">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                    ${parseInt(account.upgrades).toLocaleString()}
+                </span>
+            </td>
+            <td class="p-4 align-middle text-right">
+                <span class="inline-flex items-center gap-1 text-orange-700">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    ${parseInt(account.downgrades).toLocaleString()}
+                </span>
+            </td>
+            <td class="p-4 align-middle text-right text-muted-foreground">${parseInt(account.ps_records).toLocaleString()}</td>
+            <td class="p-4 align-middle text-right text-muted-foreground">${parseInt(account.products_changed).toLocaleString()}</td>
+        </tr>
+        `;
+        
+        // Deployment rows (hidden by default)
+        if (hasDeployments) {
+            account.deployments.forEach((deployment, deployIndex) => {
+                const deploymentId = `${accountId}-deploy-${deployIndex}`;
+                const hasProducts = deployment.products && deployment.products.length > 0;
+                
+                html += `
+                    <tr class="deployment-row hidden border-b bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors" 
+                        data-parent-account="${accountId}"
+                        data-deployment-id="${deploymentId}"
+                        onclick="event.stopPropagation(); toggleDeploymentProducts('${deploymentId}')">
+                        <td class="py-3 pr-4 align-middle" style="padding-left: 1.5rem;">
+                            <div class="flex items-center gap-2 border-l-2 border-muted pl-3">
+                                ${hasProducts ? `
+                                    <svg class="h-3 w-3 transition-transform expand-icon" data-expanded="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                ` : '<span class="w-3"></span>'}
+                                <span class="font-medium text-sm">${escapeHtml(deployment.deployment_number)}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 align-middle text-right font-medium text-sm">${parseInt(deployment.total_changes).toLocaleString()}</td>
+                        <td class="py-3 px-4 align-middle text-right text-sm">
+                            <span class="inline-flex items-center gap-1 text-green-700">
+                                <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                ${parseInt(deployment.upgrades).toLocaleString()}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 align-middle text-right text-sm">
+                            <span class="inline-flex items-center gap-1 text-orange-700">
+                                <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                                ${parseInt(deployment.downgrades).toLocaleString()}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 align-middle text-right text-muted-foreground text-sm">${parseInt(deployment.ps_records).toLocaleString()}</td>
+                        <td class="py-3 px-4 align-middle text-right text-muted-foreground text-sm">${parseInt(deployment.products_changed).toLocaleString()}</td>
+                    </tr>
+                `;
+                
+                // Product rows (hidden by default)
+                if (hasProducts) {
+                    deployment.products.forEach(product => {
+                        html += `
+                            <tr class="product-row hidden border-b bg-muted/40" data-parent-deployment="${deploymentId}">
+                                <td class="py-2 pr-4 align-middle" style="padding-left: 3rem;">
+                                    <div class="text-xs border-l-4 border-muted pl-3">
+                                        <div class="font-medium">${escapeHtml(product.product_code)}</div>
+                                        ${product.product_name && product.product_name !== product.product_code ? 
+                                            `<div class="text-xs text-muted-foreground">${escapeHtml(product.product_name)}</div>` : 
+                                            ''}
+                                    </div>
+                                </td>
+                                <td class="py-2 px-4 align-middle text-right font-medium text-xs">${parseInt(product.total_changes).toLocaleString()}</td>
+                                <td class="py-2 px-4 align-middle text-right text-xs">
+                                    <span class="inline-flex items-center gap-1 text-green-700">
+                                        <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="18 15 12 9 6 15"></polyline>
+                                        </svg>
+                                        ${parseInt(product.upgrades).toLocaleString()}
+                                    </span>
+                                </td>
+                                <td class="py-2 px-4 align-middle text-right text-xs">
+                                    <span class="inline-flex items-center gap-1 text-orange-700">
+                                        <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        ${parseInt(product.downgrades).toLocaleString()}
+                                    </span>
+                                </td>
+                                <td class="py-2 px-4 align-middle text-right text-muted-foreground text-xs">${parseInt(product.ps_records).toLocaleString()}</td>
+                                <td class="py-2 px-4 align-middle text-right text-muted-foreground text-xs">-</td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+        }
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// Toggle account deployments
+function toggleAccountDeployments(accountId) {
+    const accountRow = document.querySelector(`tr[data-account-id="${accountId}"]`);
+    const deploymentRows = document.querySelectorAll(`tr[data-parent-account="${accountId}"]`);
+    const expandIcon = accountRow ? accountRow.querySelector('.expand-icon') : null;
+    
+    if (!accountRow || deploymentRows.length === 0) return;
+    
+    const isExpanded = expandIcon && expandIcon.getAttribute('data-expanded') === 'true';
+    
+    deploymentRows.forEach(row => {
+        if (isExpanded) {
+            row.classList.add('hidden');
+            // Also hide any expanded products under this account
+            const deploymentId = row.getAttribute('data-deployment-id');
+            if (deploymentId) {
+                const productRows = document.querySelectorAll(`tr[data-parent-deployment="${deploymentId}"]`);
+                productRows.forEach(pr => pr.classList.add('hidden'));
+                const deployIcon = row.querySelector('.expand-icon');
+                if (deployIcon) {
+                    deployIcon.setAttribute('data-expanded', 'false');
+                    deployIcon.style.transform = 'rotate(0deg)';
+                }
+            }
+        } else {
+            row.classList.remove('hidden');
+        }
+    });
+    
+    if (expandIcon) {
+        expandIcon.setAttribute('data-expanded', !isExpanded);
+        if (isExpanded) {
+            expandIcon.style.transform = 'rotate(0deg)';
+        } else {
+            expandIcon.style.transform = 'rotate(90deg)';
+        }
+    }
+}
+
+// Toggle deployment products
+function toggleDeploymentProducts(deploymentId) {
+    const deploymentRow = document.querySelector(`tr[data-deployment-id="${deploymentId}"]`);
+    const productRows = document.querySelectorAll(`tr[data-parent-deployment="${deploymentId}"]`);
+    const expandIcon = deploymentRow ? deploymentRow.querySelector('.expand-icon') : null;
+    
+    if (!deploymentRow || productRows.length === 0) return;
+    
+    const isExpanded = expandIcon && expandIcon.getAttribute('data-expanded') === 'true';
+    
+    productRows.forEach(row => {
+        if (isExpanded) {
+            row.classList.add('hidden');
+        } else {
+            row.classList.remove('hidden');
+        }
+    });
+    
+    if (expandIcon) {
+        expandIcon.setAttribute('data-expanded', !isExpanded);
+        if (isExpanded) {
+            expandIcon.style.transform = 'rotate(0deg)';
+        } else {
+            expandIcon.style.transform = 'rotate(90deg)';
+        }
+    }
+}
+
+// Update recent changes list
+function updateRecentChangesList(changes) {
+    const listEl = document.getElementById('recent-changes-list');
+    if (!listEl) return;
+    
+    if (!changes || changes.length === 0) {
+        listEl.innerHTML = `
+            <p class="text-center text-muted-foreground py-8">
+                No recent package changes found.
+            </p>
+        `;
+        return;
+    }
+    
+    listEl.innerHTML = changes.map(change => {
+        const changeIcon = change.change_type === 'upgrade' ? 
+            `<svg class="h-4 w-4 text-green-700" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>` :
+            `<svg class="h-4 w-4 text-orange-700" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>`;
+        
+        const changeBadge = change.change_type === 'upgrade' ? 
+            'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800';
+        
+        const changeDate = new Date(change.ps_created_date);
+        const formattedDate = changeDate.toLocaleDateString();
+        
+        return `
+            <div class="flex items-center justify-between rounded-lg border bg-card p-4 hover:bg-accent/50 transition-colors">
+                <div class="flex items-center gap-3 flex-1">
+                    ${changeIcon}
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium">${escapeHtml(change.product_code)}</span>
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${changeBadge}">
+                                ${change.change_type}
+                            </span>
+                        </div>
+                        <div class="text-sm text-muted-foreground">
+                            ${escapeHtml(change.account_name)} • ${escapeHtml(change.ps_record_name)} • ${formattedDate}
+                        </div>
+                        <div class="text-xs text-muted-foreground mt-1">
+                            ${escapeHtml(change.previous_package)} → ${escapeHtml(change.new_package)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Refresh package changes analysis
+async function refreshPackageChangesAnalysis() {
+    console.log('[PackageChanges] Starting package changes analysis refresh...');
+    
+    const refreshBtn = document.getElementById('refresh-package-changes-btn');
+    
+    if (!refreshBtn) return;
+    
+    // Disable button and show loading state
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = `
+        <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        Analyzing...
+    `;
+    
+    try {
+        const response = await fetch('/api/analytics/package-changes/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lookbackYears: 2
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('[PackageChanges] Analysis completed:', data.summary);
+            showNotification(`Analysis complete: ${data.summary.changesFound} package changes found (${data.summary.upgradesFound} upgrades, ${data.summary.downgradesFound} downgrades)`, 'success');
+            
+            // Reload data
+            await loadPackageChangesData();
+            await loadPackageChangesStatus();
+        } else {
+            throw new Error(data.error || 'Analysis failed');
+        }
+    } catch (error) {
+        console.error('[PackageChanges] Refresh error:', error);
+        showNotification(`Failed to refresh analysis: ${error.message}`, 'error');
+    } finally {
+        // Re-enable button
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = `
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            Refresh Analysis
+        `;
+    }
+}
+
+// Export package changes to Excel
+async function exportPackageChangesToExcel() {
+    console.log('[PackageChanges] Starting Excel export...');
+    
+    const exportBtn = document.getElementById('export-package-changes-btn');
+    
+    if (!exportBtn) return;
+    
+    // Disable button and show loading state
+    exportBtn.disabled = true;
+    const originalHTML = exportBtn.innerHTML;
+    exportBtn.innerHTML = `
+        <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        Exporting...
+    `;
+    
+    try {
+        // Get current time frame
+        const timeFrameSelect = document.getElementById('package-changes-timeframe');
+        const timeFrame = timeFrameSelect ? timeFrameSelect.value : '1y';
+        
+        // Create download link
+        const url = `/api/analytics/package-changes/export?timeFrame=${timeFrame}`;
+        
+        // Create temporary anchor and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Package_Changes_${timeFrame}_${Date.now()}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        showNotification('Excel file downloaded successfully', 'success');
+        console.log('[PackageChanges] Export completed successfully');
+        
+    } catch (error) {
+        console.error('[PackageChanges] Export error:', error);
+        showNotification(`Failed to export to Excel: ${error.message}`, 'error');
+    } finally {
+        // Re-enable button
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = originalHTML;
+    }
+}
+
+console.log('[PackageChanges] Module loaded');
+

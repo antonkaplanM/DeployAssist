@@ -2553,6 +2553,500 @@ async function getAccountExternalIds(accountNames) {
     }
 }
 
+// ===== PACKAGE CHANGE ANALYSIS =====
+
+/**
+ * Helper function to extract PS record number from PS record name (e.g., "PS-4640" -> 4640)
+ * @param {string} psRecordName - PS record name (e.g., "PS-4640")
+ * @returns {number} PS record number
+ */
+function extractPsRecordNumber(psRecordName) {
+    if (!psRecordName) return 0;
+    const match = psRecordName.match(/PS-(\d+)/i);
+    return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
+ * Helper function to check if date ranges overlap for same product
+ * @param {Array} apps - Array of app entitlements
+ * @returns {boolean} True if overlapping dates found
+ */
+function hasOverlappingDates(apps) {
+    // Group by product code
+    const productGroups = {};
+    
+    apps.forEach(app => {
+        const productCode = app.productCode || app.product_code || app.ProductCode;
+        if (!productCode) return;
+        
+        if (!productGroups[productCode]) {
+            productGroups[productCode] = [];
+        }
+        
+        const startDate = app.startDate || app.start_date || app.StartDate;
+        const endDate = app.endDate || app.end_date || app.EndDate;
+        
+        if (startDate && endDate) {
+            productGroups[productCode].push({
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                packageName: app.packageName || app.package_name || app.PackageName
+            });
+        }
+    });
+    
+    // Check each product group for overlaps
+    for (const productCode in productGroups) {
+        const entries = productGroups[productCode];
+        
+        // Only check if there are multiple entries for same product
+        if (entries.length > 1) {
+            for (let i = 0; i < entries.length; i++) {
+                for (let j = i + 1; j < entries.length; j++) {
+                    const entry1 = entries[i];
+                    const entry2 = entries[j];
+                    
+                    // Check if ranges overlap
+                    const overlap = (entry1.startDate <= entry2.endDate && entry1.endDate >= entry2.startDate);
+                    
+                    if (overlap) {
+                        console.log(`⚠️ Overlapping dates found for ${productCode}: ${entry1.startDate} to ${entry1.endDate} overlaps with ${entry2.startDate} to ${entry2.endDate}`);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Compare two PS records for package changes
+ * @param {Object} previousRecord - Previous PS record
+ * @param {Object} currentRecord - Current PS record
+ * @returns {Array} Array of package changes found
+ */
+function compareRecordsForPackageChanges(previousRecord, currentRecord) {
+    const changes = [];
+    const isDebugRecord = currentRecord.Name === 'PS-4741' || previousRecord.Name === 'PS-4741';
+    
+    try {
+        // Parse payload data
+        const previousPayload = parsePayloadData(previousRecord.Payload_Data__c);
+        const currentPayload = parsePayloadData(currentRecord.Payload_Data__c);
+        
+        if (!previousPayload.hasDetails || !currentPayload.hasDetails) {
+            if (isDebugRecord) {
+                console.log(`🔍 DEBUG PS-4741: No payload details - Previous hasDetails=${previousPayload.hasDetails}, Current hasDetails=${currentPayload.hasDetails}`);
+            } else {
+                console.log(`⚠️ No payload details for comparison: Previous=${previousRecord.Name}, Current=${currentRecord.Name}`);
+            }
+            return changes;
+        }
+        
+        // Get app entitlements
+        const previousApps = previousPayload.appEntitlements || [];
+        const currentApps = currentPayload.appEntitlements || [];
+        
+        if (isDebugRecord) {
+            console.log(`🔍 DEBUG PS-4741: Previous apps count=${previousApps.length}, Current apps count=${currentApps.length}`);
+        }
+        
+        // Note: Overlapping date validation is now done in the main loop before calling this function
+        
+        // Group apps by product code and find unique package names per product
+        // This ensures we only count one change per product, not per app entitlement
+        const previousAppsByProduct = {};
+        previousApps.forEach(app => {
+            const productCode = app.productCode || app.product_code || app.ProductCode;
+            const packageName = app.packageName || app.package_name || app.PackageName;
+            
+            if (productCode && packageName) {
+                if (!previousAppsByProduct[productCode]) {
+                    previousAppsByProduct[productCode] = {
+                        packages: new Set(),
+                        sampleApp: app // Keep one sample for dates
+                    };
+                }
+                previousAppsByProduct[productCode].packages.add(packageName);
+            }
+        });
+        
+        const currentAppsByProduct = {};
+        currentApps.forEach(app => {
+            const productCode = app.productCode || app.product_code || app.ProductCode;
+            const packageName = app.packageName || app.package_name || app.PackageName;
+            
+            if (productCode && packageName) {
+                if (!currentAppsByProduct[productCode]) {
+                    currentAppsByProduct[productCode] = {
+                        packages: new Set(),
+                        sampleApp: app // Keep one sample for dates
+                    };
+                }
+                currentAppsByProduct[productCode].packages.add(packageName);
+            }
+        });
+        
+        // Track which products have already been recorded to avoid duplicates
+        const recordedProducts = new Set();
+        
+        // Compare products: only record ONE change per product code
+        Object.keys(currentAppsByProduct).forEach(productCode => {
+            // Skip if already recorded
+            if (recordedProducts.has(productCode)) {
+                return;
+            }
+            
+            // Check if this product existed in previous record
+            if (previousAppsByProduct[productCode]) {
+                const previousPackages = previousAppsByProduct[productCode].packages;
+                const currentPackages = currentAppsByProduct[productCode].packages;
+                
+                // Check if package names differ
+                // If there's any difference in package sets, record it as a change
+                const previousPackageList = Array.from(previousPackages);
+                const currentPackageList = Array.from(currentPackages);
+                
+                // Find packages that are only in current (new packages)
+                const newPackages = currentPackageList.filter(pkg => !previousPackages.has(pkg));
+                // Find packages that are only in previous (removed packages)
+                const removedPackages = previousPackageList.filter(pkg => !currentPackages.has(pkg));
+                
+                // If there are package changes, record the transition
+                // Use the latest/highest package from each set for comparison
+                let previousPackage, currentPackage;
+                
+                if (removedPackages.length > 0 && newPackages.length > 0) {
+                    // Package changed: take the highest/latest from each
+                    previousPackage = removedPackages.sort().reverse()[0]; // Reverse sort to get highest
+                    currentPackage = newPackages.sort().reverse()[0];
+                } else if (newPackages.length > 0) {
+                    // Only new packages added (upgrade)
+                    previousPackage = previousPackageList.sort().reverse()[0];
+                    currentPackage = newPackages.sort().reverse()[0];
+                } else if (removedPackages.length > 0) {
+                    // Only packages removed (downgrade)
+                    previousPackage = removedPackages.sort().reverse()[0];
+                    currentPackage = currentPackageList.sort().reverse()[0];
+                } else {
+                    // No changes
+                    previousPackage = null;
+                    currentPackage = null;
+                }
+                
+                if (previousPackage && currentPackage && previousPackage !== currentPackage) {
+                    // Determine if upgrade or downgrade
+                    const changeType = determineChangeType(previousPackage, currentPackage);
+                    
+                    const previousApp = previousAppsByProduct[productCode].sampleApp;
+                    const currentApp = currentAppsByProduct[productCode].sampleApp;
+                    const productName = currentApp.name || currentApp.productName || productCode;
+                    
+                    changes.push({
+                        psRecordId: currentRecord.Id,
+                        psRecordName: currentRecord.Name,
+                        previousPsRecordId: previousRecord.Id,
+                        previousPsRecordName: previousRecord.Name,
+                        deploymentNumber: currentRecord.Deployment__r?.Name || currentRecord.Tenant_Name__c || 'Unknown',
+                        accountId: currentRecord.Account__c,
+                        accountName: currentRecord.Account__c || 'Unknown',
+                        accountSite: currentRecord.Account_Site__c,
+                        productCode: productCode,
+                        productName: productName,
+                        previousPackage: previousPackage,
+                        newPackage: currentPackage,
+                        changeType: changeType,
+                        previousStartDate: previousApp.startDate || previousApp.start_date || previousApp.StartDate,
+                        previousEndDate: previousApp.endDate || previousApp.end_date || previousApp.EndDate,
+                        newStartDate: currentApp.startDate || currentApp.start_date || currentApp.StartDate,
+                        newEndDate: currentApp.endDate || currentApp.end_date || currentApp.EndDate,
+                        psCreatedDate: currentRecord.CreatedDate
+                    });
+                    
+                    recordedProducts.add(productCode);
+                    
+                    console.log(`📦 Package change found: ${productCode} changed from ${previousPackage} → ${currentPackage} (${changeType}) in ${currentRecord.Name}`);
+                }
+            }
+            // If product not in previous record, it's an addition, not a package change - skip
+        });
+        
+    } catch (error) {
+        console.error(`❌ Error comparing records ${previousRecord.Name} and ${currentRecord.Name}:`, error.message);
+    }
+    
+    return changes;
+}
+
+/**
+ * Determine if a package change is an upgrade or downgrade
+ * @param {string} previousPackage - Previous package name
+ * @param {string} newPackage - New package name
+ * @returns {string} 'upgrade' or 'downgrade'
+ */
+function determineChangeType(previousPackage, newPackage) {
+    // Extract numeric version if present
+    const prevMatch = previousPackage.match(/\d+/);
+    const newMatch = newPackage.match(/\d+/);
+    
+    if (prevMatch && newMatch) {
+        const prevNum = parseInt(prevMatch[0], 10);
+        const newNum = parseInt(newMatch[0], 10);
+        
+        if (newNum > prevNum) {
+            return 'upgrade';
+        } else if (newNum < prevNum) {
+            return 'downgrade';
+        }
+    }
+    
+    // If we can't determine from numbers, check for common upgrade indicators
+    const upgradeIndicators = ['premium', 'professional', 'enterprise', 'advanced', 'plus'];
+    const downgradeIndicators = ['basic', 'starter', 'lite', 'standard'];
+    
+    const newLower = newPackage.toLowerCase();
+    const prevLower = previousPackage.toLowerCase();
+    
+    for (const indicator of upgradeIndicators) {
+        if (newLower.includes(indicator) && !prevLower.includes(indicator)) {
+            return 'upgrade';
+        }
+    }
+    
+    for (const indicator of downgradeIndicators) {
+        if (newLower.includes(indicator) && !prevLower.includes(indicator)) {
+            return 'downgrade';
+        }
+    }
+    
+    // Default to upgrade if can't determine (most changes are upgrades)
+    return 'upgrade';
+}
+
+/**
+ * Analyze package changes across PS records
+ * @param {number} lookbackYears - Number of years to look back (default: 2)
+ * @param {Date} startDate - Optional start date override
+ * @param {Date} endDate - Optional end date override
+ * @returns {Promise<Object>} Analysis results
+ */
+async function analyzePackageChanges(lookbackYears = 2, startDate = null, endDate = null) {
+    try {
+        const conn = await getConnection();
+        if (!conn) {
+            throw new Error('No Salesforce connection available');
+        }
+
+        console.log(`📦 Starting package change analysis: ${lookbackYears} year lookback`);
+        
+        // Calculate date range
+        let queryStartDate, queryEndDate;
+        
+        if (startDate && endDate) {
+            queryStartDate = startDate;
+            queryEndDate = endDate;
+        } else {
+            queryEndDate = new Date();
+            queryStartDate = new Date();
+            queryStartDate.setFullYear(queryEndDate.getFullYear() - lookbackYears);
+        }
+        
+        const startDateStr = queryStartDate.toISOString().split('T')[0];
+        const endDateStr = queryEndDate.toISOString().split('T')[0];
+        
+        // Query PS records with Status = "Tenant Request Completed"
+        // We need both "Update" and "New" types (New can be previous, Update must be current)
+        const query = `
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
+                   Status__c, Deployment__c, Deployment__r.Name, Tenant_Name__c, 
+                   CreatedDate, Payload_Data__c
+            FROM Prof_Services_Request__c
+            WHERE CreatedDate >= ${startDateStr}T00:00:00Z
+            AND CreatedDate <= ${endDateStr}T23:59:59Z
+            AND Name LIKE 'PS-%'
+            AND Status__c = 'Tenant Request Completed'
+            ORDER BY Deployment__r.Name, Name ASC
+            LIMIT 10000
+        `;
+        
+        console.log(`🔍 Querying completed PS records from ${startDateStr} to ${endDateStr}...`);
+        const result = await conn.query(query);
+        const records = result.records || [];
+        
+        console.log(`✅ Retrieved ${records.length} completed PS records for analysis`);
+        
+        // Group records by deployment number (Deployment__r.Name)
+        const recordsByDeployment = {};
+        
+        records.forEach(record => {
+            // Try Deployment__r.Name first, fallback to Tenant_Name__c
+            const deploymentNumber = record.Deployment__r?.Name || record.Tenant_Name__c;
+            
+            if (!deploymentNumber) {
+                console.log(`⚠️ Skipping ${record.Name}: No deployment number`);
+                return;
+            }
+            
+            if (!recordsByDeployment[deploymentNumber]) {
+                recordsByDeployment[deploymentNumber] = [];
+            }
+            
+            recordsByDeployment[deploymentNumber].push(record);
+        });
+        
+        console.log(`📊 Found ${Object.keys(recordsByDeployment).length} unique deployments`);
+        
+        // Analyze each deployment for package changes
+        const allPackageChanges = [];
+        let deploymentsProcessed = 0;
+        let psRecordsWithChanges = new Set();
+        let accountsAffected = new Set();
+        
+        for (const deploymentNumber in recordsByDeployment) {
+            const deploymentRecords = recordsByDeployment[deploymentNumber];
+            
+            // Sort by PS record number (extract number from PS-####)
+            deploymentRecords.sort((a, b) => {
+                const numA = extractPsRecordNumber(a.Name);
+                const numB = extractPsRecordNumber(b.Name);
+                return numA - numB;
+            });
+            
+            console.log(`🔍 Analyzing deployment ${deploymentNumber}: ${deploymentRecords.length} records (${deploymentRecords[0].Name} to ${deploymentRecords[deploymentRecords.length - 1].Name})`);
+            
+            // Compare records, skipping invalid ones
+            // Track last valid record to compare against
+            let lastValidRecordIndex = 0;
+            
+            for (let i = 1; i < deploymentRecords.length; i++) {
+                const currentRecord = deploymentRecords[i];
+                
+                // Debug logging for specific PS records
+                const isDebugRecord = currentRecord.Name === 'PS-4741';
+                
+                // Current record must be Type "Update" (from TenantRequestAction__c)
+                if (currentRecord.TenantRequestAction__c !== 'Update') {
+                    if (isDebugRecord) {
+                        console.log(`🔍 DEBUG PS-4741: Skipping ${currentRecord.Name}: Type is "${currentRecord.TenantRequestAction__c}", not "Update"`);
+                    } else {
+                        console.log(`⚠️ Skipping ${currentRecord.Name}: Type is "${currentRecord.TenantRequestAction__c}", not "Update"`);
+                    }
+                    continue;
+                }
+                
+                // Check if current record is valid (no overlapping dates)
+                const currentPayload = parsePayloadData(currentRecord.Payload_Data__c);
+                const currentApps = currentPayload.appEntitlements || [];
+                if (hasOverlappingDates(currentApps)) {
+                    if (isDebugRecord) {
+                        console.log(`🔍 DEBUG PS-4741: ⚠️ Skipping ${currentRecord.Name}: Has overlapping date ranges (invalid data)`);
+                    } else {
+                        console.log(`⚠️ Skipping ${currentRecord.Name}: Has overlapping date ranges (invalid data)`);
+                    }
+                    continue; // Skip invalid record entirely
+                }
+                
+                // Find the last valid record to compare against
+                // Start from current position and work backwards
+                let previousRecord = null;
+                for (let j = i - 1; j >= 0; j--) {
+                    const candidateRecord = deploymentRecords[j];
+                    const candidatePayload = parsePayloadData(candidateRecord.Payload_Data__c);
+                    const candidateApps = candidatePayload.appEntitlements || [];
+                    
+                    // Check if candidate is valid (no overlapping dates)
+                    if (!hasOverlappingDates(candidateApps)) {
+                        previousRecord = candidateRecord;
+                        lastValidRecordIndex = j;
+                        break;
+                    }
+                }
+                
+                if (!previousRecord) {
+                    if (isDebugRecord) {
+                        console.log(`🔍 DEBUG PS-4741: No valid previous record found for comparison`);
+                    } else {
+                        console.log(`⚠️ ${currentRecord.Name}: No valid previous record found for comparison`);
+                    }
+                    continue;
+                }
+                
+                // Previous record can be any type (New or Update)
+                if (isDebugRecord) {
+                    console.log(`🔍 DEBUG PS-4741: Comparing ${previousRecord.Name} (${previousRecord.TenantRequestAction__c}) → ${currentRecord.Name} (Update)`);
+                } else {
+                    console.log(`🔄 Comparing ${previousRecord.Name} (${previousRecord.TenantRequestAction__c}) → ${currentRecord.Name} (Update)`);
+                }
+                
+                // Compare for package changes
+                const changes = compareRecordsForPackageChanges(previousRecord, currentRecord);
+                
+                // Debug logging for specific PS records
+                if (isDebugRecord) {
+                    console.log(`🔍 DEBUG PS-4741: Found ${changes.length} package change(s)`);
+                    if (changes.length === 0) {
+                        console.log(`🔍 DEBUG PS-4741: No changes detected. Possible reasons:`);
+                        console.log(`   - No matching products between records`);
+                        console.log(`   - Package names are the same`);
+                        console.log(`   - Package names are null`);
+                        console.log(`   - Overlapping date ranges (invalid data)`);
+                        console.log(`   - No payload data`);
+                    } else {
+                        changes.forEach((change, idx) => {
+                            console.log(`🔍 DEBUG PS-4741: Change ${idx + 1}: ${change.productCode} ${change.previousPackage} → ${change.newPackage} (${change.changeType})`);
+                        });
+                    }
+                }
+                
+                if (changes.length > 0) {
+                    psRecordsWithChanges.add(currentRecord.Name);
+                    accountsAffected.add(currentRecord.Account__c);
+                    allPackageChanges.push(...changes);
+                }
+            }
+            
+            deploymentsProcessed++;
+        }
+        
+        // Count upgrades and downgrades
+        const upgradesFound = allPackageChanges.filter(c => c.changeType === 'upgrade').length;
+        const downgradesFound = allPackageChanges.filter(c => c.changeType === 'downgrade').length;
+        
+        console.log(`✅ Package change analysis complete:`);
+        console.log(`   - ${deploymentsProcessed} deployments processed`);
+        console.log(`   - ${allPackageChanges.length} total package changes found`);
+        console.log(`   - ${upgradesFound} upgrades, ${downgradesFound} downgrades`);
+        console.log(`   - ${psRecordsWithChanges.size} PS records with changes`);
+        console.log(`   - ${accountsAffected.size} accounts affected`);
+        
+        return {
+            success: true,
+            packageChanges: allPackageChanges,
+            recordsAnalyzed: records.length,
+            deploymentsProcessed: deploymentsProcessed,
+            changesFound: allPackageChanges.length,
+            upgradesFound: upgradesFound,
+            downgradesFound: downgradesFound,
+            psRecordsWithChanges: psRecordsWithChanges.size,
+            accountsAffected: accountsAffected.size,
+            startDate: startDateStr,
+            endDate: endDateStr
+        };
+        
+    } catch (err) {
+        console.error('❌ Package change analysis error:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            packageChanges: [],
+            recordsAnalyzed: 0,
+            changesFound: 0
+        };
+    }
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -2576,6 +3070,8 @@ module.exports = {
     // Expiration monitor functions
     analyzeExpirations,
     getExpiringEntitlements,
+    // Package change analysis functions
+    analyzePackageChanges,
     // Customer products
     getCustomerProducts,
     // Ghost accounts
