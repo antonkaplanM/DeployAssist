@@ -614,7 +614,7 @@ function renderRequestTypeTiles(analyticsData) {
     // Map request types to specific colors matching trend lines
     const requestTypeColors = {
         'Update': 'bg-red-100 text-red-800',
-        'Onboarding': 'bg-blue-100 text-blue-800',
+        'New': 'bg-blue-100 text-blue-800',
         'Deprovision': 'bg-green-100 text-green-800',
         // Fallback colors for other request types
         'default': [
@@ -794,7 +794,7 @@ function setupTrendToggleListeners() {
             // Save preferences to localStorage
             const preferences = {
                 showUpdate: document.getElementById('trend-toggle-update')?.checked ?? true,
-                showOnboarding: document.getElementById('trend-toggle-onboarding')?.checked ?? true,
+                showNew: document.getElementById('trend-toggle-new')?.checked ?? true,
                 showDeprovision: document.getElementById('trend-toggle-deprovision')?.checked ?? true
             };
             localStorage.setItem('validationTrendPreferences', JSON.stringify(preferences));
@@ -818,7 +818,7 @@ function renderValidationTrendChart() {
     // Get toggle states from localStorage or default to all enabled
     let preferences = {
         showUpdate: true,
-        showOnboarding: true,
+        showNew: true,
         showDeprovision: true
     };
     
@@ -833,11 +833,11 @@ function renderValidationTrendChart() {
     
     // Update checkbox states
     const updateToggle = document.getElementById('trend-toggle-update');
-    const onboardingToggle = document.getElementById('trend-toggle-onboarding');
+    const newToggle = document.getElementById('trend-toggle-new');
     const deprovisionToggle = document.getElementById('trend-toggle-deprovision');
     
     if (updateToggle) updateToggle.checked = preferences.showUpdate;
-    if (onboardingToggle) onboardingToggle.checked = preferences.showOnboarding;
+    if (newToggle) newToggle.checked = preferences.showNew;
     if (deprovisionToggle) deprovisionToggle.checked = preferences.showDeprovision;
     
     // Prepare chart data - sample every 3 days to avoid overcrowding
@@ -851,12 +851,12 @@ function renderValidationTrendChart() {
     
     // Extract data for each request type
     const updateFailurePercentages = sampledData.map(d => parseFloat(d.updateFailurePercentage || d.failurePercentage || 0));
-    const onboardingFailurePercentages = sampledData.map(d => parseFloat(d.onboardingFailurePercentage || 0));
+    const newFailurePercentages = sampledData.map(d => parseFloat(d.newFailurePercentage || 0));
     const deprovisionFailurePercentages = sampledData.map(d => parseFloat(d.deprovisionFailurePercentage || 0));
     
     // Debug: Log extracted percentages
     console.log('Update percentages sample:', updateFailurePercentages.slice(0, 3));
-    console.log('Onboarding percentages sample:', onboardingFailurePercentages.slice(0, 3));
+    console.log('New percentages sample:', newFailurePercentages.slice(0, 3));
     console.log('Deprovision percentages sample:', deprovisionFailurePercentages.slice(0, 3));
     
     // Build datasets based on toggle states
@@ -881,10 +881,10 @@ function renderValidationTrendChart() {
         visibleValues.push(...updateFailurePercentages);
     }
     
-    if (preferences.showOnboarding) {
+    if (preferences.showNew) {
         datasets.push({
-            label: 'Onboarding - Validation Failure Rate (%)',
-            data: onboardingFailurePercentages,
+            label: 'New - Validation Failure Rate (%)',
+            data: newFailurePercentages,
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             borderWidth: 2,
@@ -896,7 +896,7 @@ function renderValidationTrendChart() {
             pointRadius: 4,
             pointHoverRadius: 6
         });
-        visibleValues.push(...onboardingFailurePercentages);
+        visibleValues.push(...newFailurePercentages);
     }
     
     if (preferences.showDeprovision) {
@@ -976,10 +976,10 @@ function renderValidationTrendChart() {
                                     `Update Annual Failure Rate: ${dataPoint.updateFailurePercentage || dataPoint.failurePercentage || '0.0'}%`,
                                     `Rolling Year: ${dataPoint.updateFailures || dataPoint.failures || 0} of ${dataPoint.updateTotal || dataPoint.total || 0} failed`
                                 ];
-                            } else if (datasetLabel.startsWith('Onboarding')) {
+                            } else if (datasetLabel.startsWith('New')) {
                                 return [
-                                    `Onboarding Annual Failure Rate: ${dataPoint.onboardingFailurePercentage || '0.0'}%`,
-                                    `Rolling Year: ${dataPoint.onboardingFailures || 0} of ${dataPoint.onboardingTotal || 0} failed`
+                                    `New Annual Failure Rate: ${dataPoint.newFailurePercentage || '0.0'}%`,
+                                    `Rolling Year: ${dataPoint.newFailures || 0} of ${dataPoint.newTotal || 0} failed`
                                 ];
                             } else if (datasetLabel.startsWith('Deprovision')) {
                                 return [

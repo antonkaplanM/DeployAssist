@@ -947,7 +947,7 @@ async function getWeeklyRequestTypeAnalytics(startDate, endDate, enabledRuleIds 
     }
 }
 
-// Get validation failure trend for Update, Onboarding, and Deprovision requests over time
+// Get validation failure trend for Update, New, and Deprovision requests over time
 // Each data point shows the rolling annual validation failure percentage
 async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = null) {
     try {
@@ -967,14 +967,14 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
         
         console.log(`📈 Fetching validation failure trend from ${startDateStr} to ${endDateStr} (15 months of data)`);
         
-        // Get all Update, Onboarding, and Deprovision requests for the extended period
+        // Get all Update, New, and Deprovision requests for the extended period
         const query = `
             SELECT Id, Name, TenantRequestAction__c, Payload_Data__c, CreatedDate
             FROM Prof_Services_Request__c 
             WHERE CreatedDate >= ${startDateStr}T00:00:00.000Z 
             AND CreatedDate <= ${endDateStr}T23:59:59.999Z
             AND Name LIKE 'PS-%'
-            AND (TenantRequestAction__c = 'Update' OR TenantRequestAction__c = 'Onboarding' OR TenantRequestAction__c = 'Deprovision')
+            AND (TenantRequestAction__c = 'Update' OR TenantRequestAction__c = 'New' OR TenantRequestAction__c = 'Deprovision')
             ORDER BY CreatedDate ASC
         `;
         
@@ -996,7 +996,7 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
         // Validate all records once and store results by request type
         const validatedRecordsByType = {
             'Update': [],
-            'Onboarding': [],
+            'New': [],
             'Deprovision': []
         };
         
@@ -1018,7 +1018,7 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
             }
         });
         
-        console.log(`✅ Validated ${records.length} records: Update=${validatedRecordsByType['Update'].length}, Onboarding=${validatedRecordsByType['Onboarding'].length}, Deprovision=${validatedRecordsByType['Deprovision'].length}`);
+        console.log(`✅ Validated ${records.length} records: Update=${validatedRecordsByType['Update'].length}, New=${validatedRecordsByType['New'].length}, Deprovision=${validatedRecordsByType['Deprovision'].length}`);
         
         // Calculate rolling annual failure percentage for each day in the 3-month period
         const trendData = [];
@@ -1036,7 +1036,7 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
             };
             
             // Calculate for each request type
-            ['Update', 'Onboarding', 'Deprovision'].forEach(requestType => {
+            ['Update', 'New', 'Deprovision'].forEach(requestType => {
                 const recordsInWindow = validatedRecordsByType[requestType].filter(r => 
                     r.createdDate >= yearStart && r.createdDate <= currentDate
                 );
@@ -1062,7 +1062,7 @@ async function getValidationFailureTrend(startDate, endDate, enabledRuleIds = nu
             currentDate.setDate(currentDate.getDate() + 1);
         }
         
-        console.log(`✅ Trend data calculated: ${trendData.length} daily data points with rolling annual percentages for Update, Onboarding, and Deprovision`);
+        console.log(`✅ Trend data calculated: ${trendData.length} daily data points with rolling annual percentages for Update, New, and Deprovision`);
         
         // Debug: Log first data point to verify structure
         if (trendData.length > 0) {
