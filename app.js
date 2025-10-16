@@ -848,15 +848,18 @@ app.get('/auth/salesforce/callback', async (req, res) => {
     }
 });
 
-// Validation failure trend API - Update requests over 3 months
+// Validation failure trend API - Update requests over configurable time period
 app.get('/api/analytics/validation-trend', async (req, res) => {
     try {
         const validationEngine = require('./validation-engine');
         
-        // Calculate 3-month period
+        // Get time frame from query parameter or default to 3 months
+        const months = parseInt(req.query.months) || 3;
+        
+        // Calculate time period based on months parameter
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setMonth(endDate.getMonth() - 3);
+        startDate.setMonth(endDate.getMonth() - months);
         
         // Get enabled validation rules
         let enabledRuleIds;
@@ -901,15 +904,18 @@ app.get('/api/analytics/validation-trend', async (req, res) => {
     }
 });
 
-// Analytics API - Technical Team Request counts by type (last 1 year)
+// Analytics API - Technical Team Request counts by type (configurable time period)
 app.get('/api/analytics/request-types-week', async (req, res) => {
     try {
         const validationEngine = require('./validation-engine');
         
-        // Calculate date range for last 1 year
+        // Get time frame from query parameter or default to 12 months (1 year)
+        const months = parseInt(req.query.months) || 12;
+        
+        // Calculate date range based on months parameter
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setFullYear(endDate.getFullYear() - 1);
+        startDate.setMonth(endDate.getMonth() - months);
         
         // Get enabled validation rules from query params or localStorage pattern
         let enabledRuleIds;

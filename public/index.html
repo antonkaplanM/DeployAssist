@@ -3082,40 +3082,149 @@
                             
                             <div id="application-settings-content" class="settings-section-content hidden">
                                 <div class="px-6 pb-6">
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between">
-                                            <div class="space-y-0.5">
-                                                <label class="text-sm font-medium">Dark Mode</label>
-                                                <p class="text-xs text-muted-foreground">Toggle between light and dark theme</p>
+                                    <div class="space-y-6">
+                                        <!-- General Settings -->
+                                        <div>
+                                            <h4 class="text-sm font-semibold mb-3 text-foreground">General</h4>
+                                            <div class="space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5">
+                                                        <label class="text-sm font-medium">Dark Mode</label>
+                                                        <p class="text-xs text-muted-foreground">Toggle between light and dark theme</p>
+                                                    </div>
+                                                    <button id="settings-theme-toggle" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8">
+                                                        <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <circle cx="12" cy="12" r="4"></circle>
+                                                            <path d="m12 2 0 2"></path>
+                                                            <path d="m12 20 0 2"></path>
+                                                            <path d="m4.93 4.93 1.41 1.41"></path>
+                                                            <path d="m17.66 17.66 1.41 1.41"></path>
+                                                            <path d="m2 12 2 0"></path>
+                                                            <path d="m20 12 2 0"></path>
+                                                            <path d="m6.34 17.66-1.41 1.41"></path>
+                                                            <path d="m19.07 4.93-1.41 1.41"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5">
+                                                        <label class="text-sm font-medium">Auto-refresh Background Pages</label>
+                                                        <p class="text-xs text-muted-foreground">Automatically refresh inactive pages in the background (pauses on active page)</p>
+                                                    </div>
+                                                    <select id="auto-refresh-interval" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="0">Never</option>
+                                                        <option value="1">1 minute</option>
+                                                        <option value="5" selected>5 minutes</option>
+                                                        <option value="10">10 minutes</option>
+                                                        <option value="15">15 minutes</option>
+                                                        <option value="30">30 minutes</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <button id="settings-theme-toggle" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8">
-                                                <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <circle cx="12" cy="12" r="4"></circle>
-                                                    <path d="m12 2 0 2"></path>
-                                                    <path d="m12 20 0 2"></path>
-                                                    <path d="m4.93 4.93 1.41 1.41"></path>
-                                                    <path d="m17.66 17.66 1.41 1.41"></path>
-                                                    <path d="m2 12 2 0"></path>
-                                                    <path d="m20 12 2 0"></path>
-                                                    <path d="m6.34 17.66-1.41 1.41"></path>
-                                                    <path d="m19.07 4.93-1.41 1.41"></path>
-                                                </svg>
-                                            </button>
                                         </div>
-                                        
-                                        <div class="flex items-center justify-between">
-                                            <div class="space-y-0.5">
-                                                <label class="text-sm font-medium">Auto-refresh Background Pages</label>
-                                                <p class="text-xs text-muted-foreground">Automatically refresh inactive pages in the background (pauses on active page)</p>
+
+                                        <!-- Defaults Section -->
+                                        <div class="border-t pt-6">
+                                            <h4 class="text-sm font-semibold mb-3 text-foreground">Defaults</h4>
+                                            <div class="space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5 flex-1">
+                                                        <label class="text-sm font-medium">Analytics Time Frame</label>
+                                                        <p class="text-xs text-muted-foreground">Default time period for analytics data and validation trends</p>
+                                                    </div>
+                                                    <select id="default-analytics-timeframe" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="1">1 month</option>
+                                                        <option value="3" selected>3 months</option>
+                                                        <option value="6">6 months</option>
+                                                        <option value="12">12 months</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5 flex-1">
+                                                        <label class="text-sm font-medium">Expiration Monitor Time Frame</label>
+                                                        <p class="text-xs text-muted-foreground">Default time period for checking upcoming package expirations</p>
+                                                    </div>
+                                                    <select id="default-expiration-timeframe" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="30">30 days</option>
+                                                        <option value="60">60 days</option>
+                                                        <option value="90" selected>90 days</option>
+                                                        <option value="120">120 days</option>
+                                                        <option value="180">180 days</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5 flex-1">
+                                                        <label class="text-sm font-medium">Package Changes Time Frame</label>
+                                                        <p class="text-xs text-muted-foreground">Default time period for viewing package change history</p>
+                                                    </div>
+                                                    <select id="default-package-changes-timeframe" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="7">7 days</option>
+                                                        <option value="14">14 days</option>
+                                                        <option value="30" selected>30 days</option>
+                                                        <option value="60">60 days</option>
+                                                        <option value="90">90 days</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <select id="auto-refresh-interval" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                                <option value="0">Never</option>
-                                                <option value="1">1 minute</option>
-                                                <option value="5" selected>5 minutes</option>
-                                                <option value="10">10 minutes</option>
-                                                <option value="15">15 minutes</option>
-                                                <option value="30">30 minutes</option>
-                                            </select>
+                                        </div>
+
+                                        <!-- Dashboard Widgets Defaults Section -->
+                                        <div class="border-t pt-6">
+                                            <h4 class="text-sm font-semibold mb-3 text-foreground">Dashboard Widgets</h4>
+                                            <div class="space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5 flex-1">
+                                                        <label class="text-sm font-medium">Data Validation Widget</label>
+                                                        <p class="text-xs text-muted-foreground">Default time period for validation error monitoring</p>
+                                                    </div>
+                                                    <select id="default-dashboard-validation-timeframe" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="1d">1 Day</option>
+                                                        <option value="1w" selected>1 Week</option>
+                                                        <option value="1m">1 Month</option>
+                                                        <option value="1y">1 Year</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5 flex-1">
+                                                        <label class="text-sm font-medium">Product Removals Widget</label>
+                                                        <p class="text-xs text-muted-foreground">Default time period for tracking PS request removals</p>
+                                                    </div>
+                                                    <select id="default-dashboard-removals-timeframe" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="1d">1 Day</option>
+                                                        <option value="1w" selected>1 Week</option>
+                                                        <option value="1m">1 Month</option>
+                                                        <option value="1y">1 Year</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex items-center justify-between">
+                                                    <div class="space-y-0.5 flex-1">
+                                                        <label class="text-sm font-medium">Expiration Monitor Widget</label>
+                                                        <p class="text-xs text-muted-foreground">Default window for checking upcoming package expirations</p>
+                                                    </div>
+                                                    <select id="default-dashboard-expiration-window" class="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        <option value="7" selected>7 Days</option>
+                                                        <option value="30">30 Days</option>
+                                                        <option value="60">60 Days</option>
+                                                        <option value="90">90 Days</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex justify-end pt-2">
+                                                    <button id="save-defaults-btn" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                                            <polyline points="7 3 7 8 15 8"></polyline>
+                                                        </svg>
+                                                        Save Defaults
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -579,7 +579,11 @@ async function loadAnalyticsData() {
             enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
         }
         
-        const response = await fetch(`/api/analytics/request-types-week?enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
+        // Get analytics timeframe from defaults
+        const defaults = getApplicationDefaults();
+        const months = defaults.analyticsTimeframe;
+        
+        const response = await fetch(`/api/analytics/request-types-week?months=${months}&enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
         const data = await response.json();
         
         if (data.success) {
@@ -744,8 +748,12 @@ async function loadValidationTrendChart() {
             enabledRuleIds = ['app-quantity-validation', 'model-count-validation', 'entitlement-date-overlap-validation'];
         }
         
+        // Get analytics timeframe from defaults
+        const defaults = getApplicationDefaults();
+        const months = defaults.analyticsTimeframe;
+        
         console.log('📈 Fetching validation trend data...');
-        const response = await fetch(`/api/analytics/validation-trend?enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
+        const response = await fetch(`/api/analytics/validation-trend?months=${months}&enabledRules=${encodeURIComponent(JSON.stringify(enabledRuleIds))}`);
         const data = await response.json();
         
         if (data.success && data.trendData && data.trendData.length > 0) {
@@ -839,6 +847,13 @@ function renderValidationTrendChart() {
     if (updateToggle) updateToggle.checked = preferences.showUpdate;
     if (newToggle) newToggle.checked = preferences.showNew;
     if (deprovisionToggle) deprovisionToggle.checked = preferences.showDeprovision;
+    
+    // Get the timeframe for display
+    const defaults = getApplicationDefaults();
+    const timeframeMonths = defaults.analyticsTimeframe;
+    const timeframeLabel = timeframeMonths === 1 ? 'Last Month' : 
+                          timeframeMonths === 12 ? 'Last Year' :
+                          `Last ${timeframeMonths} Months`;
     
     // Prepare chart data - sample every 3 days to avoid overcrowding
     const sampledData = validationTrendData.trendData.filter((d, index) => index % 3 === 0);
@@ -1031,7 +1046,7 @@ function renderValidationTrendChart() {
                     },
                     title: {
                         display: true,
-                        text: 'Date (Last 3 Months)',
+                        text: `Date (${timeframeLabel})`,
                         font: {
                             family: 'Inter',
                             size: 12,
@@ -1971,6 +1986,15 @@ function setupSettingsEventListeners() {
         autoRefreshIntervalSelect.addEventListener('change', handleAutoRefreshIntervalChange);
     }
 
+    // Defaults save button
+    const saveDefaultsButton = document.getElementById('save-defaults-btn');
+    if (saveDefaultsButton) {
+        saveDefaultsButton.addEventListener('click', saveApplicationDefaults);
+    }
+
+    // Load existing defaults
+    loadApplicationDefaults();
+
     // Setup collapsible sections
     // Add a small delay to ensure DOM is fully rendered
     setTimeout(() => {
@@ -2006,6 +2030,134 @@ function setupCollapsibleSections() {
             }
         });
     });
+}
+
+// ============================================================================
+// APPLICATION DEFAULTS FUNCTIONS
+// ============================================================================
+
+// Get application defaults with fallback to default values
+function getApplicationDefaults() {
+    const defaults = {
+        analyticsTimeframe: 3, // months
+        expirationTimeframe: 90, // days
+        packageChangesTimeframe: 30, // days
+        dashboardValidationTimeframe: '1w', // 1 week
+        dashboardRemovalsTimeframe: '1w', // 1 week
+        dashboardExpirationWindow: '7' // 7 days
+    };
+    
+    try {
+        const saved = localStorage.getItem('applicationDefaults');
+        if (saved) {
+            return { ...defaults, ...JSON.parse(saved) };
+        }
+    } catch (error) {
+        console.warn('Error loading application defaults:', error);
+    }
+    
+    return defaults;
+}
+
+// Load application defaults into the UI
+function loadApplicationDefaults() {
+    const defaults = getApplicationDefaults();
+    
+    const analyticsSelect = document.getElementById('default-analytics-timeframe');
+    const expirationSelect = document.getElementById('default-expiration-timeframe');
+    const packageChangesSelect = document.getElementById('default-package-changes-timeframe');
+    const dashboardValidationSelect = document.getElementById('default-dashboard-validation-timeframe');
+    const dashboardRemovalsSelect = document.getElementById('default-dashboard-removals-timeframe');
+    const dashboardExpirationSelect = document.getElementById('default-dashboard-expiration-window');
+    
+    if (analyticsSelect) {
+        analyticsSelect.value = defaults.analyticsTimeframe;
+    }
+    
+    if (expirationSelect) {
+        expirationSelect.value = defaults.expirationTimeframe;
+    }
+    
+    if (packageChangesSelect) {
+        packageChangesSelect.value = defaults.packageChangesTimeframe;
+    }
+    
+    if (dashboardValidationSelect) {
+        dashboardValidationSelect.value = defaults.dashboardValidationTimeframe;
+    }
+    
+    if (dashboardRemovalsSelect) {
+        dashboardRemovalsSelect.value = defaults.dashboardRemovalsTimeframe;
+    }
+    
+    if (dashboardExpirationSelect) {
+        dashboardExpirationSelect.value = defaults.dashboardExpirationWindow;
+    }
+    
+    console.log('Loaded application defaults:', defaults);
+}
+
+// Save application defaults to localStorage
+function saveApplicationDefaults() {
+    const analyticsSelect = document.getElementById('default-analytics-timeframe');
+    const expirationSelect = document.getElementById('default-expiration-timeframe');
+    const packageChangesSelect = document.getElementById('default-package-changes-timeframe');
+    const dashboardValidationSelect = document.getElementById('default-dashboard-validation-timeframe');
+    const dashboardRemovalsSelect = document.getElementById('default-dashboard-removals-timeframe');
+    const dashboardExpirationSelect = document.getElementById('default-dashboard-expiration-window');
+    
+    const defaults = {
+        analyticsTimeframe: parseInt(analyticsSelect?.value || 3),
+        expirationTimeframe: parseInt(expirationSelect?.value || 90),
+        packageChangesTimeframe: parseInt(packageChangesSelect?.value || 30),
+        dashboardValidationTimeframe: dashboardValidationSelect?.value || '1w',
+        dashboardRemovalsTimeframe: dashboardRemovalsSelect?.value || '1w',
+        dashboardExpirationWindow: dashboardExpirationSelect?.value || '7'
+    };
+    
+    try {
+        localStorage.setItem('applicationDefaults', JSON.stringify(defaults));
+        console.log('Saved application defaults:', defaults);
+        
+        // Show success message
+        showNotification('Defaults saved successfully', 'success');
+        
+        // Reload the current page data if we're on analytics or related pages
+        const currentPage = getCurrentPage();
+        if (currentPage === 'analytics') {
+            loadAnalytics();
+        } else if (currentPage === 'dashboard') {
+            refreshDashboard();
+        }
+    } catch (error) {
+        console.error('Error saving application defaults:', error);
+        showNotification('Error saving defaults', 'error');
+    }
+}
+
+// Show a temporary notification
+function showNotification(message, type = 'info') {
+    // Use the notification manager if available
+    if (typeof notificationManager !== 'undefined' && notificationManager.showInBrowser) {
+        notificationManager.showInBrowser(message, type);
+        return;
+    }
+    
+    // Fallback: create a simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-600 text-white' :
+        type === 'error' ? 'bg-red-600 text-white' :
+        'bg-blue-600 text-white'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
 }
 
 
@@ -5830,6 +5982,10 @@ function initializeValidationMonitoring() {
     console.log('Initializing validation monitoring...');
     
     if (timeFrameSelect) {
+        // Apply default timeframe from settings
+        const defaults = getApplicationDefaults();
+        timeFrameSelect.value = defaults.dashboardValidationTimeframe;
+        
         timeFrameSelect.addEventListener('change', fetchValidationErrors);
     }
     
@@ -6031,6 +6187,10 @@ function initializePSRemovalsMonitoring() {
     console.log('Initializing PS Request Removals monitoring...');
     
     if (removalsTimeFrameSelect) {
+        // Apply default timeframe from settings
+        const defaults = getApplicationDefaults();
+        removalsTimeFrameSelect.value = defaults.dashboardRemovalsTimeframe;
+        
         removalsTimeFrameSelect.addEventListener('change', fetchPSRemovals);
     }
     
@@ -6043,6 +6203,10 @@ function initializeExpirationWidget() {
     console.log('[ExpirationWidget] Initializing expiration monitor widget...');
     
     if (expirationWindowSelect) {
+        // Apply default window from settings
+        const defaults = getApplicationDefaults();
+        expirationWindowSelect.value = defaults.dashboardExpirationWindow;
+        
         expirationWindowSelect.addEventListener('change', fetchExpirationWidget);
     }
     
