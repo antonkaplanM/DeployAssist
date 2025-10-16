@@ -3091,7 +3091,7 @@ function showProvisioningLoading() {
     
     tbody.innerHTML = `
         <tr>
-            <td colspan="10" class="px-4 py-8 text-center">
+            <td colspan="11" class="px-4 py-8 text-center">
                 <div class="space-y-4">
                     <div class="loading-spinner mx-auto"></div>
                     <p class="text-sm text-muted-foreground">Loading provisioning requests...</p>
@@ -3114,7 +3114,7 @@ function showProvisioningError(message) {
     
     tbody.innerHTML = `
         <tr>
-            <td colspan="10" class="px-4 py-8 text-center">
+            <td colspan="11" class="px-4 py-8 text-center">
                 <div class="space-y-4">
                     <svg class="h-12 w-12 mx-auto text-red-500 opacity-50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -3137,63 +3137,7 @@ function showProvisioningError(message) {
     }
 }
 
-// Render provisioning table
-function renderProvisioningTable(data) {
-    const tbody = document.getElementById('provisioning-table-body');
-    if (!tbody) return;
-    
-    if (data.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
-                    <div class="flex flex-col items-center gap-2">
-                        <svg class="h-12 w-12 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"></path>
-                            <path d="m15 9-6 6"></path>
-                            <path d="m9 9 6 6"></path>
-                        </svg>
-                        <span>No provisioning requests found</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = data.map(request => `
-        <tr class="hover:bg-muted/50 transition-colors">
-            <td class="px-4 py-3">
-                <div class="font-medium text-sm">${request.Name || 'N/A'}</div>
-            </td>
-            <td class="px-4 py-3">
-                <div class="text-sm">${request.Account__c || 'N/A'}</div>
-                ${request.Account_Site__c ? `<div class="text-xs text-muted-foreground">Site: ${request.Account_Site__c}</div>` : ''}
-            </td>
-            <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getRequestTypeColor(request.TenantRequestAction__c)}">
-                    ${request.TenantRequestAction__c || 'N/A'}
-                </span>
-            </td>
-            <td class="px-4 py-3">
-                <div class="text-sm">${request.Deployment__r?.Name || 'N/A'}</div>
-            </td>
-            <td class="px-4 py-3">
-                ${getProductsDisplay(request)}
-            </td>
-            <td class="px-4 py-3">
-                ${getStatusDisplay(request)}
-                ${request.Billing_Status__c ? `<div class="text-xs text-muted-foreground mt-1">Billing: ${request.Billing_Status__c}</div>` : ''}
-            </td>
-            <td class="px-4 py-3">
-                <div class="text-sm">${formatDate(request.CreatedDate)}</div>
-                ${request.LastModifiedDate ? `<div class="text-xs text-muted-foreground">Modified: ${formatDate(request.LastModifiedDate)}</div>` : ''}
-            </td>
-            <td class="px-4 py-3">
-                <div class="text-sm">${request.CreatedBy?.Name || 'N/A'}</div>
-            </td>
-        </tr>
-    `).join('');
-}
+// DUPLICATE FUNCTION - REMOVED (see line 5019 for active implementation)
 
 // Update pagination info display
 function updatePaginationInfo() {
@@ -4180,43 +4124,7 @@ function formatDate(dateString) {
     }
 }
 
-// Show loading state
-function showProvisioningLoading() {
-    const tbody = document.getElementById('provisioning-table-body');
-    if (tbody) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="loading-spinner"></div>
-                        <span>Loading provisioning data...</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-}
-
-// Show error state
-function showProvisioningError(message) {
-    const tbody = document.getElementById('provisioning-table-body');
-    if (tbody) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="10" class="px-4 py-8 text-center text-red-600">
-                    <div class="flex flex-col items-center gap-2">
-                        <svg class="h-12 w-12 text-red-500/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                        </svg>
-                        <span>Error: ${message}</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-}
+// DUPLICATE FUNCTIONS - REMOVED (see lines 3088 and 3111 for active implementations)
 
 // (Removed duplicate updateProvisioningCount(count) to avoid overriding the state-based version)
 
@@ -4989,7 +4897,7 @@ function renderProvisioningTable(data) {
     if (!data || data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="10" class="px-4 py-8 text-center">
+                <td colspan="11" class="px-4 py-8 text-center">
                     <div class="flex flex-col items-center gap-2">
                         <svg class="h-12 w-12 text-muted-foreground/50" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 3v18h18V3H3z"></path>
@@ -5003,7 +4911,11 @@ function renderProvisioningTable(data) {
         return;
     }
     
-    tbody.innerHTML = data.map(request => `
+    tbody.innerHTML = data.map(request => {
+        // Extract tenant name using same logic as Account History
+        const tenantName = request.parsedPayload?.tenantName || 'N/A';
+        
+        return `
         <tr class="border-b hover:bg-muted/50">
             <td class="px-4 py-3">
                 <div class="font-medium">${request.Name || 'N/A'}</div>
@@ -5017,6 +4929,9 @@ function renderProvisioningTable(data) {
             </td>
             <td class="px-4 py-3">
                 <div class="text-sm">${request.Deployment__r?.Name || 'N/A'}</div>
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm">${tenantName}</div>
             </td>
             <td class="px-4 py-3">
                 ${getProductsDisplay(request, validationResults.get(request.Id))}
@@ -5050,7 +4965,8 @@ function renderProvisioningTable(data) {
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Render validation column for a record
