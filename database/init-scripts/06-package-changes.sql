@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS package_change_analysis (
     previous_ps_record_id VARCHAR(50) NOT NULL,
     previous_ps_record_name VARCHAR(100) NOT NULL,
     deployment_number VARCHAR(100) NOT NULL,
+    tenant_name VARCHAR(255),
     account_id VARCHAR(255),
     account_name VARCHAR(255) NOT NULL,
     account_site VARCHAR(255),
@@ -25,6 +26,18 @@ CREATE TABLE IF NOT EXISTS package_change_analysis (
     ps_created_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add tenant_name column if it doesn't exist (for existing installations)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'package_change_analysis' 
+        AND column_name = 'tenant_name'
+    ) THEN
+        ALTER TABLE package_change_analysis ADD COLUMN tenant_name VARCHAR(255);
+    END IF;
+END $$;
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_package_change_analysis_date ON package_change_analysis(analysis_date DESC);

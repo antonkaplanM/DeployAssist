@@ -804,52 +804,104 @@
                                 <div class="p-6 pt-0">
                                     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                                         <!-- Total PS Records -->
-                                        <div class="rounded-lg border bg-card p-4">
+                                        <div class="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 shadow-sm">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="rounded-lg bg-blue-100 p-2">
+                                                    <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div class="flex flex-col gap-1">
-                                                <p class="text-sm font-medium text-muted-foreground">PS Records with Changes</p>
-                                                <p class="text-3xl font-bold" id="summary-ps-records">-</p>
+                                                <p class="text-sm font-medium text-blue-700">PS Records with Changes</p>
+                                                <p class="text-3xl font-bold text-blue-900" id="summary-ps-records">-</p>
                                             </div>
                                         </div>
                                         
                                         <!-- Total Changes -->
-                                        <div class="rounded-lg border bg-card p-4">
+                                        <div class="rounded-lg border border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100/50 p-5 shadow-sm">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="rounded-lg bg-purple-100 p-2">
+                                                    <svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                                        <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div class="flex flex-col gap-1">
-                                                <p class="text-sm font-medium text-muted-foreground">Total Package Changes</p>
-                                                <p class="text-3xl font-bold" id="summary-total-changes">-</p>
+                                                <p class="text-sm font-medium text-purple-700">Total Package Changes</p>
+                                                <p class="text-3xl font-bold text-purple-900" id="summary-total-changes">-</p>
                                             </div>
                                         </div>
                                         
                                         <!-- Upgrades -->
-                                        <div class="rounded-lg border bg-green-50 p-4">
+                                        <div class="rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-green-100/50 p-5 shadow-sm">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="rounded-lg bg-green-100 p-2">
+                                                    <svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="m18 9-6-6-6 6"></path>
+                                                        <path d="M12 3v14"></path>
+                                                        <path d="M5 21h14"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div class="flex flex-col gap-1">
                                                 <p class="text-sm font-medium text-green-700">Upgrades</p>
-                                                <p class="text-3xl font-bold text-green-700" id="summary-upgrades">-</p>
-                                                <p class="text-xs text-green-600" id="summary-upgrades-pct">-</p>
+                                                <p class="text-3xl font-bold text-green-900" id="summary-upgrades">-</p>
+                                                <p class="text-xs font-medium text-green-600" id="summary-upgrades-pct">-</p>
                                             </div>
                                         </div>
                                         
                                         <!-- Downgrades -->
-                                        <div class="rounded-lg border bg-orange-50 p-4">
+                                        <div class="rounded-lg border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 shadow-sm">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="rounded-lg bg-amber-100 p-2">
+                                                    <svg class="h-5 w-5 text-amber-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M12 5v14"></path>
+                                                        <path d="m19 12-7 7-7-7"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div class="flex flex-col gap-1">
-                                                <p class="text-sm font-medium text-orange-700">Downgrades</p>
-                                                <p class="text-3xl font-bold text-orange-700" id="summary-downgrades">-</p>
-                                                <p class="text-xs text-orange-600" id="summary-downgrades-pct">-</p>
+                                                <p class="text-sm font-medium text-amber-700">Downgrades</p>
+                                                <p class="text-3xl font-bold text-amber-900" id="summary-downgrades">-</p>
+                                                <p class="text-xs font-medium text-amber-600" id="summary-downgrades-pct">-</p>
                                             </div>
                                         </div>
                                         
                                         <!-- Accounts Affected -->
-                                        <div class="rounded-lg border bg-card p-4 md:col-span-2">
+                                        <div class="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-5 shadow-sm md:col-span-2">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="rounded-lg bg-indigo-100 p-2">
+                                                    <svg class="h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                                        <circle cx="9" cy="7" r="4"></circle>
+                                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div class="flex flex-col gap-1">
-                                                <p class="text-sm font-medium text-muted-foreground">Accounts Affected</p>
-                                                <p class="text-3xl font-bold" id="summary-accounts">-</p>
+                                                <p class="text-sm font-medium text-indigo-700">Accounts Affected</p>
+                                                <p class="text-3xl font-bold text-indigo-900" id="summary-accounts">-</p>
                                             </div>
                                         </div>
                                         
                                         <!-- Products Changed -->
-                                        <div class="rounded-lg border bg-card p-4 md:col-span-2">
+                                        <div class="rounded-lg border border-teal-200 bg-gradient-to-br from-teal-50 to-teal-100/50 p-5 shadow-sm md:col-span-2">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="rounded-lg bg-teal-100 p-2">
+                                                    <svg class="h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"></path>
+                                                        <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"></path>
+                                                        <path d="M12 3v6"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div class="flex flex-col gap-1">
-                                                <p class="text-sm font-medium text-muted-foreground">Products Changed</p>
-                                                <p class="text-3xl font-bold" id="summary-products">-</p>
+                                                <p class="text-sm font-medium text-teal-700">Products Changed</p>
+                                                <p class="text-3xl font-bold text-teal-900" id="summary-products">-</p>
                                             </div>
                                         </div>
                                     </div>
@@ -2436,6 +2488,70 @@
                                         <li>Expand request rows to see complete technical details and metadata</li>
                                         <li>Click the "Clear Selection" button to start a new search</li>
                                     </ul>
+                                </div>
+                                
+                                <div class="border-t pt-4 mt-4">
+                                    <h3 class="font-semibold text-lg mb-3">Package Change Analytics</h3>
+                                    <p class="text-muted-foreground text-sm mb-4">
+                                        Track package upgrades and downgrades across all deployments to understand customer growth patterns and package evolution.
+                                    </p>
+                                    
+                                    <div class="space-y-4">
+                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-blue-900 mb-2">📊 Summary Metrics</h4>
+                                            <ul class="text-sm text-blue-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>PS Records with Changes:</strong> Count of Update requests that modified packages</li>
+                                                <li><strong>Total Package Changes:</strong> Number of individual package transitions</li>
+                                                <li><strong>Upgrades vs. Downgrades:</strong> Split view showing growth patterns</li>
+                                                <li><strong>Accounts Affected:</strong> Number of unique accounts with changes</li>
+                                                <li><strong>Products Changed:</strong> Count of unique product codes affected</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-purple-900 mb-2">🎯 Expandable Account View</h4>
+                                            <p class="text-sm text-purple-800 mb-2">Three-level hierarchy for detailed analysis:</p>
+                                            <ul class="text-sm text-purple-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Account Level:</strong> Click to expand and see all deployments for an account</li>
+                                                <li><strong>Deployment Level:</strong> Shows deployment number and tenant name (e.g., "Deploy-7186 (mycompany-prod)")</li>
+                                                <li><strong>Product Level:</strong> Expand deployments to see product-level changes</li>
+                                                <li><strong>Default State:</strong> All levels collapsed for easy overview</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-green-900 mb-2">📈 Time Frame Options</h4>
+                                            <ul class="text-sm text-green-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>30 Days:</strong> Recent activity for immediate trends</li>
+                                                <li><strong>90 Days:</strong> Quarterly patterns and usage</li>
+                                                <li><strong>6 Months / 1 Year:</strong> Long-term trend analysis</li>
+                                                <li><strong>2 Years:</strong> Historical perspective on customer growth</li>
+                                                <li><strong>On-Demand Refresh:</strong> Click "Refresh Analysis" to update with latest data</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                            <h4 class="font-semibold text-orange-900 mb-2">📥 Excel Export</h4>
+                                            <p class="text-sm text-orange-800 mb-2">Export comprehensive reports with professional formatting:</p>
+                                            <ul class="text-sm text-orange-800 space-y-1 ml-4 list-disc">
+                                                <li><strong>Summary Tab:</strong> High-level metrics and totals</li>
+                                                <li><strong>By Account Tab:</strong> Hierarchical view with deployments and products (includes tenant names)</li>
+                                                <li><strong>By Product Tab:</strong> Product-centric analysis</li>
+                                                <li><strong>Recent Changes Tab:</strong> Chronological list with tenant names and deployment details</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+                                        <h4 class="font-semibold text-gray-900 mb-2">💡 Pro Tips:</h4>
+                                        <ul class="text-sm text-gray-800 space-y-1 ml-4 list-disc">
+                                            <li>Use tenant names to identify specific environments (prod, dev, staging)</li>
+                                            <li>Look for upgrade patterns to identify high-growth accounts</li>
+                                            <li>Compare product-level changes to understand which packages are most popular</li>
+                                            <li>Export to Excel for detailed analysis and reporting to stakeholders</li>
+                                            <li>Filter by time frame to focus on recent trends vs. historical patterns</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>

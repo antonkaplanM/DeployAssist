@@ -973,11 +973,11 @@ async function insertPackageChangeData(packageChangeData) {
                 INSERT INTO package_change_analysis (
                     analysis_date, ps_record_id, ps_record_name,
                     previous_ps_record_id, previous_ps_record_name,
-                    deployment_number, account_id, account_name, account_site,
+                    deployment_number, tenant_name, account_id, account_name, account_site,
                     product_code, product_name, previous_package, new_package,
                     change_type, previous_start_date, previous_end_date,
                     new_start_date, new_end_date, ps_created_date
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
             `;
             const values = [
                 item.analysisDate || new Date(),
@@ -986,6 +986,7 @@ async function insertPackageChangeData(packageChangeData) {
                 item.previousPsRecordId,
                 item.previousPsRecordName,
                 item.deploymentNumber,
+                item.tenantName || null,
                 item.accountId || null,
                 item.accountName,
                 item.accountSite || null,
@@ -1246,6 +1247,7 @@ async function getPackageChangesByAccount(timeFrame = '1y', limit = null) {
                 account_name,
                 account_id,
                 deployment_number,
+                tenant_name,
                 COUNT(*) as total_changes,
                 COUNT(*) FILTER (WHERE change_type = 'upgrade') as upgrades,
                 COUNT(*) FILTER (WHERE change_type = 'downgrade') as downgrades,
@@ -1253,7 +1255,7 @@ async function getPackageChangesByAccount(timeFrame = '1y', limit = null) {
                 COUNT(DISTINCT product_code) as products_changed
             FROM package_change_analysis
             WHERE ps_created_date >= $1 AND ps_created_date <= $2
-            GROUP BY account_name, account_id, deployment_number
+            GROUP BY account_name, account_id, deployment_number, tenant_name
             ORDER BY account_name, total_changes DESC
         `;
         
@@ -1339,7 +1341,7 @@ async function getRecentPackageChanges(timeFrame = '1y', limit = 20) {
             SELECT 
                 ps_record_id, ps_record_name,
                 previous_ps_record_id, previous_ps_record_name,
-                deployment_number, account_name,
+                deployment_number, tenant_name, account_name,
                 product_code, product_name,
                 previous_package, new_package, change_type,
                 ps_created_date

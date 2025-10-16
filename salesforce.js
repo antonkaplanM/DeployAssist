@@ -3001,9 +3001,27 @@ async function analyzePackageChanges(lookbackYears = 2, startDate = null, endDat
                 }
                 
                 if (changes.length > 0) {
+                    // Extract tenant name from payload (using multiple fallback locations like account history)
+                    const currentPayloadParsed = parsePayloadData(currentRecord.Payload_Data__c);
+                    const tenantName = currentPayloadParsed.properties?.provisioningDetail?.tenantName 
+                        || currentPayloadParsed.properties?.tenantName 
+                        || currentPayloadParsed.preferredSubdomain1
+                        || currentPayloadParsed.preferredSubdomain2
+                        || currentPayloadParsed.properties?.preferredSubdomain1
+                        || currentPayloadParsed.properties?.preferredSubdomain2
+                        || currentPayloadParsed.tenantName 
+                        || currentRecord.Tenant_Name__c
+                        || null;
+                    
+                    // Add tenant name to each change
+                    const changesWithTenant = changes.map(change => ({
+                        ...change,
+                        tenantName: tenantName
+                    }));
+                    
                     psRecordsWithChanges.add(currentRecord.Name);
                     accountsAffected.add(currentRecord.Account__c);
-                    allPackageChanges.push(...changes);
+                    allPackageChanges.push(...changesWithTenant);
                 }
             }
             

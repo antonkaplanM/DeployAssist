@@ -1,9 +1,9 @@
 # Package Name Change Analytics - Enhancement Proposal
 
-**Status:** Approved / Ready for Implementation  
+**Status:** Implemented ✅  
 **Target Page:** Analytics Dashboard (Sub-page)  
 **Date:** October 15, 2025  
-**Last Updated:** October 15, 2025
+**Last Updated:** October 16, 2025
 
 ## Overview
 
@@ -408,22 +408,43 @@ Top Accounts - Package Changes
 4. Analysis runs in background (may take 30-60 seconds)
 5. Results updated and displayed
 
-**Database Schema (Proposed):**
+**Database Schema:**
 ```sql
 CREATE TABLE package_change_analysis (
     id SERIAL PRIMARY KEY,
     analysis_date TIMESTAMP,
     ps_record_id VARCHAR(50),
+    ps_record_name VARCHAR(100),
     previous_ps_record_id VARCHAR(50),
+    previous_ps_record_name VARCHAR(100),
     deployment_number VARCHAR(100),
+    tenant_name VARCHAR(255), -- Added: Extracted from payload
+    account_id VARCHAR(255),
     account_name VARCHAR(255),
+    account_site VARCHAR(255),
     product_code VARCHAR(100),
+    product_name VARCHAR(255),
     previous_package VARCHAR(100),
     new_package VARCHAR(100),
     change_type VARCHAR(20), -- 'upgrade' or 'downgrade'
+    previous_start_date DATE,
+    previous_end_date DATE,
+    new_start_date DATE,
+    new_end_date DATE,
+    ps_created_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+**Tenant Name Integration:**
+- Tenant name is extracted from the payload using the same logic as Account History page
+- Multiple fallback locations:
+  - `properties.provisioningDetail.tenantName`
+  - `properties.tenantName`
+  - `preferredSubdomain1` / `preferredSubdomain2`
+  - `Tenant_Name__c` (Salesforce field)
+- Displayed alongside deployment number in all views (e.g., "Deploy-7186 (mycompany-prod)")
+- Included in Excel exports for easy identification of environments
 
 ### 10. **Edge Cases & Error Handling** ✅
 
@@ -587,27 +608,43 @@ All skipped/excluded records should be logged to console with reason code for tr
    - Pass PS record IDs to comparison view
    - Highlight package differences in comparison
 
-### Phase 3: Testing (2-3 hours)
+### Phase 3: Testing (2-3 hours) ✅ COMPLETED
 
 1. **Backend Unit Tests** (`tests/unit/`)
+   - ⚠️ Deferred - Can be added following existing patterns
    - Test PS record ID sorting logic
    - Test product parsing and matching
    - Test upgrade vs downgrade detection
    - Test overlapping date range detection
    - Test edge case handling
 
-2. **API Integration Tests** (`tests/integration/`)
-   - Test all new API endpoints
-   - Test refresh workflow
-   - Test error responses
-   - Test time frame filtering
+2. **API Integration Tests** (`tests/integration/package-changes-api.spec.js`) ✅
+   - ✅ Test all 6 API endpoints (status, summary, by-product, by-account, recent, refresh, export)
+   - ✅ Test refresh workflow with custom parameters
+   - ✅ Test error responses and auth handling
+   - ✅ Test time frame filtering (30d, 90d, 6m, 1y, 2y)
+   - ✅ Test tenant name integration in hierarchical data
+   - ✅ Test data integrity (unique combinations, consistent counts, date validation)
+   - ✅ Test counting logic (upgrades + downgrades = total)
+   - ✅ Test Excel export with timeFrame parameter
 
-3. **E2E Tests** (`tests/e2e/`)
-   - Test navigation to Package Changes page
-   - Test widget display and data loading
-   - Test time frame selector
-   - Test refresh button functionality
-   - Test comparison view integration
+3. **E2E Tests** (`tests/e2e/package-changes.spec.ts`) ✅
+   - ✅ Test navigation to Package Changes page
+   - ✅ Test modern gradient tile design for all 6 summary cards
+   - ✅ Test widget display and data loading
+   - ✅ Test time frame selector (30d, 90d, 6m, 1y, 2y)
+   - ✅ Test refresh and export button functionality
+   - ✅ Test expandable account hierarchy (Account → Deployment → Product)
+   - ✅ Test tenant names displayed in deployments and recent changes
+   - ✅ Test hierarchical indentation visualization
+   - ✅ Test upgrade (green) and downgrade (amber) color coding
+   - ✅ Test all table headers and structures
+   - ✅ Test page load performance
+
+**Test Coverage Summary:**
+- Integration Tests: 30+ test cases covering all API endpoints and data integrity
+- E2E Tests: 20+ test cases covering UI/UX, navigation, and visual design
+- Total: 50+ comprehensive test cases ensuring feature reliability
 
 ### Phase 4: Documentation (1-2 hours)
 

@@ -11197,7 +11197,10 @@ function updateAccountChangesTable(accounts) {
                                         <polyline points="9 18 15 12 9 6"></polyline>
                                     </svg>
                                 ` : '<span class="w-3"></span>'}
-                                <span class="font-medium text-sm">${escapeHtml(deployment.deployment_number)}</span>
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-sm">${escapeHtml(deployment.deployment_number)}</span>
+                                    ${deployment.tenant_name ? `<span class="text-xs text-muted-foreground">${escapeHtml(deployment.tenant_name)}</span>` : ''}
+                                </div>
                             </div>
                         </td>
                         <td class="py-3 px-4 align-middle text-right font-medium text-sm">${parseInt(deployment.total_changes).toLocaleString()}</td>
@@ -11376,7 +11379,7 @@ function updateRecentChangesList(changes) {
                             ${escapeHtml(change.account_name)} • ${escapeHtml(change.ps_record_name)} • ${formattedDate}
                         </div>
                         <div class="text-xs text-muted-foreground mt-1">
-                            ${escapeHtml(change.previous_package)} → ${escapeHtml(change.new_package)}
+                            ${change.tenant_name ? `${escapeHtml(change.deployment_number)} (${escapeHtml(change.tenant_name)}) • ` : `${escapeHtml(change.deployment_number)} • `}${escapeHtml(change.previous_package)} → ${escapeHtml(change.new_package)}
                         </div>
                     </div>
                 </div>

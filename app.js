@@ -2185,8 +2185,11 @@ app.get('/api/analytics/package-changes/export', async (req, res) => {
                 if (account.deployments && account.deployments.length > 0) {
                     account.deployments.forEach(deployment => {
                         const deployRow = accountSheet.getRow(currentRow++);
+                        const deploymentLabel = deployment.tenant_name 
+                            ? `  ${deployment.deployment_number} (${deployment.tenant_name})`
+                            : `  ${deployment.deployment_number}`;
                         deployRow.values = [
-                            `  ${deployment.deployment_number}`,
+                            deploymentLabel,
                             deployment.total_changes,
                             deployment.upgrades,
                             deployment.downgrades,
@@ -2309,6 +2312,7 @@ app.get('/api/analytics/package-changes/export', async (req, res) => {
             { width: 15 },
             { width: 30 },
             { width: 20 },
+            { width: 20 },
             { width: 30 },
             { width: 20 },
             { width: 15 },
@@ -2316,14 +2320,14 @@ app.get('/api/analytics/package-changes/export', async (req, res) => {
         ];
         
         // Add title
-        recentSheet.mergeCells('A1:G1');
+        recentSheet.mergeCells('A1:H1');
         const recentTitleCell = recentSheet.getCell('A1');
         recentTitleCell.value = 'Recent Package Changes';
         recentTitleCell.font = { bold: true, size: 14 };
         recentTitleCell.alignment = { horizontal: 'center' };
         
         // Add headers
-        recentSheet.getRow(2).values = ['PS Record', 'Account', 'Deployment', 'Product', 'Package Change', 'Change Type', 'Date'];
+        recentSheet.getRow(2).values = ['PS Record', 'Account', 'Deployment', 'Tenant Name', 'Product', 'Package Change', 'Change Type', 'Date'];
         recentSheet.getRow(2).eachCell((cell) => {
             cell.style = headerStyle;
         });
@@ -2336,6 +2340,7 @@ app.get('/api/analytics/package-changes/export', async (req, res) => {
                     change.ps_record_name,
                     change.account_name,
                     change.deployment_number,
+                    change.tenant_name || '-',
                     change.product_code,
                     `${change.previous_package} → ${change.new_package}`,
                     change.change_type === 'upgrade' ? '↑ Upgrade' : '↓ Downgrade',
@@ -2348,10 +2353,10 @@ app.get('/api/analytics/package-changes/export', async (req, res) => {
                         bottom: { style: 'thin' },
                         right: { style: 'thin' }
                     };
-                    if (colNum === 7) {
+                    if (colNum === 8) { // Date column
                         cell.numFmt = 'mm/dd/yyyy';
                     }
-                    if (colNum === 6) {
+                    if (colNum === 7) { // Change Type column
                         if (change.change_type === 'upgrade') {
                             cell.font = { color: { argb: 'FF15803D' } };
                         } else {
