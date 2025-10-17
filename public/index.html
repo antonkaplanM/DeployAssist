@@ -1771,6 +1771,7 @@
                         <h2 class="text-xl font-semibold mb-4">Quick Navigation</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <a href="#getting-started" class="text-primary hover:underline">🚀 Getting Started</a>
+                            <a href="#authentication" class="text-primary hover:underline">🔐 Authentication & Users</a>
                             <a href="#dashboard" class="text-primary hover:underline">📊 Dashboard</a>
                             <a href="#provisioning" class="text-primary hover:underline">🔧 Provisioning Monitor</a>
                             <a href="#expiration" class="text-primary hover:underline">⏰ Expiration Monitor</a>
@@ -3786,8 +3787,118 @@
         </div>
     </div>
 
+    <script src="auth-utils.js"></script>
     <script src="validation-rules.js"></script>
     <script src="notification-manager.js"></script>
     <script src="script.js"></script>
+    
+    <script>
+        // Authentication - run before anything else
+        let currentUser = null;
+
+        async function initializeAuth() {
+            try {
+                // Require authentication
+                currentUser = await AuthUtils.requireAuth();
+                if (!currentUser) return; // Will redirect to login
+                
+                console.log('✅ User authenticated:', currentUser.username);
+                console.log('User roles:', currentUser.roles.map(r => r.name));
+                
+                // Add user info to header
+                addUserInfoToHeader();
+                
+                // Show/hide admin features
+                AuthUtils.applyRoleBasedVisibility(currentUser);
+                
+                // Your existing app initialization continues automatically
+            } catch (error) {
+                console.error('Authentication error:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        function addUserInfoToHeader() {
+            // Find settings section in nav
+            const settingsNav = document.getElementById('nav-settings');
+            if (settingsNav && settingsNav.parentElement) {
+                // Create user management link for admins
+                if (AuthUtils.isAdmin(currentUser)) {
+                    const userMgmtButton = document.createElement('button');
+                    userMgmtButton.id = 'nav-user-mgmt';
+                    userMgmtButton.className = 'nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+                    userMgmtButton.innerHTML = `
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        User Management
+                    `;
+                    userMgmtButton.onclick = () => window.location.href = '/user-management.html';
+                    
+                    // Insert before settings
+                    settingsNav.parentElement.insertBefore(userMgmtButton, settingsNav);
+                }
+                
+                // Add logout button after settings
+                const logoutButton = document.createElement('button');
+                logoutButton.id = 'nav-logout';
+                logoutButton.className = 'nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+                logoutButton.innerHTML = `
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                `;
+                logoutButton.onclick = () => AuthUtils.logout();
+                
+                settingsNav.parentElement.appendChild(logoutButton);
+                
+                // Add user info display
+                const userInfoDiv = document.createElement('div');
+                userInfoDiv.className = 'px-4 py-3 mt-4 border-t text-sm';
+                userInfoDiv.innerHTML = `
+                    <div class="text-muted-foreground mb-1">Signed in as:</div>
+                    <div class="font-medium">${currentUser.full_name}</div>
+                    <div class="text-xs text-muted-foreground">${currentUser.username}</div>
+                    ${currentUser.roles.map(r => `
+                        <span class="inline-block mt-2 px-2 py-0.5 text-xs rounded-full ${
+                            r.name === 'admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        }">
+                            ${r.name}
+                        </span>
+                    `).join('')}
+                `;
+                
+                settingsNav.parentElement.appendChild(userInfoDiv);
+            }
+        }
+
+        // Run authentication check immediately
+        initializeAuth();
+        
+        // Override fetch to automatically include credentials and handle auth errors
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            if (args[1]) {
+                args[1].credentials = 'include';
+            } else {
+                args[1] = { credentials: 'include' };
+            }
+            
+            return originalFetch.apply(this, args).then(response => {
+                // Handle auth errors
+                if (response.status === 401 || response.status === 403) {
+                    AuthUtils.handleUnauthorized(response);
+                }
+                return response;
+            });
+        };
+    </script>
 </body>
 </html>

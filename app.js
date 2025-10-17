@@ -10,9 +10,16 @@ const express = require('express');
 const path = require('path');
 const { spawn } = require('child_process');
 const https = require('https');
+const cookieParser = require('cookie-parser');
 const salesforce = require('./salesforce');
 const db = require('./database');
 const smlRoutes = require('./sml-routes');
+
+// Authentication modules
+const AuthService = require('./auth-service');
+const { createAuthMiddleware, requireAdmin } = require('./auth-middleware');
+const createAuthRoutes = require('./auth-routes');
+const createUserRoutes = require('./user-routes');
 
 // Environment variables helper
 function getMissingAtlassianEnvVars() {
@@ -45,14 +52,46 @@ const PORT = process.env.PORT || 8080;
 // Middleware
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(cookieParser()); // Parse cookies for authentication
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ===== AUTHENTICATION SETUP =====
+// Check if JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+    console.error('❌ ERROR: JWT_SECRET not set in environment variables');
+    console.error('   Generate one with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+    console.error('   Add it to your .env file');
+    process.exit(1);
+}
+
+// Initialize authentication service
+const authService = new AuthService(db.pool, process.env.JWT_SECRET);
+const authenticate = createAuthMiddleware(authService, db.pool);
+
+// Periodic cleanup of expired sessions and tokens (every hour)
+setInterval(() => {
+    authService.cleanupExpired().catch(err => {
+        console.error('❌ Session cleanup error:', err);
+    });
+}, 60 * 60 * 1000);
+
+console.log('✅ Authentication system initialized');
 
 // Route for the home page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// ===== AUTHENTICATION ROUTES (PUBLIC) =====
+// These routes don't require authentication
+app.use('/api/auth', createAuthRoutes(authService, authenticate));
+
+// User management routes (admin only)
+app.use('/api/users', createUserRoutes(db.pool, authService, authenticate, requireAdmin));
+
+// ===== PUBLIC API ENDPOINTS =====
 
 // API endpoint for dynamic greeting
 app.get('/api/greeting', (req, res) => {
@@ -692,8 +731,8 @@ app.get('/api/test-salesforce', async (req, res) => {
     }
 });
 
-// SML Integration Routes
-app.use('/api/sml', smlRoutes);
+// SML Integration Routes (Protected - requires authentication)
+app.use('/api/sml', authenticate, smlRoutes);
 
 // Test web connectivity endpoint
 app.get('/api/test-web-connectivity', async (req, res) => {

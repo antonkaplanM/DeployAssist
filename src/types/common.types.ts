@@ -95,6 +95,12 @@ export interface AppConfig {
     siteUrl: string;
     cloudId?: string;
   };
+  auth: {
+    jwtSecret: string;
+    defaultAdminUsername: string;
+    defaultAdminPassword: string;
+    defaultAdminFullName: string;
+  };
 }
 
 // ===== Logging Types =====

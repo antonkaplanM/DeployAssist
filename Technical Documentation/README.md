@@ -16,6 +16,7 @@ This folder contains all technical documentation for the Deployment Assistant ap
 | **[06-Testing](./06-Testing/)** | Testing strategies | Testing Strategy |
 | **[07-Bug-Fixes](./07-Bug-Fixes/)** | Bug fix documentation | Historical fixes |
 | **[08-Changelogs](./08-Changelogs/)** | Change history | All changelogs |
+| **[09-Authentication](./09-Authentication/)** | Authentication & user management | Setup guide, Integration guides |
 
 ---
 
@@ -120,6 +121,30 @@ Change history by feature:
 - **CHANGELOG-Expiration-Monitor.md** - Expiration monitor changes
 - **CHANGELOG-Settings-Enhancements.md** - Settings changes
 
+### 09-Authentication
+Authentication and user management system:
+- **SETUP-AND-TEST-NOW.md** - Quick setup guide ⭐ START HERE
+- **AUTHENTICATION-IMPLEMENTATION-SUMMARY.md** - Complete technical details
+- **JAVASCRIPT-AUTH-INTEGRATION.md** - Backend integration guide
+- **FRONTEND-INTEGRATION-GUIDE.md** - Frontend integration guide
+- **README-AUTHENTICATION.md** - System overview and features
+- **AUTHENTICATION-QUICKSTART.md** - Quick reference
+- **COMPLETE-AUTH-SYSTEM-READY.md** - Implementation roadmap
+
+**Key Features:**
+- User creation, editing, deletion
+- Role-based access control (RBAC)
+- JWT-based authentication with HTTP-only cookies
+- Session management with inactivity timeout
+- Password hashing and validation
+- Account lockout protection
+- Audit logging for security events
+
+**Utility Scripts** (in project root):
+- `setup-admin-user.js` - Create/reinitialize admin user
+- `unlock-user.js` - Unlock locked accounts
+- `run-auth-migration.js` - Database setup
+
 ---
 
 ## 🔍 Finding What You Need
@@ -130,11 +155,13 @@ Change history by feature:
 |-------------|-----|
 | Get started quickly | [01-Getting-Started/START-HERE.md](./01-Getting-Started/START-HERE.md) |
 | Set up the application | [01-Getting-Started/Quick-Setup-Guide.md](./01-Getting-Started/Quick-Setup-Guide.md) |
+| Set up authentication | [09-Authentication/SETUP-AND-TEST-NOW.md](./09-Authentication/SETUP-AND-TEST-NOW.md) ⭐ |
 | Understand the architecture | [02-Architecture/RECOMMENDED-APPROACH.md](./02-Architecture/RECOMMENDED-APPROACH.md) |
 | Migrate to TypeScript | [02-Architecture/MIGRATION-GUIDE.md](./02-Architecture/MIGRATION-GUIDE.md) |
 | Learn about a feature | [03-Features/](./03-Features/) |
 | Set up the database | [04-Database/PostgreSQL-Setup-Complete.md](./04-Database/PostgreSQL-Setup-Complete.md) |
 | Integrate with Salesforce | [05-Integrations/SALESFORCE-PROD-CONNECTED.md](./05-Integrations/SALESFORCE-PROD-CONNECTED.md) |
+| Manage users and roles | [09-Authentication/README.md](./09-Authentication/README.md) |
 | Fix an issue | [01-Getting-Started/Troubleshooting-Checklist.md](./01-Getting-Started/Troubleshooting-Checklist.md) |
 | Review what changed | [08-Changelogs/](./08-Changelogs/) |
 

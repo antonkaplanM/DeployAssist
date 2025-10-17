@@ -97,7 +97,15 @@ export const config: AppConfig = {
     apiToken: getRequiredEnv('ATLASSIAN_API_TOKEN'),
     siteUrl: getRequiredEnv('ATLASSIAN_SITE_URL'),
     cloudId: process.env.ATLASSIAN_CLOUD_ID
-  } : undefined
+  } : undefined,
+  
+  // Authentication configuration
+  auth: {
+    jwtSecret: getRequiredEnv('JWT_SECRET'),
+    defaultAdminUsername: getOptionalEnv('DEFAULT_ADMIN_USERNAME', 'admin'),
+    defaultAdminPassword: getRequiredEnv('DEFAULT_ADMIN_PASSWORD'),
+    defaultAdminFullName: getOptionalEnv('DEFAULT_ADMIN_FULL_NAME', 'System Administrator')
+  }
 };
 
 /**

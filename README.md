@@ -4,6 +4,7 @@ A deployment assistant application built with Node.js and Express, featuring a m
 
 ## Features
 
+- **🔐 Authentication & User Management**: Secure login with role-based access control
 - **Express.js Backend**: Fast and lightweight web server
 - **Modern UI**: Beautiful, responsive design with animations
 - **Interactive Greeting**: Dynamic greeting API with personalization
@@ -17,12 +18,30 @@ A deployment assistant application built with Node.js and Express, featuring a m
    npm install
    ```
 
-2. **Build CSS** (first time or after CSS changes):
+2. **Set Up Authentication** (first time only):
+   ```bash
+   # Generate JWT secret
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   
+   # Add to .env file (create if doesn't exist)
+   echo JWT_SECRET=<your_generated_secret> >> .env
+   echo DEFAULT_ADMIN_PASSWORD=YourSecurePassword123 >> .env
+   
+   # Run database migration
+   node run-auth-migration.js
+   
+   # Create admin user
+   node setup-admin-user.js
+   ```
+   
+   📖 **Detailed setup**: See `Technical Documentation/09-Authentication/SETUP-AND-TEST-NOW.md`
+
+3. **Build CSS** (first time or after CSS changes):
    ```bash
    npm run build:css
    ```
 
-3. **Start the Server**:
+4. **Start the Server**:
    ```bash
    npm start
    ```
@@ -32,8 +51,11 @@ A deployment assistant application built with Node.js and Express, featuring a m
    npm run dev
    ```
 
-4. **Open in Browser**:
+5. **Open in Browser**:
    Navigate to [http://localhost:8080](http://localhost:8080)
+   
+   - **Login**: Use admin credentials from `.env`
+   - **First time**: Change admin password after login
 
 ## Project Structure
 
@@ -89,6 +111,13 @@ The project uses Tailwind CSS (v3) for styling:
 
 ## New Features
 
+- **🔐 Authentication System**: Secure login with JWT, role-based access control, and user management
+  - User creation, editing, and deletion
+  - Role management (admin, user, custom roles)
+  - Password hashing with bcrypt
+  - Session management with auto-timeout
+  - Account lockout protection
+  - Admin-only user management interface
 - **🚀 Navigation Sidebar**: Left-side navigation with Landing Page, Analytics, and Roadmap sections
 - **📊 Analytics Dashboard**: Dedicated analytics page with data table and statistics cards
 - **🗺️ Roadmap Page**: Jira integration for Kevin Yu's initiatives with search, filter, and export
@@ -114,11 +143,12 @@ The project uses Tailwind CSS (v3) for styling:
 5. **Expiration Monitor**: Track product entitlements expiring within 7-90 days
 6. **Customer Products**: View all active products for customers organized by region
 7. **Roadmap**: Platform initiatives with Jira integration
-8. **Settings**: 
+8. **User Management** (Admin Only): Create, edit, and manage users and roles
+9. **Settings**: 
    - Salesforce OAuth configuration
    - Application settings (Dark Mode, Auto-refresh)
    - Data validation rules management
-9. **Help**: Comprehensive in-app documentation for all features
+10. **Help**: Comprehensive in-app documentation for all features including authentication
 
 ### **Keyboard Shortcuts**
 - `Ctrl/Cmd + D` - Toggle dark/light theme

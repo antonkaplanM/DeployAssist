@@ -7,13 +7,23 @@
 
 import express, { Express } from 'express';
 import path from 'path';
+import cookieParser from 'cookie-parser';
+import { Pool } from 'pg';
 import { config, validateConfig, printConfig, configureSSL } from './config';
 import { Logger } from './utils/logger';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 
+// Import services
+import { AuthService } from './services/AuthService';
+import { UserService } from './services/UserService';
+
 // Import routes
 import salesforceRoutes from './routes/salesforce.routes';
 import smlRoutes from './routes/sml.routes';
+import { createAuthRoutes } from './routes/auth.routes';
+import { createUserRoutes } from './routes/user.routes';
+import { createAuthMiddleware, createOptionalAuthMiddleware } from './middleware/auth';
+import { UserRepository } from './repositories/UserRepository';
 
 /**
  * Initialize and configure the Express application
@@ -31,6 +41,9 @@ async function createApp(): Promise<Express> {
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  
+  // Cookie parser middleware
+  app.use(cookieParser());
 
   // Request logging middleware
   app.use((req, res, next) => {
@@ -45,6 +58,34 @@ async function createApp(): Promise<Express> {
     });
     next();
   });
+
+  // Initialize database connection pool
+  const pool = new Pool({
+    host: config.database.host,
+    port: config.database.port,
+    database: config.database.database,
+    user: config.database.user,
+    password: config.database.password,
+    max: config.database.maxConnections,
+  });
+
+  // Test database connection
+  try {
+    await pool.query('SELECT NOW()');
+    Logger.info('Database connection established');
+  } catch (error) {
+    Logger.error('Database connection failed', error as Error);
+    throw error;
+  }
+
+  // Initialize authentication services
+  const authService = new AuthService(pool, config.auth.jwtSecret);
+  const userService = new UserService(pool, authService);
+  const userRepo = new UserRepository(pool);
+
+  // Initialize middleware
+  const authenticate = createAuthMiddleware(authService, userRepo);
+  const optionalAuthenticate = createOptionalAuthMiddleware(authService, userRepo);
 
   // Serve static files
   app.use(express.static(path.join(__dirname, '../public')));
@@ -61,11 +102,17 @@ async function createApp(): Promise<Express> {
     });
   });
 
-  // Salesforce routes
-  app.use('/api/salesforce', salesforceRoutes);
+  // Authentication routes (public)
+  app.use('/api/auth', createAuthRoutes(pool, authService));
 
-  // SML routes
-  app.use('/api/sml', smlRoutes);
+  // User management routes (requires authentication)
+  app.use('/api/users', createUserRoutes(pool, authService, userService));
+
+  // Salesforce routes (requires authentication)
+  app.use('/api/salesforce', authenticate, salesforceRoutes);
+
+  // SML routes (requires authentication)
+  app.use('/api/sml', authenticate, smlRoutes);
 
   // ===== Error Handling =====
 
@@ -74,6 +121,13 @@ async function createApp(): Promise<Express> {
 
   // Global error handler (must be last)
   app.use(errorHandler);
+
+  // Schedule periodic cleanup of expired sessions and tokens (every hour)
+  setInterval(() => {
+    authService.cleanupExpired().catch(err => {
+      Logger.error('Cleanup task failed', err);
+    });
+  }, 60 * 60 * 1000); // 1 hour
 
   return app;
 }
