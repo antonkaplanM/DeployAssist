@@ -194,7 +194,7 @@ test.describe('Role Management UI', () => {
         await expect(page.locator('input[name="roleName"]')).toBeVisible();
     });
 
-    test('should create custom role', async ({ page }) => {
+    test('should create custom role with page selections', async ({ page }) => {
         await login(page);
         await page.goto(`${BASE_URL}/user-management.html`);
         
@@ -207,7 +207,15 @@ test.describe('Role Management UI', () => {
         
         // Fill form
         await page.fill('input[name="roleName"]', roleName);
-        await page.fill('input[name="roleDescription"]', 'Test Role E2E');
+        await page.fill('input[name="roleDescription"]', 'Test Role E2E with Page Access');
+        
+        // Should see page checkboxes
+        await expect(page.locator('#pagesCheckboxes')).toBeVisible();
+        
+        // Select at least one page (Dashboard)
+        const pageCheckboxes = page.locator('input[name="pages"]');
+        const dashboardCheckbox = pageCheckboxes.first();
+        await dashboardCheckbox.check();
         
         // Submit
         await page.click('button[type="submit"]:has-text("Create Role")');
@@ -222,12 +230,41 @@ test.describe('Role Management UI', () => {
         const roleRow = page.locator(`tr:has-text("${roleName}")`);
         await expect(roleRow.locator('text=Custom')).toBeVisible();
         
+        // Should have Edit Pages button
+        await expect(roleRow.locator('button:has-text("Edit Pages")')).toBeVisible();
+        
         // Should have delete button
         await expect(roleRow.locator('button:has-text("Delete")')).toBeVisible();
         
         // Cleanup: Delete the test role
         await roleRow.locator('button:has-text("Delete")').click();
         await page.on('dialog', dialog => dialog.accept());
+    });
+
+    test('should require at least one page selected when creating role', async ({ page }) => {
+        await login(page);
+        await page.goto(`${BASE_URL}/user-management.html`);
+        
+        // Click Create Role
+        await page.click('button:has-text("Create Role"), button:has-text("+ Create Role")');
+        await page.waitForSelector('#roleModal.show, .modal.show', { timeout: 2000 }).catch(() => {});
+        
+        // Fill form
+        await page.fill('input[name="roleName"]', 'test_no_pages');
+        await page.fill('input[name="roleDescription"]', 'Test Role Without Pages');
+        
+        // Uncheck all pages
+        const pageCheckboxes = page.locator('input[name="pages"]');
+        const count = await pageCheckboxes.count();
+        for (let i = 0; i < count; i++) {
+            await pageCheckboxes.nth(i).uncheck();
+        }
+        
+        // Submit
+        await page.click('button[type="submit"]:has-text("Create Role")');
+        
+        // Should show error about selecting pages
+        await expect(page.locator('.alert-error, text=page')).toBeVisible();
     });
 
     test('should not allow deleting system roles', async ({ page }) => {
@@ -237,14 +274,44 @@ test.describe('Role Management UI', () => {
         // Admin role row
         const adminRow = page.locator('tr:has-text("admin")').first();
         
-        // Should not have delete button
+        // Should not have delete button (but should have Edit Pages)
         await expect(adminRow.locator('button:has-text("Delete")')).not.toBeVisible();
+        await expect(adminRow.locator('button:has-text("Edit Pages")')).toBeVisible();
         
         // User role row
         const userRow = page.locator('tr:has-text("user")').first();
         
-        // Should not have delete button
+        // Should not have delete button (but should have Edit Pages)
         await expect(userRow.locator('button:has-text("Delete")')).not.toBeVisible();
+        await expect(userRow.locator('button:has-text("Edit Pages")')).toBeVisible();
+    });
+
+    test('should edit role page assignments', async ({ page }) => {
+        await login(page);
+        await page.goto(`${BASE_URL}/user-management.html`);
+        
+        // Click Edit Pages for user role
+        const userRow = page.locator('tr:has-text("user")').first();
+        await userRow.locator('button:has-text("Edit Pages")').click();
+        
+        // Should see edit modal
+        await expect(page.locator('h2:has-text("Edit Role Pages")')).toBeVisible();
+        
+        // Role name should be disabled
+        const roleNameInput = page.locator('input[name="roleName"]');
+        await expect(roleNameInput).toBeDisabled();
+        await expect(roleNameInput).toHaveValue('user');
+        
+        // Should see page checkboxes
+        await expect(page.locator('#pagesCheckboxes')).toBeVisible();
+        
+        // Should have some pages checked
+        const checkedPages = page.locator('input[name="pages"]:checked');
+        const count = await checkedPages.count();
+        expect(count).toBeGreaterThan(0);
+        
+        // Close modal without changes
+        await page.click('button:has-text("Cancel")');
     });
 });
 
@@ -285,6 +352,98 @@ test.describe('User Management Search and Filter', () => {
         
         // All users should have role badges
         await expect(page.locator('.badge:has-text("admin"), .badge:has-text("user")')).toHaveCount(totalCount);
+    });
+});
+
+test.describe('Page Entitlements', () => {
+    test('should display page checkboxes when creating role', async ({ page }) => {
+        await login(page);
+        await page.goto(`${BASE_URL}/user-management.html`);
+        
+        // Open create role modal
+        await page.click('button:has-text("Create Role"), button:has-text("+ Create Role")');
+        await page.waitForSelector('#roleModal.show, .modal.show', { timeout: 2000 }).catch(() => {});
+        
+        // Should see page access section
+        await expect(page.locator('label:has-text("Page Access")')).toBeVisible();
+        await expect(page.locator('#pagesCheckboxes')).toBeVisible();
+        
+        // Should have multiple pages
+        const pageCheckboxes = page.locator('input[name="pages"]');
+        const count = await pageCheckboxes.count();
+        expect(count).toBeGreaterThanOrEqual(8); // At least 8 top-level pages
+    });
+
+    test('should show hierarchical page structure', async ({ page }) => {
+        await login(page);
+        await page.goto(`${BASE_URL}/user-management.html`);
+        
+        // Open create role modal
+        await page.click('button:has-text("Create Role"), button:has-text("+ Create Role")');
+        await page.waitForSelector('#roleModal.show, .modal.show', { timeout: 2000 }).catch(() => {});
+        
+        // Should see parent pages
+        await expect(page.locator('label:has-text("Dashboard")')).toBeVisible();
+        await expect(page.locator('label:has-text("Analytics")')).toBeVisible();
+        
+        // Should see sub-pages (indented)
+        const pagesContainer = page.locator('#pagesCheckboxes');
+        await expect(pagesContainer.locator('text=Analytics Overview')).toBeVisible();
+        await expect(pagesContainer.locator('text=Account History')).toBeVisible();
+    });
+
+    test('should save page assignments when creating role', async ({ page }) => {
+        await login(page);
+        await page.goto(`${BASE_URL}/user-management.html`);
+        
+        const timestamp = Date.now();
+        const roleName = `page_test_${timestamp}`;
+        
+        // Create role with specific pages
+        await page.click('button:has-text("Create Role"), button:has-text("+ Create Role")');
+        await page.waitForSelector('#roleModal.show, .modal.show', { timeout: 2000 }).catch(() => {});
+        
+        await page.fill('input[name="roleName"]', roleName);
+        await page.fill('input[name="roleDescription"]', 'Test Page Entitlements');
+        
+        // Select only Dashboard
+        const dashboardCheckbox = page.locator('input[name="pages"][value]:has-text(""), input[name="pages"]').first();
+        await dashboardCheckbox.check();
+        
+        await page.click('button[type="submit"]:has-text("Create Role")');
+        await page.waitForSelector('.alert-success', { timeout: 5000 });
+        
+        // Edit to verify pages were saved
+        const roleRow = page.locator(`tr:has-text("${roleName}")`);
+        await roleRow.locator('button:has-text("Edit Pages")').click();
+        
+        // At least one page should be checked
+        const checkedPages = page.locator('input[name="pages"]:checked');
+        const count = await checkedPages.count();
+        expect(count).toBeGreaterThan(0);
+        
+        // Cleanup
+        await page.click('button:has-text("Cancel")');
+        await roleRow.locator('button:has-text("Delete")').click();
+        await page.on('dialog', dialog => dialog.accept());
+    });
+
+    test('should get current user accessible pages', async ({ page }) => {
+        await login(page);
+        
+        // Call API to get user's pages
+        const response = await page.request.get(`${BASE_URL}/api/users/me/pages`);
+        expect(response.ok()).toBeTruthy();
+        
+        const data = await response.json();
+        expect(data.success).toBe(true);
+        expect(data.pages).toBeDefined();
+        expect(Array.isArray(data.pages)).toBe(true);
+        expect(data.pages.length).toBeGreaterThan(0);
+        
+        // Admin should have access to user_management page
+        const hasUserMgmt = data.pages.some((p: any) => p.name === 'user_management');
+        expect(hasUserMgmt).toBe(true);
     });
 });
 
