@@ -235,10 +235,8 @@ async function getExpirationData(filters = {}) {
             paramCount++;
         }
 
-        // Filter by extended status
-        if (filters.showExtended === false) {
-            queryText += ` AND is_extended = false`;
-        }
+        // Always filter to non-extended items only
+        queryText += ` AND is_extended = false`;
 
         // Filter by account
         if (filters.accountId) {

@@ -67,7 +67,6 @@ Retrieves expiration data with optional filtering.
 
 **Query Parameters:**
 - `expirationWindow` (integer) - Days in the future (default: 30)
-- `showExtended` (boolean) - Include extended items (default: true)
 
 **Response:**
 ```json
@@ -154,18 +153,30 @@ Returns information about the last analysis run.
 }
 ```
 
-## Extension Detection Logic
+## Date Roll-Up Logic
 
-The system identifies extensions by:
+When a PS record contains **multiple line items** with the same product code but different end dates (e.g., multiple entitlements extending the product), the system uses the **LATEST (maximum) end date** for that product code.
+
+**Example:**
+- PS-4178 contains RI-EXPOSUREIQ with end dates:
+  - Line 1: 2025-10-24
+  - Line 2: 2027-10-24
+- **Result:** The system uses 2027-10-24 (the maximum) to determine if the product is expiring
+
+This matches the behavior of the Provisioning Monitor page and ensures accurate expiration detection.
+
+## Expiration Detection Logic
+
+The expiration monitor shows only products that are truly at risk of expiring:
 
 1. **Grouping by Account** - All PS records for the same account are grouped together
-2. **Grouping by Product Code** - Within each account, entitlements with the same `productCode` are grouped
-3. **Extension Check** - For each expiring entitlement:
-   - Look for another PS record (different `ps_record_id`)
-   - With the same `productCode`
-   - And an `endDate` that is later than the expiring entitlement's `endDate`
-   - If found → mark as "Extended" ✓
-   - If not found → mark as "At-Risk" ⚠️
+2. **Grouping by PS Record** - Within each account, entitlements are grouped by PS record
+3. **Date Roll-Up by Product Code** - Within each PS record, the maximum end date is calculated for each product code
+4. **Expiration Check** - For each product code:
+   - Calculate if the maximum end date falls within the expiration window
+   - Check if the product has been extended in another PS record (same product code, later date)
+   - **Only show products that are NOT extended** (at-risk items only)
+5. **Intelligent Filtering** - Products removed in subsequent PS records are automatically excluded
 
 ## Usage
 
@@ -176,8 +187,8 @@ The system identifies extensions by:
 4. Click **"Refresh Analysis"** to analyze 5 years of PS records
 
 ### Daily Usage
-1. View expiration data in the main table
-2. Use filters to adjust expiration window or hide extended items
+1. View expiration data in the main table (shows only at-risk products)
+2. Use the expiration window dropdown to adjust the time frame (7, 30, 60, or 90 days)
 3. Click **"View Details"** to see product-by-product breakdown
 4. Click **"Monitor"** button to view the PS record in Provisioning Monitor
 5. Look for 🔴 red indicators for at-risk categories
@@ -276,6 +287,11 @@ The system identifies extensions by:
 
 ### Bug Fixes (October 2025)
 1. **Modal Data Not Loading**: Fixed duplicate HTML element IDs (`modal-title` and `modal-content`) that prevented the expiration details modal from displaying data correctly. Product modal IDs renamed to `product-modal-title` and `product-modal-content`.
+
+2. **Incorrect Expiration Date for Products with Multiple Line Items** (October 17, 2025): Fixed logic to use the **maximum end date** for product codes that appear multiple times in the same PS record with different dates. Previously, the system checked each individual line item's date, which could show products as expiring even when they had additional line items extending them further. Now uses the same date roll-up logic as the Provisioning Monitor page.
+   - Example: PS-4178 RI-EXPOSUREIQ now correctly shows end date as 2027-10-24 (latest date) instead of 2025-10-24 (nearest date)
+   
+3. **Removed Extended Items Display** (October 17, 2025): Removed the "Show Extended" filter and extended items from display. With the new date roll-up logic, products with multiple line items automatically use the latest date, making the extended items display redundant. The monitor now focuses exclusively on at-risk products (those without extensions), reducing noise and improving clarity.
 
 2. **Status Column Incorrect**: Fixed backend grouping logic in `salesforce.js` to default status to `'extended'` and only mark as `'at-risk'` if ANY product is not extended. Previously all items incorrectly showed as at-risk.
 

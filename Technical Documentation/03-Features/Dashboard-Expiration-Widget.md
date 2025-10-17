@@ -67,7 +67,7 @@ The widget follows the same card layout as other dashboard widgets:
 #### Core Functions:
 1. **`fetchExpirationWidget()`** - Fetches expiration data from `/api/expiration/monitor`
    - Passes `expirationWindow` parameter (default: 7 days)
-   - Includes `showExtended=true` to get all data
+   - Gets only at-risk (non-extended) items
    - Handles loading states and error scenarios
 
 2. **`displayExpirationWidget(data)`** - Renders the widget content
@@ -132,7 +132,7 @@ initializeExpirationWidget();
 
 Query Parameters:
 - `expirationWindow` - Number of days (7, 30, 60, or 90)
-- `showExtended` - Always `true` to include extended products in summary
+- Returns only at-risk (non-extended) products
 
 Response Structure:
 ```json

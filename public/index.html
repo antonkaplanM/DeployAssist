@@ -1248,17 +1248,6 @@
                                     <option value="90">90 days</option>
                                 </select>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <input 
-                                    type="checkbox" 
-                                    id="show-extended-checkbox" 
-                                    class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
-                                    checked
-                                >
-                                <label for="show-extended-checkbox" class="text-sm font-medium cursor-pointer">
-                                    Show Extended Items
-                                </label>
-                            </div>
                             <div class="ml-auto text-sm text-muted-foreground" id="expiration-last-analyzed">
                                 Last analyzed: Never
                             </div>
@@ -1269,20 +1258,7 @@
                     <div class="grid gap-4 md:grid-cols-4 mb-8">
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
                             <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">Total Expiring</h3>
-                                <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                </svg>
-                            </div>
-                            <div class="text-2xl font-bold" id="expiration-total">0</div>
-                            <p class="text-xs text-muted-foreground mt-1">Product entitlements</p>
-                        </div>
-                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">At-Risk</h3>
+                                <h3 class="tracking-tight text-sm font-medium">At Risk</h3>
                                 <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                                     <path d="M12 9v4"></path>
@@ -1290,29 +1266,40 @@
                                 </svg>
                             </div>
                             <div class="text-2xl font-bold text-red-600" id="expiration-at-risk">0</div>
-                            <p class="text-xs text-muted-foreground mt-1">No extension found</p>
+                            <p class="text-xs text-muted-foreground mt-1">0-7 days</p>
                         </div>
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
                             <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">Extended</h3>
+                                <h3 class="tracking-tight text-sm font-medium">Upcoming</h3>
+                                <svg class="h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold text-amber-600" id="expiration-upcoming">0</div>
+                            <p class="text-xs text-muted-foreground mt-1">7-30 days</p>
+                        </div>
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 class="tracking-tight text-sm font-medium">Current</h3>
                                 <svg class="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M9 12l2 2 4-4"></path>
                                     <circle cx="12" cy="12" r="10"></circle>
                                 </svg>
                             </div>
-                            <div class="text-2xl font-bold text-green-600" id="expiration-extended">0</div>
-                            <p class="text-xs text-muted-foreground mt-1">Extended by another PS record</p>
+                            <div class="text-2xl font-bold text-green-600" id="expiration-current">0</div>
+                            <p class="text-xs text-muted-foreground mt-1">30+ days</p>
                         </div>
                         <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
                             <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 class="tracking-tight text-sm font-medium">Accounts Affected</h3>
+                                <h3 class="tracking-tight text-sm font-medium">Accounts</h3>
                                 <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"></path>
                                     <path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"></path>
                                 </svg>
                             </div>
                             <div class="text-2xl font-bold" id="expiration-accounts">0</div>
-                            <p class="text-xs text-muted-foreground mt-1">Unique accounts</p>
+                            <p class="text-xs text-muted-foreground mt-1">Affected</p>
                         </div>
                     </div>
 
@@ -1953,7 +1940,6 @@
                                         <li>Navigate to <strong>Provisioning → Expiration Monitor</strong></li>
                                         <li>Click <strong>"Refresh Analysis"</strong> to analyze recent data (first-time setup)</li>
                                         <li>Use the <strong>expiration window dropdown</strong> to adjust the time frame</li>
-                                        <li>Toggle <strong>"Show Extended"</strong> to filter view</li>
                                         <li>Click <strong>"View Details"</strong> for product-by-product breakdown</li>
                                         <li>Click <strong>"Monitor"</strong> button to view the PS record in Provisioning Monitor</li>
                                     </ol>
@@ -1993,11 +1979,10 @@
                                     <h4 class="font-semibold text-green-900 mb-2">✅ Best Practices:</h4>
                                     <ul class="text-sm text-green-800 space-y-1">
                                         <li>• Run "Refresh Analysis" daily or weekly for up-to-date data</li>
-                                        <li>• Focus on at-risk products (uncheck "Show Extended")</li>
                                         <li>• Trust the intelligent filtering - intentional product removals are automatically excluded</li>
+                                        <li>• Products with multiple end dates automatically use the latest date</li>
                                         <li>• Use 30-day window for proactive planning</li>
                                         <li>• Review 7-day window for urgent expirations</li>
-                                        <li>• Check extension details in modal for verification</li>
                                         <li>• Use "Monitor" button to view full PS record details in Provisioning Monitor</li>
                                     </ul>
                                 </div>

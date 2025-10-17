@@ -1497,27 +1497,35 @@ app.get('/api/expiration/monitor', async (req, res) => {
         }
         
         const expirationWindow = parseInt(req.query.expirationWindow) || 30;
-        const showExtended = req.query.showExtended !== 'false'; // Default true
         
-        console.log(`📊 Fetching expiration data (window: ${expirationWindow} days, showExtended: ${showExtended})`);
+        console.log(`📊 Fetching expiration data (window: ${expirationWindow} days, non-extended only)`);
         
         // Get summary from database
         const summaryResult = await db.getExpirationSummary(expirationWindow);
         
-        // Get expiring entitlements grouped by account/PS record
-        const result = await salesforce.getExpiringEntitlements(expirationWindow, showExtended);
+        // Get expiring entitlements grouped by account/PS record (non-extended only)
+        const result = await salesforce.getExpiringEntitlements(expirationWindow, false);
         
         // Get last analysis status
         const analysisStatus = await db.getLatestAnalysisStatus();
         
         if (result.success) {
+            // Calculate summary based on status categories
+            const atRiskCount = result.expirations.filter(e => e.status === 'at-risk').length;
+            const upcomingCount = result.expirations.filter(e => e.status === 'upcoming').length;
+            const currentCount = result.expirations.filter(e => e.status === 'current').length;
+            
+            // Get unique accounts
+            const uniqueAccounts = new Set(result.expirations.map(e => e.account.id));
+            
             res.json({
                 success: true,
                 summary: {
-                    totalExpiring: parseInt(summaryResult.summary?.total_expiring || 0),
-                    atRisk: parseInt(summaryResult.summary?.at_risk || 0),
-                    extended: parseInt(summaryResult.summary?.extended || 0),
-                    accountsAffected: parseInt(summaryResult.summary?.accounts_affected || 0)
+                    totalExpiring: result.expirations.length,
+                    atRisk: atRiskCount,
+                    upcoming: upcomingCount,
+                    current: currentCount,
+                    accountsAffected: uniqueAccounts.size
                 },
                 expirations: result.expirations,
                 expirationWindow: expirationWindow,
@@ -1531,7 +1539,8 @@ app.get('/api/expiration/monitor', async (req, res) => {
                 summary: {
                     totalExpiring: 0,
                     atRisk: 0,
-                    extended: 0,
+                    upcoming: 0,
+                    current: 0,
                     accountsAffected: 0
                 },
                 expirations: []
@@ -1546,7 +1555,8 @@ app.get('/api/expiration/monitor', async (req, res) => {
             summary: {
                 totalExpiring: 0,
                 atRisk: 0,
-                extended: 0,
+                upcoming: 0,
+                current: 0,
                 accountsAffected: 0
             }
         });

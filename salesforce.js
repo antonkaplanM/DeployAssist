@@ -1487,41 +1487,83 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
             // Get PS records for this account
             const accountPsRecords = psRecordsByAccount.get(accountId) || [];
             
-            // Group by product code within account
-            const byProductCode = new Map();
+            // Group entitlements by PS record first
+            const byPsRecord = new Map();
             accountEntitlements.forEach(ent => {
-                if (!byProductCode.has(ent.productCode)) {
-                    byProductCode.set(ent.productCode, []);
+                if (!byPsRecord.has(ent.psRecordId)) {
+                    byPsRecord.set(ent.psRecordId, []);
                 }
-                byProductCode.get(ent.productCode).push(ent);
+                byPsRecord.get(ent.psRecordId).push(ent);
             });
             
-            // For each product code, check for expirations and extensions
-            for (const [productCode, entitlements] of byProductCode) {
-                // Sort by end date
-                entitlements.sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
+            // Process each PS record
+            for (const [psRecordId, psEntitlements] of byPsRecord) {
+                // Within this PS record, group by product code and find max end date
+                // This ensures that if a product code has multiple line items with different dates,
+                // we use the LATEST end date for expiration detection (e.g., PS-4178 RI-EXPOSUREIQ)
+                const productCodeMaxDates = new Map();
                 
-                for (let i = 0; i < entitlements.length; i++) {
-                    const current = entitlements[i];
-                    const currentEndDate = new Date(current.endDate);
+                psEntitlements.forEach(ent => {
+                    const productCode = ent.productCode;
+                    const endDate = new Date(ent.endDate);
                     
-                    // Check if this entitlement is expiring within the window
-                    if (currentEndDate >= today && currentEndDate <= expirationThreshold) {
-                        // Calculate days until expiry
-                        const daysUntilExpiry = Math.ceil((currentEndDate - today) / (1000 * 60 * 60 * 24));
+                    if (!productCodeMaxDates.has(productCode)) {
+                        productCodeMaxDates.set(productCode, {
+                            maxEndDate: endDate,
+                            maxEndDateStr: ent.endDate,
+                            entitlement: ent
+                        });
+                    } else {
+                        const existing = productCodeMaxDates.get(productCode);
+                        if (endDate > existing.maxEndDate) {
+                            productCodeMaxDates.set(productCode, {
+                                maxEndDate: endDate,
+                                maxEndDateStr: ent.endDate,
+                                entitlement: ent
+                            });
+                        }
+                    }
+                });
+                
+                // Now check each product code's max end date for expiration
+                for (const [productCode, productData] of productCodeMaxDates) {
+                    const maxEndDate = productData.maxEndDate;
+                    const maxEndDateStr = productData.maxEndDateStr;
+                    const entitlement = productData.entitlement;
+                    
+                    // Check if this product code's max end date is expiring within the window
+                    if (maxEndDate >= today && maxEndDate <= expirationThreshold) {
+                        // Calculate days until expiry based on MAX end date
+                        const daysUntilExpiry = Math.ceil((maxEndDate - today) / (1000 * 60 * 60 * 24));
                         
-                        // Look for extensions (same product code, later end date, different PS record)
-                        const extension = entitlements.find(e => 
-                            e.psRecordId !== current.psRecordId &&
-                            new Date(e.endDate) > currentEndDate
-                        );
+                        // Look for extensions in OTHER PS records (same product code, later end date)
+                        // Need to find the max end date for this product code in other PS records
+                        let extension = null;
+                        for (const [otherPsRecordId, otherPsEntitlements] of byPsRecord) {
+                            if (otherPsRecordId !== psRecordId) {
+                                // Find all entitlements for this product code in the other PS record
+                                const matchingEntitlements = otherPsEntitlements.filter(e => 
+                                    e.productCode === productCode
+                                );
+                                
+                                // Find the max end date for this product code in the other PS record
+                                for (const otherEnt of matchingEntitlements) {
+                                    const otherEndDate = new Date(otherEnt.endDate);
+                                    if (otherEndDate > maxEndDate) {
+                                        if (!extension || otherEndDate > new Date(extension.endDate)) {
+                                            extension = otherEnt;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         
                         if (extension) {
                             extensionsFound++;
                         }
                         
                         // Check if this product was removed in a subsequent PS record
-                        const currentPsRecord = accountPsRecords.find(pr => pr.id === current.psRecordId);
+                        const currentPsRecord = accountPsRecords.find(pr => pr.id === psRecordId);
                         let wasRemovedInLaterRecord = false;
                         
                         if (currentPsRecord) {
@@ -1541,14 +1583,14 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
                         // Only include if not removed in a subsequent record
                         if (!wasRemovedInLaterRecord) {
                             expiringItems.push({
-                                accountId: current.accountId,
-                                accountName: current.accountName,
-                                psRecordId: current.psRecordId,
-                                psRecordName: current.psRecordName,
-                                productCode: current.productCode,
-                                productName: current.productName,
-                                productType: current.productType,
-                                endDate: current.endDate,
+                                accountId: entitlement.accountId,
+                                accountName: entitlement.accountName,
+                                psRecordId: entitlement.psRecordId,
+                                psRecordName: entitlement.psRecordName,
+                                productCode: entitlement.productCode,
+                                productName: entitlement.productName,
+                                productType: entitlement.productType,
+                                endDate: maxEndDateStr, // Use the MAX end date
                                 daysUntilExpiry: daysUntilExpiry,
                                 isExtended: !!extension,
                                 extendingPsRecordId: extension?.psRecordId || null,
@@ -1588,17 +1630,17 @@ async function analyzeExpirations(lookbackYears = 5, expirationWindow = 30) {
 /**
  * Get expiring entitlements grouped by account and PS record
  * @param {number} expirationWindow - Days in the future to check
- * @param {boolean} showExtended - Whether to include extended items
+ * @param {boolean} showExtended - Whether to include extended items (deprecated, always false)
  * @returns {Promise<Object>} Grouped expiration data
  */
-async function getExpiringEntitlements(expirationWindow = 30, showExtended = true) {
+async function getExpiringEntitlements(expirationWindow = 30, showExtended = false) {
     try {
         const db = require('./database');
         
-        // Get expiration data from cache
+        // Get expiration data from cache (non-extended only)
         const result = await db.getExpirationData({
             expirationWindow: expirationWindow,
-            showExtended: showExtended
+            showExtended: false  // Always filter to non-extended items
         });
         
         if (!result.success || !result.data) {
@@ -1631,7 +1673,8 @@ async function getExpiringEntitlements(expirationWindow = 30, showExtended = tru
                         apps: []
                     },
                     earliestExpiry: item.end_date,
-                    status: 'extended' // Default to extended, will be updated if any at-risk found
+                    earliestDaysUntilExpiry: item.days_until_expiry,
+                    status: 'current' // Will be updated based on earliest expiry
                 });
             }
             
@@ -1657,14 +1700,23 @@ async function getExpiringEntitlements(expirationWindow = 30, showExtended = tru
                 group.expiringProducts.apps.push(product);
             }
             
-            // Update earliest expiry
+            // Update earliest expiry and its days until expiry
             if (new Date(item.end_date) < new Date(group.earliestExpiry)) {
                 group.earliestExpiry = item.end_date;
+                group.earliestDaysUntilExpiry = item.days_until_expiry;
             }
+        });
+        
+        // Calculate status based on earliest expiry for each group
+        grouped.forEach(group => {
+            const daysUntilExpiry = group.earliestDaysUntilExpiry;
             
-            // Update status - if ANY product is not extended, mark entire group as at-risk
-            if (!item.is_extended) {
+            if (daysUntilExpiry <= 7) {
                 group.status = 'at-risk';
+            } else if (daysUntilExpiry <= 30) {
+                group.status = 'upcoming';
+            } else {
+                group.status = 'current';
             }
         });
         

@@ -6394,7 +6394,7 @@ async function fetchExpirationWidget() {
         
         console.log(`[ExpirationWidget] Fetching data for ${expirationWindow} day window`);
         
-        const response = await fetch(`/api/expiration/monitor?expirationWindow=${expirationWindow}&showExtended=true`);
+        const response = await fetch(`/api/expiration/monitor?expirationWindow=${expirationWindow}&showExtended=false`);
         const data = await response.json();
         
         if (data.success) {
@@ -6461,28 +6461,33 @@ function displayExpirationWidget(data) {
         return;
     }
     
-    // Display summary
+    // Display summary with three-tier status
     const atRiskCount = summary.atRisk || 0;
-    const extendedCount = summary.extended || 0;
-    const totalExpiring = summary.totalExpiring || 0;
+    const upcomingCount = summary.upcoming || 0;
+    const currentCount = summary.current || 0;
     const accountsAffected = summary.accountsAffected || 0;
+    const totalExpiring = atRiskCount + upcomingCount + currentCount;
     
-    // Filter at-risk expirations
-    const atRiskExpirations = (expirations || []).filter(exp => exp.status === 'at-risk');
+    // Filter expirations by status
+    const atRiskExpirations = (expirations || []).filter(e => e.status === 'at-risk');
     
-    // Determine status color
+    // Determine overall status color based on highest priority
     let statusColor = 'green';
     let statusIcon = '✓';
-    let statusText = 'All products extended';
+    let statusText = 'No products expiring';
     
     if (atRiskCount > 0) {
         statusColor = 'red';
         statusIcon = '⚠️';
-        statusText = `${atRiskCount} product${atRiskCount !== 1 ? 's' : ''} at risk`;
-    } else if (totalExpiring > 0) {
+        statusText = `${atRiskCount} at risk`;
+    } else if (upcomingCount > 0) {
+        statusColor = 'amber';
+        statusIcon = '⏱️';
+        statusText = `${upcomingCount} upcoming`;
+    } else if (currentCount > 0) {
         statusColor = 'green';
         statusIcon = '✓';
-        statusText = `All ${totalExpiring} expiring product${totalExpiring !== 1 ? 's are' : ' is'} extended`;
+        statusText = `${currentCount} current`;
     }
     
     expirationStatus.innerHTML = `
@@ -6493,6 +6498,9 @@ function displayExpirationWidget(data) {
                         <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                         <path d="M12 9v4"></path>
                         <path d="M12 17h.01"></path>
+                    ` : upcomingCount > 0 ? `
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
                     ` : `
                         <path d="M9 12l2 2 4-4"></path>
                         <circle cx="12" cy="12" r="10"></circle>
@@ -6502,35 +6510,41 @@ function displayExpirationWidget(data) {
             <div class="flex-1">
                 <p class="font-medium">${statusText}</p>
                 <p class="text-sm text-muted-foreground">
-                    ${totalExpiring} total product${totalExpiring !== 1 ? 's' : ''} expiring in next ${expirationWindow} days across ${accountsAffected} account${accountsAffected !== 1 ? 's' : ''}
+                    ${totalExpiring} product${totalExpiring !== 1 ? 's' : ''} expiring in next ${expirationWindow} days${accountsAffected > 0 ? ` across ${accountsAffected} account${accountsAffected !== 1 ? 's' : ''}` : ''}
                 </p>
             </div>
         </div>
     `;
     
-    // Display detailed summary cards
+    // Display detailed summary cards (show if there are any expiring products)
     if (totalExpiring > 0) {
         let summaryHTML = `
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <!-- Total Expiring -->
-                <div class="rounded-lg border bg-purple-50 p-3">
-                    <div class="text-2xl font-bold text-purple-700">${totalExpiring}</div>
-                    <div class="text-xs text-purple-600 mt-1">Total Expiring</div>
-                </div>
-                
                 <!-- At Risk -->
-                <div class="rounded-lg border ${atRiskCount > 0 ? 'bg-red-50 ring-2 ring-red-600' : 'bg-slate-50'} p-3">
-                    <div class="text-2xl font-bold ${atRiskCount > 0 ? 'text-red-700' : 'text-slate-600'}">${atRiskCount}</div>
-                    <div class="text-xs ${atRiskCount > 0 ? 'text-red-600' : 'text-slate-500'} mt-1">At Risk</div>
-                </div>
+                ${atRiskCount > 0 ? `
+                    <div class="rounded-lg border bg-red-50 ring-2 ring-red-600 p-3">
+                        <div class="text-2xl font-bold text-red-700">${atRiskCount}</div>
+                        <div class="text-xs text-red-600 mt-1">At Risk</div>
+                    </div>
+                ` : ''}
                 
-                <!-- Extended -->
-                <div class="rounded-lg border bg-green-50 p-3">
-                    <div class="text-2xl font-bold text-green-700">${extendedCount}</div>
-                    <div class="text-xs text-green-600 mt-1">Extended</div>
-                </div>
+                <!-- Upcoming -->
+                ${upcomingCount > 0 ? `
+                    <div class="rounded-lg border bg-amber-50 ${atRiskCount === 0 ? 'ring-2 ring-amber-600' : ''} p-3">
+                        <div class="text-2xl font-bold text-amber-700">${upcomingCount}</div>
+                        <div class="text-xs text-amber-600 mt-1">Upcoming</div>
+                    </div>
+                ` : ''}
                 
-                <!-- Accounts -->
+                <!-- Current -->
+                ${currentCount > 0 ? `
+                    <div class="rounded-lg border bg-green-50 ${atRiskCount === 0 && upcomingCount === 0 ? 'ring-2 ring-green-600' : ''} p-3">
+                        <div class="text-2xl font-bold text-green-700">${currentCount}</div>
+                        <div class="text-xs text-green-600 mt-1">Current</div>
+                    </div>
+                ` : ''}
+                
+                <!-- Accounts Affected -->
                 <div class="rounded-lg border bg-blue-50 p-3">
                     <div class="text-2xl font-bold text-blue-700">${accountsAffected}</div>
                     <div class="text-xs text-blue-600 mt-1">Accounts</div>
@@ -9665,7 +9679,6 @@ console.log('Customer Products page functions loaded');
 // Expiration Monitor state
 let expirationData = [];
 let expirationWindow = 30;
-let showExtended = true;
 
 // Initialize Expiration Monitor page
 async function initializeExpiration() {
@@ -9697,7 +9710,6 @@ function setupExpirationEventListeners() {
     const refreshBtn = document.getElementById('refresh-expiration-btn');
     const refreshEmptyBtn = document.getElementById('refresh-empty-btn');
     const windowSelect = document.getElementById('expiration-page-window-select'); // Page-specific dropdown
-    const extendedCheckbox = document.getElementById('show-extended-checkbox');
     
     if (refreshBtn) {
         refreshBtn.addEventListener('click', refreshExpirationAnalysis);
@@ -9718,13 +9730,6 @@ function setupExpirationEventListeners() {
         });
     } else {
         console.warn('[Expiration] Window select element NOT found - event listener not attached');
-    }
-    
-    if (extendedCheckbox) {
-        extendedCheckbox.addEventListener('change', (e) => {
-            showExtended = e.target.checked;
-            renderExpirationTable();
-        });
     }
 }
 
@@ -9761,7 +9766,7 @@ async function loadExpirationData() {
         
         const params = new URLSearchParams({
             expirationWindow: expirationWindow,
-            showExtended: showExtended
+            showExtended: 'false'  // Always fetch only non-extended items
         });
         
         console.log('[Expiration] Fetching data with params:', params.toString());
@@ -9798,10 +9803,15 @@ async function loadExpirationData() {
 
 // Update summary cards
 function updateExpirationSummary(summary) {
-    document.getElementById('expiration-total').textContent = summary.totalExpiring || 0;
-    document.getElementById('expiration-at-risk').textContent = summary.atRisk || 0;
-    document.getElementById('expiration-extended').textContent = summary.extended || 0;
-    document.getElementById('expiration-accounts').textContent = summary.accountsAffected || 0;
+    const atRiskEl = document.getElementById('expiration-at-risk');
+    const upcomingEl = document.getElementById('expiration-upcoming');
+    const currentEl = document.getElementById('expiration-current');
+    const accountsEl = document.getElementById('expiration-accounts');
+    
+    if (atRiskEl) atRiskEl.textContent = summary.atRisk || 0;
+    if (upcomingEl) upcomingEl.textContent = summary.upcoming || 0;
+    if (currentEl) currentEl.textContent = summary.current || 0;
+    if (accountsEl) accountsEl.textContent = summary.accountsAffected || 0;
 }
 
 // View PS record from expiration monitor in provisioning monitor
@@ -9865,6 +9875,7 @@ function renderExpirationTable() {
         // Status
         const statusCell = document.createElement('td');
         statusCell.className = 'p-4 align-middle';
+        
         if (item.status === 'at-risk') {
             statusCell.innerHTML = `
                 <span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-2 ring-red-600">
@@ -9873,7 +9884,17 @@ function renderExpirationTable() {
                         <path d="M12 9v4"></path>
                         <path d="M12 17h.01"></path>
                     </svg>
-                    At-Risk
+                    At Risk
+                </span>
+            `;
+        } else if (item.status === 'upcoming') {
+            statusCell.innerHTML = `
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-2 ring-amber-600">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Upcoming
                 </span>
             `;
         } else {
@@ -9883,7 +9904,7 @@ function renderExpirationTable() {
                         <path d="M9 12l2 2 4-4"></path>
                         <circle cx="12" cy="12" r="10"></circle>
                     </svg>
-                    Extended
+                    Current
                 </span>
             `;
         }
@@ -9936,35 +9957,33 @@ function renderExpirationTable() {
     });
 }
 
-// Get expiring products badges with red contour for at-risk categories
+// Get expiring products badges with color matching the status
 function getExpiringProductsBadges(item) {
     const badges = [];
     const products = item.expiringProducts;
     
-    // Models badge (blue when extended, red when at-risk)
+    // Determine badge styling based on item status
+    let badgeClass;
+    if (item.status === 'at-risk') {
+        badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600';
+    } else if (item.status === 'upcoming') {
+        badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 ring-2 ring-amber-600';
+    } else {
+        badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 ring-2 ring-green-600';
+    }
+    
+    // Models badge
     if (products.models && products.models.length > 0) {
-        const hasAtRisk = products.models.some(p => !p.isExtended);
-        const badgeClass = hasAtRisk 
-            ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600' 
-            : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-600/20';
         badges.push(`<span class="${badgeClass}">Models (${products.models.length})</span>`);
     }
     
-    // Data badge (green when extended, red when at-risk)
+    // Data badge
     if (products.data && products.data.length > 0) {
-        const hasAtRisk = products.data.some(p => !p.isExtended);
-        const badgeClass = hasAtRisk 
-            ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600' 
-            : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-green-600/20';
         badges.push(`<span class="${badgeClass}">Data (${products.data.length})</span>`);
     }
     
-    // Apps badge (purple when extended, red when at-risk)
+    // Apps badge
     if (products.apps && products.apps.length > 0) {
-        const hasAtRisk = products.apps.some(p => !p.isExtended);
-        const badgeClass = hasAtRisk 
-            ? 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 ring-2 ring-red-600' 
-            : 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-purple-50 text-purple-700 ring-1 ring-purple-600/20';
         badges.push(`<span class="${badgeClass}">Apps (${products.apps.length})</span>`);
     }
     
