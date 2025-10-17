@@ -194,17 +194,82 @@ Category Breakdown:
 - [Customer Products Feature](../03-Features/Customer-Products-Feature.md)
 - [PS Audit Trail Setup Complete](../03-Features/PS-Audit-Trail/SETUP-COMPLETE.md)
 
-## Bug Fix (Post-Implementation)
+## Bug Fixes (Post-Implementation)
 
-### Issue
+### Issue #1: Frontend Using Old SML Code Path
 After initial implementation, the frontend was still using the old SML integration code path, causing:
 - Error messages about SML authentication
 - No results displayed for customer products
 
-### Resolution
+**Resolution:**
 - ✅ Updated `loadCustomerProducts()` function to call `/api/customer-products` directly
 - ✅ Removed SML-related code (`transformSMLDataForUI()` function)
 - ✅ Simplified data flow: Frontend → API → PS Audit Trail → Frontend
+
+### Issue #2: Date Aggregation Not Working for IC-DATABRIDGE and Similar Products
+When a PS record payload contains multiple entries with the same product code (common with renewals/extensions), only the last entry's dates were shown instead of an aggregated date range.
+
+**Example Problem (PS-4878 - Ark Syndicate Management):**
+```
+Product: IC-DATABRIDGE
+Entry 1: 2025-06-01 to 2026-05-31
+Entry 2: 2026-06-01 to 2027-05-31
+
+Was showing: 2026-06-01 to 2027-05-31 (only Entry 2)
+Should show: 2025-06-01 to 2027-05-31 (aggregated range)
+```
+
+**Root Cause:**
+The code had an `isDataBridge` check that used `includes('databridge')` which incorrectly matched **IC-DATABRIDGE**. This caused IC-DATABRIDGE entries to be treated as separate instances (each with a unique key including the PS record name), preventing date aggregation.
+
+**Resolution:**
+- ✅ Implemented date rollup logic similar to provisioning monitor page
+- ✅ Now aggregates dates when same product code appears multiple times:
+  - **Start Date**: Uses earliest start date across all entries
+  - **End Date**: Uses latest end date across all entries
+  - **Status**: Recalculated based on the latest end date
+  - **Days Remaining**: Calculated from the latest end date
+
+**Code Changes:**
+
+**Before (Broken):**
+```javascript
+const isDataBridge = entitlement.productCode?.toLowerCase().includes('databridge');
+const uniqueKey = isDataBridge 
+    ? `${region}|${category.type}|${entitlement.productCode}|${record.ps_record_name}` // WRONG: Prevents aggregation
+    : `${region}|${category.type}|${entitlement.productCode}`;
+```
+
+**After (Fixed):**
+```javascript
+// All products should aggregate dates when same product code appears multiple times
+// This handles renewals, extensions, and multi-year subscriptions
+const uniqueKey = `${region}|${category.type}|${entitlement.productCode}`;
+
+if (productMap.has(uniqueKey)) {
+    // Product already exists - aggregate date ranges
+    const existing = productMap.get(uniqueKey);
+    
+    // Update to earliest start date
+    if (startDate && (!existing.startDate || startDate < existing.startDate)) {
+        existing.startDate = startDate;
+    }
+    
+    // Update to latest end date
+    if (endDate && (!existing.endDate || endDate > existing.endDate)) {
+        existing.endDate = endDate;
+    }
+    
+    // Recalculate status based on latest end date
+    // ...
+}
+```
+
+**Benefits:**
+- ✅ Accurate representation of product subscription periods
+- ✅ Shows complete coverage span for renewed/extended products
+- ✅ Consistent with monitor page behavior
+- ✅ Prevents confusion about subscription end dates
 
 ## Summary
 
@@ -213,7 +278,8 @@ After initial implementation, the frontend was still using the old SML integrati
 ✅ Enhanced performance with database queries instead of Salesforce API  
 ✅ Better user experience with status badges and data source notes  
 ✅ No breaking changes, fully backward compatible  
-✅ Fixed frontend to use new data source (removed SML dependencies)
+✅ Fixed frontend to use new data source (removed SML dependencies)  
+✅ Implemented date aggregation for products with multiple entries (renewals/extensions)
 
-The Customer Products page now provides a true representation of what customers currently have, based on their latest completed tenant provisioning request.
+The Customer Products page now provides a true representation of what customers currently have, based on their latest completed tenant provisioning request, with accurate date ranges that aggregate renewals and extensions.
 

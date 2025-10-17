@@ -1837,37 +1837,67 @@ async function getCustomerProducts(accountName) {
                 }
                 
                 // Create unique key (region + category + productCode)
-                // Exception: databridge can have multiple instances in same region
-                const isDataBridge = entitlement.productCode?.toLowerCase().includes('databridge');
-                const uniqueKey = isDataBridge 
-                    ? `${region}|${category.type}|${entitlement.productCode}|${record.ps_record_name}`
-                    : `${region}|${category.type}|${entitlement.productCode}`;
+                // All products should aggregate dates when same product code appears multiple times
+                // This handles renewals, extensions, and multi-year subscriptions
+                const uniqueKey = `${region}|${category.type}|${entitlement.productCode}`;
                 
-                // Calculate days remaining and status
-                const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-                
-                let status;
-                if (daysRemaining > 90) {
-                    status = 'active';
-                } else if (daysRemaining > 30) {
-                    status = 'expiring-soon';
+                if (productMap.has(uniqueKey)) {
+                    // Product already exists - aggregate date ranges (similar to monitor page logic)
+                    const existing = productMap.get(uniqueKey);
+                    
+                    // Update to earliest start date
+                    if (startDate && (!existing.startDate || startDate < existing.startDate)) {
+                        existing.startDate = startDate;
+                    }
+                    
+                    // Update to latest end date
+                    if (endDate && (!existing.endDate || endDate > existing.endDate)) {
+                        existing.endDate = endDate;
+                    }
+                    
+                    // Recalculate days remaining and status based on latest end date
+                    const daysRemaining = Math.ceil((existing.endDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysRemaining > 90) {
+                        existing.status = 'active';
+                    } else if (daysRemaining > 30) {
+                        existing.status = 'expiring-soon';
+                    } else {
+                        existing.status = 'expiring';
+                    }
+                    existing.daysRemaining = daysRemaining;
+                    
+                    // Update package name if not set
+                    if (entitlement.packageName && !existing.packageName) {
+                        existing.packageName = entitlement.packageName;
+                    }
                 } else {
-                    status = 'expiring';
+                    // Create new product entry
+                    const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    let status;
+                    if (daysRemaining > 90) {
+                        status = 'active';
+                    } else if (daysRemaining > 30) {
+                        status = 'expiring-soon';
+                    } else {
+                        status = 'expiring';
+                    }
+                    
+                    productMap.set(uniqueKey, {
+                        productCode: entitlement.productCode,
+                        productName: entitlement.name || entitlement.productCode,
+                        packageName: entitlement.packageName || null,
+                        category: category.type,
+                        region: region,
+                        startDate: startDate,
+                        endDate: endDate,
+                        status: status,
+                        daysRemaining: daysRemaining,
+                        sourcePSRecords: [record.ps_record_name],
+                        isDataBridge: false
+                    });
                 }
-                
-                productMap.set(uniqueKey, {
-                    productCode: entitlement.productCode,
-                    productName: entitlement.name || entitlement.productCode,
-                    packageName: entitlement.packageName || null,
-                    category: category.type,
-                    region: region,
-                    startDate: startDate,
-                    endDate: endDate,
-                    status: status,
-                    daysRemaining: daysRemaining,
-                    sourcePSRecords: [record.ps_record_name],
-                    isDataBridge: isDataBridge
-                });
             }
         }
         
