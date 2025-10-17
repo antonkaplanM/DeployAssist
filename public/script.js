@@ -8251,10 +8251,16 @@ function renderEnhancedComparisonTable(title, type, comparison, prevName, currNa
     // Build all products with their comparison data
     const allProducts = [];
     
+    // Helper to extract product code from composite key (format: "productCode|date1|date2|...")
+    const extractProductCode = (compositeId) => {
+        return compositeId.split('|')[0];
+    };
+    
     // Added products
     added.forEach(item => {
         allProducts.push({
-            productCode: item.id,
+            productCode: extractProductCode(item.id),
+            compositeKey: item.id,
             prev: null,
             curr: item.product,
             status: 'added',
@@ -8265,7 +8271,8 @@ function renderEnhancedComparisonTable(title, type, comparison, prevName, currNa
     // Removed products
     removed.forEach(item => {
         allProducts.push({
-            productCode: item.id,
+            productCode: extractProductCode(item.id),
+            compositeKey: item.id,
             prev: item.product,
             curr: null,
             status: 'removed',
@@ -8276,7 +8283,8 @@ function renderEnhancedComparisonTable(title, type, comparison, prevName, currNa
     // Updated products
     updated.forEach(item => {
         allProducts.push({
-            productCode: item.id,
+            productCode: extractProductCode(item.id),
+            compositeKey: item.id,
             prev: item.prev,
             curr: item.curr,
             status: 'updated',
@@ -8287,7 +8295,8 @@ function renderEnhancedComparisonTable(title, type, comparison, prevName, currNa
     // Unchanged products
     unchanged.forEach(item => {
         allProducts.push({
-            productCode: item.id,
+            productCode: extractProductCode(item.id),
+            compositeKey: item.id,
             prev: item.product,
             curr: item.product,
             status: 'unchanged',
@@ -8295,8 +8304,12 @@ function renderEnhancedComparisonTable(title, type, comparison, prevName, currNa
         });
     });
     
-    // Sort products by product code
-    allProducts.sort((a, b) => String(a.productCode).localeCompare(String(b.productCode)));
+    // Sort products by product code first, then by composite key for proper grouping
+    allProducts.sort((a, b) => {
+        const codeCompare = String(a.productCode).localeCompare(String(b.productCode));
+        if (codeCompare !== 0) return codeCompare;
+        return String(a.compositeKey).localeCompare(String(b.compositeKey));
+    });
     
     // Determine if section should be collapsed (only if ALL products are unchanged)
     const hasChanges = added.length > 0 || removed.length > 0 || updated.length > 0;
@@ -8433,6 +8446,70 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
     const currentPayload = parseRequestPayload(currentRequest);
     const previousPayload = parseRequestPayload(previousRequest);
     
+    // Helper function to aggregate consecutive date ranges for products with same attributes
+    const aggregateDateRanges = (products, getNonDateAttributes) => {
+        if (!products || products.length === 0) return [];
+        
+        // Group by non-date attributes
+        const groups = new Map();
+        
+        products.forEach(product => {
+            const key = getNonDateAttributes(product);
+            if (!groups.has(key)) {
+                groups.set(key, []);
+            }
+            groups.get(key).push(product);
+        });
+        
+        // For each group, aggregate consecutive date ranges
+        const aggregated = [];
+        groups.forEach((items, key) => {
+            // Sort by start date
+            items.sort((a, b) => {
+                const dateA = new Date(a.startDate || '1900-01-01');
+                const dateB = new Date(b.startDate || '1900-01-01');
+                return dateA - dateB;
+            });
+            
+            // Aggregate consecutive ranges
+            let currentGroup = [items[0]];
+            
+            for (let i = 1; i < items.length; i++) {
+                const prev = currentGroup[currentGroup.length - 1];
+                const curr = items[i];
+                
+                // Check if dates are consecutive (prev.endDate + 1 day = curr.startDate)
+                const prevEndDate = new Date(prev.endDate || '2099-12-31');
+                const currStartDate = new Date(curr.startDate || '1900-01-01');
+                
+                // Add 1 day to prevEndDate
+                const nextDay = new Date(prevEndDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                
+                // If consecutive, extend the current group
+                if (nextDay.getTime() === currStartDate.getTime()) {
+                    // Update the end date of the first item in current group
+                    currentGroup[0] = {
+                        ...currentGroup[0],
+                        endDate: curr.endDate,
+                        _aggregatedCount: (currentGroup[0]._aggregatedCount || 1) + 1
+                    };
+                } else {
+                    // Not consecutive, start a new aggregated item
+                    aggregated.push(currentGroup[0]);
+                    currentGroup = [curr];
+                }
+            }
+            
+            // Add the last group
+            if (currentGroup.length > 0) {
+                aggregated.push(currentGroup[0]);
+            }
+        });
+        
+        return aggregated;
+    };
+    
     // Helper function to compare products and detect changes
     const compareProducts = (prevProducts, currProducts, getIdentifier, compareAttributes) => {
         const result = {
@@ -8498,11 +8575,20 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
         return result;
     };
     
-    // Compare Models
-    const modelComparison = compareProducts(
+    // Aggregate and Compare Models
+    const prevModelsAggregated = aggregateDateRanges(
         previousPayload.modelEntitlements || [],
+        (m) => `${m.productCode}|${m.productModifier || ''}`
+    );
+    const currModelsAggregated = aggregateDateRanges(
         currentPayload.modelEntitlements || [],
-        (m) => m.productCode,
+        (m) => `${m.productCode}|${m.productModifier || ''}`
+    );
+    
+    const modelComparison = compareProducts(
+        prevModelsAggregated,
+        currModelsAggregated,
+        (m) => `${m.productCode}|${m.productModifier || ''}`,
         (prev, curr) => {
             const changes = [];
             const fields = ['startDate', 'endDate', 'productModifier'];
@@ -8515,11 +8601,20 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
         }
     );
     
-    // Compare Data Entitlements
-    const dataComparison = compareProducts(
+    // Aggregate and Compare Data Entitlements
+    const prevDataAggregated = aggregateDateRanges(
         previousPayload.dataEntitlements || [],
+        (d) => `${d.productCode || d.name}|${d.productModifier || ''}`
+    );
+    const currDataAggregated = aggregateDateRanges(
         currentPayload.dataEntitlements || [],
-        (d) => d.productCode || d.name,
+        (d) => `${d.productCode || d.name}|${d.productModifier || ''}`
+    );
+    
+    const dataComparison = compareProducts(
+        prevDataAggregated,
+        currDataAggregated,
+        (d) => `${d.productCode || d.name}|${d.productModifier || ''}`,
         (prev, curr) => {
             const changes = [];
             const fields = ['startDate', 'endDate', 'productModifier'];
@@ -8532,11 +8627,20 @@ function showDetailedComparisonModal(currentRequestId, previousRequestId) {
         }
     );
     
-    // Compare App Entitlements
-    const appComparison = compareProducts(
+    // Aggregate and Compare App Entitlements
+    const prevAppsAggregated = aggregateDateRanges(
         previousPayload.appEntitlements || [],
+        (app) => `${app.productCode || app.name}|${app.packageName || ''}|${app.quantity || ''}|${app.productModifier || ''}`
+    );
+    const currAppsAggregated = aggregateDateRanges(
         currentPayload.appEntitlements || [],
-        (app) => app.productCode || app.name,
+        (app) => `${app.productCode || app.name}|${app.packageName || ''}|${app.quantity || ''}|${app.productModifier || ''}`
+    );
+    
+    const appComparison = compareProducts(
+        prevAppsAggregated,
+        currAppsAggregated,
+        (app) => `${app.productCode || app.name}|${app.packageName || ''}|${app.quantity || ''}|${app.productModifier || ''}`,
         (prev, curr) => {
             const changes = [];
             const fields = ['packageName', 'quantity', 'startDate', 'endDate', 'productModifier'];

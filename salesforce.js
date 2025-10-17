@@ -2916,6 +2916,10 @@ async function analyzePackageChanges(lookbackYears = 2, startDate = null, endDat
             
             console.log(`🔍 Analyzing deployment ${deploymentNumber}: ${deploymentRecords.length} records (${deploymentRecords[0].Name} to ${deploymentRecords[deploymentRecords.length - 1].Name})`);
             
+            // Track recent transitions for this deployment to avoid counting consecutive upgrades to the same package
+            // Key: productCode, Value: {targetPackage, changeType, psRecordName}
+            const recentTransitions = new Map();
+            
             // Compare records, skipping invalid ones
             // Track last valid record to compare against
             let lastValidRecordIndex = 0;
@@ -3013,15 +3017,42 @@ async function analyzePackageChanges(lookbackYears = 2, startDate = null, endDat
                         || currentRecord.Tenant_Name__c
                         || null;
                     
-                    // Add tenant name to each change
-                    const changesWithTenant = changes.map(change => ({
-                        ...change,
-                        tenantName: tenantName
-                    }));
+                    // Filter out consecutive upgrades to the same target package
+                    // This prevents counting intermediate/partial upgrade states as separate changes
+                    const filteredChanges = changes.filter(change => {
+                        const productCode = change.productCode;
+                        const recentTransition = recentTransitions.get(productCode);
+                        
+                        // If this is a consecutive transition to the same target package, skip it
+                        if (recentTransition && 
+                            recentTransition.targetPackage === change.newPackage && 
+                            recentTransition.changeType === change.changeType) {
+                            console.log(`⏭️  Skipping consecutive ${change.changeType}: ${productCode} ${change.previousPackage} → ${change.newPackage} in ${currentRecord.Name} (already transitioned to ${change.newPackage} in ${recentTransition.psRecordName})`);
+                            return false; // Skip this change
+                        }
+                        
+                        // Update recent transitions map
+                        recentTransitions.set(productCode, {
+                            targetPackage: change.newPackage,
+                            changeType: change.changeType,
+                            psRecordName: currentRecord.Name
+                        });
+                        
+                        return true; // Keep this change
+                    });
                     
-                    psRecordsWithChanges.add(currentRecord.Name);
-                    accountsAffected.add(currentRecord.Account__c);
-                    allPackageChanges.push(...changesWithTenant);
+                    // Only process if there are filtered changes
+                    if (filteredChanges.length > 0) {
+                        // Add tenant name to each change
+                        const changesWithTenant = filteredChanges.map(change => ({
+                            ...change,
+                            tenantName: tenantName
+                        }));
+                        
+                        psRecordsWithChanges.add(currentRecord.Name);
+                        accountsAffected.add(currentRecord.Account__c);
+                        allPackageChanges.push(...changesWithTenant);
+                    }
                 }
             }
             
