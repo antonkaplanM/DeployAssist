@@ -106,6 +106,18 @@ class AuthService {
 
             user.permissions = permissionsResult.rows;
 
+            // Load accessible pages
+            const pagesResult = await this.pool.query(`
+                SELECT DISTINCT p.*
+                FROM pages p
+                INNER JOIN role_pages rp ON p.id = rp.page_id
+                INNER JOIN user_roles ur ON rp.role_id = ur.role_id
+                WHERE ur.user_id = $1
+                ORDER BY p.sort_order, p.display_name
+            `, [user.id]);
+
+            user.pages = pagesResult.rows;
+
             // Update last login
             await this.pool.query(`
                 UPDATE users
@@ -306,6 +318,7 @@ class AuthService {
             username: user.username,
             roles: user.roles.map(r => r.name),
             permissions: (user.permissions || []).map(p => p.name),
+            pages: (user.pages || []).map(p => p.name),
             sessionId,
             type: 'access',
             iat: Math.floor(Date.now() / 1000),

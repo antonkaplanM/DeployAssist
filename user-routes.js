@@ -396,6 +396,163 @@ function createUserRoutes(pool, authService, authenticate, requireAdmin) {
     });
 
     /**
+     * GET /api/users/pages/all - Get all pages
+     */
+    router.get('/pages/all', authenticate, async (req, res) => {
+        try {
+            const result = await pool.query(`
+                SELECT 
+                    id, name, display_name, description, parent_page_id,
+                    route, icon, sort_order, is_system_page
+                FROM pages
+                ORDER BY sort_order ASC, display_name ASC
+            `);
+
+            res.json({
+                success: true,
+                pages: result.rows,
+                count: result.rows.length
+            });
+        } catch (error) {
+            console.error('Get all pages error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve pages'
+            });
+        }
+    });
+
+    /**
+     * GET /api/users/roles/:id/pages - Get pages assigned to a role
+     */
+    router.get('/roles/:id/pages', authenticate, requireAdmin(), async (req, res) => {
+        try {
+            const roleId = parseInt(req.params.id);
+            
+            const result = await pool.query(`
+                SELECT p.*
+                FROM pages p
+                INNER JOIN role_pages rp ON p.id = rp.page_id
+                WHERE rp.role_id = $1
+                ORDER BY p.sort_order, p.display_name
+            `, [roleId]);
+
+            res.json({
+                success: true,
+                pages: result.rows,
+                count: result.rows.length
+            });
+        } catch (error) {
+            console.error('Get role pages error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve role pages'
+            });
+        }
+    });
+
+    /**
+     * PUT /api/users/roles/:id/pages - Assign pages to a role
+     */
+    router.put('/roles/:id/pages', authenticate, requireAdmin(), async (req, res) => {
+        try {
+            const roleId = parseInt(req.params.id);
+            const { pageIds } = req.body;
+
+            if (!pageIds || !Array.isArray(pageIds)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'pageIds array is required'
+                });
+            }
+
+            // Check if it's a system role
+            const roleCheck = await pool.query(
+                'SELECT name, is_system_role FROM roles WHERE id = $1',
+                [roleId]
+            );
+
+            if (roleCheck.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Role not found'
+                });
+            }
+
+            // Begin transaction
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                // Delete existing page assignments
+                await client.query('DELETE FROM role_pages WHERE role_id = $1', [roleId]);
+
+                // Insert new page assignments
+                if (pageIds.length > 0) {
+                    for (const pageId of pageIds) {
+                        await client.query(
+                            'INSERT INTO role_pages (role_id, page_id) VALUES ($1, $2)',
+                            [roleId, pageId]
+                        );
+                    }
+                }
+
+                await client.query('COMMIT');
+
+                // Audit log
+                await pool.query(`
+                    INSERT INTO auth_audit_log (user_id, action, entity_type, entity_id, new_value, performed_by)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [req.user.id, 'pages_assigned', 'role_pages', roleId, JSON.stringify(pageIds), req.user.id]);
+
+                res.json({
+                    success: true,
+                    message: 'Pages assigned to role successfully'
+                });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
+        } catch (error) {
+            console.error('Assign role pages error:', error);
+            res.status(400).json({
+                success: false,
+                error: error.message || 'Failed to assign pages to role'
+            });
+        }
+    });
+
+    /**
+     * GET /api/users/me/pages - Get current user's accessible pages
+     */
+    router.get('/me/pages', authenticate, async (req, res) => {
+        try {
+            const result = await pool.query(`
+                SELECT DISTINCT p.*
+                FROM pages p
+                INNER JOIN role_pages rp ON p.id = rp.page_id
+                INNER JOIN user_roles ur ON rp.role_id = ur.role_id
+                WHERE ur.user_id = $1
+                ORDER BY p.sort_order, p.display_name
+            `, [req.user.id]);
+
+            res.json({
+                success: true,
+                pages: result.rows,
+                count: result.rows.length
+            });
+        } catch (error) {
+            console.error('Get user pages error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve user pages'
+            });
+        }
+    });
+
+    /**
      * DELETE /api/users/roles/:id - Delete role
      */
     router.delete('/roles/:id', authenticate, requireAdmin(), async (req, res) => {

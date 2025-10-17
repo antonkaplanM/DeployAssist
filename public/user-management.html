@@ -442,11 +442,11 @@
         </div>
     </div>
 
-    <!-- Create Role Modal -->
+    <!-- Create/Edit Role Modal -->
     <div id="roleModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
-                <h2>Create Role</h2>
+                <h2 id="roleModalTitle">Create Role</h2>
             </div>
             
             <form id="roleForm">
@@ -462,11 +462,19 @@
                     <small>Brief description of this role's purpose</small>
                 </div>
 
+                <div class="form-group">
+                    <label>Page Access *</label>
+                    <small style="margin-bottom: 12px;">Select which pages this role can access</small>
+                    <div class="checkbox-group" id="pagesCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                        <!-- Pages will be loaded here -->
+                    </div>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" onclick="closeRoleModal()" class="btn btn-secondary">
                         Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="roleSubmitBtn">
                         Create Role
                     </button>
                 </div>
@@ -479,7 +487,9 @@
         let currentUser = null;
         let editingUserId = null;
         let changingPasswordUserId = null;
+        let editingRoleId = null;
         let allRoles = [];
+        let allPages = [];
 
         // Initialize on page load
         async function init() {
@@ -497,8 +507,25 @@
             AuthUtils.renderUserInfo(currentUser, 'userInfo');
 
             // Load data
+            await loadPages();
             await loadRoles();
             await loadUsers();
+        }
+
+        async function loadPages() {
+            try {
+                const response = await fetch('/api/users/pages/all', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error('Failed to load pages');
+
+                const data = await response.json();
+                allPages = data.pages || [];
+            } catch (error) {
+                console.error('Error loading pages:', error);
+                showAlert('Failed to load pages', 'error');
+            }
         }
 
         async function loadRoles() {
@@ -536,11 +563,16 @@
                         </span>
                     </td>
                     <td>
-                        ${!role.is_system_role ? `
-                            <button onclick="deleteRole(${role.id}, '${role.name}')" class="btn btn-danger btn-small">
-                                Delete
+                        <div class="action-buttons">
+                            <button onclick="editRole(${role.id})" class="btn btn-secondary btn-small">
+                                Edit Pages
                             </button>
-                        ` : '<em style="color: #999;">System role</em>'}
+                            ${!role.is_system_role ? `
+                                <button onclick="deleteRole(${role.id}, '${role.name}')" class="btn btn-danger btn-small">
+                                    Delete
+                                </button>
+                            ` : ''}
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -811,8 +843,91 @@
         }
 
         function showCreateRoleModal() {
+            editingRoleId = null;
+            document.getElementById('roleModalTitle').textContent = 'Create Role';
+            document.getElementById('roleSubmitBtn').textContent = 'Create Role';
             document.getElementById('roleForm').reset();
+            document.getElementById('roleName').disabled = false;
+            
+            // Load pages checkboxes
+            loadPagesCheckboxes([]);
+            
             document.getElementById('roleModal').classList.add('show');
+        }
+
+        async function editRole(roleId) {
+            try {
+                // Get role details
+                const roleResponse = await fetch(`/api/users/roles/all`, {
+                    credentials: 'include'
+                });
+                if (!roleResponse.ok) throw new Error('Failed to load role');
+                const rolesData = await roleResponse.json();
+                const role = rolesData.roles.find(r => r.id === roleId);
+                
+                if (!role) throw new Error('Role not found');
+
+                // Get role pages
+                const pagesResponse = await fetch(`/api/users/roles/${roleId}/pages`, {
+                    credentials: 'include'
+                });
+                if (!pagesResponse.ok) throw new Error('Failed to load role pages');
+                const pagesData = await pagesResponse.json();
+                const rolePages = pagesData.pages || [];
+
+                editingRoleId = roleId;
+                document.getElementById('roleModalTitle').textContent = 'Edit Role Pages';
+                document.getElementById('roleSubmitBtn').textContent = 'Update Role';
+                document.getElementById('roleName').value = role.name;
+                document.getElementById('roleName').disabled = true;
+                document.getElementById('roleDescription').value = role.description || '';
+                
+                // Load pages checkboxes with current assignments
+                const assignedPageIds = rolePages.map(p => p.id);
+                loadPagesCheckboxes(assignedPageIds);
+                
+                document.getElementById('roleModal').classList.add('show');
+            } catch (error) {
+                console.error('Error loading role:', error);
+                showAlert('Failed to load role', 'error');
+            }
+        }
+
+        function loadPagesCheckboxes(selectedPageIds) {
+            const container = document.getElementById('pagesCheckboxes');
+            
+            // Group pages by parent
+            const topLevelPages = allPages.filter(p => p.parent_page_id === null);
+            const childPages = allPages.filter(p => p.parent_page_id !== null);
+            
+            let html = '';
+            
+            // Build hierarchical checkbox list
+            topLevelPages.forEach(page => {
+                const isChecked = selectedPageIds.includes(page.id);
+                html += `
+                    <label style="font-weight: 600; margin-bottom: 4px;">
+                        <input type="checkbox" name="pages" value="${page.id}" ${isChecked ? 'checked' : ''}>
+                        ${page.display_name}
+                    </label>
+                `;
+                
+                // Add child pages
+                const children = childPages.filter(c => c.parent_page_id === page.id);
+                if (children.length > 0) {
+                    children.forEach(child => {
+                        const isChildChecked = selectedPageIds.includes(child.id);
+                        html += `
+                            <label style="margin-left: 24px; font-weight: normal; margin-bottom: 4px;">
+                                <input type="checkbox" name="pages" value="${child.id}" ${isChildChecked ? 'checked' : ''}>
+                                ${child.display_name}
+                            </label>
+                        `;
+                    });
+                }
+            });
+            
+            container.innerHTML = html;
         }
 
         function closeRoleModal() {
@@ -825,25 +940,67 @@
             const formData = new FormData(e.target);
             const name = formData.get('roleName');
             const description = formData.get('roleDescription');
+            const pageCheckboxes = document.querySelectorAll('input[name="pages"]:checked');
+            const pageIds = Array.from(pageCheckboxes).map(cb => parseInt(cb.value));
+
+            if (pageIds.length === 0) {
+                showAlert('Please select at least one page for this role', 'error');
+                return;
+            }
 
             try {
-                const response = await fetch('/api/users/roles', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ name, description })
-                });
+                if (editingRoleId) {
+                    // Update existing role pages
+                    const response = await fetch(`/api/users/roles/${editingRoleId}/pages`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ pageIds })
+                    });
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to create role');
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to update role pages');
+                    }
+
+                    showAlert('Role pages updated successfully', 'success');
+                } else {
+                    // Create new role
+                    const response = await fetch('/api/users/roles', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ name, description })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to create role');
+                    }
+
+                    const result = await response.json();
+                    const newRoleId = result.role.id;
+
+                    // Assign pages to the new role
+                    const pagesResponse = await fetch(`/api/users/roles/${newRoleId}/pages`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ pageIds })
+                    });
+
+                    if (!pagesResponse.ok) {
+                        const error = await pagesResponse.json();
+                        throw new Error(error.error || 'Failed to assign pages to role');
+                    }
+
+                    showAlert('Role created successfully', 'success');
                 }
 
-                showAlert('Role created successfully', 'success');
                 closeRoleModal();
                 await loadRoles();
             } catch (error) {
-                console.error('Error creating role:', error);
+                console.error('Error saving role:', error);
                 showAlert(error.message, 'error');
             }
         });

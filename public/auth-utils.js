@@ -67,6 +67,117 @@ const AuthUtils = {
     },
 
     /**
+     * Check if current user has access to a specific page
+     */
+    async hasPageAccess(pageName) {
+        try {
+            const response = await fetch('/api/users/me/pages', {
+                credentials: 'include'
+            });
+
+            if (!response.ok) return false;
+
+            const data = await response.json();
+            const pages = data.pages || [];
+            
+            return pages.some(page => page.name === pageName);
+        } catch (error) {
+            console.error('Page access check failed:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Get all pages accessible to current user
+     */
+    async getUserPages() {
+        try {
+            const response = await fetch('/api/users/me/pages', {
+                credentials: 'include'
+            });
+
+            if (!response.ok) return [];
+
+            const data = await response.json();
+            return data.pages || [];
+        } catch (error) {
+            console.error('Failed to get user pages:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Check page access and redirect if denied
+     */
+    async requirePageAccess(pageName, redirectUrl = '/') {
+        const hasAccess = await this.hasPageAccess(pageName);
+        
+        if (!hasAccess) {
+            alert('Access denied. You do not have permission to access this page.');
+            window.location.href = redirectUrl;
+            return false;
+        }
+        
+        return true;
+    },
+
+    /**
+     * Build hierarchical page structure from flat list
+     */
+    buildPageHierarchy(pages) {
+        const pageMap = new Map();
+        const rootPages = [];
+
+        // Create map
+        pages.forEach(page => {
+            pageMap.set(page.id, { ...page, children: [] });
+        });
+
+        // Build hierarchy
+        pages.forEach(page => {
+            const pageNode = pageMap.get(page.id);
+            
+            if (page.parent_page_id === null) {
+                rootPages.push(pageNode);
+            } else {
+                const parent = pageMap.get(page.parent_page_id);
+                if (parent) {
+                    parent.children.push(pageNode);
+                }
+            }
+        });
+
+        return rootPages;
+    },
+
+    /**
+     * Apply page-based visibility to navigation elements
+     */
+    async applyPageBasedVisibility() {
+        const userPages = await this.getUserPages();
+        const pageNames = userPages.map(p => p.name);
+
+        // Hide navigation items based on page access
+        document.querySelectorAll('[data-page-access]').forEach(element => {
+            const requiredPage = element.getAttribute('data-page-access');
+            const hasAccess = pageNames.includes(requiredPage);
+            element.style.display = hasAccess ? '' : 'none';
+        });
+
+        // Hide sections or content based on page access
+        document.querySelectorAll('[data-page-required]').forEach(element => {
+            const requiredPage = element.getAttribute('data-page-required');
+            const hasAccess = pageNames.includes(requiredPage);
+            
+            if (!hasAccess) {
+                element.remove(); // Remove from DOM entirely
+            }
+        });
+
+        return userPages;
+    },
+
+    /**
      * Show/hide elements based on role
      */
     applyRoleBasedVisibility(user) {

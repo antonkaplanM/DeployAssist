@@ -3790,6 +3790,9 @@
                 console.log('✅ User authenticated:', currentUser.username);
                 console.log('User roles:', currentUser.roles.map(r => r.name));
                 
+                // Apply page-based visibility to navigation
+                await applyPageVisibility();
+                
                 // Add user info to header
                 addUserInfoToHeader();
                 
@@ -3800,6 +3803,64 @@
             } catch (error) {
                 console.error('Authentication error:', error);
                 window.location.href = '/login.html';
+            }
+        }
+
+        async function applyPageVisibility() {
+            try {
+                const userPages = await AuthUtils.getUserPages();
+                const pageNames = userPages.map(p => p.name);
+
+                console.log('User has access to pages:', pageNames);
+
+                // Map navigation buttons to page names
+                const navPageMap = {
+                    'nav-dashboard': 'dashboard',
+                    'nav-analytics': 'analytics',
+                    'nav-analytics-overview': 'analytics.overview',
+                    'nav-account-history': 'analytics.account_history',
+                    'nav-package-changes': 'analytics.package_changes',
+                    'nav-provisioning': 'provisioning',
+                    'nav-provisioning-monitor': 'provisioning.monitor',
+                    'nav-expiration': 'provisioning.expiration',
+                    'nav-ghost-accounts': 'provisioning.ghost_accounts',
+                    'nav-customer-products': 'customer_products',
+                    'nav-roadmap': 'roadmap',
+                    'nav-help': 'help',
+                    'nav-settings': 'settings'
+                };
+
+                // Hide/show navigation items based on page access
+                Object.entries(navPageMap).forEach(([navId, pageName]) => {
+                    const navElement = document.getElementById(navId);
+                    if (navElement) {
+                        const hasAccess = pageNames.includes(pageName);
+                        if (!hasAccess) {
+                            navElement.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Hide parent sections if no children are visible
+                const analyticsSection = document.querySelector('.analytics-section');
+                if (analyticsSection) {
+                    const visibleChildren = Array.from(analyticsSection.querySelectorAll('.sub-nav-item'))
+                        .filter(el => el.style.display !== 'none');
+                    if (visibleChildren.length === 0) {
+                        document.getElementById('nav-analytics').style.display = 'none';
+                    }
+                }
+
+                const provisioningSection = document.querySelector('.provisioning-section');
+                if (provisioningSection) {
+                    const visibleChildren = Array.from(provisioningSection.querySelectorAll('.sub-nav-item'))
+                        .filter(el => el.style.display !== 'none');
+                    if (visibleChildren.length === 0) {
+                        document.getElementById('nav-provisioning').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to apply page visibility:', error);
             }
         }
 

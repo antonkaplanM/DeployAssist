@@ -49,6 +49,23 @@ export interface Permission {
 }
 
 /**
+ * Page entity from database
+ */
+export interface Page {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  parent_page_id: number | null;
+  route: string | null;
+  icon: string | null;
+  sort_order: number;
+  is_system_page: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/**
  * User-Role junction entity
  */
 export interface UserRole {
@@ -66,6 +83,16 @@ export interface RolePermission {
   id: number;
   role_id: number;
   permission_id: number;
+  created_at: Date;
+}
+
+/**
+ * Role-Page junction entity
+ */
+export interface RolePage {
+  id: number;
+  role_id: number;
+  page_id: number;
   created_at: Date;
 }
 
@@ -153,11 +180,28 @@ export interface PermissionDTO {
 }
 
 /**
+ * Page data transfer object
+ */
+export interface PageDTO {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  parent_page_id: number | null;
+  route: string | null;
+  icon: string | null;
+  sort_order: number;
+  is_system_page: boolean;
+  children?: PageDTO[]; // For nested page structure
+}
+
+/**
  * User with roles for internal use
  */
 export interface UserWithRoles extends Omit<User, 'password_hash'> {
   roles: Role[];
   permissions?: Permission[];
+  pages?: Page[];
 }
 
 // ===== REQUEST/RESPONSE TYPES =====
@@ -228,6 +272,7 @@ export interface CreateRoleRequest {
   name: string;
   description?: string;
   permissionIds?: number[];
+  pageIds?: number[];
 }
 
 /**
@@ -236,6 +281,14 @@ export interface CreateRoleRequest {
 export interface UpdateRoleRequest {
   description?: string;
   permissionIds?: number[];
+  pageIds?: number[];
+}
+
+/**
+ * Assign pages request
+ */
+export interface AssignPagesRequest {
+  pageIds: number[];
 }
 
 // ===== JWT PAYLOAD TYPES =====

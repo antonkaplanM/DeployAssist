@@ -130,9 +130,57 @@ function requireRole(...roleNames) {
     };
 }
 
+/**
+ * Check if user has access to a specific page
+ * @param {string} pageName - Name of the page to check access for
+ * @returns {Function} Middleware function
+ */
+function requirePageAccess(pageName, pool) {
+    return async (req, res, next) => {
+        try {
+            if (!req.user || !req.user.id) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Authentication required',
+                    code: 'UNAUTHORIZED'
+                });
+            }
+
+            // Check if user has access to the page
+            const result = await pool.query(`
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pages p
+                    INNER JOIN role_pages rp ON p.id = rp.page_id
+                    INNER JOIN user_roles ur ON rp.role_id = ur.role_id
+                    WHERE ur.user_id = $1 AND p.name = $2
+                ) as has_access
+            `, [req.user.id, pageName]);
+
+            if (!result.rows[0].has_access) {
+                return res.status(403).json({
+                    success: false,
+                    error: `Access denied. You do not have permission to access this page: ${pageName}`,
+                    code: 'FORBIDDEN'
+                });
+            }
+
+            next();
+        } catch (error) {
+            console.error('Page access check error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to verify page access',
+                code: 'INTERNAL_ERROR'
+            });
+        }
+    };
+}
+
 module.exports = {
     createAuthMiddleware,
     requireAdmin,
-    requireRole
+    requireRole,
+    requirePageAccess
 };
 
