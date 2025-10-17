@@ -6,20 +6,30 @@ Write-Host ""
 
 # Get the current directory
 $scriptPath = (Get-Location).Path
-$nodePath = (Get-Command node.exe).Source
+$wscriptPath = "C:\Windows\System32\wscript.exe"
+$vbsWrapper = Join-Path $scriptPath "run-capture-hidden.vbs"
 $captureScript = Join-Path $scriptPath "capture-ps-changes.js"
 
 Write-Host "Configuration:" -ForegroundColor Yellow
-Write-Host "   Node.exe: $nodePath"
-Write-Host "   Script: $captureScript"
+Write-Host "   VBS Wrapper: $vbsWrapper"
+Write-Host "   Capture Script: $captureScript"
 Write-Host "   Working Directory: $scriptPath"
 Write-Host "   Frequency: Every 5 minutes"
+Write-Host "   Window: Hidden (no popup)"
 Write-Host ""
 
 # Check if the capture script exists
 if (-not (Test-Path $captureScript)) {
     Write-Host "Error: capture-ps-changes.js not found!" -ForegroundColor Red
     Write-Host "Expected location: $captureScript" -ForegroundColor Red
+    exit 1
+}
+
+# Check if the VBS wrapper exists
+if (-not (Test-Path $vbsWrapper)) {
+    Write-Host "Error: run-capture-hidden.vbs not found!" -ForegroundColor Red
+    Write-Host "Expected location: $vbsWrapper" -ForegroundColor Red
+    Write-Host "Please ensure the VBS wrapper script is in the same directory." -ForegroundColor Red
     exit 1
 }
 
@@ -46,13 +56,13 @@ if ($existingTask) {
 
 Write-Host "Creating scheduled task..." -ForegroundColor Cyan
 
-# Create the action (what to run)
-$action = New-ScheduledTaskAction -Execute $nodePath -Argument "capture-ps-changes.js" -WorkingDirectory $scriptPath
+# Create the action (what to run) - use VBScript wrapper to hide window
+$action = New-ScheduledTaskAction -Execute $wscriptPath -Argument "`"$vbsWrapper`"" -WorkingDirectory $scriptPath
 
 # Create the trigger (when to run - every 5 minutes for 365 days, which will auto-renew)
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
 
-# Create the principal (run as current user)
+# Create the principal (run as current user, VBS wrapper handles hiding window)
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
 
 # Create the settings
@@ -77,7 +87,8 @@ try {
     Write-Host ""
     Write-Host "To test immediately:" -ForegroundColor Yellow
     Write-Host "   Run: Start-ScheduledTask -TaskName '$taskName'"
-    Write-Host "   Or:  node capture-ps-changes.js"
+    Write-Host "   Or:  wscript run-capture-hidden.vbs (no popup)"
+    Write-Host "   Or:  node capture-ps-changes.js (will show window)"
     Write-Host ""
     
     # Ask if user wants to test now

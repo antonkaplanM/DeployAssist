@@ -6216,7 +6216,7 @@ async function fetchPSRemovals() {
     }
 }
 
-// Display removals results in the tile
+// Display removals results in the tile with aggregated categories
 function displayRemovalsResults(data) {
     const { requests, totalCount, timeFrame, note } = data;
     const timeFrameLabel = getTimeFrameLabel(timeFrame);
@@ -6264,7 +6264,68 @@ function displayRemovalsResults(data) {
         `;
         removalsList.classList.add('hidden');
     } else {
-        // Display removals count
+        // Aggregate all removals by category across all requests
+        const aggregatedRemovals = {
+            models: [],
+            data: [],
+            apps: []
+        };
+        
+        // Track which PS records each product was removed from
+        const removalSources = new Map(); // productKey -> [{ request, previousRequest }]
+        
+        requests.forEach(item => {
+            const { currentRequest, previousRequest, removals } = item;
+            
+            // Aggregate models
+            removals.removedModels.forEach(model => {
+                const key = model.productCode;
+                if (!removalSources.has(key)) {
+                    aggregatedRemovals.models.push({
+                        ...model,
+                        productCode: model.productCode,
+                        productName: model.name || model.productCode
+                    });
+                    removalSources.set(key, []);
+                }
+                removalSources.get(key).push({ currentRequest, previousRequest });
+            });
+            
+            // Aggregate data
+            removals.removedData.forEach(dataItem => {
+                const key = dataItem.productCode;
+                if (!removalSources.has(key)) {
+                    aggregatedRemovals.data.push({
+                        ...dataItem,
+                        productCode: dataItem.productCode,
+                        productName: dataItem.name || dataItem.productCode
+                    });
+                    removalSources.set(key, []);
+                }
+                removalSources.get(key).push({ currentRequest, previousRequest });
+            });
+            
+            // Aggregate apps
+            removals.removedApps.forEach(app => {
+                const key = app.productCode;
+                if (!removalSources.has(key)) {
+                    aggregatedRemovals.apps.push({
+                        ...app,
+                        productCode: app.productCode,
+                        productName: app.name || app.productCode
+                    });
+                    removalSources.set(key, []);
+                }
+                removalSources.get(key).push({ currentRequest, previousRequest });
+            });
+        });
+        
+        const totalModels = aggregatedRemovals.models.length;
+        const totalData = aggregatedRemovals.data.length;
+        const totalApps = aggregatedRemovals.apps.length;
+        const totalProducts = totalModels + totalData + totalApps;
+        
+        // Display summary with total count
         removalsStatus.innerHTML = `
             <div class="flex items-center gap-3 text-orange-700">
                 <div class="flex-shrink-0">
@@ -6275,7 +6336,7 @@ function displayRemovalsResults(data) {
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <p class="font-medium">${totalCount} PS request${totalCount !== 1 ? 's' : ''} with product removals</p>
+                    <p class="font-medium">${totalProducts} unique product${totalProducts !== 1 ? 's' : ''} removed across ${totalCount} PS request${totalCount !== 1 ? 's' : ''}</p>
                     <p class="text-sm text-muted-foreground">
                         Found in ${timeFrameLabel}
                     </p>
@@ -6283,95 +6344,77 @@ function displayRemovalsResults(data) {
             </div>
         `;
         
-        // Display list of removals
-        const renderRemovalCard = (item) => {
-            const { currentRequest, previousRequest, removals } = item;
-            const removedItems = [
-                ...removals.removedModels.map(m => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mr-1 mb-1">Model: ${m.productCode}</span>`),
-                ...removals.removedData.map(d => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 mr-1 mb-1">Data: ${d.productCode}</span>`),
-                ...removals.removedApps.map(a => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-1 mb-1">App: ${a.productCode}</span>`)
-            ].join('');
-            
-            return `
-                <div class="rounded-lg border bg-white p-4 hover:shadow-md transition-shadow">
-                    <div class="space-y-3">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2">
-                                    <h3 class="font-semibold text-base">${currentRequest.name}</h3>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                        ${currentRequest.requestType || 'Update'}
-                                    </span>
-                                </div>
-                                <p class="text-sm text-muted-foreground mt-1">
-                                    Account: ${currentRequest.account}
-                                </p>
-                                <p class="text-xs text-muted-foreground mt-0.5">
-                                    Created: ${new Date(currentRequest.createdDate).toLocaleDateString()}
-                                </p>
-                            </div>
-                            <button 
-                                onclick="viewPSRecordExact('${currentRequest.id}', '${currentRequest.name}')" 
-                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                            >
-                                View Record
-                            </button>
-                        </div>
-                        
-                        <div class="border-t pt-3">
-                            <div class="flex items-start gap-2">
-                                <svg class="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 6h18"></path>
-                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                                </svg>
-                                <div class="flex-1">
-                                    <p class="text-sm font-medium text-orange-900 mb-2">
-                                        Removed from ${previousRequest.name}
-                                        <span class="text-xs text-muted-foreground ml-1">
-                                            (${new Date(previousRequest.createdDate).toLocaleDateString()})
-                                        </span>
-                                    </p>
-                                    <div class="flex flex-wrap gap-1">
-                                        ${removedItems}
-                                    </div>
-                                    <p class="text-xs text-muted-foreground mt-2">
-                                        Total removals: ${removals.totalCount} product${removals.totalCount !== 1 ? 's' : ''}
-                                    </p>
-                                </div>
-                            </div>
+        // Display clickable category cards
+        removalsList.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Models Card -->
+                <button 
+                    onclick="showRemovalCategoryModal('models', ${JSON.stringify(aggregatedRemovals.models).replace(/"/g, '&quot;')}, ${JSON.stringify(Array.from(removalSources.entries())).replace(/"/g, '&quot;')})"
+                    class="rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 hover:shadow-lg transition-all hover:border-blue-300 text-left"
+                    ${totalModels === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                >
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="rounded-lg bg-blue-100 p-2">
+                            <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <circle cx="21" cy="11" r="8"></circle>
+                                <path d="M21 21l-4.35-4.35"></path>
+                            </svg>
                         </div>
                     </div>
-                </div>
-            `;
-        };
-        
-        // Show only the first record, rest are collapsible
-        const firstRecord = renderRemovalCard(requests[0]);
-        const remainingRecords = requests.slice(1);
-        
-        if (remainingRecords.length > 0) {
-            removalsList.innerHTML = `
-                ${firstRecord}
-                <div id="removals-additional" class="space-y-2 hidden">
-                    ${remainingRecords.map(item => renderRemovalCard(item)).join('')}
-                </div>
-                <button 
-                    id="removals-expand-btn"
-                    onclick="toggleRemovalsExpand()"
-                    class="w-full inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                >
-                    <svg id="removals-expand-icon" class="h-4 w-4 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m6 9 6 6 6-6"></path>
-                    </svg>
-                    <span id="removals-expand-text">Show ${remainingRecords.length} more record${remainingRecords.length !== 1 ? 's' : ''}</span>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-sm font-medium text-blue-700">Models</p>
+                        <p class="text-3xl font-bold text-blue-900">${totalModels}</p>
+                        <p class="text-xs text-blue-600">${totalModels === 0 ? 'No removals' : 'Click to view details'}</p>
+                    </div>
                 </button>
-            `;
-        } else {
-            removalsList.innerHTML = firstRecord;
-        }
+                
+                <!-- Data Card -->
+                <button 
+                    onclick="showRemovalCategoryModal('data', ${JSON.stringify(aggregatedRemovals.data).replace(/"/g, '&quot;')}, ${JSON.stringify(Array.from(removalSources.entries())).replace(/"/g, '&quot;')})"
+                    class="rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100/50 p-4 hover:shadow-lg transition-all hover:border-green-300 text-left"
+                    ${totalData === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                >
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="rounded-lg bg-green-100 p-2">
+                            <svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-sm font-medium text-green-700">Data</p>
+                        <p class="text-3xl font-bold text-green-900">${totalData}</p>
+                        <p class="text-xs text-green-600">${totalData === 0 ? 'No removals' : 'Click to view details'}</p>
+                    </div>
+                </button>
+                
+                <!-- Apps Card -->
+                <button 
+                    onclick="showRemovalCategoryModal('apps', ${JSON.stringify(aggregatedRemovals.apps).replace(/"/g, '&quot;')}, ${JSON.stringify(Array.from(removalSources.entries())).replace(/"/g, '&quot;')})"
+                    class="rounded-lg border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 hover:shadow-lg transition-all hover:border-purple-300 text-left"
+                    ${totalApps === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                >
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="rounded-lg bg-purple-100 p-2">
+                            <svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                                <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                                <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                                <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-sm font-medium text-purple-700">Apps</p>
+                        <p class="text-3xl font-bold text-purple-900">${totalApps}</p>
+                        <p class="text-xs text-purple-600">${totalApps === 0 ? 'No removals' : 'Click to view details'}</p>
+                    </div>
+                </button>
+            </div>
+        `;
         
         removalsList.classList.remove('hidden');
     }
@@ -6395,6 +6438,209 @@ function displayRemovalsError(errorMessage) {
         </div>
     `;
     removalsList.classList.add('hidden');
+}
+
+// Show removal category modal (Models, Data, or Apps)
+function showRemovalCategoryModal(categoryType, products, sourcesArray) {
+    // Parse the JSON strings if needed
+    if (typeof products === 'string') {
+        products = JSON.parse(products.replace(/&quot;/g, '"'));
+    }
+    if (typeof sourcesArray === 'string') {
+        sourcesArray = JSON.parse(sourcesArray.replace(/&quot;/g, '"'));
+    }
+    
+    // Convert sources array back to Map
+    const sources = new Map(sourcesArray);
+    
+    // Get category configuration
+    const categoryConfig = {
+        'models': {
+            title: 'Model Removals',
+            icon: `<svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 12l2 2 4-4"></path>
+                <circle cx="21" cy="11" r="8"></circle>
+                <path d="M21 21l-4.35-4.35"></path>
+            </svg>`,
+            colorClass: 'blue'
+        },
+        'data': {
+            title: 'Data Removals',
+            icon: `<svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>`,
+            colorClass: 'green'
+        },
+        'apps': {
+            title: 'App Removals',
+            icon: `<svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+            </svg>`,
+            colorClass: 'purple'
+        }
+    };
+    
+    const config = categoryConfig[categoryType] || categoryConfig['models'];
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('removal-category-modal');
+    if (existingModal) {
+        existingModal.remove();
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleRemovalModalEscape);
+    }
+    
+    // Build product rows
+    const productRows = products.map(product => {
+        const productSources = sources.get(product.productCode) || [];
+        const psRecords = productSources.map(s => s.currentRequest.name).join(', ');
+        
+        return `
+            <tr class="border-t hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">${escapeHtml(product.productCode)}</td>
+                <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(product.productName)}</td>
+                <td class="px-4 py-3 text-xs text-gray-600">
+                    <div class="flex flex-wrap gap-1">
+                        ${productSources.map(s => `
+                            <button 
+                                onclick="viewPSRecordExact('${s.currentRequest.id}', '${s.currentRequest.name}'); closeRemovalCategoryModal();"
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
+                                title="Click to view in Provisioning Monitor"
+                            >
+                                ${escapeHtml(s.currentRequest.name)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    // Create modal HTML
+    const modalHTML = `
+        <div id="removal-category-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onclick="closeRemovalCategoryModal(event)">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full flex flex-col" style="max-height: 90vh;" onclick="event.stopPropagation()">
+                <!-- Modal Header (Fixed) -->
+                <div class="flex items-center justify-between p-6 border-b bg-${config.colorClass}-50 flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        ${config.icon}
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">${config.title}</h2>
+                            <p class="text-sm text-gray-600">${products.length} unique product${products.length !== 1 ? 's' : ''} removed</p>
+                        </div>
+                    </div>
+                    <button onclick="closeRemovalCategoryModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18"></path>
+                            <path d="M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Body (Scrollable) -->
+                <div class="flex-1 overflow-y-auto p-6" style="min-height: 0;">
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-start gap-2">
+                            <svg class="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                <path d="M12 9v4"></path>
+                                <path d="M12 17h.01"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-orange-900">Products Removed from Entitlements</p>
+                                <p class="text-xs text-orange-700 mt-1">These products were present in previous PS requests but removed in newer requests. Click PS record badges to view details in Provisioning Monitor.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Code</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Removed In PS Records</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${productRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer (Fixed) -->
+                <div class="flex justify-end gap-3 p-6 border-t bg-gray-50 flex-shrink-0">
+                    <button onclick="closeRemovalCategoryModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to document
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Add escape key listener
+    document.addEventListener('keydown', handleRemovalModalEscape);
+}
+
+// Close removal category modal
+function closeRemovalCategoryModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    
+    const modal = document.getElementById('removal-category-modal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Always clean up
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleRemovalModalEscape);
+}
+
+// Handle escape key for removal modal
+function handleRemovalModalEscape(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('removal-category-modal');
+        if (modal) {
+            closeRemovalCategoryModal();
+        }
+    }
+}
+
+// Toggle removals expand/collapse (for backward compatibility if needed)
+function toggleRemovalsExpand() {
+    const additional = document.getElementById('removals-additional');
+    const btn = document.getElementById('removals-expand-btn');
+    const icon = document.getElementById('removals-expand-icon');
+    const text = document.getElementById('removals-expand-text');
+    
+    if (additional && btn) {
+        const isHidden = additional.classList.contains('hidden');
+        
+        if (isHidden) {
+            additional.classList.remove('hidden');
+            icon.style.transform = 'rotate(180deg)';
+            text.textContent = 'Show less';
+        } else {
+            additional.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+            const count = additional.children.length;
+            text.textContent = `Show ${count} more record${count !== 1 ? 's' : ''}`;
+        }
+    }
 }
 
 // ===== EXPIRATION MONITOR WIDGET (DASHBOARD) =====
