@@ -9271,6 +9271,7 @@ function selectCustomerProductsAccount(accountName) {
 }
 
 // Load customer products for an account
+// Uses the latest PS record with status "Tenant Request Completed" from the audit trail
 async function loadCustomerProducts(accountName) {
     try {
         console.log(`Loading customer products for: ${accountName}`);
@@ -9278,136 +9279,28 @@ async function loadCustomerProducts(accountName) {
         showCustomerProductsLoading(true);
         hideCustomerProductsSearchResults();
         
-        // First, get tenant information from Salesforce
-        const sfResponse = await fetch(`/api/provisioning/requests?search=${encodeURIComponent(accountName)}&pageSize=10`);
-        const sfData = await sfResponse.json();
-        
-        if (!sfData.success || !sfData.records || sfData.records.length === 0) {
-            throw new Error('No records found for this account');
-        }
-        
-        // Find tenant name from the most recent record
-        let tenantName = null;
-        let tenantId = null;
-        
-        for (const record of sfData.records) {
-            if (record.Tenant_Name__c) {
-                tenantName = record.Tenant_Name__c;
-                tenantId = record.Tenant_Name__c; // In many cases, tenant ID is same as tenant name
-                break;
-            } else if (record.parsedPayload && record.parsedPayload.tenantName) {
-                tenantName = record.parsedPayload.tenantName;
-                tenantId = record.parsedPayload.tenantName;
-                break;
-            }
-        }
-        
-        if (!tenantId) {
-            throw new Error('Could not find tenant information for this account');
-        }
-        
-        console.log(`Found tenant: ${tenantName} (${tenantId})`);
-        
-        // Fetch SML data through server proxy
-        const smlResponse = await fetch(`/api/sml/tenant/${encodeURIComponent(tenantId)}/products?tenantName=${encodeURIComponent(tenantName || tenantId)}`);
-        const smlData = await smlResponse.json();
+        // Fetch customer products from the audit trail via our API
+        const response = await fetch(`/api/customer-products?account=${encodeURIComponent(accountName)}`);
+        const data = await response.json();
         
         showCustomerProductsLoading(false);
         
-        if (smlData.success) {
-            // Transform SML data to match the existing UI structure
-            const transformedData = transformSMLDataForUI(accountName, tenantName, smlData);
-            
+        if (data.success) {
             currentCustomerProducts = {
                 accountName: accountName,
-                tenantName: tenantName,
-                data: transformedData
+                data: data
             };
             
-            renderCustomerProducts(transformedData);
+            renderCustomerProducts(data);
         } else {
-            console.error('Error loading SML products:', smlData.error);
-            
-            // Show error with helpful message
-            if (smlData.error && smlData.error.includes('not configured')) {
-                showCustomerProductsError('SML integration not configured. Please configure it in Settings.');
-            } else if (smlData.error && smlData.error.includes('expired')) {
-                showCustomerProductsError('SML authentication expired. Please refresh the Bearer token in Settings.');
-            } else {
-                showCustomerProductsError(smlData.error || 'Failed to load products from SML');
-            }
+            console.error('Error loading customer products:', data.error);
+            showCustomerProductsError(data.error || 'Failed to load customer products');
         }
     } catch (error) {
         console.error('Error loading customer products:', error);
         showCustomerProductsLoading(false);
         showCustomerProductsError(error.message || 'Failed to load customer products');
     }
-}
-
-// Transform SML data to match existing UI structure
-function transformSMLDataForUI(accountName, tenantName, smlData) {
-    // The SML data structure has products organized by category
-    const { products, summary, fetchedAt } = smlData;
-    
-    // Group products by region (if we have region info, otherwise use "Unknown")
-    const productsByRegion = {};
-    
-    ['apps', 'models', 'data'].forEach(category => {
-        const categoryProducts = products[category] || [];
-        
-        categoryProducts.forEach(product => {
-            // For now, we'll use a single "SML Environment" region since region info might not be in the product
-            // You can enhance this later if region information becomes available
-            const region = 'SML Environment';
-            
-            if (!productsByRegion[region]) {
-                productsByRegion[region] = {
-                    models: [],
-                    data: [],
-                    apps: []
-                };
-            }
-            
-            // Transform the product to match the existing UI structure
-            const transformedProduct = {
-                productCode: product.productCode,
-                productName: product.productName || product.productCode,
-                packageName: null,
-                category: category,
-                region: region,
-                startDate: product.startDate,
-                endDate: product.endDate,
-                status: product.status,
-                daysRemaining: product.daysRemaining,
-                sourcePSRecords: [], // SML doesn't provide PS record references
-                isDataBridge: false,
-                source: 'SML' // Mark as coming from SML
-            };
-            
-            productsByRegion[region][category].push(transformedProduct);
-        });
-    });
-    
-    return {
-        success: true,
-        account: accountName,
-        tenantName: tenantName,
-        summary: {
-            totalActive: summary.totalActive,
-            byCategory: {
-                models: summary.byCategory.models,
-                data: summary.byCategory.data,
-                apps: summary.byCategory.apps
-            }
-        },
-        productsByRegion: productsByRegion,
-        lastUpdated: {
-            psRecordId: 'SML',
-            date: fetchedAt
-        },
-        psRecordsAnalyzed: 0,
-        source: 'SML'
-    };
 }
 
 // Show/hide loading state
@@ -9451,7 +9344,23 @@ function renderCustomerProducts(data) {
     const lastUpdatedEl = document.getElementById('customer-products-last-updated');
     if (lastUpdatedEl && data.lastUpdated) {
         const date = new Date(data.lastUpdated.date);
-        lastUpdatedEl.textContent = `${data.lastUpdated.psRecordId} on ${date.toLocaleDateString()}`;
+        const status = data.lastUpdated.status || 'Tenant Request Completed';
+        lastUpdatedEl.innerHTML = `
+            <span class="font-medium">${data.lastUpdated.psRecordId}</span> 
+            <span class="text-muted-foreground">on ${date.toLocaleDateString()}</span>
+            <span class="ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-500/10 dark:text-green-400 dark:ring-green-500/20">
+                ${status}
+            </span>
+        `;
+    }
+    
+    // Display note if present
+    if (data.note) {
+        const noteEl = document.getElementById('customer-products-note');
+        if (noteEl) {
+            noteEl.textContent = data.note;
+            noteEl.classList.remove('hidden');
+        }
     }
     
     // Update category counts
@@ -9678,12 +9587,17 @@ function clearCustomerProducts() {
     const emptyState = document.getElementById('customer-products-empty-state');
     const summary = document.getElementById('customer-products-summary');
     const regionsSection = document.getElementById('customer-products-regions');
+    const noteEl = document.getElementById('customer-products-note');
     
     if (emptyState) emptyState.classList.remove('hidden');
     if (summary) summary.classList.add('hidden');
     if (regionsSection) {
         regionsSection.classList.add('hidden');
         regionsSection.innerHTML = '';
+    }
+    if (noteEl) {
+        noteEl.classList.add('hidden');
+        noteEl.textContent = '';
     }
 }
 

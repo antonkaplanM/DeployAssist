@@ -1739,29 +1739,36 @@ async function getExpiringEntitlements(expirationWindow = 30, showExtended = fal
 /**
  * Get aggregated customer products for a specific account
  * Shows only active products (endDate >= today), grouped by region and category
+ * Uses the latest PS record with status "Tenant Request Completed" from the audit trail
  */
 async function getCustomerProducts(accountName) {
     try {
         console.log(`📦 Fetching customer products for account: ${accountName}`);
         
-        const conn = await getConnection();
+        const db = require('./database');
         
-        // Query all PS requests for this account
-        const soqlQuery = `
-            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
-                   Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
-            FROM Prof_Services_Request__c
-            WHERE Account__c = '${accountName.replace(/'/g, "\\'")}'
-            ORDER BY CreatedDate DESC
-            LIMIT 1000
+        // Query the latest "Tenant Request Completed" PS record from audit trail
+        const query = `
+            SELECT 
+                ps_record_id,
+                ps_record_name,
+                account_name,
+                status,
+                payload_data,
+                created_date,
+                last_modified_date,
+                captured_at
+            FROM ps_audit_trail
+            WHERE account_id = $1
+            AND status = 'Tenant Request Completed'
+            ORDER BY created_date DESC, captured_at DESC
+            LIMIT 1
         `;
         
-        const result = await conn.query(soqlQuery);
-        const records = result.records || [];
+        const result = await db.query(query, [accountName]);
         
-        console.log(`✅ Found ${records.length} PS records for ${accountName}`);
-        
-        if (records.length === 0) {
+        if (result.rows.length === 0) {
+            console.log(`⚠️ No "Tenant Request Completed" PS record found for account: ${accountName}`);
             return {
                 success: true,
                 account: accountName,
@@ -1771,107 +1778,96 @@ async function getCustomerProducts(accountName) {
                 },
                 productsByRegion: {},
                 lastUpdated: null,
-                psRecordsAnalyzed: 0
+                psRecordsAnalyzed: 0,
+                note: 'No completed tenant requests found for this account'
             };
         }
+        
+        const record = result.rows[0];
+        console.log(`✅ Found latest completed PS record: ${record.ps_record_name}`);
         
         // Today's date for active product filtering
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Aggregate products by region
-        const productsByRegion = {};
-        let lastUpdatedRecord = records[0]; // Most recent (already sorted DESC)
+        // Parse the payload data
+        const payload = parsePayloadData(record.payload_data);
         
-        // Track all unique products across regions for merging
-        // Key: region|category|productCode
+        if (!payload || !payload.hasDetails) {
+            console.log(`⚠️ No entitlements found in PS record: ${record.ps_record_name}`);
+            return {
+                success: true,
+                account: accountName,
+                summary: {
+                    totalActive: 0,
+                    byCategory: { models: 0, data: 0, apps: 0 }
+                },
+                productsByRegion: {},
+                lastUpdated: {
+                    psRecordId: record.ps_record_name,
+                    date: record.last_modified_date || record.created_date,
+                    status: record.status
+                },
+                psRecordsAnalyzed: 1
+            };
+        }
+        
+        const region = payload.region || 'Unknown Region';
+        const productsByRegion = {};
         const productMap = new Map();
         
-        for (const record of records) {
-            const payload = parsePayloadData(record.Payload_Data__c);
-            
-            if (!payload || !payload.hasDetails) {
-                continue;
-            }
-            
-            const region = payload.region || 'Unknown Region';
-            
-            // Process each category
-            const categories = [
-                { type: 'models', data: payload.modelEntitlements || [] },
-                { type: 'data', data: payload.dataEntitlements || [] },
-                { type: 'apps', data: payload.appEntitlements || [] }
-            ];
-            
-            for (const category of categories) {
-                for (const entitlement of category.data) {
-                    // Check if product has required fields
-                    if (!entitlement.productCode) continue;
-                    
-                    const startDate = entitlement.startDate ? new Date(entitlement.startDate) : null;
-                    const endDate = entitlement.endDate ? new Date(entitlement.endDate) : null;
-                    
-                    // Skip if no end date or product is expired
-                    if (!endDate || endDate < today) {
-                        continue;
-                    }
-                    
-                    // Create unique key for merging (region + category + productCode)
-                    // Exception: databridge can have multiple instances in same region
-                    const isDataBridge = entitlement.productCode?.toLowerCase().includes('databridge');
-                    const uniqueKey = isDataBridge 
-                        ? `${region}|${category.type}|${entitlement.productCode}|${record.Name}` // Include PS record for databridge
-                        : `${region}|${category.type}|${entitlement.productCode}`;
-                    
-                    if (productMap.has(uniqueKey)) {
-                        // Merge with existing product
-                        const existing = productMap.get(uniqueKey);
-                        
-                        // Update date range (earliest start, latest end)
-                        if (startDate && (!existing.startDate || startDate < existing.startDate)) {
-                            existing.startDate = startDate;
-                        }
-                        if (endDate && (!existing.endDate || endDate > existing.endDate)) {
-                            existing.endDate = endDate;
-                        }
-                        
-                        // Add PS record to sources
-                        if (!existing.sourcePSRecords.includes(record.Name)) {
-                            existing.sourcePSRecords.push(record.Name);
-                        }
-                        
-                        // Update package name if more recent
-                        if (entitlement.packageName && !existing.packageName) {
-                            existing.packageName = entitlement.packageName;
-                        }
-                    } else {
-                        // Create new product entry
-                        const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-                        
-                        let status;
-                        if (daysRemaining > 90) {
-                            status = 'active';
-                        } else if (daysRemaining > 30) {
-                            status = 'expiring-soon';
-                        } else {
-                            status = 'expiring';
-                        }
-                        
-                        productMap.set(uniqueKey, {
-                            productCode: entitlement.productCode,
-                            productName: entitlement.name || entitlement.productCode,
-                            packageName: entitlement.packageName || null,
-                            category: category.type,
-                            region: region,
-                            startDate: startDate,
-                            endDate: endDate,
-                            status: status,
-                            daysRemaining: daysRemaining,
-                            sourcePSRecords: [record.Name],
-                            isDataBridge: isDataBridge
-                        });
-                    }
+        // Process each category
+        const categories = [
+            { type: 'models', data: payload.modelEntitlements || [] },
+            { type: 'data', data: payload.dataEntitlements || [] },
+            { type: 'apps', data: payload.appEntitlements || [] }
+        ];
+        
+        for (const category of categories) {
+            for (const entitlement of category.data) {
+                // Check if product has required fields
+                if (!entitlement.productCode) continue;
+                
+                const startDate = entitlement.startDate ? new Date(entitlement.startDate) : null;
+                const endDate = entitlement.endDate ? new Date(entitlement.endDate) : null;
+                
+                // Skip if no end date or product is expired
+                if (!endDate || endDate < today) {
+                    continue;
                 }
+                
+                // Create unique key (region + category + productCode)
+                // Exception: databridge can have multiple instances in same region
+                const isDataBridge = entitlement.productCode?.toLowerCase().includes('databridge');
+                const uniqueKey = isDataBridge 
+                    ? `${region}|${category.type}|${entitlement.productCode}|${record.ps_record_name}`
+                    : `${region}|${category.type}|${entitlement.productCode}`;
+                
+                // Calculate days remaining and status
+                const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+                
+                let status;
+                if (daysRemaining > 90) {
+                    status = 'active';
+                } else if (daysRemaining > 30) {
+                    status = 'expiring-soon';
+                } else {
+                    status = 'expiring';
+                }
+                
+                productMap.set(uniqueKey, {
+                    productCode: entitlement.productCode,
+                    productName: entitlement.name || entitlement.productCode,
+                    packageName: entitlement.packageName || null,
+                    category: category.type,
+                    region: region,
+                    startDate: startDate,
+                    endDate: endDate,
+                    status: status,
+                    daysRemaining: daysRemaining,
+                    sourcePSRecords: [record.ps_record_name],
+                    isDataBridge: isDataBridge
+                });
             }
         }
         
@@ -1927,10 +1923,12 @@ async function getCustomerProducts(accountName) {
             },
             productsByRegion: productsByRegion,
             lastUpdated: {
-                psRecordId: lastUpdatedRecord.Name,
-                date: lastUpdatedRecord.LastModifiedDate || lastUpdatedRecord.CreatedDate
+                psRecordId: record.ps_record_name,
+                date: record.last_modified_date || record.created_date,
+                status: record.status
             },
-            psRecordsAnalyzed: records.length
+            psRecordsAnalyzed: 1,
+            note: `Products shown from latest completed PS record: ${record.ps_record_name}`
         };
         
     } catch (err) {

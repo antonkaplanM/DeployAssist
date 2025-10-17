@@ -2707,6 +2707,7 @@ app.get('/api/deprovisioned-accounts', async (req, res) => {
 // ===== CUSTOMER PRODUCTS API ENDPOINTS =====
 
 // Get aggregated customer products for an account
+// Uses the latest PS record with status "Tenant Request Completed" from the audit trail
 app.get('/api/customer-products', async (req, res) => {
     try {
         console.log('📦 Customer products API called...', req.query);
@@ -2720,26 +2721,7 @@ app.get('/api/customer-products', async (req, res) => {
             });
         }
         
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
-        if (!hasValidAuth) {
-            console.log('⚠️ No valid Salesforce authentication - returning empty data');
-            return res.json({
-                success: true,
-                account: accountName,
-                summary: {
-                    totalActive: 0,
-                    byCategory: { models: 0, data: 0, apps: 0 }
-                },
-                productsByRegion: {},
-                lastUpdated: null,
-                psRecordsAnalyzed: 0,
-                note: 'No Salesforce authentication - please configure in Settings',
-                timestamp: new Date().toISOString()
-            });
-        }
-        
-        console.log(`🔍 Fetching customer products for: ${accountName}`);
+        console.log(`🔍 Fetching customer products from audit trail for: ${accountName}`);
         
         const result = await salesforce.getCustomerProducts(accountName);
         
