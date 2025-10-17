@@ -31,6 +31,7 @@ const navProvisioning = document.getElementById('nav-provisioning');
 const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
 const navExpiration = document.getElementById('nav-expiration');
 const navGhostAccounts = document.getElementById('nav-ghost-accounts');
+const navAuditTrail = document.getElementById('nav-audit-trail');
 const navCustomerProducts = document.getElementById('nav-customer-products');
 const navHelp = document.getElementById('nav-help');
 const navSettings = document.getElementById('nav-settings');
@@ -4950,19 +4951,47 @@ function renderProvisioningTable(data) {
                 <div class="text-sm">${request.CreatedBy?.Name || 'N/A'}</div>
             </td>
             <td class="px-4 py-3 text-center">
-                <button 
-                    class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
-                    onclick="viewAccountHistoryForRequest('${(request.Account__c || '').replace(/'/g, "\\'")}', '${(request.Name || '').replace(/'/g, "\\'")}')"
-                    title="View account history for this PS request"
-                >
-                    <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"/>
-                        <path d="M18 17V9"/>
-                        <path d="M13 17V5"/>
-                        <path d="M8 17v-3"/>
-                    </svg>
-                    <span class="hidden sm:inline">History</span>
-                </button>
+                <div class="relative inline-block">
+                    <button 
+                        onclick="toggleActionsMenu('${request.Id}')"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                        title="Actions"
+                    >
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                    </button>
+                    <div id="actions-menu-${request.Id}" class="hidden absolute right-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                        <div class="py-1" role="menu">
+                            <button 
+                                onclick="viewAccountHistoryForRequest('${(request.Account__c || '').replace(/'/g, "\\'")}', '${(request.Name || '').replace(/'/g, "\\'")}')"
+                                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                role="menuitem"
+                            >
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 3v18h18"></path>
+                                    <path d="M18 17V9"></path>
+                                    <path d="M13 17V5"></path>
+                                    <path d="M8 17v-3"></path>
+                                </svg>
+                                Account History
+                            </button>
+                            <button 
+                                onclick="viewPSRecordInAuditTrail('${(request.Name || '').replace(/'/g, "\\'")}', '${(request.Id || '').replace(/'/g, "\\'")}')"
+                                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                role="menuitem"
+                            >
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+                                    <path d="m19 9-5 5-4-4-3 3"></path>
+                                </svg>
+                                Audit Trail
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </td>
         </tr>
     `;
@@ -11057,6 +11086,356 @@ function setupGhostAccountsEventListeners() {
     }
     
     console.log('[GhostAccounts] Event listeners setup complete');
+}
+
+// ===== PS AUDIT TRAIL PAGE FUNCTIONS =====
+
+// Load audit trail statistics
+async function loadAuditTrailStats() {
+    try {
+        const response = await fetch('/api/audit-trail/stats');
+        const data = await response.json();
+        
+        if (data.success && data.stats) {
+            const stats = data.stats;
+            document.getElementById('audit-stat-total-records').textContent = 
+                parseInt(stats.total_ps_records || 0).toLocaleString();
+            document.getElementById('audit-stat-total-snapshots').textContent = 
+                parseInt(stats.total_snapshots || 0).toLocaleString();
+            document.getElementById('audit-stat-status-changes').textContent = 
+                parseInt(stats.total_status_changes || 0).toLocaleString();
+            
+            if (stats.latest_snapshot) {
+                const lastCapture = new Date(stats.latest_snapshot);
+                const now = new Date();
+                const minutesAgo = Math.floor((now - lastCapture) / 60000);
+                
+                if (minutesAgo < 1) {
+                    document.getElementById('audit-stat-last-capture').textContent = 'Just now';
+                } else if (minutesAgo < 60) {
+                    document.getElementById('audit-stat-last-capture').textContent = `${minutesAgo}m ago`;
+                } else if (minutesAgo < 1440) {
+                    const hoursAgo = Math.floor(minutesAgo / 60);
+                    document.getElementById('audit-stat-last-capture').textContent = `${hoursAgo}h ago`;
+                } else {
+                    const daysAgo = Math.floor(minutesAgo / 1440);
+                    document.getElementById('audit-stat-last-capture').textContent = `${daysAgo}d ago`;
+                }
+            } else {
+                document.getElementById('audit-stat-last-capture').textContent = 'Never';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading audit trail stats:', error);
+    }
+}
+
+// Search for a PS record's audit trail
+async function searchPSAuditTrail(identifier) {
+    if (!identifier || identifier.trim().length === 0) {
+        alert('Please enter a PS record name or ID');
+        return;
+    }
+    
+    identifier = identifier.trim();
+    
+    try {
+        console.log(`Searching audit trail for: ${identifier}`);
+        
+        // Show loading state
+        document.getElementById('audit-trail-empty-state').classList.add('hidden');
+        document.getElementById('audit-trail-results-section').classList.remove('hidden');
+        
+        // Fetch audit trail data
+        const response = await fetch(`/api/audit-trail/ps-record/${encodeURIComponent(identifier)}`);
+        const data = await response.json();
+        
+        if (data.success && data.records && data.records.length > 0) {
+            const records = data.records;
+            const latestRecord = records[0]; // Records are ordered by captured_at DESC
+            
+            // Update record info header
+            document.getElementById('audit-record-name').textContent = latestRecord.ps_record_name;
+            document.getElementById('audit-record-account').textContent = 
+                latestRecord.account_name || latestRecord.account_id || 'Unknown Account';
+            document.getElementById('audit-record-count').textContent = 
+                `${records.length} snapshot${records.length !== 1 ? 's' : ''}`;
+            
+            // Update current status badge
+            const statusBadge = document.getElementById('audit-current-status');
+            statusBadge.textContent = latestRecord.status || 'Unknown';
+            statusBadge.className = 'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ' + getStatusBadgeClass(latestRecord.status);
+            
+            // Render status timeline
+            await renderStatusTimeline(identifier);
+            
+            // Render audit trail table
+            renderAuditTrailTable(records);
+            
+        } else {
+            // No records found
+            document.getElementById('audit-trail-results-section').classList.add('hidden');
+            document.getElementById('audit-trail-empty-state').classList.remove('hidden');
+            alert(`No audit trail records found for "${identifier}"`);
+        }
+    } catch (error) {
+        console.error('Error searching audit trail:', error);
+        alert('Failed to search audit trail. Please try again.');
+        document.getElementById('audit-trail-results-section').classList.add('hidden');
+        document.getElementById('audit-trail-empty-state').classList.remove('hidden');
+    }
+}
+
+// Render status change timeline
+async function renderStatusTimeline(identifier) {
+    try {
+        const response = await fetch(`/api/audit-trail/status-changes/${encodeURIComponent(identifier)}`);
+        const data = await response.json();
+        
+        const timelineContainer = document.getElementById('audit-timeline-container');
+        
+        if (data.success && data.changes && data.changes.length > 0) {
+            const changes = data.changes;
+            
+            let html = '<div class="space-y-4">';
+            
+            changes.forEach((change, index) => {
+                const isFirst = index === 0;
+                const isLast = index === changes.length - 1;
+                const capturedDate = new Date(change.captured_at);
+                
+                html += `
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full ${isFirst ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
+                                ${isFirst ? '📍' : '⏺'}
+                            </div>
+                            ${!isLast ? '<div class="w-0.5 flex-1 bg-border mt-2" style="min-height: 40px;"></div>' : ''}
+                        </div>
+                        <div class="flex-1 pb-8">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-semibold">${change.status || 'Unknown'}</span>
+                                ${change.previous_status ? `<span class="text-muted-foreground text-sm">← from ${change.previous_status}</span>` : ''}
+                            </div>
+                            <div class="text-sm text-muted-foreground">
+                                ${capturedDate.toLocaleDateString()} at ${capturedDate.toLocaleTimeString()}
+                            </div>
+                            <div class="text-xs text-muted-foreground mt-1">
+                                ${change.change_type === 'initial' ? 'Initial capture' : 'Status change detected'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            timelineContainer.innerHTML = html;
+        } else {
+            timelineContainer.innerHTML = `
+                <div class="flex items-center justify-center py-8 text-muted-foreground">
+                    No status changes recorded
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error rendering timeline:', error);
+        document.getElementById('audit-timeline-container').innerHTML = `
+            <div class="flex items-center justify-center py-8 text-red-500">
+                Error loading timeline
+            </div>
+        `;
+    }
+}
+
+// Render audit trail table
+function renderAuditTrailTable(records) {
+    const tbody = document.getElementById('audit-trail-table-body');
+    
+    if (!records || records.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                    No audit trail records found
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = records.map(record => {
+        const capturedDate = new Date(record.captured_at);
+        
+        return `
+            <tr class="border-b hover:bg-muted/50">
+                <td class="px-4 py-3">
+                    <div class="text-sm">${capturedDate.toLocaleDateString()}</div>
+                    <div class="text-xs text-muted-foreground">${capturedDate.toLocaleTimeString()}</div>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="${getStatusBadgeClass(record.status)} inline-flex items-center rounded-full px-2 py-1 text-xs font-medium">
+                        ${record.status || 'Unknown'}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="text-sm">${formatChangeType(record.change_type)}</span>
+                </td>
+                <td class="px-4 py-3">
+                    <div class="text-sm">${record.request_type || '-'}</div>
+                </td>
+                <td class="px-4 py-3">
+                    <div class="text-sm">${record.deployment_name || record.deployment_id || '-'}</div>
+                </td>
+                <td class="px-4 py-3">
+                    <div class="text-sm">${record.tenant_name || '-'}</div>
+                </td>
+                <td class="px-4 py-3">
+                    <button 
+                        onclick="viewAuditRecordDetails('${record.id}')"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                    >
+                        Details
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Helper function to get status badge CSS class
+function getStatusBadgeClass(status) {
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
+    const statusLower = status.toLowerCase();
+    
+    if (statusLower.includes('complete') || statusLower.includes('success')) {
+        return 'bg-green-100 text-green-800';
+    } else if (statusLower.includes('error') || statusLower.includes('fail')) {
+        return 'bg-red-100 text-red-800';
+    } else if (statusLower.includes('progress') || statusLower.includes('pending')) {
+        return 'bg-blue-100 text-blue-800';
+    } else if (statusLower.includes('review') || statusLower.includes('wait')) {
+        return 'bg-yellow-100 text-yellow-800';
+    } else {
+        return 'bg-gray-100 text-gray-800';
+    }
+}
+
+// Helper function to format change type
+function formatChangeType(changeType) {
+    if (!changeType) return 'Snapshot';
+    
+    const typeMap = {
+        'initial': '🆕 Initial Capture',
+        'status_change': '🔄 Status Change',
+        'update': '📝 Update',
+        'snapshot': '📸 Snapshot'
+    };
+    
+    return typeMap[changeType] || changeType;
+}
+
+// View audit record details (placeholder for modal implementation)
+function viewAuditRecordDetails(recordId) {
+    alert(`Viewing details for record ID: ${recordId}\n\nFull details modal coming soon!`);
+    // TODO: Implement modal to show full record details including payload data
+}
+
+// Initialize audit trail page
+function initializeAuditTrail() {
+    console.log('Audit Trail page initialized');
+    
+    // Load statistics
+    loadAuditTrailStats();
+    
+    // Set up search button
+    const searchBtn = document.getElementById('audit-trail-search-btn');
+    const searchInput = document.getElementById('audit-trail-search');
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            const identifier = searchInput.value;
+            searchPSAuditTrail(identifier);
+        });
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const identifier = searchInput.value;
+                searchPSAuditTrail(identifier);
+            }
+        });
+    }
+}
+
+// Toggle actions dropdown menu for provisioning monitor
+function toggleActionsMenu(recordId) {
+    const menuId = `actions-menu-${recordId}`;
+    const menu = document.getElementById(menuId);
+    
+    if (!menu) return;
+    
+    // Close all other open menus first
+    document.querySelectorAll('[id^="actions-menu-"]').forEach(otherMenu => {
+        if (otherMenu.id !== menuId) {
+            otherMenu.classList.add('hidden');
+        }
+    });
+    
+    // Toggle this menu
+    menu.classList.toggle('hidden');
+    
+    // Close menu when clicking outside
+    if (!menu.classList.contains('hidden')) {
+        const closeMenu = (e) => {
+            if (!menu.contains(e.target) && !e.target.closest(`button[onclick*="${recordId}"]`)) {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        // Add listener on next tick to avoid immediate closure
+        setTimeout(() => document.addEventListener('click', closeMenu), 0);
+    }
+}
+
+// Navigate to audit trail and search for a specific PS record
+function viewPSRecordInAuditTrail(psRecordName, psRecordId) {
+    console.log(`📊 Navigating to Audit Trail for: ${psRecordName || psRecordId}`);
+    
+    // Close any open menus first
+    document.querySelectorAll('[id^="actions-menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+    });
+    
+    // Navigate to audit trail page
+    showPage('audit-trail');
+    
+    // Initialize the page if not already initialized
+    initializeAuditTrail();
+    
+    // Wait a moment for the page to be fully rendered
+    setTimeout(() => {
+        const searchInput = document.getElementById('audit-trail-search');
+        if (searchInput) {
+            // Set the search value (prefer name over ID)
+            searchInput.value = psRecordName || psRecordId;
+            
+            // Trigger the search automatically
+            searchPSAuditTrail(psRecordName || psRecordId);
+            
+            console.log(`✅ Auto-searching for: ${psRecordName || psRecordId}`);
+        } else {
+            console.error('❌ Audit trail search input not found');
+        }
+    }, 100);
+}
+
+// Add navigation handler for audit trail
+if (navAuditTrail) {
+    navAuditTrail.addEventListener('click', () => {
+        showPage('audit-trail');
+        initializeAuditTrail();
+    });
 }
 
 // Initialize ghost accounts on page load

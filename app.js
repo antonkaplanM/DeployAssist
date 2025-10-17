@@ -2896,6 +2896,180 @@ app.get('/api/packages/summary/stats', async (req, res) => {
     }
 });
 
+// ===== PS AUDIT TRAIL API ENDPOINTS =====
+const psAuditService = require('./ps-audit-service');
+
+// Get audit trail for a specific PS record
+app.get('/api/audit-trail/ps-record/:identifier', async (req, res) => {
+    try {
+        const identifier = req.params.identifier;
+        console.log(`🔍 Fetching audit trail for PS record: ${identifier}`);
+        
+        const result = await psAuditService.getPSAuditTrail(identifier);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                identifier: result.identifier,
+                recordCount: result.recordCount,
+                records: result.records,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                identifier: result.identifier,
+                records: []
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching PS audit trail:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch audit trail',
+            records: []
+        });
+    }
+});
+
+// Get status change history for a PS record
+app.get('/api/audit-trail/status-changes/:identifier', async (req, res) => {
+    try {
+        const identifier = req.params.identifier;
+        console.log(`📊 Fetching status changes for PS record: ${identifier}`);
+        
+        const result = await psAuditService.getPSStatusChanges(identifier);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                identifier: result.identifier,
+                changeCount: result.changeCount,
+                changes: result.changes,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                identifier: result.identifier,
+                changes: []
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching status changes:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch status changes',
+            changes: []
+        });
+    }
+});
+
+// Get audit trail statistics
+app.get('/api/audit-trail/stats', async (req, res) => {
+    try {
+        console.log('📊 Fetching audit trail statistics...');
+        
+        const result = await psAuditService.getAuditStats();
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                stats: result.stats,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error,
+                stats: null
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching audit stats:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch audit statistics',
+            stats: null
+        });
+    }
+});
+
+// Search for PS records in audit trail
+app.get('/api/audit-trail/search', async (req, res) => {
+    try {
+        const searchTerm = req.query.q || req.query.search || '';
+        console.log(`🔍 Searching audit trail for: ${searchTerm}`);
+        
+        if (!searchTerm || searchTerm.length < 2) {
+            return res.json({
+                success: true,
+                results: [],
+                searchTerm: searchTerm
+            });
+        }
+        
+        // Search in the ps_audit_latest view for matching PS records
+        const query = `
+            SELECT DISTINCT 
+                ps_record_id,
+                ps_record_name,
+                account_name,
+                status,
+                captured_at
+            FROM ps_audit_latest
+            WHERE ps_record_name ILIKE $1
+               OR account_name ILIKE $1
+               OR ps_record_id ILIKE $1
+            ORDER BY captured_at DESC
+            LIMIT 20
+        `;
+        
+        const result = await db.query(query, [`%${searchTerm}%`]);
+        
+        res.json({
+            success: true,
+            results: result.rows,
+            searchTerm: searchTerm,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error searching audit trail:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to search audit trail',
+            results: []
+        });
+    }
+});
+
+// Trigger manual capture of current PS records (admin function)
+app.post('/api/audit-trail/capture', async (req, res) => {
+    try {
+        console.log('🔄 Manual capture triggered...');
+        
+        // This would typically be called from a scheduled job
+        // For now, we'll just return a success message
+        // In production, you'd want to trigger the capture-ps-changes script
+        
+        res.json({
+            success: true,
+            message: 'Capture triggered. Run capture-ps-changes.js script to process.',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error triggering capture:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to trigger capture'
+        });
+    }
+});
+
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);

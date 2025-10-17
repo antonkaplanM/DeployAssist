@@ -136,6 +136,16 @@
                                     </svg>
                                     Ghost Accounts
                                 </button>
+                                <button 
+                                    id="nav-audit-trail" 
+                                    class="sub-nav-item flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+                                        <path d="m19 9-5 5-4-4-3 3"></path>
+                                    </svg>
+                                    Audit Trail
+                                </button>
                             </div>
                         </div>
                         
@@ -1135,7 +1145,7 @@
                                                 Created By
                                                 <span class="sort-indicator ml-1">↕</span>
                                             </th>
-                                            <th class="px-4 py-3 text-center text-sm font-medium text-muted-foreground w-24">
+                                            <th class="px-4 py-3 text-center text-sm font-medium text-muted-foreground w-16">
                                                 Actions
                                             </th>
                                         </tr>
@@ -1602,6 +1612,150 @@
                 </div>
             </div>
 
+            <!-- PS Audit Trail Page -->
+            <div id="page-audit-trail" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+                                <path d="m19 9-5 5-4-4-3 3"></path>
+                            </svg>
+                            <div>
+                                <h1 class="text-3xl font-bold tracking-tight">PS Record Audit Trail</h1>
+                                <p class="text-muted-foreground mt-2">
+                                    Track the history and status changes of Professional Services records
+                                </p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Search Section -->
+                    <div class="bg-card rounded-lg border shadow-sm p-6 mb-6">
+                        <div class="flex flex-col gap-4">
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <label class="text-sm font-medium block mb-2">Search PS Record:</label>
+                                    <input 
+                                        type="text"
+                                        id="audit-trail-search" 
+                                        placeholder="Enter PS record name (e.g., PS-12345) or Salesforce ID..."
+                                        class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    >
+                                </div>
+                                <div class="flex items-end">
+                                    <button 
+                                        id="audit-trail-search-btn"
+                                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6"
+                                    >
+                                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <path d="m21 21-4.3-4.3"></path>
+                                        </svg>
+                                        Search
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Statistics Summary -->
+                            <div id="audit-stats-summary" class="grid grid-cols-4 gap-4 pt-4 border-t">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold" id="audit-stat-total-records">-</div>
+                                    <div class="text-xs text-muted-foreground">Total PS Records</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold" id="audit-stat-total-snapshots">-</div>
+                                    <div class="text-xs text-muted-foreground">Total Snapshots</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold" id="audit-stat-status-changes">-</div>
+                                    <div class="text-xs text-muted-foreground">Status Changes</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold" id="audit-stat-last-capture">-</div>
+                                    <div class="text-xs text-muted-foreground">Last Capture</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="audit-trail-results-section" class="hidden">
+                        <!-- Record Info Header -->
+                        <div id="audit-record-info" class="bg-card rounded-lg border shadow-sm p-6 mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-xl font-bold" id="audit-record-name">-</h2>
+                                    <p class="text-sm text-muted-foreground mt-1">
+                                        <span id="audit-record-account">-</span> • 
+                                        <span id="audit-record-count">0 snapshot(s)</span>
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium">Current Status:</span>
+                                    <span id="audit-current-status" class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Timeline -->
+                        <div class="bg-card rounded-lg border shadow-sm p-6 mb-6">
+                            <h3 class="text-lg font-semibold mb-4">Status Change Timeline</h3>
+                            <div id="audit-timeline-container">
+                                <div class="flex items-center justify-center py-8 text-muted-foreground">
+                                    Loading timeline...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Audit Trail Table -->
+                        <div class="bg-card rounded-lg border shadow-sm">
+                            <div class="p-4 border-b">
+                                <h3 class="text-lg font-semibold">Complete Audit Trail</h3>
+                                <p class="text-sm text-muted-foreground mt-1">All captured snapshots for this PS record</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="border-b bg-muted/50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Captured At</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Change Type</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Request Type</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Deployment</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Tenant</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="audit-trail-table-body">
+                                        <tr>
+                                            <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                                                No data to display
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="audit-trail-empty-state" class="bg-card rounded-lg border shadow-sm p-12">
+                        <div class="flex flex-col items-center justify-center text-center">
+                            <svg class="h-16 w-16 text-muted-foreground mb-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                            </svg>
+                            <h3 class="mt-4 text-lg font-semibold">Search for a PS Record</h3>
+                            <p class="mt-2 text-sm text-muted-foreground max-w-md">
+                                Enter a PS record name (e.g., PS-12345) or Salesforce ID in the search box above to view its complete audit trail and status history.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Customer Products Page -->
             <div id="page-customer-products" class="page-content hidden">
                 <div class="container mx-auto px-4 py-8 max-w-7xl">
@@ -1762,6 +1916,7 @@
                             <a href="#dashboard" class="text-primary hover:underline">📊 Dashboard</a>
                             <a href="#provisioning" class="text-primary hover:underline">🔧 Provisioning Monitor</a>
                             <a href="#expiration" class="text-primary hover:underline">⏰ Expiration Monitor</a>
+                            <a href="#audit-trail-help" class="text-primary hover:underline">📊 PS Audit Trail</a>
                             <a href="#customer-products-help" class="text-primary hover:underline">👥 Customer Products</a>
                             <a href="#package-lookup" class="text-primary hover:underline">📦 Package Lookup</a>
                             <a href="#validation" class="text-primary hover:underline">✅ Validation Rules</a>
@@ -2010,6 +2165,113 @@
                                         <li><strong>Monitor Button:</strong> Navigate to Provisioning Monitor to see the complete PS record</li>
                                         <li><strong>Exact Match:</strong> PS-89 shows only PS-89, not PS-898 or similar IDs</li>
                                         <li><strong>Seamless Integration:</strong> Switch between Expiration Monitor and Provisioning Monitor easily</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- PS Audit Trail -->
+                    <section id="audit-trail-help" class="mb-8">
+                        <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                📊 PS Audit Trail
+                            </h2>
+                            <div class="space-y-4">
+                                <p class="text-muted-foreground">
+                                    Track the complete history of Professional Services records, viewing status changes and processing times over time.
+                                </p>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-blue-900 mb-2">What It Does:</h3>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-blue-800">
+                                        <li>Captures snapshots of PS records automatically every 5 minutes</li>
+                                        <li>Tracks status changes and transitions over time</li>
+                                        <li>Maintains complete audit trail for compliance</li>
+                                        <li>Enables analysis of processing times and bottlenecks</li>
+                                        <li>Searchable by PS record name or Salesforce ID</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h3 class="font-semibold">How to Access:</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-primary mb-2">🔍 Direct Search</h4>
+                                            <p class="text-sm text-muted-foreground mb-2">
+                                                Navigate to Provisioning → Audit Trail
+                                            </p>
+                                            <ol class="list-decimal list-inside text-xs text-muted-foreground space-y-1">
+                                                <li>Enter PS record name (e.g., PS-12345)</li>
+                                                <li>Click Search or press Enter</li>
+                                                <li>View complete history and timeline</li>
+                                            </ol>
+                                        </div>
+                                        
+                                        <div class="border rounded-lg p-4">
+                                            <h4 class="font-medium text-primary mb-2">⚡ Quick Access from Monitor</h4>
+                                            <p class="text-sm text-muted-foreground mb-2">
+                                                From any PS record in Provisioning Monitor
+                                            </p>
+                                            <ol class="list-decimal list-inside text-xs text-muted-foreground space-y-1">
+                                                <li>Click Actions menu (⋮) on any PS record</li>
+                                                <li>Select "Audit Trail"</li>
+                                                <li>Results displayed automatically</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-green-900 mb-2">What You'll See:</h3>
+                                    <div class="space-y-2 text-sm text-green-800">
+                                        <div class="border-l-4 border-green-500 pl-3">
+                                            <p class="font-medium">📋 Record Information</p>
+                                            <p class="text-xs">PS record name, account, current status, and total snapshots captured</p>
+                                        </div>
+                                        <div class="border-l-4 border-blue-500 pl-3">
+                                            <p class="font-medium">📈 Status Timeline</p>
+                                            <p class="text-xs">Visual timeline showing status progression with timestamps</p>
+                                        </div>
+                                        <div class="border-l-4 border-purple-500 pl-3">
+                                            <p class="font-medium">📊 Complete Audit Trail</p>
+                                            <p class="text-xs">Table with all snapshots including status, timestamps, deployment info, and more</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-amber-900 mb-2">Use Cases:</h3>
+                                    <ul class="text-sm text-amber-800 space-y-2">
+                                        <li><strong>🔍 Investigation:</strong> Quickly see how long a record has been in its current status</li>
+                                        <li><strong>⏱️ Processing Time:</strong> Calculate time from creation to completion</li>
+                                        <li><strong>🚨 Troubleshooting:</strong> Identify when and why records got stuck</li>
+                                        <li><strong>📋 Compliance:</strong> Complete timestamped history for audit purposes</li>
+                                        <li><strong>📊 Analysis:</strong> Identify bottlenecks in the provisioning process</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-indigo-900 mb-2">Statistics Dashboard:</h3>
+                                    <p class="text-sm text-indigo-800 mb-2">
+                                        The Audit Trail page displays system-wide statistics at the top:
+                                    </p>
+                                    <ul class="list-disc list-inside text-sm text-indigo-800 space-y-1">
+                                        <li><strong>Total PS Records:</strong> Unique records being tracked</li>
+                                        <li><strong>Total Snapshots:</strong> All captured snapshots over time</li>
+                                        <li><strong>Status Changes:</strong> Number of detected status transitions</li>
+                                        <li><strong>Last Capture:</strong> When the system last checked for changes (updates every 5 minutes)</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-purple-900 mb-2">💡 Pro Tips:</h3>
+                                    <ul class="text-sm text-purple-800 space-y-1">
+                                        <li>• System automatically captures changes every 5 minutes</li>
+                                        <li>• Search by PS record name (PS-12345) or Salesforce ID</li>
+                                        <li>• Timeline shows status progression from oldest to newest</li>
+                                        <li>• Use Account History link to see other PS records for the same account</li>
+                                        <li>• Data is retained indefinitely for complete audit trail</li>
                                     </ul>
                                 </div>
                             </div>
@@ -3824,6 +4086,7 @@
                     'nav-provisioning-monitor': 'provisioning.monitor',
                     'nav-expiration': 'provisioning.expiration',
                     'nav-ghost-accounts': 'provisioning.ghost_accounts',
+                    'nav-audit-trail': 'provisioning.audit_trail',
                     'nav-customer-products': 'customer_products',
                     'nav-roadmap': 'roadmap',
                     'nav-help': 'help',

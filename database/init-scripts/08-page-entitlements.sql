@@ -75,7 +75,9 @@ VALUES
     ('provisioning.expiration', 'Expiration Monitor', 'Monitor upcoming expirations', 
         (SELECT id FROM pages WHERE name = 'provisioning'), '/provisioning/expiration', 2, TRUE),
     ('provisioning.ghost_accounts', 'Ghost Accounts', 'Manage ghost accounts', 
-        (SELECT id FROM pages WHERE name = 'provisioning'), '/provisioning/ghost-accounts', 3, TRUE)
+        (SELECT id FROM pages WHERE name = 'provisioning'), '/provisioning/ghost-accounts', 3, TRUE),
+    ('provisioning.audit_trail', 'Audit Trail', 'PS record history and status tracking', 
+        (SELECT id FROM pages WHERE name = 'provisioning'), '/provisioning/audit-trail', 4, TRUE)
 ON CONFLICT (name) DO NOTHING;
 
 -- ===== ASSIGN ALL PAGES TO ADMIN ROLE =====

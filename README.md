@@ -123,6 +123,7 @@ The project uses Tailwind CSS (v3) for styling:
 - **🗺️ Roadmap Page**: Jira integration for Kevin Yu's initiatives with search, filter, and export
 - **👥 Customer Products**: View all active products for customers organized by region and category
 - **⏰ Expiration Monitor**: Track product entitlements expiring within configurable timeframes
+- **📊 PS Audit Trail**: Complete history of Professional Services records with automated change tracking
 - **📈 Account History**: Chronological view of all Technical Team Requests for an account
 - **🔄 Auto-Refresh**: Automatic background refresh for all data pages with configurable intervals (1-30 min or Never)
 - **✅ Validation Rules**: Data validation system for Technical Team Requests (located in Settings)
@@ -140,15 +141,16 @@ The project uses Tailwind CSS (v3) for styling:
 2. **Analytics Dashboard**: Technical Team Request activity and trends with validation failure tracking
 3. **Account History**: Chronological view of all Technical Team Requests for any account
 4. **Provisioning Monitor**: View and search deployment requests with pagination and filters
-5. **Expiration Monitor**: Track product entitlements expiring within 7-90 days
-6. **Customer Products**: View all active products for customers organized by region
-7. **Roadmap**: Platform initiatives with Jira integration
-8. **User Management** (Admin Only): Create, edit, and manage users and roles
-9. **Settings**: 
+5. **PS Audit Trail**: Track complete history and status changes of PS records
+6. **Expiration Monitor**: Track product entitlements expiring within 7-90 days
+7. **Customer Products**: View all active products for customers organized by region
+8. **Roadmap**: Platform initiatives with Jira integration
+9. **User Management** (Admin Only): Create, edit, and manage users and roles
+10. **Settings**: 
    - Salesforce OAuth configuration
    - Application settings (Dark Mode, Auto-refresh)
    - Data validation rules management
-10. **Help**: Comprehensive in-app documentation for all features including authentication
+11. **Help**: Comprehensive in-app documentation for all features including authentication
 
 ### **Keyboard Shortcuts**
 - `Ctrl/Cmd + D` - Toggle dark/light theme
