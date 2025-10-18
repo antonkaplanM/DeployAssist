@@ -4,219 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Deploy Assist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(214.3 31.8% 91.4%)",
+                        input: "hsl(214.3 31.8% 91.4%)",
+                        ring: "hsl(222.2 84% 4.9%)",
+                        background: "hsl(0 0% 100%)",
+                        foreground: "hsl(222.2 84% 4.9%)",
+                        primary: {
+                            DEFAULT: "hsl(222.2 47.4% 11.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        card: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(0 84.2% 60.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 400px;
-            padding: 40px;
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .login-header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
-
-        .login-header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            color: #333;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-options {
-            display: flex;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .form-options label {
-            display: flex;
-            align-items: center;
-            font-size: 14px;
-            color: #666;
-            cursor: pointer;
-        }
-
-        .form-options input[type="checkbox"] {
-            margin-right: 8px;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
-        .btn-login:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .alert-error {
-            background-color: #fee;
-            border: 1px solid #fcc;
-            color: #c33;
-        }
-
-        .alert-success {
-            background-color: #efe;
-            border: 1px solid #cfc;
-            color: #3c3;
-        }
-
-        .alert.show {
-            display: block;
-        }
-
-        .loading-spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto;
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .btn-login.loading .btn-text {
-            display: none;
+        .animate-spin {
+            animation: spin 0.8s linear infinite;
         }
 
-        .btn-login.loading .loading-spinner {
-            display: block;
+        /* Custom gradient background */
+        body {
+            background: linear-gradient(135deg, hsl(220 26% 14%) 0%, hsl(220 20% 25%) 50%, hsl(220 26% 14%) 100%);
         }
     </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>🚀 Deploy Assist</h1>
-            <p>Sign in to your account</p>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md animate-fade-in">
+        <!-- Logo/Brand Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-white shadow-lg">
+                <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">Deploy Assist</h1>
+            <p class="text-gray-300">Welcome back! Please sign in to continue.</p>
         </div>
 
-        <div id="alert" class="alert"></div>
+        <!-- Login Card -->
+        <div class="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+            <div class="p-8">
+                <!-- Alert Section -->
+                <div id="alert" class="hidden mb-6 p-4 rounded-lg"></div>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input 
-                    type="text" 
-                    id="username" 
-                    name="username" 
-                    required 
-                    autocomplete="username"
-                    placeholder="Enter your username"
-                >
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-6">
+                    <!-- Username Field -->
+                    <div class="space-y-2">
+                        <label for="username" class="block text-sm font-medium text-foreground">
+                            Username
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            required 
+                            autocomplete="username"
+                            placeholder="Enter your username"
+                            class="w-full px-3 py-2 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                        >
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="space-y-2">
+                        <label for="password" class="block text-sm font-medium text-foreground">
+                            Password
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            autocomplete="current-password"
+                            placeholder="Enter your password"
+                            class="w-full px-3 py-2 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                        >
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="flex items-center">
+                        <input 
+                            type="checkbox" 
+                            id="rememberMe" 
+                            name="rememberMe"
+                            class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring"
+                        >
+                        <label for="rememberMe" class="ml-2 text-sm text-muted-foreground cursor-pointer">
+                            Remember me for 30 days
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit" 
+                        id="loginBtn"
+                        class="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8"
+                    >
+                        <span id="btnText">Sign In</span>
+                        <svg id="loadingSpinner" class="hidden h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                    </button>
+                </form>
             </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    required 
-                    autocomplete="current-password"
-                    placeholder="Enter your password"
-                >
+            <!-- Footer Info -->
+            <div class="px-8 py-4 bg-muted border-t border-border">
+                <p class="text-xs text-muted-foreground text-center">
+                    Need help? Contact your system administrator
+                </p>
             </div>
+        </div>
 
-            <div class="form-options">
-                <label>
-                    <input type="checkbox" id="rememberMe" name="rememberMe">
-                    Remember me for 30 days
-                </label>
-            </div>
-
-            <button type="submit" id="loginBtn" class="btn-login">
-                <span class="btn-text">Sign In</span>
-                <div class="loading-spinner"></div>
-            </button>
-        </form>
+        <!-- Additional Info -->
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-300">
+                Secure access to your deployment environment
+            </p>
+        </div>
     </div>
 
     <script>
         const form = document.getElementById('loginForm');
         const loginBtn = document.getElementById('loginBtn');
+        const btnText = document.getElementById('btnText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
         const alert = document.getElementById('alert');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
@@ -253,8 +213,7 @@
             }
 
             // Show loading state
-            loginBtn.classList.add('loading');
-            loginBtn.disabled = true;
+            setLoadingState(true);
             hideAlert();
 
             try {
@@ -279,34 +238,52 @@
                     // Redirect to main page after short delay
                     setTimeout(() => {
                         window.location.href = '/';
-                    }, 1000);
+                    }, 800);
                 } else {
                     const errorMessage = data.error || 'Login failed. Please try again.';
                     showAlert(errorMessage, 'error');
-                    loginBtn.classList.remove('loading');
-                    loginBtn.disabled = false;
+                    setLoadingState(false);
                 }
             } catch (error) {
                 console.error('Login error:', error);
                 showAlert('Network error. Please check your connection and try again.', 'error');
-                loginBtn.classList.remove('loading');
-                loginBtn.disabled = false;
+                setLoadingState(false);
             }
         });
 
+        function setLoadingState(loading) {
+            loginBtn.disabled = loading;
+            if (loading) {
+                btnText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                btnText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
         function showAlert(message, type) {
             alert.textContent = message;
-            alert.className = `alert alert-${type} show`;
+            alert.className = `mb-6 p-4 rounded-lg text-sm font-medium ${
+                type === 'error' 
+                    ? 'bg-red-50 border border-red-200 text-red-800' 
+                    : 'bg-green-50 border border-green-200 text-green-800'
+            }`;
+            alert.classList.remove('hidden');
         }
 
         function hideAlert() {
-            alert.className = 'alert';
+            alert.classList.add('hidden');
         }
 
         // Clear alert when user starts typing
         usernameInput.addEventListener('input', hideAlert);
         passwordInput.addEventListener('input', hideAlert);
+
+        // Focus on username input on page load
+        window.addEventListener('load', () => {
+            usernameInput.focus();
+        });
     </script>
 </body>
 </html>
-

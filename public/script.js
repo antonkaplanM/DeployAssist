@@ -393,13 +393,27 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts') {
+    const analyticsSubnav = document.getElementById('analytics-subnav');
+    
+    // Show/hide provisioning sub-navigation
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'audit-trail') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
     } else {
         if (provisioningSubnav) {
             provisioningSubnav.classList.add('hidden');
+        }
+    }
+    
+    // Show/hide analytics sub-navigation
+    if (pageId === 'analytics' || pageId === 'account-history' || pageId === 'package-changes') {
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
+        }
+    } else {
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.add('hidden');
         }
     }
     
@@ -411,7 +425,7 @@ function showPage(pageId) {
         item.classList.add('text-muted-foreground');
     });
     
-    // Handle sub-navigation for provisioning pages
+    // Handle sub-navigation active states
     if (pageId === 'provisioning') {
         const provisioningMonitorNav = document.getElementById('nav-provisioning-monitor');
         if (provisioningMonitorNav) {
@@ -423,6 +437,36 @@ function showPage(pageId) {
         if (expirationNav) {
             expirationNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             expirationNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'ghost-accounts') {
+        const ghostAccountsNav = document.getElementById('nav-ghost-accounts');
+        if (ghostAccountsNav) {
+            ghostAccountsNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            ghostAccountsNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'audit-trail') {
+        const auditTrailNav = document.getElementById('nav-audit-trail');
+        if (auditTrailNav) {
+            auditTrailNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            auditTrailNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'analytics') {
+        const analyticsOverviewNav = document.getElementById('nav-analytics-overview');
+        if (analyticsOverviewNav) {
+            analyticsOverviewNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            analyticsOverviewNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'account-history') {
+        const accountHistoryNav = document.getElementById('nav-account-history');
+        if (accountHistoryNav) {
+            accountHistoryNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            accountHistoryNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'package-changes') {
+        const packageChangesNav = document.getElementById('nav-package-changes');
+        if (packageChangesNav) {
+            packageChangesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            packageChangesNav.classList.remove('text-muted-foreground');
         }
     } else if (pageId === 'customer-products') {
         const customerProductsNav = document.getElementById('nav-customer-products');
@@ -454,6 +498,8 @@ function showPage(pageId) {
         initializeRoadmap();
     } else if (pageId === 'settings') {
         initializeSettings();
+    } else if (pageId === 'user-management') {
+        initializeUserManagement();
     }
 }
 
@@ -529,6 +575,18 @@ function handleNavigation(event) {
         const analyticsSubnav = document.getElementById('analytics-subnav');
         if (analyticsSubnav) {
             analyticsSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'package-changes') {
+        // Make sure analytics sub-navigation is visible for Package Changes
+        const analyticsSubnav = document.getElementById('analytics-subnav');
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'audit-trail') {
+        // Make sure provisioning sub-navigation is visible for these pages
+        const provisioningSubnav = document.getElementById('provisioning-subnav');
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.remove('hidden');
         }
     }
     
@@ -5688,13 +5746,27 @@ function showPage(pageId) {
     
     // Handle sub-navigation visibility
     const provisioningSubnav = document.getElementById('provisioning-subnav');
-    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts') {
+    const analyticsSubnav = document.getElementById('analytics-subnav');
+    
+    // Show/hide provisioning sub-navigation
+    if (pageId === 'provisioning' || pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'audit-trail') {
         if (provisioningSubnav) {
             provisioningSubnav.classList.remove('hidden');
         }
     } else {
         if (provisioningSubnav) {
             provisioningSubnav.classList.add('hidden');
+        }
+    }
+    
+    // Show/hide analytics sub-navigation
+    if (pageId === 'analytics' || pageId === 'account-history' || pageId === 'package-changes') {
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
+        }
+    } else {
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.add('hidden');
         }
     }
     
@@ -5706,7 +5778,7 @@ function showPage(pageId) {
         item.classList.add('text-muted-foreground');
     });
     
-    // Handle sub-navigation for provisioning pages
+    // Handle sub-navigation active states
     if (pageId === 'provisioning') {
         const provisioningMonitorNav = document.getElementById('nav-provisioning-monitor');
         if (provisioningMonitorNav) {
@@ -5718,6 +5790,36 @@ function showPage(pageId) {
         if (expirationNav) {
             expirationNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
             expirationNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'ghost-accounts') {
+        const ghostAccountsNav = document.getElementById('nav-ghost-accounts');
+        if (ghostAccountsNav) {
+            ghostAccountsNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            ghostAccountsNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'audit-trail') {
+        const auditTrailNav = document.getElementById('nav-audit-trail');
+        if (auditTrailNav) {
+            auditTrailNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            auditTrailNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'analytics') {
+        const analyticsOverviewNav = document.getElementById('nav-analytics-overview');
+        if (analyticsOverviewNav) {
+            analyticsOverviewNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            analyticsOverviewNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'account-history') {
+        const accountHistoryNav = document.getElementById('nav-account-history');
+        if (accountHistoryNav) {
+            accountHistoryNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            accountHistoryNav.classList.remove('text-muted-foreground');
+        }
+    } else if (pageId === 'package-changes') {
+        const packageChangesNav = document.getElementById('nav-package-changes');
+        if (packageChangesNav) {
+            packageChangesNav.classList.add('active', 'bg-accent', 'text-accent-foreground');
+            packageChangesNav.classList.remove('text-muted-foreground');
         }
     } else if (pageId === 'customer-products') {
         const customerProductsNav = document.getElementById('nav-customer-products');
@@ -5741,6 +5843,8 @@ function showPage(pageId) {
         initializeRoadmap();
     } else if (pageId === 'settings') {
         initializeSettings();
+    } else if (pageId === 'user-management') {
+        initializeUserManagement();
     }
 }
 
@@ -5817,6 +5921,18 @@ function handleNavigation(event) {
         if (analyticsSubnav) {
             analyticsSubnav.classList.remove('hidden');
         }
+    } else if (pageId === 'package-changes') {
+        // Make sure analytics sub-navigation is visible for Package Changes
+        const analyticsSubnav = document.getElementById('analytics-subnav');
+        if (analyticsSubnav) {
+            analyticsSubnav.classList.remove('hidden');
+        }
+    } else if (pageId === 'expiration' || pageId === 'ghost-accounts' || pageId === 'audit-trail') {
+        // Make sure provisioning sub-navigation is visible for these pages
+        const provisioningSubnav = document.getElementById('provisioning-subnav');
+        if (provisioningSubnav) {
+            provisioningSubnav.classList.remove('hidden');
+        }
     }
     
     showPage(pageId);
@@ -5838,12 +5954,19 @@ function setupNavigationEventListeners() {
     const navRoadmap = document.getElementById('nav-roadmap');
     const navProvisioning = document.getElementById('nav-provisioning');
     const navProvisioningMonitor = document.getElementById('nav-provisioning-monitor');
+    const navCustomerProducts = document.getElementById('nav-customer-products');
     const navHelp = document.getElementById('nav-help');
     const navSettings = document.getElementById('nav-settings');
     
     // Analytics sub-navigation items
     const navAnalyticsOverview = document.getElementById('nav-analytics-overview');
     const navAccountHistory = document.getElementById('nav-account-history');
+    const navPackageChanges = document.getElementById('nav-package-changes');
+    
+    // Provisioning sub-navigation items
+    const navExpiration = document.getElementById('nav-expiration');
+    const navGhostAccounts = document.getElementById('nav-ghost-accounts');
+    const navAuditTrail = document.getElementById('nav-audit-trail');
     
     // Add event listeners
     if (navDashboard) navDashboard.addEventListener('click', handleNavigation);
@@ -5851,12 +5974,19 @@ function setupNavigationEventListeners() {
     if (navRoadmap) navRoadmap.addEventListener('click', handleNavigation);
     if (navProvisioning) navProvisioning.addEventListener('click', handleProvisioningNavigation);
     if (navProvisioningMonitor) navProvisioningMonitor.addEventListener('click', handleNavigation);
+    if (navCustomerProducts) navCustomerProducts.addEventListener('click', handleNavigation);
     if (navHelp) navHelp.addEventListener('click', handleNavigation);
     if (navSettings) navSettings.addEventListener('click', handleNavigation);
     
     // Analytics sub-navigation listeners
     if (navAnalyticsOverview) navAnalyticsOverview.addEventListener('click', handleNavigation);
     if (navAccountHistory) navAccountHistory.addEventListener('click', handleNavigation);
+    if (navPackageChanges) navPackageChanges.addEventListener('click', handleNavigation);
+    
+    // Provisioning sub-navigation listeners
+    if (navExpiration) navExpiration.addEventListener('click', handleNavigation);
+    if (navGhostAccounts) navGhostAccounts.addEventListener('click', handleNavigation);
+    if (navAuditTrail) navAuditTrail.addEventListener('click', handleNavigation);
     
     console.log('Navigation event listeners setup completed');
 }
@@ -12233,4 +12363,556 @@ async function exportPackageChangesToExcel() {
 }
 
 console.log('[PackageChanges] Module loaded');
+
+// ===== USER MANAGEMENT FUNCTIONS =====
+
+let userMgmtEditingUserId = null;
+let userMgmtChangingPasswordUserId = null;
+let userMgmtEditingRoleId = null;
+let userMgmtAllRoles = [];
+let userMgmtAllPages = [];
+
+// Initialize User Management page
+async function initializeUserManagement() {
+    console.log('[UserManagement] Initializing...');
+    
+    // Show global loading state
+    const globalLoading = document.getElementById('user-mgmt-global-loading');
+    if (globalLoading) {
+        globalLoading.classList.remove('hidden');
+    }
+    
+    // Store current user globally for user management functions
+    if (window.currentUser) {
+        console.log('[UserManagement] Current user:', window.currentUser.username);
+    }
+    
+    try {
+        // Load pages and roles first
+        await loadUserMgmtPages();
+        console.log('[UserManagement] Pages loaded:', userMgmtAllPages.length);
+        
+        await loadUserMgmtRoles();
+        console.log('[UserManagement] Roles loaded:', userMgmtAllRoles.length);
+        
+        await loadUserMgmtUsers();
+        
+        console.log('[UserManagement] Initialization complete');
+        
+        // Hide global loading state
+        if (globalLoading) {
+            globalLoading.classList.add('hidden');
+        }
+        
+        // Show the sections
+        const usersSection = document.getElementById('user-mgmt-users-section');
+        const rolesSection = document.getElementById('user-mgmt-roles-section');
+        if (usersSection) usersSection.classList.remove('hidden');
+        if (rolesSection) rolesSection.classList.remove('hidden');
+    } catch (error) {
+        console.error('[UserManagement] Initialization error:', error);
+        showUserMgmtAlert('Failed to initialize user management: ' + error.message, 'error');
+        
+        // Hide global loading state on error too
+        if (globalLoading) {
+            globalLoading.classList.add('hidden');
+        }
+    }
+}
+
+// Show alert in user management page
+function showUserMgmtAlert(message, type = 'info') {
+    const alert = document.getElementById('user-mgmt-alert');
+    if (!alert) return;
+    
+    alert.className = `mb-6 p-4 rounded-lg ${
+        type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' :
+        type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' :
+        'bg-blue-50 border border-blue-200 text-blue-800'
+    }`;
+    alert.textContent = message;
+    alert.classList.remove('hidden');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        alert.classList.add('hidden');
+    }, 5000);
+}
+
+// Load all pages
+async function loadUserMgmtPages() {
+    try {
+        const response = await fetch('/api/users/pages/all', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to load pages');
+        
+        const data = await response.json();
+        userMgmtAllPages = data.pages || [];
+    } catch (error) {
+        console.error('[UserManagement] Error loading pages:', error);
+        throw error;
+    }
+}
+
+// Load all roles
+async function loadUserMgmtRoles() {
+    try {
+        const response = await fetch('/api/users/roles/all', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to load roles');
+        
+        const data = await response.json();
+        userMgmtAllRoles = data.roles || [];
+        displayUserMgmtRoles(userMgmtAllRoles);
+    } catch (error) {
+        console.error('[UserManagement] Error loading roles:', error);
+        throw error;
+    }
+}
+
+// Display roles table
+function displayUserMgmtRoles(roles) {
+    const tbody = document.getElementById('roles-table-body');
+    if (!tbody) return;
+    
+    if (roles.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-muted-foreground">No roles found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = roles.map(role => `
+        <tr class="border-b transition-colors hover:bg-muted/50">
+            <td class="p-4 align-middle font-semibold">${escapeHtml(role.name)}</td>
+            <td class="p-4 align-middle">${role.description ? escapeHtml(role.description) : '<em class="text-muted-foreground">No description</em>'}</td>
+            <td class="p-4 align-middle">
+                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                    role.is_system_role ? 'bg-blue-50 text-blue-700 ring-blue-600/20' : 'bg-gray-50 text-gray-700 ring-gray-600/20'
+                }">
+                    ${role.is_system_role ? 'System' : 'Custom'}
+                </span>
+            </td>
+            <td class="p-4 align-middle">
+                <div class="flex gap-2">
+                    <button onclick="editUserMgmtRole(${role.id})" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                        Edit Pages
+                    </button>
+                    ${!role.is_system_role ? `
+                        <button onclick="deleteUserMgmtRole(${role.id}, '${escapeHtml(role.name)}')" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-red-600 text-white hover:bg-red-700 h-8 px-3">
+                            Delete
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Load all users
+async function loadUserMgmtUsers() {
+    try {
+        const response = await fetch('/api/users', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            if (AuthUtils.handleUnauthorized(response)) return;
+            throw new Error('Failed to load users');
+        }
+        
+        const data = await response.json();
+        displayUserMgmtUsers(data.users || []);
+    } catch (error) {
+        console.error('[UserManagement] Error loading users:', error);
+        showUserMgmtAlert('Failed to load users', 'error');
+        document.getElementById('users-loading-state').textContent = 'Error loading users';
+    }
+}
+
+// Display users table
+function displayUserMgmtUsers(users) {
+    const loading = document.getElementById('users-loading-state');
+    const empty = document.getElementById('users-empty-state');
+    const container = document.getElementById('users-table-container');
+    const tbody = document.getElementById('users-table-body');
+    
+    if (!loading || !empty || !container || !tbody) return;
+    
+    loading.style.display = 'none';
+    
+    if (users.length === 0) {
+        empty.classList.remove('hidden');
+        container.classList.add('hidden');
+        return;
+    }
+    
+    empty.classList.add('hidden');
+    container.classList.remove('hidden');
+    
+    // Get current user info from AuthUtils
+    const currentUser = window.currentUser || {};
+    
+    tbody.innerHTML = users.map(user => `
+        <tr class="border-b transition-colors hover:bg-muted/50">
+            <td class="p-4 align-middle font-semibold">${escapeHtml(user.username)}</td>
+            <td class="p-4 align-middle">${escapeHtml(user.full_name)}</td>
+            <td class="p-4 align-middle">
+                <div class="flex flex-wrap gap-1">
+                    ${user.roles.map(role => `
+                        <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                            role.name === 'admin' ? 'bg-purple-50 text-purple-700 ring-purple-600/20' : 'bg-blue-50 text-blue-700 ring-blue-600/20'
+                        }">
+                            ${escapeHtml(role.name)}
+                        </span>
+                    `).join('')}
+                </div>
+            </td>
+            <td class="p-4 align-middle">
+                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                    user.is_active ? 'bg-green-50 text-green-700 ring-green-600/20' : 'bg-gray-50 text-gray-700 ring-gray-600/20'
+                }">
+                    ${user.is_active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+            <td class="p-4 align-middle text-sm text-muted-foreground">
+                ${user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never'}
+            </td>
+            <td class="p-4 align-middle">
+                <div class="flex gap-2">
+                    <button onclick="editUserMgmtUser(${user.id})" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                        Edit
+                    </button>
+                    <button onclick="changeUserMgmtPassword(${user.id}, '${escapeHtml(user.username)}')" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                        Password
+                    </button>
+                    ${user.id !== currentUser.id ? `
+                        <button onclick="deleteUserMgmtUser(${user.id}, '${escapeHtml(user.username)}')" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-red-600 text-white hover:bg-red-700 h-8 px-3">
+                            Delete
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Show create user modal
+function showCreateUserModal() {
+    userMgmtEditingUserId = null;
+    document.getElementById('user-modal-title').textContent = 'Create User';
+    document.getElementById('user-submit-btn').textContent = 'Create User';
+    document.getElementById('user-form').reset();
+    document.getElementById('user-password-group').style.display = 'block';
+    document.getElementById('user-password').required = true;
+    document.getElementById('user-active-group').style.display = 'none';
+    
+    // Populate roles
+    const rolesContainer = document.getElementById('user-roles-checkboxes');
+    rolesContainer.innerHTML = userMgmtAllRoles.map(role => `
+        <label class="flex items-center gap-2">
+            <input type="checkbox" name="roles" value="${role.id}" class="rounded border-gray-300">
+            <span class="text-sm">${escapeHtml(role.name)}</span>
+        </label>
+    `).join('');
+    
+    document.getElementById('user-modal').classList.remove('hidden');
+}
+
+// Edit user
+async function editUserMgmtUser(userId) {
+    try {
+        const response = await fetch(`/api/users/${userId}`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch user');
+        
+        const data = await response.json();
+        const user = data.user;
+        
+        userMgmtEditingUserId = userId;
+        document.getElementById('user-modal-title').textContent = 'Edit User';
+        document.getElementById('user-submit-btn').textContent = 'Update User';
+        document.getElementById('user-username').value = user.username;
+        document.getElementById('user-full-name').value = user.full_name;
+        document.getElementById('user-is-active').checked = user.is_active;
+        document.getElementById('user-password-group').style.display = 'none';
+        document.getElementById('user-password').required = false;
+        document.getElementById('user-active-group').style.display = 'block';
+        
+        // Populate roles
+        const rolesContainer = document.getElementById('user-roles-checkboxes');
+        rolesContainer.innerHTML = userMgmtAllRoles.map(role => `
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="roles" value="${role.id}" ${user.roles.some(r => r.id === role.id) ? 'checked' : ''} class="rounded border-gray-300">
+                <span class="text-sm">${escapeHtml(role.name)}</span>
+            </label>
+        `).join('');
+        
+        document.getElementById('user-modal').classList.remove('hidden');
+    } catch (error) {
+        console.error('[UserManagement] Error loading user:', error);
+        showUserMgmtAlert('Failed to load user details', 'error');
+    }
+}
+
+// Close user modal
+function closeUserModal() {
+    document.getElementById('user-modal').classList.add('hidden');
+}
+
+// Handle user form submit
+document.addEventListener('DOMContentLoaded', () => {
+    const userForm = document.getElementById('user-form');
+    if (userForm) {
+        userForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const roleCheckboxes = document.querySelectorAll('input[name="roles"]:checked');
+            const roleIds = Array.from(roleCheckboxes).map(cb => parseInt(cb.value));
+            
+            const userData = {
+                username: formData.get('username'),
+                full_name: formData.get('full_name'),
+                role_ids: roleIds
+            };
+            
+            if (!userMgmtEditingUserId) {
+                userData.password = formData.get('password');
+            } else {
+                userData.is_active = document.getElementById('user-is-active').checked;
+            }
+            
+            try {
+                const url = userMgmtEditingUserId ? `/api/users/${userMgmtEditingUserId}` : '/api/users';
+                const method = userMgmtEditingUserId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Operation failed');
+                }
+                
+                showUserMgmtAlert(`User ${userMgmtEditingUserId ? 'updated' : 'created'} successfully`, 'success');
+                closeUserModal();
+                await loadUserMgmtUsers();
+            } catch (error) {
+                console.error('[UserManagement] Error saving user:', error);
+                showUserMgmtAlert(error.message, 'error');
+            }
+        });
+    }
+});
+
+// Change password
+function changeUserMgmtPassword(userId, username) {
+    userMgmtChangingPasswordUserId = userId;
+    document.getElementById('password-modal-username').textContent = `User: ${username}`;
+    document.getElementById('password-form').reset();
+    document.getElementById('password-modal').classList.remove('hidden');
+}
+
+// Close password modal
+function closePasswordModal() {
+    document.getElementById('password-modal').classList.add('hidden');
+}
+
+// Handle password form submit
+document.addEventListener('DOMContentLoaded', () => {
+    const passwordForm = document.getElementById('password-form');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newPassword = formData.get('newPassword');
+            
+            try {
+                const response = await fetch(`/api/users/${userMgmtChangingPasswordUserId}/password`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to change password');
+                }
+                
+                showUserMgmtAlert('Password changed successfully', 'success');
+                closePasswordModal();
+            } catch (error) {
+                console.error('[UserManagement] Error changing password:', error);
+                showUserMgmtAlert(error.message, 'error');
+            }
+        });
+    }
+});
+
+// Delete user
+async function deleteUserMgmtUser(userId, username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/users/${userId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete user');
+        }
+        
+        showUserMgmtAlert('User deleted successfully', 'success');
+        await loadUserMgmtUsers();
+    } catch (error) {
+        console.error('[UserManagement] Error deleting user:', error);
+        showUserMgmtAlert(error.message, 'error');
+    }
+}
+
+// Show create role modal
+function showCreateRoleModal() {
+    userMgmtEditingRoleId = null;
+    document.getElementById('role-modal-title').textContent = 'Create Role';
+    document.getElementById('role-submit-btn').textContent = 'Create Role';
+    document.getElementById('role-form').reset();
+    
+    // Populate pages
+    const pagesContainer = document.getElementById('role-pages-checkboxes');
+    pagesContainer.innerHTML = userMgmtAllPages.map(page => `
+        <label class="flex items-center gap-2">
+            <input type="checkbox" name="pages" value="${page.id}" class="rounded border-gray-300">
+            <span class="text-sm">${escapeHtml(page.display_name)}</span>
+            ${page.description ? `<span class="text-xs text-muted-foreground">- ${escapeHtml(page.description)}</span>` : ''}
+        </label>
+    `).join('');
+    
+    document.getElementById('role-modal').classList.remove('hidden');
+}
+
+// Edit role
+async function editUserMgmtRole(roleId) {
+    try {
+        const response = await fetch(`/api/users/roles/${roleId}`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch role');
+        
+        const data = await response.json();
+        const role = data.role;
+        
+        userMgmtEditingRoleId = roleId;
+        document.getElementById('role-modal-title').textContent = 'Edit Role';
+        document.getElementById('role-submit-btn').textContent = 'Update Role';
+        document.getElementById('role-name').value = role.name;
+        document.getElementById('role-description').value = role.description || '';
+        
+        // Populate pages
+        const pagesContainer = document.getElementById('role-pages-checkboxes');
+        pagesContainer.innerHTML = userMgmtAllPages.map(page => `
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="pages" value="${page.id}" ${role.pages.some(p => p.id === page.id) ? 'checked' : ''} class="rounded border-gray-300">
+                <span class="text-sm">${escapeHtml(page.display_name)}</span>
+                ${page.description ? `<span class="text-xs text-muted-foreground">- ${escapeHtml(page.description)}</span>` : ''}
+            </label>
+        `).join('');
+        
+        document.getElementById('role-modal').classList.remove('hidden');
+    } catch (error) {
+        console.error('[UserManagement] Error loading role:', error);
+        showUserMgmtAlert('Failed to load role details', 'error');
+    }
+}
+
+// Close role modal
+function closeRoleModal() {
+    document.getElementById('role-modal').classList.add('hidden');
+}
+
+// Handle role form submit
+document.addEventListener('DOMContentLoaded', () => {
+    const roleForm = document.getElementById('role-form');
+    if (roleForm) {
+        roleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const pageCheckboxes = document.querySelectorAll('input[name="pages"]:checked');
+            const pageIds = Array.from(pageCheckboxes).map(cb => parseInt(cb.value));
+            
+            const roleData = {
+                name: formData.get('roleName'),
+                description: formData.get('roleDescription') || null,
+                page_ids: pageIds
+            };
+            
+            try {
+                const url = userMgmtEditingRoleId ? `/api/users/roles/${userMgmtEditingRoleId}` : '/api/users/roles';
+                const method = userMgmtEditingRoleId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(roleData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Operation failed');
+                }
+                
+                showUserMgmtAlert(`Role ${userMgmtEditingRoleId ? 'updated' : 'created'} successfully`, 'success');
+                closeRoleModal();
+                await loadUserMgmtRoles();
+            } catch (error) {
+                console.error('[UserManagement] Error saving role:', error);
+                showUserMgmtAlert(error.message, 'error');
+            }
+        });
+    }
+});
+
+// Delete role
+async function deleteUserMgmtRole(roleId, roleName) {
+    if (!confirm(`Are you sure you want to delete role "${roleName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/users/roles/${roleId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete role');
+        }
+        
+        showUserMgmtAlert('Role deleted successfully', 'success');
+        await loadUserMgmtRoles();
+    } catch (error) {
+        console.error('[UserManagement] Error deleting role:', error);
+        showUserMgmtAlert(error.message, 'error');
+    }
+}
+
+console.log('[UserManagement] Module loaded');
 

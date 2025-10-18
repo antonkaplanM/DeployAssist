@@ -21,7 +21,13 @@
             <div class="flex h-full flex-col">
                 <!-- Logo/Header -->
                 <div class="flex items-center gap-2 border-b px-6 py-4">
-                    <span class="text-2xl">🚀</span>
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                        <svg class="h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
                     <span class="font-semibold">Deployment Assistant</span>
                 </div>
                 
@@ -3712,6 +3718,117 @@
                 </div>
             </div>
 
+            <!-- User Management Page -->
+            <div id="page-user-management" class="page-content hidden">
+                <div class="container mx-auto px-4 py-8 max-w-7xl">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">User Management</h1>
+                        </div>
+                        <p class="text-muted-foreground text-base md:text-lg">Manage user accounts and role permissions</p>
+                    </header>
+
+                    <!-- Alert Section -->
+                    <div id="user-mgmt-alert" class="hidden mb-6"></div>
+                    
+                    <!-- Global Loading State -->
+                    <div id="user-mgmt-global-loading" class="text-center py-12">
+                        <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+                            <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+                        </div>
+                        <p class="mt-4 text-muted-foreground">Loading user management...</p>
+                    </div>
+
+                    <!-- Users Section -->
+                    <div id="user-mgmt-users-section" class="rounded-lg border bg-card text-card-foreground shadow-sm mb-6 hidden">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-xl font-semibold">Users</h2>
+                                <button onclick="showCreateUserModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"></path>
+                                        <path d="M12 5v14"></path>
+                                    </svg>
+                                    Create User
+                                </button>
+                            </div>
+
+                            <div id="users-loading-state" class="text-center py-12 text-muted-foreground">
+                                Loading users...
+                            </div>
+
+                            <div id="users-empty-state" class="hidden text-center py-12">
+                                <svg class="h-12 w-12 mx-auto text-muted-foreground mb-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                <h3 class="text-lg font-semibold mb-2">No users found</h3>
+                                <p class="text-muted-foreground">Create your first user to get started</p>
+                            </div>
+
+                            <div id="users-table-container" class="hidden overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="border-b">
+                                        <tr class="text-left">
+                                            <th class="py-3 px-4 font-semibold text-sm">Username</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Full Name</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Roles</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Status</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Last Login</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table-body">
+                                        <!-- Users will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles Section -->
+                    <div id="user-mgmt-roles-section" class="rounded-lg border bg-card text-card-foreground shadow-sm hidden">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-xl font-semibold">Roles</h2>
+                                <button onclick="showCreateRoleModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"></path>
+                                        <path d="M12 5v14"></path>
+                                    </svg>
+                                    Create Role
+                                </button>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="border-b">
+                                        <tr class="text-left">
+                                            <th class="py-3 px-4 font-semibold text-sm">Role Name</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Description</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Type</th>
+                                            <th class="py-3 px-4 font-semibold text-sm">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roles-table-body">
+                                        <!-- Roles will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Roadmap Page -->
             <div id="page-roadmap" class="page-content hidden">
                 <div class="container mx-auto px-4 py-8 max-w-7xl">
@@ -4037,6 +4154,142 @@
         </div>
     </div>
 
+    <!-- User Management Modals -->
+    <!-- Create/Edit User Modal -->
+    <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h2 id="user-modal-title" class="text-xl font-semibold">Create User</h2>
+                    <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    <form id="user-form" class="space-y-4">
+                        <div>
+                            <label for="user-username" class="block text-sm font-medium mb-2">Username *</label>
+                            <input type="text" id="user-username" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <p class="text-xs text-muted-foreground mt-1">Lowercase letters, numbers, dots, dashes, underscores</p>
+                        </div>
+                        <div id="user-password-group">
+                            <label for="user-password" class="block text-sm font-medium mb-2">Password *</label>
+                            <input type="password" id="user-password" name="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <p class="text-xs text-muted-foreground mt-1">Minimum 8 characters</p>
+                        </div>
+                        <div>
+                            <label for="user-full-name" class="block text-sm font-medium mb-2">Full Name *</label>
+                            <input type="text" id="user-full-name" name="full_name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Roles *</label>
+                            <div id="user-roles-checkboxes" class="space-y-2 border border-gray-200 rounded-md p-3 max-h-48 overflow-y-auto">
+                                <!-- Roles will be populated here -->
+                            </div>
+                        </div>
+                        <div id="user-active-group" class="hidden">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="user-is-active" name="is_active" checked class="rounded border-gray-300">
+                                <span class="text-sm font-medium">Active</span>
+                            </label>
+                        </div>
+                        <div class="flex gap-3 justify-end pt-4">
+                            <button type="button" onclick="closeUserModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                Cancel
+                            </button>
+                            <button type="submit" id="user-submit-btn" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                Create User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <div>
+                        <h2 class="text-xl font-semibold">Change Password</h2>
+                        <p id="password-modal-username" class="text-sm text-muted-foreground mt-1"></p>
+                    </div>
+                    <button onclick="closePasswordModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <form id="password-form" class="space-y-4">
+                        <div>
+                            <label for="new-password" class="block text-sm font-medium mb-2">New Password *</label>
+                            <input type="password" id="new-password" name="newPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <p class="text-xs text-muted-foreground mt-1">Minimum 8 characters</p>
+                        </div>
+                        <div class="flex gap-3 justify-end pt-4">
+                            <button type="button" onclick="closePasswordModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                Cancel
+                            </button>
+                            <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Role Modal -->
+    <div id="role-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h2 id="role-modal-title" class="text-xl font-semibold">Create Role</h2>
+                    <button onclick="closeRoleModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    <form id="role-form" class="space-y-4">
+                        <div>
+                            <label for="role-name" class="block text-sm font-medium mb-2">Role Name *</label>
+                            <input type="text" id="role-name" name="roleName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <p class="text-xs text-muted-foreground mt-1">Lowercase letters, numbers, hyphens, underscores</p>
+                        </div>
+                        <div>
+                            <label for="role-description" class="block text-sm font-medium mb-2">Description</label>
+                            <input type="text" id="role-description" name="roleDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <p class="text-xs text-muted-foreground mt-1">Brief description of this role's purpose</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Page Access *</label>
+                            <p class="text-xs text-muted-foreground mb-3">Select which pages this role can access</p>
+                            <div id="role-pages-checkboxes" class="space-y-2 border border-gray-200 rounded-md p-3 max-h-80 overflow-y-auto">
+                                <!-- Pages will be populated here -->
+                            </div>
+                        </div>
+                        <div class="flex gap-3 justify-end pt-4">
+                            <button type="button" onclick="closeRoleModal()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                Cancel
+                            </button>
+                            <button type="submit" id="role-submit-btn" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                Create Role
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="auth-utils.js"></script>
     <script src="validation-rules.js"></script>
     <script src="notification-manager.js"></script>
@@ -4093,6 +4346,7 @@
                     'nav-customer-products': 'customer_products',
                     'nav-roadmap': 'roadmap',
                     'nav-help': 'help',
+                    'nav-user-management': 'user_management',
                     'nav-settings': 'settings'
                 };
 
@@ -4137,7 +4391,7 @@
                 // Create user management link for admins
                 if (AuthUtils.isAdmin(currentUser)) {
                     const userMgmtButton = document.createElement('button');
-                    userMgmtButton.id = 'nav-user-mgmt';
+                    userMgmtButton.id = 'nav-user-management';
                     userMgmtButton.className = 'nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
                     userMgmtButton.innerHTML = `
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4148,7 +4402,7 @@
                         </svg>
                         User Management
                     `;
-                    userMgmtButton.onclick = () => window.location.href = '/user-management.html';
+                    userMgmtButton.onclick = (event) => handleNavigation(event);
                     
                     // Insert before settings
                     settingsNav.parentElement.insertBefore(userMgmtButton, settingsNav);
