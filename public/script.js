@@ -12734,15 +12734,27 @@ document.addEventListener('DOMContentLoaded', () => {
         passwordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
-            const newPassword = formData.get('newPassword');
+            const passwordInput = document.getElementById('new-password');
+            const newPassword = passwordInput.value.trim();
+            
+            // Validate password is not empty
+            if (!newPassword) {
+                showUserMgmtAlert('Please enter a new password', 'error');
+                return;
+            }
+
+            // Validate minimum length
+            if (newPassword.length < 8) {
+                showUserMgmtAlert('Password must be at least 8 characters', 'error');
+                return;
+            }
             
             try {
                 const response = await fetch(`/api/users/${userMgmtChangingPasswordUserId}/password`, {
                     method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_password: newPassword })
+                    body: JSON.stringify({ newPassword: newPassword })
                 });
                 
                 if (!response.ok) {

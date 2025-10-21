@@ -12,7 +12,21 @@ export default defineConfig({
     headless: true
   },
   projects: [
-    { name: 'Chromium', use: { ...devices['Desktop Chrome'] } },
+    // Setup project - runs once before all tests
+    { 
+      name: 'setup', 
+      testMatch: /.*\.setup\.ts/,
+    },
+    // Main test project - depends on setup
+    { 
+      name: 'Chromium', 
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Use saved authentication state
+        storageState: '.auth/user.json',
+      },
+      dependencies: ['setup'],
+    },
   ]
 });
 

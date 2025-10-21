@@ -1,83 +1,46 @@
-# Environment variables (contains secrets)
-.env
-
-# Node.js dependencies
+# Dependencies
 node_modules/
+npm-debug.log
+yarn-error.log
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
+# Environment
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.production
 
-# macOS
-.DS_Store
+# Build outputs
+dist/
+build/
+*.log
 
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Coverage
+coverage/
+.nyc_output/
 
-# IDEs
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Authentication state for tests
+.auth/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Temporary files
-.tmp/
+*.tmp
 temp/
+tmp/
 
-# Salesforce authentication tokens (contains secrets)
+# Salesforce authentication tokens (generated at runtime)
 .salesforce_auth.json
-
-# Salesforce configuration files (contains secrets)
-sf-replacements.txt
-
-# Salesforce configuration Description (contains secrets)
-SALESFORCE-PROD-CONNECTED.md
-test-sf-prod.js
-
-# BFG Repo Cleaner files
-secrets-cleanup.txt
-..bfg-report/
-.git.bfg-report/
-
-# Generated CSS files
-public/tailwind.css
+*.salesforce_auth.json

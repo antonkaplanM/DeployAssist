@@ -1,0 +1,8 @@
+{
+  "accessToken": "YOUR_ACCESS_TOKEN_HERE",
+  "instanceUrl": "https://your-instance.salesforce.com",
+  "tokenType": "Bearer",
+  "scope": "openid id api",
+  "authenticatedAt": "2025-01-01T00:00:00.000Z"
+}
+

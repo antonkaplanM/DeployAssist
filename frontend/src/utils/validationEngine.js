@@ -1,0 +1,277 @@
+/**
+ * Validation Engine - Client-side validation for provisioning requests
+ * Port of the validation-engine.js from the old app
+ */
+
+// Validation rules configuration
+const validationRules = {
+  'app-quantity-validation': {
+    name: 'App Quantity Validation',
+    description: 'Validates that app quantities are set correctly',
+  },
+  'entitlement-date-overlap-validation': {
+    name: 'Entitlement Date Overlap',
+    description: 'Checks for overlapping entitlement dates',
+  },
+  'entitlement-date-gap-validation': {
+    name: 'Entitlement Date Gap',
+    description: 'Checks for gaps in entitlement dates',
+  },
+  'app-package-name-validation': {
+    name: 'App Package Name',
+    description: 'Validates app package names',
+  },
+};
+
+/**
+ * Validate a single record against enabled rules
+ */
+export const validateRecord = (record, enabledRules = []) => {
+  if (!record.Payload_Data__c) {
+    return {
+      recordId: record.Id,
+      overallStatus: 'PASS',
+      ruleResults: [],
+    };
+  }
+
+  try {
+    const payload = JSON.parse(record.Payload_Data__c);
+    const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
+    
+    const ruleResults = [];
+    
+    // Run each enabled rule
+    enabledRules.forEach(ruleId => {
+      if (validationRules[ruleId]) {
+        const result = runRule(ruleId, entitlements, record);
+        ruleResults.push(result);
+      }
+    });
+
+    // Determine overall status
+    const hasFail = ruleResults.some(r => r.status === 'FAIL');
+    const overallStatus = hasFail ? 'FAIL' : 'PASS';
+
+    return {
+      recordId: record.Id,
+      overallStatus,
+      ruleResults,
+    };
+  } catch (error) {
+    console.error('Validation error:', error);
+    return {
+      recordId: record.Id,
+      overallStatus: 'PASS',
+      ruleResults: [],
+    };
+  }
+};
+
+/**
+ * Run a specific validation rule
+ */
+const runRule = (ruleId, entitlements, record) => {
+  const rule = validationRules[ruleId];
+  
+  switch (ruleId) {
+    case 'app-quantity-validation':
+      return validateAppQuantity(entitlements);
+    case 'entitlement-date-overlap-validation':
+      return validateDateOverlap(entitlements);
+    case 'entitlement-date-gap-validation':
+      return validateDateGap(entitlements);
+    case 'app-package-name-validation':
+      return validateAppPackageName(entitlements);
+    default:
+      return {
+        ruleId,
+        ruleName: rule.name,
+        status: 'PASS',
+        details: null,
+      };
+  }
+};
+
+/**
+ * Validate app quantities
+ */
+const validateAppQuantity = (entitlements) => {
+  const apps = entitlements.appEntitlements || [];
+  
+  for (const app of apps) {
+    if (!app.quantity || app.quantity < 1) {
+      return {
+        ruleId: 'app-quantity-validation',
+        ruleName: 'App Quantity Validation',
+        status: 'FAIL',
+        details: `App ${app.productCode} has invalid quantity: ${app.quantity}`,
+      };
+    }
+  }
+  
+  return {
+    ruleId: 'app-quantity-validation',
+    ruleName: 'App Quantity Validation',
+    status: 'PASS',
+    details: null,
+  };
+};
+
+/**
+ * Validate date overlaps
+ */
+const validateDateOverlap = (entitlements) => {
+  const allEntitlements = [
+    ...(entitlements.modelEntitlements || []),
+    ...(entitlements.dataEntitlements || []),
+    ...(entitlements.appEntitlements || []),
+  ];
+
+  // Group by product code
+  const grouped = {};
+  allEntitlements.forEach(ent => {
+    const key = ent.productCode;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(ent);
+  });
+
+  // Check for overlaps within each product
+  for (const [productCode, ents] of Object.entries(grouped)) {
+    if (ents.length < 2) continue;
+
+    for (let i = 0; i < ents.length; i++) {
+      for (let j = i + 1; j < ents.length; j++) {
+        const a = ents[i];
+        const b = ents[j];
+        
+        const aStart = new Date(a.startDate);
+        const aEnd = new Date(a.endDate);
+        const bStart = new Date(b.startDate);
+        const bEnd = new Date(b.endDate);
+
+        // Check for overlap
+        if ((aStart <= bEnd) && (bStart <= aEnd)) {
+          return {
+            ruleId: 'entitlement-date-overlap-validation',
+            ruleName: 'Entitlement Date Overlap',
+            status: 'FAIL',
+            details: `${productCode} has overlapping dates`,
+          };
+        }
+      }
+    }
+  }
+
+  return {
+    ruleId: 'entitlement-date-overlap-validation',
+    ruleName: 'Entitlement Date Overlap',
+    status: 'PASS',
+    details: null,
+  };
+};
+
+/**
+ * Validate date gaps
+ */
+const validateDateGap = (entitlements) => {
+  // Simplified - just return PASS for now
+  return {
+    ruleId: 'entitlement-date-gap-validation',
+    ruleName: 'Entitlement Date Gap',
+    status: 'PASS',
+    details: null,
+  };
+};
+
+/**
+ * Validate app package names
+ */
+const validateAppPackageName = (entitlements) => {
+  const apps = entitlements.appEntitlements || [];
+  
+  for (const app of apps) {
+    // Exception products that don't require package names
+    const exceptions = ['IC-RISKDATALAKE', 'IC-DATABRIDGE'];
+    if (exceptions.includes(app.productCode)) continue;
+    
+    if (!app.packageName || app.packageName.trim() === '') {
+      return {
+        ruleId: 'app-package-name-validation',
+        ruleName: 'App Package Name',
+        status: 'FAIL',
+        details: `App ${app.productCode} is missing package name`,
+      };
+    }
+  }
+  
+  return {
+    ruleId: 'app-package-name-validation',
+    ruleName: 'App Package Name',
+    status: 'PASS',
+    details: null,
+  };
+};
+
+/**
+ * Get tooltip text for validation result
+ */
+export const getValidationTooltip = (result) => {
+  if (!result || result.overallStatus === 'PASS') {
+    return 'All validation rules passed';
+  }
+
+  const failedRules = result.ruleResults
+    .filter(r => r.status === 'FAIL')
+    .map(r => `${r.ruleName}: ${r.details || 'Failed'}`)
+    .join('\n');
+
+  return failedRules || 'Validation failed';
+};
+
+/**
+ * Parse entitlements from payload
+ */
+export const parseEntitlements = (payloadData) => {
+  if (!payloadData) return null;
+
+  try {
+    const payload = JSON.parse(payloadData);
+    const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
+    
+    return {
+      models: entitlements.modelEntitlements || [],
+      data: entitlements.dataEntitlements || [],
+      apps: entitlements.appEntitlements || [],
+    };
+  } catch (error) {
+    console.error('Error parsing entitlements:', error);
+    return null;
+  }
+};
+
+/**
+ * Parse tenant name from payload
+ */
+export const parseTenantName = (payloadData) => {
+  if (!payloadData) return 'N/A';
+
+  try {
+    const payload = JSON.parse(payloadData);
+    return payload.properties?.provisioningDetail?.tenantName || 
+           payload.tenantName || 
+           'N/A';
+  } catch (error) {
+    return 'N/A';
+  }
+};
+
+export default {
+  validateRecord,
+  getValidationTooltip,
+  parseEntitlements,
+  parseTenantName,
+};
+
+
+

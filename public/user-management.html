@@ -180,6 +180,18 @@
             overflow-y: auto;
         }
 
+        /* Password modal - more compact */
+        #passwordModal .modal-content {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        @media (max-width: 500px) {
+            #passwordModal .modal-content {
+                width: 90%;
+            }
+        }
+
         .modal-header {
             margin-bottom: 24px;
         }
@@ -795,14 +807,27 @@
         document.getElementById('passwordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const newPassword = document.getElementById('newPassword').value;
+            const passwordInput = document.getElementById('newPassword');
+            const newPassword = passwordInput.value.trim();
+
+            // Validate password is not empty
+            if (!newPassword) {
+                showAlert('Please enter a new password', 'error');
+                return;
+            }
+
+            // Validate minimum length
+            if (newPassword.length < 8) {
+                showAlert('Password must be at least 8 characters', 'error');
+                return;
+            }
 
             try {
                 const response = await fetch(`/api/users/${changingPasswordUserId}/password`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ newPassword })
+                    body: JSON.stringify({ newPassword: newPassword })
                 });
 
                 if (!response.ok) {

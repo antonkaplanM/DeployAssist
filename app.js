@@ -45,7 +45,7 @@ function sanitizeForJql(value) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;  // Changed to 5000 for old app comparison
 
 // Remove MCP-related configuration as we're now using direct API
 
@@ -54,8 +54,9 @@ app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(cookieParser()); // Parse cookies for authentication
 
-// Serve static files from the public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// CORS disabled - serving React build directly from Express on port 8080
+// (VPN blocks port 8090, so we can't use Vite dev server)
+// Note: Static file serving moved to AFTER API routes to prevent conflicts
 
 // ===== AUTHENTICATION SETUP =====
 // Check if JWT_SECRET is set
@@ -79,10 +80,12 @@ setInterval(() => {
 
 console.log('✅ Authentication system initialized');
 
-// Route for the home page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Route for the home page - serve React app (skip if running old app on port 5000)
+if (PORT != 5000 && PORT !== '5000') {
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+    });
+}
 
 // ===== AUTHENTICATION ROUTES (PUBLIC) =====
 // These routes don't require authentication
@@ -3052,10 +3055,19 @@ app.post('/api/audit-trail/capture', async (req, res) => {
     }
 });
 
+// Serve static files from OLD app (public folder) for comparison
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Catch-all route disabled - OLD app doesn't need React Router
+// app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+// });
+
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
-        console.log(`📁 Serving static files from ./public`);
+        console.log(`📁 Serving OLD JavaScript app from ./public`);
+        console.log(`🌐 URL: http://localhost:${PORT}`);
         console.log(`🔗 Direct Atlassian API Integration: No MCP configuration required`);
     });
 }
