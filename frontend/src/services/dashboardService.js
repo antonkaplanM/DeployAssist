@@ -13,15 +13,18 @@ export const getValidationErrors = async (timeFrame = '1d', enabledRules = [
   'app-package-name-validation'
 ]) => {
   try {
+    console.log('[DashboardService] Fetching validation errors with timeFrame:', timeFrame);
     const response = await api.get('/validation/errors', {
       params: {
         timeFrame,
         enabledRules: JSON.stringify(enabledRules)
       }
     });
+    console.log('[DashboardService] Validation errors response:', response.data);
     return response.data;
   } catch (error) {
     console.error('[DashboardService] Error fetching validation errors:', error);
+    console.error('[DashboardService] Error details:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -29,12 +32,15 @@ export const getValidationErrors = async (timeFrame = '1d', enabledRules = [
 // Get PS requests with product removals
 export const getRemovalsData = async (timeFrame = '1w') => {
   try {
+    console.log('[DashboardService] Fetching removals with timeFrame:', timeFrame);
     const response = await api.get('/provisioning/removals', {
       params: { timeFrame }
     });
+    console.log('[DashboardService] Removals response:', response.data);
     return response.data;
   } catch (error) {
     console.error('[DashboardService] Error fetching removals:', error);
+    console.error('[DashboardService] Error details:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -42,15 +48,18 @@ export const getRemovalsData = async (timeFrame = '1w') => {
 // Get expiration monitor data
 export const getExpirationData = async (expirationWindow = 7) => {
   try {
+    console.log('[DashboardService] Fetching expiration data with window:', expirationWindow);
     const response = await api.get('/expiration/monitor', {
       params: {
         expirationWindow,
         showExtended: false
       }
     });
+    console.log('[DashboardService] Expiration response:', response.data);
     return response.data;
   } catch (error) {
     console.error('[DashboardService] Error fetching expiration data:', error);
+    console.error('[DashboardService] Error details:', error.response?.data || error.message);
     throw error;
   }
 };

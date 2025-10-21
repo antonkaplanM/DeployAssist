@@ -17,6 +17,7 @@ import AccountHistory from './pages/AccountHistory';
 import AnalyticsOverview from './pages/AnalyticsOverview';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
+import ApiTest from './pages/ApiTest';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/api-test" element={<ApiTest />} />
 
             {/* Protected Routes with Layout */}
             <Route
