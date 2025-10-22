@@ -7,7 +7,7 @@ const dbConfig = {
     port: parseInt(process.env.DB_PORT || '5432'),
     database: process.env.DB_NAME || 'deployment_assistant',
     user: process.env.DB_USER || 'app_user',
-    password: process.env.DB_PASSWORD || 'secure_password_123',
+    password: process.env.DB_PASSWORD, // Required - set in .env file
     // Connection pool settings
     max: parseInt(process.env.DB_POOL_MAX || '10'), // Maximum connections in pool
     idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'), // 30 seconds

@@ -2,12 +2,50 @@
 # Runs all SQL initialization scripts in order
 
 param(
-    [string]$DbHost = "localhost",
-    [string]$DbPort = "5432",
-    [string]$DbName = "deployment_assistant",
-    [string]$DbUser = "app_user",
-    [string]$DbPassword = "secure_password_123"
+    [string]$DbHost = $env:DB_HOST,
+    [string]$DbPort = $env:DB_PORT,
+    [string]$DbName = $env:DB_NAME,
+    [string]$DbUser = $env:DB_USER,
+    [string]$DbPassword = $env:DB_PASSWORD
 )
+
+# Function to load .env file
+function Load-EnvFile {
+    param([string]$EnvFilePath = ".env")
+    
+    if (Test-Path $EnvFilePath) {
+        Write-Host "📄 Loading environment variables from $EnvFilePath" -ForegroundColor Gray
+        Get-Content $EnvFilePath | ForEach-Object {
+            if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                # Remove quotes if present
+                $value = $value -replace '^["'']|["'']$', ''
+                [Environment]::SetEnvironmentVariable($key, $value, "Process")
+            }
+        }
+    }
+}
+
+# Load .env file from project root (go up one directory from database folder)
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$envFile = Join-Path $projectRoot ".env"
+Load-EnvFile -EnvFilePath $envFile
+
+# Set defaults if still not set (fallback to .env file values)
+if (-not $DbHost) { $DbHost = $env:DB_HOST ?? "localhost" }
+if (-not $DbPort) { $DbPort = $env:DB_PORT ?? "5432" }
+if (-not $DbName) { $DbName = $env:DB_NAME ?? "deployment_assistant" }
+if (-not $DbUser) { $DbUser = $env:DB_USER ?? "app_user" }
+if (-not $DbPassword) { $DbPassword = $env:DB_PASSWORD }
+
+# Validate required parameters
+if (-not $DbPassword) {
+    Write-Host "❌ Database password is required!" -ForegroundColor Red
+    Write-Host "Please set DB_PASSWORD in your .env file or pass it as parameter:" -ForegroundColor Yellow
+    Write-Host "   .\run-migrations.ps1 -DbPassword 'your_password'" -ForegroundColor Gray
+    exit 1
+}
 
 Write-Host "🚀 Running database migrations..." -ForegroundColor Green
 Write-Host "Database: $DbName on ${DbHost}:${DbPort}" -ForegroundColor Cyan

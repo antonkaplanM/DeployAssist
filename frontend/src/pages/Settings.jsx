@@ -666,8 +666,7 @@ const Settings = () => {
                     <div>
                       <p className="text-sm font-medium text-green-800 dark:text-green-300">Auto-Refresh Now Active!</p>
                       <p className="text-xs text-green-700 dark:text-green-400 mt-1">
-                        These settings now control both the legacy app (port 5000) and the new React app (port 8080). 
-                        Auto-refresh will work seamlessly across both applications.
+                        Auto-refresh settings are now active and will work seamlessly across the application.
                       </p>
                     </div>
                   </div>

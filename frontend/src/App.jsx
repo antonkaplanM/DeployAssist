@@ -20,7 +20,9 @@ import AccountHistory from './pages/AccountHistory';
 import AnalyticsOverview from './pages/AnalyticsOverview';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
+import Help from './pages/Help';
 import ApiTest from './pages/ApiTest';
+import Roadmap from './pages/Roadmap';
 
 function App() {
   return (
@@ -140,6 +142,26 @@ function App() {
                 element={
                   <ProtectedRoute pageName="settings">
                     <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Help */}
+              <Route 
+                path="help" 
+                element={
+                  <ProtectedRoute pageName="help">
+                    <Help />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Experimental Pages - Roadmap */}
+              <Route 
+                path="experimental/roadmap" 
+                element={
+                  <ProtectedRoute pageName="experimental.roadmap">
+                    <Roadmap />
                   </ProtectedRoute>
                 } 
               />

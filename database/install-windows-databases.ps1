@@ -1,7 +1,38 @@
 # PostgreSQL and Redis Installation Script for Windows
 # Run this script as Administrator
 
+# Function to load .env file
+function Load-EnvFile {
+    param([string]$EnvFilePath = ".env")
+    
+    if (Test-Path $EnvFilePath) {
+        Write-Host "📄 Loading environment variables from $EnvFilePath" -ForegroundColor Gray
+        Get-Content $EnvFilePath | ForEach-Object {
+            if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                # Remove quotes if present
+                $value = $value -replace '^["'']|["'']$', ''
+                [Environment]::SetEnvironmentVariable($key, $value, "Process")
+            }
+        }
+    }
+}
+
+# Load .env file from project root (go up one directory from database folder)
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$envFile = Join-Path $projectRoot ".env"
+Load-EnvFile -EnvFilePath $envFile
+
+# Get database configuration from environment variables
+$DB_NAME = $env:DB_NAME ?? "deployment_assistant"
+$DB_USER = $env:DB_USER ?? "app_user"
+$DB_PASSWORD = $env:DB_PASSWORD ?? "secure_password_123"
+
 Write-Host "🚀 Installing PostgreSQL and Redis on Windows..." -ForegroundColor Green
+Write-Host "Using configuration from .env file:" -ForegroundColor Cyan
+Write-Host "   Database: $DB_NAME" -ForegroundColor Gray
+Write-Host "   User: $DB_USER" -ForegroundColor Gray
 
 # Install PostgreSQL using winget
 Write-Host "📊 Installing PostgreSQL..." -ForegroundColor Yellow
@@ -36,17 +67,17 @@ try {
     
     # Create database and user using psql
     $env:PGPASSWORD = "postgres"
-    & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "CREATE DATABASE deployment_assistant;"
-    & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "CREATE USER app_user WITH PASSWORD 'secure_password_123';"
-    & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE deployment_assistant TO app_user;"
+    & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "CREATE DATABASE $DB_NAME;"
+    & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+    & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
     
     Write-Host "✅ PostgreSQL configuration completed" -ForegroundColor Green
 } catch {
     Write-Host "⚠️ PostgreSQL configuration needs manual setup" -ForegroundColor Yellow
     Write-Host "Please run these commands manually after installation:" -ForegroundColor Cyan
-    Write-Host "psql -U postgres -c `"CREATE DATABASE deployment_assistant;`"" -ForegroundColor Gray
-    Write-Host "psql -U postgres -c `"CREATE USER app_user WITH PASSWORD 'secure_password_123';`"" -ForegroundColor Gray
-    Write-Host "psql -U postgres -c `"GRANT ALL PRIVILEGES ON DATABASE deployment_assistant TO app_user;`"" -ForegroundColor Gray
+    Write-Host "psql -U postgres -c `"CREATE DATABASE $DB_NAME;`"" -ForegroundColor Gray
+    Write-Host "psql -U postgres -c `"CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';`"" -ForegroundColor Gray
+    Write-Host "psql -U postgres -c `"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;`"" -ForegroundColor Gray
 }
 
 # Configure Redis

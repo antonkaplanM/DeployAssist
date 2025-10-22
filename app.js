@@ -46,7 +46,7 @@ function sanitizeForJql(value) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;  // Changed to 5000 for old app comparison
+const PORT = process.env.PORT || 5000;
 
 // Remove MCP-related configuration as we're now using direct API
 
@@ -80,13 +80,6 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 console.log('✅ Authentication system initialized');
-
-// Route for the home page - serve React app (skip if running old app on port 5000)
-if (PORT != 5000 && PORT !== '5000') {
-    app.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
-    });
-}
 
 // ===== AUTHENTICATION ROUTES (PUBLIC) =====
 // These routes don't require authentication
@@ -3058,20 +3051,20 @@ app.post('/api/audit-trail/capture', async (req, res) => {
     }
 });
 
-// Serve static files from OLD app (public folder) for comparison
+// Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Catch-all route disabled - OLD app doesn't need React Router
-// app.get('*', (req, res) => {
-//     res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
-// });
 
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
-        console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
-        console.log(`📁 Serving OLD JavaScript app from ./public`);
-        console.log(`🌐 URL: http://localhost:${PORT}`);
+        console.log(`🚀 Backend server is running on http://0.0.0.0:${PORT}`);
+        console.log(`📁 Serving static files from ./public`);
+        console.log(`🌐 API URL: http://localhost:${PORT}`);
         console.log(`🔗 Direct Atlassian API Integration: No MCP configuration required`);
+        console.log('');
+        console.log('💡 For development with hot reload:');
+        console.log('   1. This backend is running on port 5000');
+        console.log('   2. Run "npm run dev:frontend" in another terminal');
+        console.log('   3. Access frontend at http://localhost:8080');
     });
 }
 

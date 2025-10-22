@@ -17,6 +17,7 @@ This folder contains all technical documentation for the Deployment Assistant ap
 | **[07-Bug-Fixes](./07-Bug-Fixes/)** | Bug fix documentation | Historical fixes |
 | **[08-Changelogs](./08-Changelogs/)** | Change history | All changelogs |
 | **[09-Authentication](./09-Authentication/)** | Authentication & user management | Setup guide, Integration guides |
+| **[10-Security](./10-Security/)** | Security & credentials | Environment variables, Security updates |
 
 ---
 
@@ -70,9 +71,12 @@ Detailed feature documentation:
 - **Account-History-Feature.md** - Account history tracking
 - **Customer-Products-Feature.md** - Customer products management
 - **Customer-Products-Testing-Summary.md** - Testing results
+- **Experimental-Pages-Roadmap.md** - Experimental pages and Jira roadmap integration
+- **Experimental-Pages-Setup-Summary.md** - Setup guide for experimental pages
 - **Expiration-Monitor-Feature.md** - Expiration monitoring
 - **Expiration-Monitor-Implementation-Summary.md** - Implementation details
 - **Expiration-Monitor-Filtering-Enhancement.md** - Filtering improvements
+- **Help-Page-Implementation.md** - React help page implementation
 - **Notification-System-Feature.md** - Notification system
 - **Notification-Implementation-Summary.md** - Implementation details
 - **Notification-Quick-Start.md** - Quick start guide
@@ -102,24 +106,36 @@ External system integrations:
 ### 06-Testing
 Testing strategies and documentation:
 - **Testing-Strategy.md** - Overall testing approach
+- **Test-Execution-Results.md** - Test execution results and status
+- **Test-Suite-Execution-Complete.md** - Test suite execution summary
+- **Test-Suite-Migration-Complete.md** - Test migration to React app
 - Unit tests: `tests/unit/`
 - Integration tests: `tests/integration/`
 - E2E tests: `tests/e2e/`
 
+Also see: `tests/` folder in project root for test implementation
+
 ### 07-Bug-Fixes
 Historical bug fix documentation:
 - **Expiration-Monitor-Bug-Fix-Part2.md** - Expiration monitor fixes (complete)
+- **Expiration-Monitor-Extended-Fix.md** - Extended expiration monitor fix
 - **Field-Mapping-Fix-Complete.md** - Field mapping fix (complete)
 - **PS-4652-FINAL-FIX.md** - PS-4652 fix (final version)
 - **ISSUE-ANALYSIS-SUMMARY.md** - Issue analysis
+- **CUSTOMER-PRODUCTS-PS-4215-FIX.md** - Customer products bug fix
+- **CUSTOMER-PRODUCTS-BROKE-AFTER-INITIAL-FIX.md** - Customer products follow-up fix
+- **Expiration-Monitor-Date-Rollup-Fix.md** - Date rollup fix
 
 ### 08-Changelogs
 Change history by feature:
 - **CHANGELOG-Account-History.md** - Account history changes
 - **CHANGELOG-Analytics-Enhancement.md** - Analytics changes
 - **CHANGELOG-Analytics-Trend-Enhancement.md** - Trend chart changes
+- **CHANGELOG-Experimental-Pages-Oct-2025.md** - Experimental pages and roadmap feature
 - **CHANGELOG-Expiration-Monitor.md** - Expiration monitor changes
 - **CHANGELOG-Settings-Enhancements.md** - Settings changes
+- **CHANGELOG-PS-Audit-Trail.md** - PS audit trail changes
+- And more...
 
 ### 09-Authentication
 Authentication and user management system:
@@ -130,10 +146,12 @@ Authentication and user management system:
 - **README-AUTHENTICATION.md** - System overview and features
 - **AUTHENTICATION-QUICKSTART.md** - Quick reference
 - **COMPLETE-AUTH-SYSTEM-READY.md** - Implementation roadmap
+- **PAGE-ENTITLEMENTS-SYSTEM.md** - Page-level permissions system
 
 **Key Features:**
 - User creation, editing, deletion
 - Role-based access control (RBAC)
+- Page-level permissions and entitlements
 - JWT-based authentication with HTTP-only cookies
 - Session management with inactivity timeout
 - Password hashing and validation
@@ -144,6 +162,24 @@ Authentication and user management system:
 - `setup-admin-user.js` - Create/reinitialize admin user
 - `unlock-user.js` - Unlock locked accounts
 - `run-auth-migration.js` - Database setup
+
+### 10-Security
+Security documentation and credential management:
+- **README.md** - Security documentation overview
+- **Security-Update-Quick-Start.md** - Quick start guide for security updates
+- **Environment-Variables-Security.md** - Environment variable security overview
+- **Environment-Variables-Detailed-Guide.md** - Comprehensive technical guide
+- **Update-Existing-Env-File.md** - Guide for updating .env file
+- **Security-Update-Summary.md** - Summary of all security changes
+- **Security-Audit-Report.md** - Complete security audit report
+
+**Key Topics:**
+- Environment variable management
+- Database credential security
+- Removing hardcoded secrets
+- .env file configuration
+- PowerShell script security
+- GitHub secret scanning compliance
 
 ---
 
@@ -162,6 +198,8 @@ Authentication and user management system:
 | Set up the database | [04-Database/PostgreSQL-Setup-Complete.md](./04-Database/PostgreSQL-Setup-Complete.md) |
 | Integrate with Salesforce | [05-Integrations/SALESFORCE-PROD-CONNECTED.md](./05-Integrations/SALESFORCE-PROD-CONNECTED.md) |
 | Manage users and roles | [09-Authentication/README.md](./09-Authentication/README.md) |
+| Configure security | [10-Security/README.md](./10-Security/README.md) ⭐ |
+| Update .env file | [10-Security/Update-Existing-Env-File.md](./10-Security/Update-Existing-Env-File.md) |
 | Fix an issue | [01-Getting-Started/Troubleshooting-Checklist.md](./01-Getting-Started/Troubleshooting-Checklist.md) |
 | Review what changed | [08-Changelogs/](./08-Changelogs/) |
 
@@ -229,6 +267,25 @@ Links to related docs
 
 ## 🔄 Recent Changes
 
+**October 22, 2025: Security & Experimental Pages Update**
+- ✅ Created new 10-Security section for credential management
+- ✅ Removed hardcoded database passwords from all scripts
+- ✅ Implemented environment variable security
+- ✅ Added Experimental Pages feature with Jira Roadmap integration
+- ✅ Created comprehensive security documentation
+- ✅ Updated all PowerShell scripts to use .env file
+- ✅ Added ADF (Atlassian Document Format) support in Roadmap
+- ✅ Organized all security and feature documentation
+- ✅ Clean repository root (no loose documentation files)
+
+**October 22, 2025: Documentation Consolidation**
+- ✅ Moved all root-level documentation to proper folders
+- ✅ Added Help-Page-Implementation to 03-Features
+- ✅ Consolidated test suite documentation to 06-Testing
+- ✅ Moved bug fixes to 07-Bug-Fixes
+- ✅ Removed temporary cleanup/reorganization files
+- ✅ Updated this index with all new files
+
 **October 2025: Documentation Reorganization**
 - ✅ Created organized folder structure
 - ✅ Moved all documentation to Technical Documentation folder
@@ -291,7 +348,8 @@ npm run start:ts
 
 ---
 
-**Last Updated**: October 9, 2025  
-**Version**: 2.0  
-**Status**: ✅ Organized and Up-to-Date
+**Last Updated**: October 22, 2025  
+**Version**: 2.2  
+**Status**: ✅ Organized and Up-to-Date  
+**Latest Additions**: Security section (10-Security), Experimental Pages, Roadmap feature
 

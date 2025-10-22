@@ -6,7 +6,11 @@ import {
   ClockIcon,
   RectangleStackIcon,
   UserGroupIcon,
+  UsersIcon,
+  CubeIcon,
+  BeakerIcon,
   Cog6ToothIcon,
+  QuestionMarkCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
@@ -17,6 +21,7 @@ const Sidebar = () => {
   const { hasPageAccess } = useAuth();
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [provisioningOpen, setProvisioningOpen] = useState(false);
+  const [experimentalOpen, setExperimentalOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -30,9 +35,13 @@ const Sidebar = () => {
     // Check if current path belongs to Provisioning section
     const isProvisioningPath = path.startsWith('/provisioning');
     
+    // Check if current path belongs to Experimental section
+    const isExperimentalPath = path.startsWith('/experimental');
+    
     // Update states accordingly
     setAnalyticsOpen(isAnalyticsPath);
     setProvisioningOpen(isProvisioningPath);
+    setExperimentalOpen(isExperimentalPath);
   }, [location.pathname]);
 
   // Define all navigation items with their page name mappings
@@ -105,16 +114,37 @@ const Sidebar = () => {
     { 
       name: 'Customer Products', 
       path: '/customer-products', 
-      icon: UserGroupIcon, 
+      icon: CubeIcon, 
       id: 'nav-customer-products',
       pageName: 'customer_products'
+    },
+    {
+      name: 'Experimental Pages',
+      icon: BeakerIcon,
+      id: 'nav-experimental',
+      pageName: 'experimental', // Parent page
+      submenu: [
+        { 
+          name: 'Roadmap', 
+          path: '/experimental/roadmap', 
+          id: 'nav-experimental-roadmap',
+          pageName: 'experimental.roadmap'
+        }
+      ]
     },
     { 
       name: 'User Management', 
       path: '/users', 
-      icon: UserGroupIcon, 
+      icon: UsersIcon, 
       id: 'nav-user-management',
       pageName: 'user_management'
+    },
+    { 
+      name: 'Help', 
+      path: '/help', 
+      icon: QuestionMarkCircleIcon, 
+      id: 'nav-help',
+      pageName: 'help'
     },
     { 
       name: 'Settings', 
@@ -168,12 +198,15 @@ const Sidebar = () => {
           {navItems.map((item) => {
             if (item.submenu) {
               const isOpen = item.name === 'Analytics' ? analyticsOpen : 
-                           item.name === 'Provisioning Monitor' ? provisioningOpen : false;
+                           item.name === 'Provisioning Monitor' ? provisioningOpen :
+                           item.name === 'Experimental Pages' ? experimentalOpen : false;
               const setOpen = item.name === 'Analytics' ? setAnalyticsOpen : 
-                            item.name === 'Provisioning Monitor' ? setProvisioningOpen : null;
+                            item.name === 'Provisioning Monitor' ? setProvisioningOpen :
+                            item.name === 'Experimental Pages' ? setExperimentalOpen : null;
 
               const subnavId = item.name === 'Analytics' ? 'analytics-subnav' :
-                              item.name === 'Provisioning Monitor' ? 'provisioning-subnav' : undefined;
+                              item.name === 'Provisioning Monitor' ? 'provisioning-subnav' :
+                              item.name === 'Experimental Pages' ? 'experimental-subnav' : undefined;
 
               return (
                 <div key={item.name}>
