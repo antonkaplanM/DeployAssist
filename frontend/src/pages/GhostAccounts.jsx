@@ -138,7 +138,7 @@ const GhostAccounts = () => {
           <button
             onClick={fetchGhostAccounts}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm font-medium"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:opacity-50 text-sm font-medium text-gray-900 dark:text-gray-100 transition-colors"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh Data
@@ -156,19 +156,19 @@ const GhostAccounts = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Ghost Accounts</p>
               <p className="text-2xl font-bold text-gray-900">{summary.total_ghost_accounts || 0}</p>
             </div>
-            <div className="p-3 bg-red-50 rounded-lg">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
               <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Needs Review</p>
@@ -180,13 +180,13 @@ const GhostAccounts = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Reviewed</p>
               <p className="text-2xl font-bold text-green-600">{summary.reviewed || 0}</p>
             </div>
-            <div className="p-3 bg-green-50 rounded-lg">
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <CheckCircleIcon className="h-6 w-6 text-green-600" />
             </div>
           </div>
@@ -194,9 +194,9 @@ const GhostAccounts = () => {
       </div>
 
       {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex gap-3">
-          <ExclamationTriangleIcon className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+          <ExclamationTriangleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
             <h3 className="text-sm font-semibold text-blue-900 mb-1">About Ghost Accounts</h3>
             <p className="text-sm text-blue-800">
@@ -219,14 +219,14 @@ const GhostAccounts = () => {
               value={accountSearch}
               onChange={(e) => setAccountSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchGhostAccounts()}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 transition-colors"
             />
           </div>
         </div>
         <select
           value={reviewStatusFilter}
           onChange={(e) => setReviewStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="px-4 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 transition-colors"
         >
           <option value="all">All Accounts</option>
           <option value="unreviewed">Needs Review</option>
@@ -242,16 +242,16 @@ const GhostAccounts = () => {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <p className="text-red-800">{error}</p>
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
                   Account Name
@@ -278,7 +278,7 @@ const GhostAccounts = () => {
                 <tr>
                   <td colSpan="6" className="px-4 py-8 text-center">
                     <LoadingSpinner />
-                    <p className="text-sm text-gray-500 mt-2">Loading ghost accounts...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading ghost accounts...</p>
                   </td>
                 </tr>
               ) : ghostAccounts.length === 0 ? (
@@ -292,13 +292,13 @@ const GhostAccounts = () => {
                   const daysSinceExpiry = getDaysSinceExpiry(account.latest_expiry_date);
                   
                   return (
-                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors">
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{account.account_name}</div>
                         <div className="text-xs text-gray-500">{daysSinceExpiry} days since latest expiry</div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+                        <span className="inline-flex items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20 px-3 py-1 text-xs font-medium text-red-700">
                           {account.total_expired_products} products
                         </span>
                       </td>
@@ -314,7 +314,7 @@ const GhostAccounts = () => {
                             href={account.ma_sf_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                            className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 hover:underline"
                             title="Open in MA Salesforce"
                           >
                             <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -331,12 +331,12 @@ const GhostAccounts = () => {
                       <td className="px-4 py-3">
                         {account.is_reviewed ? (
                           <div>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/20 px-3 py-1 text-xs font-medium text-green-700">
                               <CheckCircleIcon className="h-3 w-3" />
                               Reviewed
                             </span>
                             {account.reviewed_at && (
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {new Date(account.reviewed_at).toLocaleDateString()}
                               </div>
                             )}
@@ -353,7 +353,7 @@ const GhostAccounts = () => {
                           {!account.is_reviewed && (
                             <button
                               onClick={() => handleMarkReviewed(account.account_id, account.account_name)}
-                              className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-8 px-3"
+                              className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 h-8 px-3 text-gray-900 dark:text-gray-100 transition-colors"
                               title="Mark as Reviewed"
                             >
                               <CheckCircleIcon className="h-4 w-4 mr-1" />

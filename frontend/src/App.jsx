@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { AutoRefreshProvider } from './context/AutoRefreshContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
@@ -22,9 +25,12 @@ import ApiTest from './pages/ApiTest';
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
-          <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Router>
+              <AutoRefreshProvider>
+                <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/api-test" element={<ApiTest />} />
@@ -141,9 +147,12 @@ function App() {
 
             {/* Catch-all - redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
+                </Routes>
+              </AutoRefreshProvider>
+            </Router>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

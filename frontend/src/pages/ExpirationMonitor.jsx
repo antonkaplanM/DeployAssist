@@ -10,14 +10,24 @@ import {
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductModal from '../components/features/ProductModal';
 import { getExpirationMonitor, refreshExpirationAnalysis } from '../services/expirationService';
-import { parseTenantName } from '../utils/validationEngine';
 
 const ExpirationMonitor = () => {
+  // Get initial window: user's saved preference > default from Settings > fallback to 90 days
+  const getInitialWindow = () => {
+    // First, check if user has a saved preference for this page
+    const userPreference = localStorage.getItem('expirationMonitor_timeframe');
+    if (userPreference) return parseInt(userPreference);
+    
+    // If not, use the default from Settings
+    const defaultSetting = localStorage.getItem('defaultExpirationTimeframe');
+    return defaultSetting ? parseInt(defaultSetting) : 90;
+  };
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [expirationWindow, setExpirationWindow] = useState(30);
+  const [expirationWindow, setExpirationWindow] = useState(getInitialWindow());
   const [showExtended, setShowExtended] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: 'earliestExpiry', direction: 'asc' });
   const [productModal, setProductModal] = useState({
@@ -30,6 +40,13 @@ const ExpirationMonitor = () => {
   useEffect(() => {
     fetchExpirations();
   }, [expirationWindow, showExtended]);
+
+  // Save user's timeframe preference when they change it
+  const handleWindowChange = (newWindow) => {
+    setExpirationWindow(newWindow);
+    localStorage.setItem('expirationMonitor_timeframe', newWindow.toString());
+    console.log(`[ExpirationMonitor] User preference saved: ${newWindow} days`);
+  };
 
   const fetchExpirations = async () => {
     setLoading(true);
@@ -81,7 +98,7 @@ const ExpirationMonitor = () => {
   };
 
   const handleViewProducts = (expiration, type) => {
-    const products = expiration.products?.[type] || [];
+    const products = expiration.expiringProducts?.[type] || [];
     setProductModal({
       isOpen: true,
       products: products,
@@ -96,16 +113,15 @@ const ExpirationMonitor = () => {
       return;
     }
 
-    const headers = ['Account', 'PS Record', 'Status', 'Earliest Expiry', 'Days Until Expiry', 'Models', 'Data', 'Apps'];
+    const headers = ['Account', 'PS Record', 'Status', 'Earliest Expiry (Days Until)', 'Models', 'Data', 'Apps'];
     const rows = data.expirations.map(exp => [
       exp.account.name,
       exp.psRecord.name,
       exp.status,
-      new Date(exp.earliestExpiry).toLocaleDateString(),
-      exp.daysUntilExpiry,
-      exp.products?.models?.length || 0,
-      exp.products?.data?.length || 0,
-      exp.products?.apps?.length || 0,
+      `${new Date(exp.earliestExpiry).toLocaleDateString()} (${exp.earliestDaysUntilExpiry} days)`,
+      exp.expiringProducts?.models?.length || 0,
+      exp.expiringProducts?.data?.length || 0,
+      exp.expiringProducts?.apps?.length || 0,
     ]);
 
     const csvContent = [
@@ -137,7 +153,7 @@ const ExpirationMonitor = () => {
         return sortConfig.direction === 'asc' ? aDate - bDate : bDate - aDate;
       }
 
-      if (sortConfig.key === 'daysUntilExpiry') {
+      if (sortConfig.key === 'earliestDaysUntilExpiry') {
         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
       }
 
@@ -211,7 +227,7 @@ const ExpirationMonitor = () => {
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors"
           >
             <ArrowDownTrayIcon className="h-5 w-5" />
             Export
@@ -221,7 +237,7 @@ const ExpirationMonitor = () => {
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
             <span className="text-sm text-red-800">{error}</span>
@@ -231,7 +247,7 @@ const ExpirationMonitor = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-6" id="expiration-total">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" id="expiration-total">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-blue-100 rounded-lg">
               <ClockIcon className="h-6 w-6 text-blue-600" />
@@ -243,7 +259,7 @@ const ExpirationMonitor = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6" id="expiration-at-risk">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" id="expiration-at-risk">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-red-100 rounded-lg">
               <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
@@ -255,7 +271,7 @@ const ExpirationMonitor = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6" id="expiration-upcoming">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" id="expiration-upcoming">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-yellow-100 rounded-lg">
               <CalendarIcon className="h-6 w-6 text-yellow-600" />
@@ -267,7 +283,7 @@ const ExpirationMonitor = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6" id="expiration-extended">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" id="expiration-extended">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-green-100 rounded-lg">
               <CalendarIcon className="h-6 w-6 text-green-600" />
@@ -279,7 +295,7 @@ const ExpirationMonitor = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6" id="expiration-accounts">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" id="expiration-accounts">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-purple-100 rounded-lg">
               <BuildingOfficeIcon className="h-6 w-6 text-purple-600" />
@@ -293,7 +309,7 @@ const ExpirationMonitor = () => {
       </div>
 
       {/* Controls */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <label htmlFor="expiration-window-select" className="text-sm font-medium text-gray-700">
@@ -302,8 +318,8 @@ const ExpirationMonitor = () => {
             <select
               id="expiration-window-select"
               value={expirationWindow}
-              onChange={(e) => setExpirationWindow(parseInt(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => handleWindowChange(parseInt(e.target.value))}
+              className="px-3 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-colors"
             >
               <option value={7}>7 days</option>
               <option value={30}>30 days</option>
@@ -318,7 +334,7 @@ const ExpirationMonitor = () => {
               id="show-extended-checkbox"
               checked={showExtended}
               onChange={(e) => setShowExtended(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
             />
             <label htmlFor="show-extended-checkbox" className="text-sm font-medium text-gray-700">
               Show Extended Entitlements
@@ -328,7 +344,7 @@ const ExpirationMonitor = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden" id="page-expiration-monitor">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" id="page-expiration-monitor">
         {expirations.length === 0 ? (
           <div className="p-12 text-center" id="expiration-empty-state">
             <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -344,40 +360,34 @@ const ExpirationMonitor = () => {
                 <tr>
                   <th
                     onClick={() => handleSort('account.name')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   >
                     Account {sortConfig.key === 'account.name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
                   <th
                     onClick={() => handleSort('psRecord.name')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   >
                     PS Record {sortConfig.key === 'psRecord.name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Expiring Products
                   </th>
                   <th
                     onClick={() => handleSort('status')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   >
                     Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
                   <th
                     onClick={() => handleSort('earliestExpiry')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   >
                     Earliest Expiry {sortConfig.key === 'earliestExpiry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th
-                    onClick={() => handleSort('daysUntilExpiry')}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  >
-                    Days Until {sortConfig.key === 'daysUntilExpiry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                  </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200" id="expiration-table-body">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200" id="expiration-table-body">
                 {expirations.map((exp, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -388,28 +398,28 @@ const ExpirationMonitor = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div className="flex gap-2">
-                        {exp.products?.models && exp.products.models.length > 0 && (
+                        {exp.expiringProducts?.models && exp.expiringProducts.models.length > 0 && (
                           <button
                             onClick={() => handleViewProducts(exp, 'models')}
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 underline"
                           >
-                            {exp.products.models.length} Model{exp.products.models.length !== 1 ? 's' : ''}
+                            {exp.expiringProducts.models.length} Model{exp.expiringProducts.models.length !== 1 ? 's' : ''}
                           </button>
                         )}
-                        {exp.products?.data && exp.products.data.length > 0 && (
+                        {exp.expiringProducts?.data && exp.expiringProducts.data.length > 0 && (
                           <button
                             onClick={() => handleViewProducts(exp, 'data')}
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 underline"
                           >
-                            {exp.products.data.length} Data
+                            {exp.expiringProducts.data.length} Data
                           </button>
                         )}
-                        {exp.products?.apps && exp.products.apps.length > 0 && (
+                        {exp.expiringProducts?.apps && exp.expiringProducts.apps.length > 0 && (
                           <button
                             onClick={() => handleViewProducts(exp, 'apps')}
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 underline"
                           >
-                            {exp.products.apps.length} App{exp.products.apps.length !== 1 ? 's' : ''}
+                            {exp.expiringProducts.apps.length} App{exp.expiringProducts.apps.length !== 1 ? 's' : ''}
                           </button>
                         )}
                       </div>
@@ -420,10 +430,10 @@ const ExpirationMonitor = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(exp.earliestExpiry).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {exp.daysUntilExpiry}
+                      <div className="flex flex-col">
+                        <span className="font-medium">{new Date(exp.earliestExpiry).toLocaleDateString()}</span>
+                        <span className="text-xs text-gray-500">({exp.earliestDaysUntilExpiry} days)</span>
+                      </div>
                     </td>
                   </tr>
                 ))}

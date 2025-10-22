@@ -73,7 +73,7 @@ const ApiTest = () => {
             </button>
           </div>
           {validationResult && (
-            <pre className="bg-gray-100 p-4 rounded overflow-auto text-sm">
+            <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded overflow-auto text-sm">
               {validationResult}
             </pre>
           )}
@@ -92,7 +92,7 @@ const ApiTest = () => {
             </button>
           </div>
           {removalsResult && (
-            <pre className="bg-gray-100 p-4 rounded overflow-auto text-sm">
+            <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded overflow-auto text-sm">
               {removalsResult}
             </pre>
           )}
@@ -111,14 +111,14 @@ const ApiTest = () => {
             </button>
           </div>
           {expirationResult && (
-            <pre className="bg-gray-100 p-4 rounded overflow-auto text-sm">
+            <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded overflow-auto text-sm">
               {expirationResult}
             </pre>
           )}
         </div>
       </div>
 
-      <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
+      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
         <p className="text-sm text-yellow-800">
           <strong>Note:</strong> Open your browser console (F12) to see detailed logging of all API requests and responses.
         </p>

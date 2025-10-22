@@ -24,6 +24,7 @@ export const getPackageChangesByProduct = async (timeFrame = '1y') => {
     const response = await api.get('/analytics/package-changes/by-product', {
       params: { timeFrame }
     });
+    console.log('[PackageChangesService] Product data response:', response.data);
     return response.data;
   } catch (error) {
     console.error('[PackageChangesService] Error fetching by product:', error);
@@ -37,6 +38,7 @@ export const getPackageChangesByAccount = async (timeFrame = '1y') => {
     const response = await api.get('/analytics/package-changes/by-account', {
       params: { timeFrame }
     });
+    console.log('[PackageChangesService] Account data response:', response.data);
     return response.data;
   } catch (error) {
     console.error('[PackageChangesService] Error fetching by account:', error);

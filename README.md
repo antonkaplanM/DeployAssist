@@ -18,23 +18,13 @@ A deployment assistant application built with Node.js and Express, featuring a m
    npm install
    ```
 
-2. **Set Up Authentication** (first time only):
+2. **Set Up Database** (first time only):
    ```bash
-   # Generate JWT secret
-   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-   
-   # Add to .env file (create if doesn't exist)
-   echo JWT_SECRET=<your_generated_secret> >> .env
-   echo DEFAULT_ADMIN_PASSWORD=YourSecurePassword123 >> .env
-   
-   # Run database migration
-   node run-auth-migration.js
-   
-   # Create admin user
-   node setup-admin-user.js
+   # Run database initialization scripts
+   # See Technical Documentation/04-Database/Windows-Database-Setup-Guide.md
    ```
    
-   📖 **Detailed setup**: See `Technical Documentation/09-Authentication/SETUP-AND-TEST-NOW.md`
+   📖 **Detailed setup**: See `Technical Documentation/01-Getting-Started/Quick-Start-Guide.md`
 
 3. **Build CSS** (first time or after CSS changes):
    ```bash

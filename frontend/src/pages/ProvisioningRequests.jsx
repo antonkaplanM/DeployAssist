@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
-  MagnifyingGlassIcon, 
   ArrowPathIcon,
   ArrowDownTrayIcon,
   FunnelIcon
@@ -9,6 +8,7 @@ import {
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductModal from '../components/features/ProductModal';
 import ActionsMenu from '../components/common/ActionsMenu';
+import TypeAheadSearch from '../components/common/TypeAheadSearch';
 import { getProvisioningRequests, searchProvisioning } from '../services/provisioningService';
 import { validateRecord, getValidationTooltip, parseEntitlements, parseTenantName } from '../utils/validationEngine';
 
@@ -114,8 +114,32 @@ const ProvisioningRequests = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // In a real implementation, this would trigger a new API call with search param
     fetchRequests();
+  };
+
+  // Handle type-ahead search selection
+  const handleSearchSelect = (item) => {
+    if (item.type === 'technical_request') {
+      // Filter by specific technical request
+      setSearchTerm(item.name);
+      setExactMatchFilter(item.name);
+    } else if (item.type === 'account') {
+      // Filter by account
+      setSearchTerm(item.name);
+      setFilters(prev => ({ ...prev, accountId: item.id }));
+    }
+  };
+
+  // Wrapper for searchProvisioning that matches the expected signature
+  const searchFunction = async (term, limit, signal) => {
+    try {
+      return await searchProvisioning(term, limit);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        throw error;
+      }
+      return { success: false, results: { technicalRequests: [], accounts: [] } };
+    }
   };
 
   const handleExport = () => {
@@ -145,7 +169,7 @@ const ProvisioningRequests = () => {
         request.Account_Site__c || '',
         request.TenantRequestAction__c || '',
         request.Deployment__r?.Name || '',
-        parseTenantName(request.Payload_Data__c),
+        parseTenantName(request),
         getStatusText(request),
         new Date(request.CreatedDate).toLocaleDateString(),
         request.CreatedBy?.Name || ''
@@ -311,7 +335,7 @@ const ProvisioningRequests = () => {
             📱 Apps ({apps.length})
           </button>
         )}
-        <span className="text-xs text-gray-500 px-1">({totalCount} total)</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 px-1">({totalCount} total)</span>
       </div>
     );
   };
@@ -365,7 +389,7 @@ const ProvisioningRequests = () => {
 
       {/* Exact Match Filter Badge */}
       {exactMatchFilter && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FunnelIcon className="h-5 w-5 text-blue-600" />
             <span className="text-sm text-blue-900">
@@ -378,7 +402,7 @@ const ProvisioningRequests = () => {
               setSearchTerm('');
               setSearchParams({});
             }}
-            className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+            className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 hover:bg-blue-100 rounded transition-colors"
           >
             Clear Filter
           </button>
@@ -387,26 +411,25 @@ const ProvisioningRequests = () => {
 
       {/* Filters and Actions */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1">
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by PS Request or Account..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </form>
+        {/* Search with Type-Ahead */}
+        <div className="flex-1">
+          <TypeAheadSearch
+            searchFunction={searchFunction}
+            onSelect={handleSearchSelect}
+            placeholder="Search Technical Team Requests or Accounts..."
+            debounceDelay={300}
+            minSearchLength={2}
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+        </div>
 
         {/* Filters */}
         <div className="flex gap-2">
           <select
             value={filters.requestType}
             onChange={(e) => setFilters({ ...filters, requestType: e.target.value })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 transition-colors"
           >
             <option value="">All Request Types</option>
             <option value="Tenant Request Add">Add</option>
@@ -417,7 +440,7 @@ const ProvisioningRequests = () => {
           <select
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 transition-colors"
           >
             <option value="">All Statuses</option>
             <option value="Completed">Completed</option>
@@ -431,7 +454,7 @@ const ProvisioningRequests = () => {
           <button
             onClick={fetchRequests}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:opacity-50 text-gray-900 dark:text-gray-100 transition-colors"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -449,16 +472,16 @@ const ProvisioningRequests = () => {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <p className="text-red-800">{error}</p>
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
                   Technical Team Request
@@ -521,7 +544,7 @@ const ProvisioningRequests = () => {
                       <div className="text-sm text-gray-900">{request.Deployment__r?.Name || 'N/A'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-900">{parseTenantName(request.Payload_Data__c)}</div>
+                      <div className="text-sm text-gray-900">{parseTenantName(request)}</div>
                     </td>
                     <td className="px-4 py-3">
                       {renderProductsColumn(request)}
@@ -560,7 +583,7 @@ const ProvisioningRequests = () => {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-t border-gray-200">
             <div className="text-sm text-gray-700">
               Showing <span className="font-medium">{((pagination.currentPage - 1) * pagination.pageSize) + 1}</span> to{' '}
               <span className="font-medium">
@@ -572,7 +595,7 @@ const ProvisioningRequests = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -582,7 +605,7 @@ const ProvisioningRequests = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
-                className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>

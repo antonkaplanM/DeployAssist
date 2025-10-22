@@ -37,7 +37,7 @@ const query = `
         last_modified_date,
         captured_at
     FROM ps_audit_trail
-    WHERE account_id = $1
+    WHERE account_name = $1
     AND status = 'Tenant Request Completed'
     ORDER BY created_date DESC, captured_at DESC
     LIMIT 1

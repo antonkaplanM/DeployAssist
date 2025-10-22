@@ -149,17 +149,17 @@ const Sidebar = () => {
   }, [hasPageAccess]);
 
   return (
-    <aside className="w-64 border-r bg-white shadow-sm flex flex-col h-screen">
+    <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex flex-col h-screen transition-colors duration-200">
       {/* Logo/Header */}
-      <div className="flex items-center gap-2 border-b px-6 py-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50">
-          <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900">
+          <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
             <path d="M2 17l10 5 10-5"></path>
             <path d="M2 12l10 5 10-5"></path>
           </svg>
         </div>
-        <span className="font-semibold text-gray-900">Deploy Assist</span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100">Deployment Assistant</span>
       </div>
 
       {/* Navigation Menu */}
@@ -180,7 +180,7 @@ const Sidebar = () => {
                   <button
                     id={item.id}
                     onClick={() => setOpen && setOpen(!isOpen)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center gap-3">
                       <item.icon className="h-4 w-4" />
@@ -202,8 +202,8 @@ const Sidebar = () => {
                           to={subItem.path}
                           className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
                             isActive(subItem.path)
-                              ? 'bg-blue-50 text-blue-600 font-medium active'
-                              : 'text-gray-600 hover:bg-gray-100'
+                              ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-medium active'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                           }`}
                         >
                           {subItem.name}
@@ -222,8 +222,8 @@ const Sidebar = () => {
                 to={item.path}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive(item.path)
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <item.icon className="h-4 w-4" />
@@ -235,9 +235,9 @@ const Sidebar = () => {
       </nav>
 
       {/* Footer with user info */}
-      <div className="border-t px-4 py-3">
-        <div className="text-xs text-gray-500">
-          Deploy Assist v2.0
+      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          Deployment Assistant v2.0
         </div>
       </div>
     </aside>

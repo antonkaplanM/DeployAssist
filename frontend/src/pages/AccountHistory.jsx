@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   BuildingOfficeIcon,
@@ -12,8 +13,10 @@ import ActionsMenu from '../components/common/ActionsMenu';
 import ProductModal from '../components/features/ProductModal';
 import ComparisonModal from '../components/features/ComparisonModal';
 import { searchAccounts, getAccountHistory } from '../services/accountHistoryService';
+import { parseTenantName } from '../utils/validationEngine';
 
 const AccountHistory = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -22,6 +25,7 @@ const AccountHistory = () => {
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
   
   // Filters
   const [deploymentFilter, setDeploymentFilter] = useState('');
@@ -139,6 +143,24 @@ const AccountHistory = () => {
   };
 
   // Apply filters
+  // Auto-load account from URL parameter (only once)
+  useEffect(() => {
+    const accountParam = searchParams.get('account');
+    if (accountParam && !hasAutoLoaded && !selectedAccount && !loading) {
+      console.log('[AccountHistory] Auto-loading account from URL:', accountParam);
+      setHasAutoLoaded(true);
+      setSearchTerm(accountParam);
+      // Automatically select and load the account
+      handleSelectAccount({
+        type: 'account',
+        name: accountParam,
+        displayName: accountParam,
+        id: accountParam
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Only run when URL params change
+
   useEffect(() => {
     let filtered = [...requests];
     
@@ -172,11 +194,15 @@ const AccountHistory = () => {
   const handleClear = () => {
     setSelectedAccount(null);
     setSearchTerm('');
+    setSearchResults([]); // Clear search results dropdown
     setRequests([]);
     setFilteredRequests([]);
     setDeploymentFilter('');
     setShowLimit(5);
     setSelectedForComparison([]);
+    setHasAutoLoaded(false); // Reset auto-load flag
+    // Clear URL parameters to prevent auto-reload
+    setSearchParams({});
   };
 
   // Format date
@@ -255,9 +281,9 @@ const AccountHistory = () => {
       </div>
 
       {/* Search Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Search for Account</h2>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Search for Account</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Search by account name (e.g., "Bank of America") or by Technical Team Request ID (e.g., "PS-4331")
         </p>
         
@@ -273,7 +299,7 @@ const AccountHistory = () => {
                 handleSearch(e.target.value);
               }}
               placeholder="Enter account name or PS-ID..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-colors"
             />
             {searching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -286,13 +312,13 @@ const AccountHistory = () => {
           {searchResults.length > 0 && (
             <div
               id="account-history-search-results"
-              className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+              className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto"
             >
               {searchResults.map((item, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSelectAccount(item)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 border-b border-gray-100 last:border-b-0 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     {item.type === 'ps-id' ? (
@@ -316,13 +342,13 @@ const AccountHistory = () => {
 
       {/* Account Summary */}
       {selectedAccount && (
-        <div id="account-summary-section" className="bg-white rounded-lg border border-gray-200 p-6">
+        <div id="account-summary-section" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900" id="account-summary-name">
                 {selectedAccount.name}
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 <span id="account-summary-count">{requests.length}</span> Technical Team Requests
                 <span className="mx-2">•</span>
                 <span id="account-summary-date-range">{getDateRange()}</span>
@@ -330,7 +356,7 @@ const AccountHistory = () => {
             </div>
             <button
               onClick={handleClear}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors"
             >
               <XMarkIcon className="h-4 w-4" />
               Clear Selection
@@ -348,7 +374,7 @@ const AccountHistory = () => {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <span className="text-sm text-red-800">{error}</span>
         </div>
       )}
@@ -357,7 +383,7 @@ const AccountHistory = () => {
       {!selectedAccount && !loading && (
         <div
           id="account-history-empty-state"
-          className="bg-white rounded-lg border border-gray-200 p-12 text-center"
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center"
         >
           <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-400" />
           <h3 className="mt-4 text-lg font-semibold text-gray-900">Search for an Account</h3>
@@ -372,7 +398,7 @@ const AccountHistory = () => {
 
       {/* Request History Table */}
       {selectedAccount && !loading && requests.length > 0 && (
-        <div id="account-history-table-section" className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div id="account-history-table-section" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="p-6 border-b">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -396,7 +422,7 @@ const AccountHistory = () => {
                     id="deployment-filter"
                     value={deploymentFilter}
                     onChange={(e) => setDeploymentFilter(e.target.value)}
-                    className="h-9 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:bg-gray-800 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
                   >
                     <option value="">All Deployments</option>
                     {deploymentOptions.map(dep => (
@@ -414,7 +440,7 @@ const AccountHistory = () => {
                     id="show-limit"
                     value={showLimit}
                     onChange={(e) => setShowLimit(e.target.value)}
-                    className="h-9 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:bg-gray-800 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
                   >
                     <option value="5">Latest 5</option>
                     <option value="10">Latest 10</option>
@@ -430,7 +456,7 @@ const AccountHistory = () => {
                     type="checkbox"
                     checked={showProductChanges}
                     onChange={(e) => setShowProductChanges(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
                   />
                   <span className="text-gray-700">Show Product Changes</span>
                 </label>
@@ -454,7 +480,7 @@ const AccountHistory = () => {
                 </button>
                 <button
                   onClick={() => setSelectedForComparison([])}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Clear Selection
                 </button>
@@ -470,51 +496,51 @@ const AccountHistory = () => {
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-10">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider w-10">
                     Select
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Request ID
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Deployment
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Tenant Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Products
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
                 {filteredRequests.map((request) => {
                   const { modelEntitlements, dataEntitlements, appEntitlements } = parsePayloadData(request.Payload_Data__c);
                   
                   return (
                     <React.Fragment key={request.Id}>
-                      <tr className="hover:bg-gray-50 transition-colors">
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors">
                         <td className="px-4 py-3">
                           <input
                             type="checkbox"
                             checked={selectedForComparison.some(r => r.Id === request.Id)}
                             onChange={() => handleComparisonCheckbox(request)}
                             disabled={selectedForComparison.length >= 2 && !selectedForComparison.some(r => r.Id === request.Id)}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            className="h-4 w-4 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -529,7 +555,7 @@ const AccountHistory = () => {
                           {request.Deployment__r?.Name || 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {request.Tenant_Name__c || '-'}
+                          {parseTenantName(request)}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(request.Status__c)}`}>
@@ -544,9 +570,9 @@ const AccountHistory = () => {
                             {modelEntitlements.length > 0 && (
                               <button
                                 onClick={() => handleProductGroupClick(request.Name, 'models', modelEntitlements)}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 hover:bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded transition-colors"
                               >
-                                <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
+                                <span className="bg-blue-100 text-blue-800 dark:text-blue-300 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
                                   {modelEntitlements.length}
                                 </span>
                                 Models
@@ -555,9 +581,9 @@ const AccountHistory = () => {
                             {dataEntitlements.length > 0 && (
                               <button
                                 onClick={() => handleProductGroupClick(request.Name, 'data', dataEntitlements)}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 hover:text-green-800 dark:text-green-300 hover:bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded transition-colors"
                               >
-                                <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">
+                                <span className="bg-green-100 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded-full">
                                   {dataEntitlements.length}
                                 </span>
                                 Data
@@ -618,7 +644,7 @@ const AccountHistory = () => {
 
       {/* No Results State */}
       {selectedAccount && !loading && requests.length === 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
           <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No Requests Found</h3>
           <p className="mt-1 text-sm text-gray-500">

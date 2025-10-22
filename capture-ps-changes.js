@@ -29,24 +29,22 @@ async function capturePSChanges() {
         // Get Salesforce connection
         const conn = await salesforce.getConnection();
         
-        // Query for recent PS records (last 30 days to catch any updates)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
-        
+        // Query for ALL PS records (no date limit - we want complete audit trail)
+        // The audit service will detect which ones have actually changed
         const soql = `
-            SELECT Id, Name, Account__c, Status__c, Deployment__c, Deployment__r.Name,
+            SELECT Id, Name, Account__c, Status__c, 
+                   Deployment__c, Deployment__r.Name,
                    Account_Site__c, Billing_Status__c, RecordTypeId,
                    TenantRequestAction__c, Tenant_Name__c, Payload_Data__c,
                    Requested_Install_Date__c, RequestedGoLiveDate__c,
                    SMLErrorMessage__c,
                    CreatedDate, LastModifiedDate, CreatedBy.Name
             FROM Prof_Services_Request__c 
-            WHERE LastModifiedDate >= ${startDateStr}T00:00:00Z AND Name LIKE 'PS-%'
+            WHERE Name LIKE 'PS-%'
             ORDER BY LastModifiedDate DESC
         `;
         
-        console.log(`📊 Fetching records modified since ${startDateStr}...`);
+        console.log(`📊 Fetching all PS records from Salesforce...`);
         
         // Execute query
         const result = await conn.query(soql);
@@ -74,7 +72,7 @@ async function capturePSChanges() {
             endTime,
             recordsProcessed: changeResult.totalRecords,
             newSnapshots: changeResult.newSnapshots,
-            changesDetected: changeResult.statusChanges,
+            changesDetected: changeResult.statusChanges + (changeResult.otherChanges || 0),
             status: changeResult.success ? 'completed' : 'failed',
             error: null
         });
@@ -82,10 +80,13 @@ async function capturePSChanges() {
         console.log('');
         console.log('✅ Change detection complete!');
         
-        // If there were status changes, show a summary
-        if (changeResult.statusChanges > 0) {
+        // If there were changes, show a summary
+        const totalChanges = changeResult.statusChanges + (changeResult.otherChanges || 0);
+        if (totalChanges > 0) {
             console.log('');
-            console.log(`📝 ${changeResult.statusChanges} status change(s) detected and captured!`);
+            console.log(`📝 ${totalChanges} change(s) detected and captured!`);
+            console.log(`   - Status changes: ${changeResult.statusChanges}`);
+            console.log(`   - Other changes: ${changeResult.otherChanges || 0}`);
         }
         
         process.exit(0);

@@ -20,11 +20,33 @@ import {
 } from '../services/packageChangesService';
 
 const PackageChangesAnalytics = () => {
+  // Get initial timeframe: user's saved preference > default from Settings > fallback to 30 days
+  const getInitialTimeFrame = () => {
+    // First, check if user has a saved preference for this page
+    const userPreference = localStorage.getItem('packageChanges_timeframe');
+    if (userPreference) return userPreference;
+    
+    // If not, use the default from Settings and map to available options
+    const defaultSetting = localStorage.getItem('defaultPackageChangesTimeframe');
+    if (!defaultSetting) return '30d';
+    
+    const days = parseInt(defaultSetting);
+    // Map to available options in the component
+    if (days <= 7) return '7d';
+    if (days <= 14) return '14d';
+    if (days <= 30) return '30d';
+    if (days <= 60) return '60d';
+    if (days <= 90) return '90d';
+    if (days <= 180) return '6m';
+    return '1y';
+  };
+
   const [summary, setSummary] = useState(null);
   const [byProduct, setByProduct] = useState([]);
   const [byAccount, setByAccount] = useState([]);
   const [expandedAccounts, setExpandedAccounts] = useState(new Set());
-  const [timeFrame, setTimeFrame] = useState('1y');
+  const [expandedDeployments, setExpandedDeployments] = useState(new Set());
+  const [timeFrame, setTimeFrame] = useState(getInitialTimeFrame());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -34,6 +56,13 @@ const PackageChangesAnalytics = () => {
   useEffect(() => {
     fetchData();
   }, [timeFrame]);
+
+  // Save user's timeframe preference when they change it
+  const handleTimeFrameChange = (newTimeFrame) => {
+    setTimeFrame(newTimeFrame);
+    localStorage.setItem('packageChanges_timeframe', newTimeFrame);
+    console.log(`[PackageChanges] User preference saved: ${newTimeFrame}`);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,11 +80,13 @@ const PackageChangesAnalytics = () => {
       }
       
       if (productData.success) {
-        setByProduct(productData.changes || []);
+        console.log('[PackageChanges] Product data:', productData.data);
+        setByProduct(productData.data || []);
       }
       
       if (accountData.success) {
-        setByAccount(accountData.changes || []);
+        console.log('[PackageChanges] Account data:', accountData.data);
+        setByAccount(accountData.data || []);
       }
     } catch (err) {
       console.error('Error fetching package changes:', err);
@@ -101,28 +132,29 @@ const PackageChangesAnalytics = () => {
     const newExpanded = new Set(expandedAccounts);
     if (newExpanded.has(accountName)) {
       newExpanded.delete(accountName);
+      // Also collapse all deployments under this account
+      const newExpandedDeployments = new Set(expandedDeployments);
+      expandedDeployments.forEach(key => {
+        if (key.startsWith(`${accountName}-`)) {
+          newExpandedDeployments.delete(key);
+        }
+      });
+      setExpandedDeployments(newExpandedDeployments);
     } else {
       newExpanded.add(accountName);
     }
     setExpandedAccounts(newExpanded);
   };
 
-  const getChangeBadge = (type) => {
-    if (type === 'upgrade') {
-      return (
-        <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 border border-green-200">
-          <ArrowTrendingUpIcon className="h-3 w-3" />
-          Upgrade
-        </span>
-      );
+  const toggleDeploymentExpand = (accountName, deploymentNumber) => {
+    const deploymentKey = `${accountName}-${deploymentNumber}`;
+    const newExpanded = new Set(expandedDeployments);
+    if (newExpanded.has(deploymentKey)) {
+      newExpanded.delete(deploymentKey);
     } else {
-      return (
-        <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 border border-red-200">
-          <ArrowTrendingDownIcon className="h-3 w-3" />
-          Downgrade
-        </span>
-      );
+      newExpanded.add(deploymentKey);
     }
+    setExpandedDeployments(newExpanded);
   };
 
   if (loading && !summary) {
@@ -170,7 +202,7 @@ const PackageChangesAnalytics = () => {
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:opacity-50 transition-colors"
             id="export-package-changes-btn"
           >
             <ArrowDownTrayIcon className="h-5 w-5" />
@@ -181,13 +213,13 @@ const PackageChangesAnalytics = () => {
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <span className="text-sm text-red-800">{error}</span>
         </div>
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-2">
           <label htmlFor="package-changes-timeframe" className="text-sm font-medium text-gray-700">
             Time Frame:
@@ -195,8 +227,8 @@ const PackageChangesAnalytics = () => {
           <select
             id="package-changes-timeframe"
             value={timeFrame}
-            onChange={(e) => setTimeFrame(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(e) => handleTimeFrameChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-colors"
           >
             <option value="30d">Last 30 Days</option>
             <option value="90d">Last 90 Days</option>
@@ -208,11 +240,11 @@ const PackageChangesAnalytics = () => {
 
       {/* Summary Statistics */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Summary</h2>
-        <p className="text-sm text-gray-600 mb-4">Overall package change statistics</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Summary</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Overall package change statistics</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-6" id="summary-ps-records">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 dark:border-blue-800 p-6" id="summary-ps-records">
             <div className="flex items-center gap-3">
               <CubeIcon className="h-8 w-8 text-blue-600" />
               <div>
@@ -232,7 +264,7 @@ const PackageChangesAnalytics = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 p-6" id="summary-upgrades">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 dark:border-green-800 p-6" id="summary-upgrades">
             <div className="flex items-center gap-3">
               <ArrowTrendingUpIcon className="h-8 w-8 text-green-600" />
               <div>
@@ -242,7 +274,7 @@ const PackageChangesAnalytics = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 p-6" id="summary-downgrades">
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 dark:border-red-800 p-6" id="summary-downgrades">
             <div className="flex items-center gap-3">
               <ArrowTrendingDownIcon className="h-8 w-8 text-red-600" />
               <div>
@@ -252,7 +284,7 @@ const PackageChangesAnalytics = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200 p-6" id="summary-accounts">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200 dark:border-yellow-800 p-6" id="summary-accounts">
             <div className="flex items-center gap-3">
               <BuildingOfficeIcon className="h-8 w-8 text-yellow-600" />
               <div>
@@ -275,10 +307,10 @@ const PackageChangesAnalytics = () => {
       </div>
 
       {/* By Product Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Package Changes by Product</h3>
-          <p className="text-sm text-gray-600 mt-1">Breakdown of upgrades and downgrades per product</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Breakdown of upgrades and downgrades per product</p>
         </div>
         {byProduct.length === 0 ? (
           <div className="p-12 text-center">
@@ -291,40 +323,55 @@ const PackageChangesAnalytics = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product Code
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Product
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product Name
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Total Changes
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Upgrades
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Downgrades
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    PS Records
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Accounts
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200" id="product-changes-tbody">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200" id="product-changes-tbody">
                 {byProduct.map((product, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                      {product.product_code}
+                  <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors">
+                    <td className="px-6 py-4 align-middle">
+                      <div className="font-medium text-gray-900">{product.product_code}</div>
+                      {product.product_name && product.product_name !== product.product_code && (
+                        <div className="text-xs text-gray-600">{product.product_name}</div>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {product.product_name}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
+                      {parseInt(product.total_changes || 0).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
-                      {product.total_changes}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                      <span className="inline-flex items-center gap-1 text-green-700">
+                        <ArrowTrendingUpIcon className="h-3 w-3" />
+                        {parseInt(product.upgrades || 0).toLocaleString()}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
-                      {product.upgrades}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                      <span className="inline-flex items-center gap-1 text-orange-700">
+                        <ArrowTrendingDownIcon className="h-3 w-3" />
+                        {parseInt(product.downgrades || 0).toLocaleString()}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 font-medium">
-                      {product.downgrades}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                      {parseInt(product.ps_records || 0).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                      {parseInt(product.accounts || 0).toLocaleString()}
                     </td>
                   </tr>
                 ))}
@@ -335,10 +382,10 @@ const PackageChangesAnalytics = () => {
       </div>
 
       {/* By Account Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Accounts - Package Changes</h3>
-          <p className="text-sm text-gray-600 mt-1">All accounts with package changes</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">All accounts with package changes (3-level hierarchy: Account → Deployment → Product)</p>
         </div>
         {byAccount.length === 0 ? (
           <div className="p-12 text-center">
@@ -351,91 +398,163 @@ const PackageChangesAnalytics = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Account Name
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Account / Deployment / Product
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deployments
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Total Changes
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Upgrades
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Downgrades
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    PS Records
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Products
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200" id="account-changes-tbody">
-                {byAccount.map((account, idx) => (
-                  <React.Fragment key={idx}>
-                    <tr className="account-row hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {account.account_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
-                        {account.deployment_count}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
-                        {account.total_changes}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
-                        {account.total_upgrades}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 font-medium">
-                        {account.total_downgrades}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => toggleAccountExpand(account.account_name)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          {expandedAccounts.has(account.account_name) ? (
-                            <ChevronDownIcon className="h-5 w-5 inline" />
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200" id="account-changes-tbody">
+                {byAccount.map((account, accountIdx) => (
+                  <React.Fragment key={accountIdx}>
+                    {/* Account Row (Level 1) */}
+                    <tr 
+                      className="account-row hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 cursor-pointer"
+                      onClick={() => toggleAccountExpand(account.account_name)}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {account.deployments && account.deployments.length > 0 ? (
+                            expandedAccounts.has(account.account_name) ? (
+                              <ChevronDownIcon className="h-4 w-4 text-gray-400 transition-transform" />
+                            ) : (
+                              <ChevronRightIcon className="h-4 w-4 text-gray-400 transition-transform" />
+                            )
                           ) : (
-                            <ChevronRightIcon className="h-5 w-5 inline" />
+                            <span className="w-4" />
                           )}
-                        </button>
+                          <span className="font-medium text-base text-gray-900">{account.account_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
+                        {parseInt(account.total_changes || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        <span className="inline-flex items-center gap-1 text-green-700">
+                          <ArrowTrendingUpIcon className="h-3 w-3" />
+                          {parseInt(account.upgrades || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        <span className="inline-flex items-center gap-1 text-orange-700">
+                          <ArrowTrendingDownIcon className="h-3 w-3" />
+                          {parseInt(account.downgrades || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                        {parseInt(account.ps_records || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                        {parseInt(account.products_changed || 0).toLocaleString()}
                       </td>
                     </tr>
-                    {expandedAccounts.has(account.account_name) && account.deployments && (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-4 bg-gray-50">
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-gray-900 mb-3">Deployments for {account.account_name}</h4>
-                            {account.deployments.map((deployment, dIdx) => (
-                              <div key={dIdx} className="bg-white rounded-lg border border-gray-200 p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900">{deployment.ps_record_name}</p>
-                                    <p className="text-xs text-gray-600">Changed: {new Date(deployment.change_date).toLocaleDateString()}</p>
-                                  </div>
-                                  {getChangeBadge(deployment.change_type)}
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                  <div>
-                                    <span className="text-gray-600">From: </span>
-                                    <span className="font-medium text-gray-900">{deployment.old_package_name}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">To: </span>
-                                    <span className="font-medium text-gray-900">{deployment.new_package_name}</span>
-                                  </div>
-                                </div>
-                                {deployment.product_name && (
-                                  <p className="mt-2 text-xs text-gray-600">Product: {deployment.product_name}</p>
+
+                    {/* Deployment Rows (Level 2) */}
+                    {expandedAccounts.has(account.account_name) && account.deployments && account.deployments.map((deployment, deployIdx) => (
+                      <React.Fragment key={`${accountIdx}-${deployIdx}`}>
+                        <tr 
+                          className="deployment-row bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDeploymentExpand(account.account_name, deployment.deployment_number);
+                          }}
+                        >
+                          <td className="py-3 pr-4" style={{ paddingLeft: '2.5rem' }}>
+                            <div className="flex items-center gap-2 border-l-2 border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 pl-3 text-gray-900 dark:text-gray-100 transition-colors">
+                              {deployment.products && deployment.products.length > 0 ? (
+                                expandedDeployments.has(`${account.account_name}-${deployment.deployment_number}`) ? (
+                                  <ChevronDownIcon className="h-3 w-3 text-gray-400 transition-transform" />
+                                ) : (
+                                  <ChevronRightIcon className="h-3 w-3 text-gray-400 transition-transform" />
+                                )
+                              ) : (
+                                <span className="w-3" />
+                              )}
+                              <div className="flex flex-col">
+                                <span className="font-medium text-sm text-gray-900">{deployment.deployment_number}</span>
+                                {deployment.tenant_name && (
+                                  <span className="text-xs text-gray-600">{deployment.tenant_name}</span>
                                 )}
                               </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
+                            {parseInt(deployment.total_changes || 0).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap text-sm text-right">
+                            <span className="inline-flex items-center gap-1 text-green-700">
+                              <ArrowTrendingUpIcon className="h-3 w-3" />
+                              {parseInt(deployment.upgrades || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap text-sm text-right">
+                            <span className="inline-flex items-center gap-1 text-orange-700">
+                              <ArrowTrendingDownIcon className="h-3 w-3" />
+                              {parseInt(deployment.downgrades || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap text-sm text-right text-gray-600">
+                            {parseInt(deployment.ps_records || 0).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap text-sm text-right text-gray-600">
+                            {parseInt(deployment.products_changed || 0).toLocaleString()}
+                          </td>
+                        </tr>
+
+                        {/* Product Rows (Level 3) */}
+                        {expandedDeployments.has(`${account.account_name}-${deployment.deployment_number}`) && 
+                         deployment.products && deployment.products.map((product, prodIdx) => (
+                          <tr 
+                            key={`${accountIdx}-${deployIdx}-${prodIdx}`}
+                            className="product-row bg-gray-100"
+                          >
+                            <td className="py-2 pr-4" style={{ paddingLeft: '4rem' }}>
+                              <div className="text-xs border-l-4 border-gray-400 pl-3">
+                                <div className="font-medium text-gray-900">{product.product_code}</div>
+                                {product.product_name && product.product_name !== product.product_code && (
+                                  <div className="text-xs text-gray-600">{product.product_name}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-4 whitespace-nowrap text-xs text-right font-medium text-gray-900">
+                              {parseInt(product.total_changes || 0).toLocaleString()}
+                            </td>
+                            <td className="py-2 px-4 whitespace-nowrap text-xs text-right">
+                              <span className="inline-flex items-center gap-1 text-green-700">
+                                <ArrowTrendingUpIcon className="h-2 w-2" />
+                                {parseInt(product.upgrades || 0).toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="py-2 px-4 whitespace-nowrap text-xs text-right">
+                              <span className="inline-flex items-center gap-1 text-orange-700">
+                                <ArrowTrendingDownIcon className="h-2 w-2" />
+                                {parseInt(product.downgrades || 0).toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="py-2 px-4 whitespace-nowrap text-xs text-right text-gray-600">
+                              {parseInt(product.ps_records || 0).toLocaleString()}
+                            </td>
+                            <td className="py-2 px-4 whitespace-nowrap text-xs text-right text-gray-600">
+                              -
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ))}
                   </React.Fragment>
                 ))}
               </tbody>

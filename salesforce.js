@@ -1637,10 +1637,10 @@ async function getExpiringEntitlements(expirationWindow = 30, showExtended = fal
     try {
         const db = require('./database');
         
-        // Get expiration data from cache (non-extended only)
+        // Get expiration data from cache - respect showExtended parameter
         const result = await db.getExpirationData({
             expirationWindow: expirationWindow,
-            showExtended: false  // Always filter to non-extended items
+            showExtended: showExtended  // Pass through the showExtended parameter
         });
         
         if (!result.success || !result.data) {
@@ -1759,7 +1759,7 @@ async function getCustomerProducts(accountName) {
                 last_modified_date,
                 captured_at
             FROM ps_audit_trail
-            WHERE account_id = $1
+            WHERE account_name = $1
             AND status = 'Tenant Request Completed'
             ORDER BY created_date DESC, captured_at DESC
             LIMIT 1
@@ -1768,19 +1768,76 @@ async function getCustomerProducts(accountName) {
         const result = await db.query(query, [accountName]);
         
         if (result.rows.length === 0) {
-            console.log(`⚠️ No "Tenant Request Completed" PS record found for account: ${accountName}`);
-            return {
-                success: true,
-                account: accountName,
-                summary: {
-                    totalActive: 0,
-                    byCategory: { models: 0, data: 0, apps: 0 }
-                },
-                productsByRegion: {},
-                lastUpdated: null,
-                psRecordsAnalyzed: 0,
-                note: 'No completed tenant requests found for this account'
-            };
+            console.log(`⚠️ No "Tenant Request Completed" PS record found in audit trail for account: ${accountName}`);
+            console.log(`🔄 Falling back to Salesforce direct query...`);
+            
+            // Fallback: Query Salesforce directly for this account
+            try {
+                const conn = await getConnection();
+                
+                const soql = `
+                    SELECT Id, Name, Account__c, Status__c, Payload_Data__c,
+                           CreatedDate, LastModifiedDate
+                    FROM Prof_Services_Request__c 
+                    WHERE Account__c = '${accountName.replace(/'/g, "\\'")}'
+                    AND Status__c = 'Tenant Request Completed'
+                    AND Name LIKE 'PS-%'
+                    ORDER BY CreatedDate DESC
+                    LIMIT 1
+                `;
+                
+                const sfResult = await conn.query(soql);
+                
+                if (sfResult.records.length === 0) {
+                    console.log(`⚠️ No "Tenant Request Completed" PS record found in Salesforce either`);
+                    return {
+                        success: true,
+                        account: accountName,
+                        summary: {
+                            totalActive: 0,
+                            byCategory: { models: 0, data: 0, apps: 0 }
+                        },
+                        productsByRegion: {},
+                        lastUpdated: null,
+                        psRecordsAnalyzed: 0,
+                        note: 'No completed tenant requests found for this account. Run npm run audit:backfill to populate the audit trail.'
+                    };
+                }
+                
+                console.log(`✅ Found PS record in Salesforce: ${sfResult.records[0].Name}`);
+                
+                // Convert Salesforce record to audit trail format
+                const sfRecord = sfResult.records[0];
+                const record = {
+                    ps_record_id: sfRecord.Id,
+                    ps_record_name: sfRecord.Name,
+                    account_name: sfRecord.Account__c || accountName,
+                    status: sfRecord.Status__c,
+                    payload_data: sfRecord.Payload_Data__c,
+                    created_date: sfRecord.CreatedDate,
+                    last_modified_date: sfRecord.LastModifiedDate,
+                    captured_at: new Date().toISOString()
+                };
+                
+                // Continue processing with this record
+                // (fall through to the code below that processes the record)
+                result.rows[0] = record;
+                
+            } catch (sfError) {
+                console.error(`❌ Salesforce fallback failed:`, sfError.message);
+                return {
+                    success: true,
+                    account: accountName,
+                    summary: {
+                        totalActive: 0,
+                        byCategory: { models: 0, data: 0, apps: 0 }
+                    },
+                    productsByRegion: {},
+                    lastUpdated: null,
+                    psRecordsAnalyzed: 0,
+                    note: 'Data not available. Run npm run audit:backfill to populate the audit trail database.'
+                };
+            }
         }
         
         const record = result.rows[0];

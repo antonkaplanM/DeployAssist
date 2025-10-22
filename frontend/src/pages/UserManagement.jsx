@@ -310,7 +310,7 @@ const UserManagement = () => {
               type="checkbox"
               checked={roleFormData.pageIds.includes(page.id)}
               onChange={() => handlePageToggle(page.id)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
             />
             <span className="text-sm text-gray-900">{page.display_name}</span>
           </label>
@@ -322,7 +322,7 @@ const UserManagement = () => {
                     type="checkbox"
                     checked={roleFormData.pageIds.includes(child.id)}
                     onChange={() => handlePageToggle(child.id)}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
                   />
                   <span className="text-sm text-gray-700">{child.display_name}</span>
                 </label>
@@ -346,12 +346,12 @@ const UserManagement = () => {
     <div id="page-user-management" className="space-y-6">
       {/* Alert Messages */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 px-4 py-3 rounded-lg">
           {success}
         </div>
       )}
@@ -367,8 +367,8 @@ const UserManagement = () => {
       </div>
 
       {/* Users Section */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">Users</h2>
           <button
             onClick={() => {
@@ -386,24 +386,24 @@ const UserManagement = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 User
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Roles
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Last Login
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
             {users.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -420,7 +420,7 @@ const UserManagement = () => {
                     {user.roles?.map((role) => (
                       <span
                         key={role.id}
-                        className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200"
+                        className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:text-blue-300 dark:text-blue-300 border border-blue-200"
                       >
                         {role.name}
                       </span>
@@ -447,14 +447,14 @@ const UserManagement = () => {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleEditUser(user)}
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 transition-colors"
                       title="Edit User"
                     >
                       <PencilIcon className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => handleChangePassword(user.id, user.username)}
-                      className="text-gray-600 hover:text-gray-800 transition-colors"
+                      className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 dark:text-gray-100 transition-colors"
                       title="Change Password"
                     >
                       <KeyIcon className="h-5 w-5" />
@@ -462,7 +462,7 @@ const UserManagement = () => {
                     {user.id !== currentUser?.id && (
                       <button
                         onClick={() => handleDeleteUser(user.id, user.username)}
-                        className="text-red-600 hover:text-red-800 transition-colors"
+                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:text-red-300 transition-colors"
                         title="Delete User"
                       >
                         <TrashIcon className="h-5 w-5" />
@@ -477,8 +477,8 @@ const UserManagement = () => {
       </div>
 
       {/* Roles Section */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">Roles</h2>
           <button
             onClick={() => {
@@ -496,21 +496,21 @@ const UserManagement = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Role Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Description
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Type
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
             {roles.map((role) => (
               <tr key={role.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -537,7 +537,7 @@ const UserManagement = () => {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleEditRole(role)}
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-300 dark:text-blue-300 transition-colors"
                       title="Edit Pages"
                     >
                       <PencilIcon className="h-5 w-5" />
@@ -545,7 +545,7 @@ const UserManagement = () => {
                     {!role.is_system_role && (
                       <button
                         onClick={() => handleDeleteRole(role.id, role.name, role.is_system_role)}
-                        className="text-red-600 hover:text-red-800 transition-colors"
+                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:text-red-300 transition-colors"
                         title="Delete Role"
                       >
                         <TrashIcon className="h-5 w-5" />
@@ -562,7 +562,7 @@ const UserManagement = () => {
       {/* User Modal */}
       {showUserModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingUser ? 'Edit User' : 'Create User'}
@@ -582,7 +582,7 @@ const UserManagement = () => {
             <form onSubmit={handleUserSubmit} className="space-y-4">
               {!editingUser && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Username *
                   </label>
                   <input
@@ -592,9 +592,9 @@ const UserManagement = () => {
                     onChange={(e) =>
                       setUserFormData({ ...userFormData, username: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Lowercase letters, numbers, dots, dashes, underscores
                   </p>
                 </div>
@@ -602,7 +602,7 @@ const UserManagement = () => {
 
               {!editingUser && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Password *
                   </label>
                   <input
@@ -612,14 +612,14 @@ const UserManagement = () => {
                     onChange={(e) =>
                       setUserFormData({ ...userFormData, password: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 8 characters</p>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Full Name *
                 </label>
                 <input
@@ -629,13 +629,13 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setUserFormData({ ...userFormData, full_name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Roles *</label>
-                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Roles *</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                   {roles.map((role) => (
                     <label key={role.id} className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -654,7 +654,7 @@ const UserManagement = () => {
                             });
                           }
                         }}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
                       />
                       <span className="text-sm text-gray-700">
                         {role.name}
@@ -676,7 +676,7 @@ const UserManagement = () => {
                       onChange={(e) =>
                         setUserFormData({ ...userFormData, is_active: e.target.checked })
                       }
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
                     />
                     <span className="text-sm font-medium text-gray-700">Active</span>
                   </label>
@@ -702,7 +702,7 @@ const UserManagement = () => {
                     setEditingUser(null);
                     resetUserForm();
                   }}
-                  className="flex-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors"
                 >
                   Cancel
                 </button>
@@ -715,11 +715,11 @@ const UserManagement = () => {
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full">
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Change Password</h2>
-                <p className="text-sm text-gray-600 mt-1">For: {passwordUsername}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">For: {passwordUsername}</p>
               </div>
               <button
                 onClick={() => {
@@ -735,7 +735,7 @@ const UserManagement = () => {
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   New Password *
                 </label>
                 <input
@@ -743,9 +743,9 @@ const UserManagement = () => {
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 8 characters</p>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -763,7 +763,7 @@ const UserManagement = () => {
                     setPasswordUserId(null);
                     setNewPassword('');
                   }}
-                  className="flex-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors"
                 >
                   Cancel
                 </button>
@@ -776,7 +776,7 @@ const UserManagement = () => {
       {/* Role Modal */}
       {showRoleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingRole ? 'Edit Role Pages' : 'Create Role'}
@@ -795,7 +795,7 @@ const UserManagement = () => {
 
             <form onSubmit={handleRoleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Role Name *
                 </label>
                 <input
@@ -806,16 +806,16 @@ const UserManagement = () => {
                     setRoleFormData({ ...roleFormData, name: e.target.value })
                   }
                   disabled={editingRole !== null}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 disabled:bg-gray-100 dark:bg-gray-700 disabled:cursor-not-allowed"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Lowercase letters, numbers, hyphens, underscores
                 </p>
               </div>
 
               {!editingRole && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Description
                   </label>
                   <input
@@ -824,22 +824,22 @@ const UserManagement = () => {
                     onChange={(e) =>
                       setRoleFormData({ ...roleFormData, description: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Brief description of this role's purpose
                   </p>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Page Access *
                 </label>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                   Select which pages this role can access
                 </p>
-                <div className="border border-gray-300 rounded-lg p-4 max-h-80 overflow-y-auto">
+                <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-80 overflow-y-auto">
                   {renderPageCheckboxes()}
                 </div>
               </div>
@@ -859,7 +859,7 @@ const UserManagement = () => {
                     setEditingRole(null);
                     resetRoleForm();
                   }}
-                  className="flex-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors"
                 >
                   Cancel
                 </button>

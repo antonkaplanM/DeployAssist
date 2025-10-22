@@ -53,7 +53,7 @@ async function capturePSRecordSnapshot(psRecord, changeType = 'snapshot', previo
             psRecord.Id,
             psRecord.Name,
             psRecord.Account__c || null,
-            null,  // account_name - we'll populate this later if needed
+            psRecord.Account__c || null,  // account_name (Account__c contains the name)
             psRecord.Account_Site__c || null,
             psRecord.Status__c || null,
             psRecord.TenantRequestAction__c || null,
@@ -141,13 +141,16 @@ async function detectAndCaptureChanges(currentRecords) {
     const startTime = Date.now();
     let newSnapshots = 0;
     let statusChanges = 0;
+    let otherChanges = 0;
     let noChanges = 0;
     
     for (const record of currentRecords) {
         try {
             // Get the latest snapshot for this record
             const latestQuery = `
-                SELECT status, captured_at
+                SELECT status, account_name, account_site, request_type, 
+                       deployment_id, deployment_name, tenant_name, billing_status,
+                       sml_error_message, payload_data, last_modified_date, captured_at
                 FROM ps_audit_trail
                 WHERE ps_record_id = $1
                 ORDER BY captured_at DESC
@@ -171,8 +174,30 @@ async function detectAndCaptureChanges(currentRecords) {
                     await capturePSRecordSnapshot(record, 'status_change', previousStatus);
                     statusChanges++;
                 } else {
-                    // No changes detected
-                    noChanges++;
+                    // Check for other attribute changes
+                    const currentLastModified = record.LastModifiedDate ? new Date(record.LastModifiedDate) : null;
+                    const previousLastModified = latestSnapshot.last_modified_date ? new Date(latestSnapshot.last_modified_date) : null;
+                    
+                    const hasChanges = 
+                        (latestSnapshot.account_name !== (record.Account__c || null)) ||
+                        (latestSnapshot.account_site !== (record.Account_Site__c || null)) ||
+                        (latestSnapshot.request_type !== (record.TenantRequestAction__c || null)) ||
+                        (latestSnapshot.deployment_id !== (record.Deployment__c || null)) ||
+                        (latestSnapshot.deployment_name !== (record.Deployment__r?.Name || null)) ||
+                        (latestSnapshot.tenant_name !== (record.Tenant_Name__c || record.parsedPayload?.tenantName || null)) ||
+                        (latestSnapshot.billing_status !== (record.Billing_Status__c || null)) ||
+                        (latestSnapshot.sml_error_message !== (record.SMLErrorMessage__c || null)) ||
+                        (latestSnapshot.payload_data !== (typeof record.Payload_Data__c === 'string' ? record.Payload_Data__c : JSON.stringify(record.Payload_Data__c || {}))) ||
+                        (currentLastModified && previousLastModified && currentLastModified.getTime() !== previousLastModified.getTime());
+                    
+                    if (hasChanges) {
+                        console.log(`📝 Attribute change detected for ${record.Name}`);
+                        await capturePSRecordSnapshot(record, 'update', null);
+                        otherChanges++;
+                    } else {
+                        // No changes detected
+                        noChanges++;
+                    }
                 }
             }
         } catch (error) {
@@ -185,6 +210,7 @@ async function detectAndCaptureChanges(currentRecords) {
     console.log(`✅ Change detection complete in ${duration}s:`);
     console.log(`   - New records: ${newSnapshots}`);
     console.log(`   - Status changes: ${statusChanges}`);
+    console.log(`   - Other changes: ${otherChanges}`);
     console.log(`   - No changes: ${noChanges}`);
     
     return {
@@ -192,6 +218,7 @@ async function detectAndCaptureChanges(currentRecords) {
         totalRecords: currentRecords.length,
         newSnapshots,
         statusChanges,
+        otherChanges,
         noChanges,
         duration
     };

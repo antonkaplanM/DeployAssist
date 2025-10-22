@@ -19,7 +19,10 @@
     "test:ci": "jest --coverage --runInBand",
     "pw:install": "playwright install",
     "lint": "eslint src/**/*.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "audit:backfill": "node backfill-ps-audit.js",
+    "audit:capture": "node capture-ps-changes.js",
+    "audit:fix-names": "node update-audit-account-names.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

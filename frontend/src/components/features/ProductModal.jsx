@@ -244,20 +244,20 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
 
         {/* Modal */}
         <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative transform overflow-hidden rounded-lg bg-white shadow-xl transition-all w-full max-w-4xl">
+          <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-xl transition-all w-full max-w-4xl">
             {/* Header */}
             <div className={`${colors.bg} ${colors.border} border-b px-6 py-4 flex items-center justify-between`}>
               <div>
                 <h3 className={`text-lg font-semibold ${colors.text}`}>
                   {typeLabels[productType]}
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {requestName} • {products?.length || 0} item{products?.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="rounded-full p-1 hover:bg-gray-200 transition-colors"
+                className="rounded-full p-1 hover:bg-gray-200 dark:bg-gray-600 transition-colors"
               >
                 <XMarkIcon className={`h-6 w-6 ${colors.icon}`} />
               </button>
@@ -333,7 +333,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                 return (
                                   <td key={col.key} className="px-3 py-3 text-sm">
                                     <span className="font-medium">{value}</span>
-                                    <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
                                       {group.items.length} instances
                                     </span>
                                   </td>
@@ -351,7 +351,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                           e.stopPropagation();
                                           handleShowPackageInfo(value);
                                         }}
-                                        className="inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-1"
+                                        className="inline-flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 transition-colors p-1"
                                         title="View package details"
                                       >
                                         <InformationCircleIcon className="h-4 w-4 text-blue-600" />
@@ -409,7 +409,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                               e.stopPropagation();
                                               handleShowPackageInfo(value);
                                             }}
-                                            className="inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-1"
+                                            className="inline-flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 transition-colors p-1"
                                             title="View package details"
                                           >
                                             <InformationCircleIcon className="h-4 w-4 text-blue-600" />
@@ -437,10 +437,10 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-6 py-3 flex justify-end border-t">
+            <div className="bg-gray-50 dark:bg-gray-900 px-6 py-3 flex justify-end border-t">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50"
               >
                 Close
               </button>
@@ -455,13 +455,13 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
           <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={() => setPackageModalData(null)}></div>
           
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative transform overflow-hidden rounded-lg bg-white shadow-xl transition-all w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-xl transition-all w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               {/* Header */}
-              <div className="flex items-start justify-between p-6 border-b sticky top-0 bg-white z-10">
+              <div className="flex items-start justify-between p-6 border-b sticky top-0 bg-white dark:bg-gray-800 z-10">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{packageModalData.package_name}</h3>
                   {packageModalData.ri_package_name && (
-                    <p className="text-sm text-gray-500 mt-1">RI Package: {packageModalData.ri_package_name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">RI Package: {packageModalData.ri_package_name}</p>
                   )}
                   {packageModalData.package_type && (
                     <span className={`inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full ${
@@ -475,7 +475,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                 </div>
                 <button
                   onClick={() => setPackageModalData(null)}
-                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                  className="text-gray-400 hover:text-gray-600 dark:text-gray-400 flex-shrink-0"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -484,42 +484,42 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
               {/* Description */}
               {packageModalData.description && (
                 <div className="p-6 border-b">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Description</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">{packageModalData.description}</p>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{packageModalData.description}</p>
                 </div>
               )}
 
               {/* Capacity & Limits */}
               <div className="p-6">
-                <h4 className="text-sm font-semibold text-gray-700 mb-4">Capacity & Limits</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Capacity & Limits</h4>
                 <div className="grid grid-cols-2 gap-4">
                   {packageModalData.locations && (
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500 mb-1">Locations</div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Locations</div>
                       <div className="text-lg font-semibold text-gray-900">{Number(packageModalData.locations).toLocaleString()}</div>
                     </div>
                   )}
                   {packageModalData.max_concurrent_model && (
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500 mb-1">Max Concurrent Model Jobs</div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Max Concurrent Model Jobs</div>
                       <div className="text-lg font-semibold text-gray-900">{packageModalData.max_concurrent_model}</div>
                     </div>
                   )}
                   {packageModalData.max_concurrent_non_model && (
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500 mb-1">Max Concurrent Non-Model Jobs</div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Max Concurrent Non-Model Jobs</div>
                       <div className="text-lg font-semibold text-gray-900">{packageModalData.max_concurrent_non_model}</div>
                     </div>
                   )}
                   {packageModalData.max_jobs_day && (
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500 mb-1">Max Jobs per Day</div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Max Jobs per Day</div>
                       <div className="text-lg font-semibold text-gray-900">{Number(packageModalData.max_jobs_day).toLocaleString()}</div>
                     </div>
                   )}
                   {packageModalData.max_users && (
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500 mb-1">Max Users</div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Max Users</div>
                       <div className="text-lg font-semibold text-gray-900">{Number(packageModalData.max_users).toLocaleString()}</div>
                     </div>
                   )}
@@ -527,10 +527,10 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
               </div>
 
               {/* Footer */}
-              <div className="bg-gray-50 px-6 py-3 flex justify-end border-t">
+              <div className="bg-gray-50 dark:bg-gray-900 px-6 py-3 flex justify-end border-t">
                 <button
                   onClick={() => setPackageModalData(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50"
                 >
                   Close
                 </button>
@@ -543,7 +543,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
       {/* Loading overlay */}
       {loadingPackage && (
         <div className="fixed inset-0 z-[60] bg-black bg-opacity-30 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
             <div className="flex items-center gap-3">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
               <span className="text-gray-600">Loading package details...</span>

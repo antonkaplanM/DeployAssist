@@ -17,7 +17,7 @@ const RemovalsWidget = ({ data, error, isLoading, timeFrame, onTimeFrameChange }
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 text-red-700 bg-red-50 p-4 rounded-lg">
+      <div className="flex items-center gap-3 text-red-700 dark:text-red-400 dark:text-red-400 bg-red-50 dark:bg-red-900/20 dark:bg-red-900/20 p-4 rounded-lg">
         <svg className="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
         </svg>
@@ -113,11 +113,11 @@ const RemovalsWidget = ({ data, error, isLoading, timeFrame, onTimeFrameChange }
     <div className="space-y-4">
       {/* Time Frame Selector */}
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-700">Time Frame:</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Frame:</label>
         <select
           value={timeFrame}
           onChange={(e) => onTimeFrameChange(e.target.value)}
-          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
         >
           <option value="1d">Last 24 hours</option>
           <option value="3d">Last 3 days</option>
@@ -128,7 +128,7 @@ const RemovalsWidget = ({ data, error, isLoading, timeFrame, onTimeFrameChange }
 
       {/* Status Message */}
       {totalProducts === 0 ? (
-        <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg">
+        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 dark:text-green-400 bg-green-50 dark:bg-green-900/20 dark:bg-green-900/20 p-3 rounded-lg">
           <svg className="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
@@ -237,7 +237,7 @@ const RemovalCategoryModal = ({ category, onClose }) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -245,7 +245,7 @@ const RemovalCategoryModal = ({ category, onClose }) => {
           <h2 className="text-2xl font-bold text-gray-900">{config.title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 transition-colors"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -257,20 +257,20 @@ const RemovalCategoryModal = ({ category, onClose }) => {
         <div className="flex-1 overflow-y-auto p-6">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 sticky top-0">
+              <thead className="bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 sticky top-0">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                     Product Code
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                     Product Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                     Removed From
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 dark:bg-gray-800 divide-y divide-gray-200">
                 {category.products.map((product, index) => {
                   const sources = category.sources.get(product.productCode) || [];
                   return (
@@ -286,7 +286,7 @@ const RemovalCategoryModal = ({ category, onClose }) => {
                           <div key={idx} className="mb-1">
                             <a
                               href={`/provisioning?exact=${encodeURIComponent(source.currentRequest?.name || '')}`}
-                              className="text-blue-600 hover:underline"
+                              className="text-blue-600 dark:text-blue-400 dark:text-blue-400 hover:underline"
                               onClick={(e) => {
                                 e.preventDefault();
                                 window.location.href = `/provisioning?exact=${encodeURIComponent(source.currentRequest?.name || '')}`;
@@ -306,7 +306,7 @@ const RemovalCategoryModal = ({ category, onClose }) => {
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t bg-gray-50 flex-shrink-0">
+        <div className="flex justify-end gap-3 p-6 border-t bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 flex-shrink-0">
           <button
             onClick={onClose}
             className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"

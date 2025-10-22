@@ -251,14 +251,41 @@ export const parseEntitlements = (payloadData) => {
 };
 
 /**
- * Parse tenant name from payload
+ * Parse tenant name from request object or payload data
+ * Prioritizes backend-parsed data, then falls back to parsing payload
+ * @param {Object|string} requestOrPayload - Full request object or just payload string
+ * @returns {string} Tenant name or 'N/A'
  */
-export const parseTenantName = (payloadData) => {
+export const parseTenantName = (requestOrPayload) => {
+  // If passed null/undefined
+  if (!requestOrPayload) return 'N/A';
+  
+  // If passed a full request object (has parsedPayload from backend)
+  if (typeof requestOrPayload === 'object' && requestOrPayload.parsedPayload) {
+    return requestOrPayload.parsedPayload.tenantName || 'N/A';
+  }
+  
+  // If passed a full request object with Tenant_Name__c field
+  if (typeof requestOrPayload === 'object' && requestOrPayload.Tenant_Name__c) {
+    return requestOrPayload.Tenant_Name__c;
+  }
+  
+  // If passed just the payload string or request object with Payload_Data__c
+  const payloadData = typeof requestOrPayload === 'string' 
+    ? requestOrPayload 
+    : requestOrPayload.Payload_Data__c;
+    
   if (!payloadData) return 'N/A';
 
   try {
     const payload = JSON.parse(payloadData);
+    // Check all possible locations where tenant name might be stored
     return payload.properties?.provisioningDetail?.tenantName || 
+           payload.properties?.tenantName || 
+           payload.preferredSubdomain1 || 
+           payload.preferredSubdomain2 || 
+           payload.properties?.preferredSubdomain1 || 
+           payload.properties?.preferredSubdomain2 || 
            payload.tenantName || 
            'N/A';
   } catch (error) {

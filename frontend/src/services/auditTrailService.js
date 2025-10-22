@@ -51,7 +51,7 @@ export const getPSStatusChanges = async (identifier) => {
   }
 };
 
-// Trigger manual capture
+// Trigger manual capture (for testing/admin purposes - automatic capture runs every 5 minutes)
 export const triggerManualCapture = async () => {
   try {
     const response = await api.post('/audit-trail/capture');

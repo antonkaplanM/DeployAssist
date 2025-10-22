@@ -38,8 +38,8 @@ const ProtectedRoute = ({ children, pageName }) => {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Access Denied</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             You don't have permission to access this page.
           </p>
           <a

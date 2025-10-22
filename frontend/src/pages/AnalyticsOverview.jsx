@@ -32,6 +32,17 @@ ChartJS.register(
 const AnalyticsOverview = () => {
   const navigate = useNavigate();
   
+  // Get initial timeframe: user's saved preference > default from Settings > fallback to 12 months
+  const getInitialTimeframe = () => {
+    // First, check if user has a saved preference for this page
+    const userPreference = localStorage.getItem('analyticsOverview_timeframe');
+    if (userPreference) return parseInt(userPreference);
+    
+    // If not, use the default from Settings
+    const defaultSetting = localStorage.getItem('defaultAnalyticsTimeframe');
+    return defaultSetting ? parseInt(defaultSetting) : 12;
+  };
+  
   // State for request types analytics
   const [requestTypesData, setRequestTypesData] = useState([]);
   const [requestTypesLoading, setRequestTypesLoading] = useState(true);
@@ -44,6 +55,9 @@ const AnalyticsOverview = () => {
   const [trendError, setTrendError] = useState(null);
   const [trendPeriod, setTrendPeriod] = useState(null);
   
+  // State for timeframe selection
+  const [timeframeMonths, setTimeframeMonths] = useState(getInitialTimeframe());
+  
   // State for toggle controls (default all enabled like old app)
   const [visibleLines, setVisibleLines] = useState({
     Update: true,
@@ -53,21 +67,28 @@ const AnalyticsOverview = () => {
   
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Fetch data on mount
+  // Fetch data on mount and when timeframe changes
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [timeframeMonths]);
 
   const fetchData = async () => {
     setLastRefresh(new Date());
     await Promise.all([fetchRequestTypesData(), fetchTrendData()]);
   };
 
+  // Save user's timeframe preference when they change it
+  const handleTimeframeChange = (newMonths) => {
+    setTimeframeMonths(newMonths);
+    localStorage.setItem('analyticsOverview_timeframe', newMonths.toString());
+    console.log(`[AnalyticsOverview] User preference saved: ${newMonths} months`);
+  };
+
   const fetchRequestTypesData = async () => {
     setRequestTypesLoading(true);
     setRequestTypesError(null);
     try {
-      const data = await getRequestTypesAnalytics(12); // Last 12 months
+      const data = await getRequestTypesAnalytics(timeframeMonths);
       if (data.success) {
         setRequestTypesData(data.data || []);
         if (data.period) {
@@ -86,7 +107,7 @@ const AnalyticsOverview = () => {
     setTrendLoading(true);
     setTrendError(null);
     try {
-      const data = await getValidationTrend(3); // Last 3 months
+      const data = await getValidationTrend(timeframeMonths);
       console.log('[AnalyticsOverview] Trend API response:', data);
       if (data.success) {
         console.log('[AnalyticsOverview] Setting trend data:', data.trendData?.length, 'items');
@@ -326,6 +347,23 @@ const AnalyticsOverview = () => {
         <div className="flex items-center justify-between">
           <p className="text-gray-600">Monitor Technical Team Request activity and trends</p>
           <div className="flex items-center gap-4">
+            {/* Timeframe Selector */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="analytics-timeframe" className="text-sm font-medium text-gray-700">
+                Time Frame:
+              </label>
+              <select
+                id="analytics-timeframe"
+                value={timeframeMonths}
+                onChange={(e) => handleTimeframeChange(parseInt(e.target.value))}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 bg-white dark:bg-gray-700"
+              >
+                <option value={1}>1 month</option>
+                <option value={3}>3 months</option>
+                <option value={6}>6 months</option>
+                <option value={12}>12 months</option>
+              </select>
+            </div>
             <div className="text-sm text-gray-500">
               Last refreshed: {formatTimestamp(lastRefresh)}
             </div>
@@ -344,7 +382,9 @@ const AnalyticsOverview = () => {
       {/* Stats Overview */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Technical Team Requests - Last Year</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Technical Team Requests - Last {timeframeMonths} {timeframeMonths === 1 ? 'Month' : 'Months'}
+          </h2>
           {period && <span className="text-sm text-gray-500">{formatDateRange(period)}</span>}
         </div>
 
@@ -353,11 +393,11 @@ const AnalyticsOverview = () => {
             <LoadingSpinner />
           </div>
         ) : requestTypesError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center">
             <p className="text-red-600">Failed to load analytics data</p>
             <button
               onClick={fetchRequestTypesData}
-              className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+              className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800"
             >
               Try Again
             </button>
@@ -414,12 +454,14 @@ const AnalyticsOverview = () => {
       </section>
 
       {/* Validation Trend Chart */}
-      <section className="rounded-lg border bg-white shadow-sm">
+      <section className="rounded-lg border bg-white dark:bg-gray-800 shadow-sm">
         <div className="p-6 border-b">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Validation Trend by Request Type</h3>
-              <p className="text-sm text-gray-600">Rolling annual validation failure percentage (each point = % of failures in past year)</p>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Validation Trend by Request Type - Last {timeframeMonths} {timeframeMonths === 1 ? 'Month' : 'Months'}
+              </h3>
+              <p className="text-sm text-gray-600">Validation failure percentage over selected time period</p>
             </div>
             {trendPeriod && <span className="text-xs text-gray-500">{formatDateRange(trendPeriod)}</span>}
           </div>
@@ -435,7 +477,7 @@ const AnalyticsOverview = () => {
                   ...visibleLines,
                   Update: e.target.checked
                 })}
-                className="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-2 focus:ring-red-500"
+                className="w-4 h-4 text-red-600 dark:text-red-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-gray-100 transition-colors"
               />
               <span className="text-sm flex items-center gap-2">
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(239, 68, 68)' }}></span>
@@ -450,7 +492,7 @@ const AnalyticsOverview = () => {
                   ...visibleLines,
                   New: e.target.checked
                 })}
-                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
               />
               <span className="text-sm flex items-center gap-2">
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(59, 130, 246)' }}></span>
@@ -465,7 +507,7 @@ const AnalyticsOverview = () => {
                   ...visibleLines,
                   Deprovision: e.target.checked
                 })}
-                className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-2 focus:ring-green-500"
+                className="w-4 h-4 text-green-600 dark:text-green-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-gray-100 transition-colors"
               />
               <span className="text-sm flex items-center gap-2">
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(16, 185, 129)' }}></span>
@@ -490,7 +532,7 @@ const AnalyticsOverview = () => {
               <p className="text-xs text-red-600">{trendError}</p>
               <button
                 onClick={fetchTrendData}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800"
               >
                 Try Again
               </button>

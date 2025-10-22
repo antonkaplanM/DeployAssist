@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 
 // Configure SSL settings immediately after loading environment.
@@ -1500,14 +1501,15 @@ app.get('/api/expiration/monitor', async (req, res) => {
         }
         
         const expirationWindow = parseInt(req.query.expirationWindow) || 30;
+        const showExtended = req.query.showExtended === 'true' || req.query.showExtended === true;
         
-        console.log(`📊 Fetching expiration data (window: ${expirationWindow} days, non-extended only)`);
+        console.log(`📊 Fetching expiration data (window: ${expirationWindow} days, showExtended: ${showExtended})`);
         
         // Get summary from database
         const summaryResult = await db.getExpirationSummary(expirationWindow);
         
-        // Get expiring entitlements grouped by account/PS record (non-extended only)
-        const result = await salesforce.getExpiringEntitlements(expirationWindow, false);
+        // Get expiring entitlements grouped by account/PS record
+        const result = await salesforce.getExpiringEntitlements(expirationWindow, showExtended);
         
         // Get last analysis status
         const analysisStatus = await db.getLatestAnalysisStatus();
@@ -3031,18 +3033,19 @@ app.get('/api/audit-trail/search', async (req, res) => {
     }
 });
 
-// Trigger manual capture of current PS records (admin function)
+// Trigger manual capture of current PS records (admin/testing function)
+// Note: Automatic capture runs every 5 minutes via scheduled task (setup-audit-capture-task.ps1)
 app.post('/api/audit-trail/capture', async (req, res) => {
     try {
         console.log('🔄 Manual capture triggered...');
         
-        // This would typically be called from a scheduled job
-        // For now, we'll just return a success message
-        // In production, you'd want to trigger the capture-ps-changes script
+        // This is a lightweight endpoint for testing
+        // The actual capture happens via the scheduled task (capture-ps-changes.js)
+        // To truly trigger a capture, run: node capture-ps-changes.js
         
         res.json({
             success: true,
-            message: 'Capture triggered. Run capture-ps-changes.js script to process.',
+            message: 'Manual capture noted. For full capture, the scheduled task runs every 5 minutes automatically.',
             timestamp: new Date().toISOString()
         });
         

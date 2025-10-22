@@ -355,7 +355,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
                 <line x1="5" x2="19" y1="12" y2="12"></line>
               </svg>
             ),
-            text: <span className="text-green-700 text-xs font-medium">Added</span>
+            text: <span className="text-green-700 dark:text-green-400 text-xs font-medium">Added</span>
           };
         case 'removed':
           return {
@@ -365,7 +365,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
                 <line x1="5" x2="19" y1="12" y2="12"></line>
               </svg>
             ),
-            text: <span className="text-red-700 text-xs font-medium">Removed</span>
+            text: <span className="text-red-700 dark:text-red-400 text-xs font-medium">Removed</span>
           };
         case 'updated':
           return {
@@ -377,7 +377,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
                 <line x1="12" x2="12" y1="3" y2="15"></line>
               </svg>
             ),
-            text: <span className="text-yellow-700 text-xs font-medium">Updated</span>
+            text: <span className="text-yellow-700 dark:text-yellow-400 text-xs font-medium">Updated</span>
           };
         default:
           return {
@@ -387,14 +387,14 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             ),
-            text: <span className="text-blue-700 text-xs font-medium">Unchanged</span>
+            text: <span className="text-blue-700 dark:text-blue-400 text-xs font-medium">Unchanged</span>
           };
       }
     };
 
     return (
       <details open={hasChanges} className="border rounded-lg overflow-hidden group">
-        <summary className="bg-gray-50 p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors">
+        <summary className="bg-gray-50 dark:bg-gray-900 p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 transition-colors">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold inline-flex items-center gap-2">
@@ -403,7 +403,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
                 </svg>
                 {title}
               </h3>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                 Total: {total} | <span className="text-green-700">Added: {added.length}</span> | 
                 <span className="text-red-700"> Removed: {removed.length}</span> | 
                 <span className="text-yellow-700"> Updated: {updated.length}</span> | 
@@ -419,15 +419,15 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
         </summary>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead className="bg-gray-100 border-b-2 border-gray-400">
+            <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-400">
               <tr>
-                <th className="px-2 py-2 text-left font-semibold text-gray-700 border-r border-gray-400" rowSpan="2">
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-400" rowSpan="2">
                   Product Code
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-gray-700 border-r border-gray-400" colSpan={columns.length}>
+                <th className="px-2 py-2 text-center font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-400" colSpan={columns.length}>
                   {prevName}
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-gray-700 border-r border-gray-400" colSpan={columns.length}>
+                <th className="px-2 py-2 text-center font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-400" colSpan={columns.length}>
                   {currName}
                 </th>
                 <th className="px-2 py-2 text-center font-semibold text-gray-700" rowSpan="2">
@@ -437,7 +437,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
               <tr>
                 {/* Previous columns */}
                 {columns.map(col => (
-                  <th key={`prev-${col.key}`} className="px-2 py-1.5 text-left text-xs font-medium text-gray-600 border-r border-gray-300">
+                  <th key={`prev-${col.key}`} className="px-2 py-1.5 text-left text-xs font-medium text-gray-600 dark:text-gray-400 border-r border-gray-300 dark:border-gray-600">
                     {col.label}
                   </th>
                 ))}
@@ -503,12 +503,12 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <div>
             <h2 className="text-xl font-semibold">Side-by-Side Product Comparison</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {previousRequest.Name} → {currentRequest.Name}
             </p>
           </div>
@@ -527,7 +527,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center gap-3 p-6 border-t bg-gray-50 flex-shrink-0">
+        <div className="flex justify-between items-center gap-3 p-6 border-t bg-gray-50 dark:bg-gray-900 flex-shrink-0">
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-green-100 border border-green-300"></span>
@@ -548,7 +548,7 @@ const ComparisonModal = ({ isOpen, onClose, request1, request2 }) => {
           </div>
           <button
             onClick={onClose}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-10 px-4 py-2"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 h-10 px-4 py-2"
           >
             Close
           </button>
