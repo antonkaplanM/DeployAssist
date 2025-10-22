@@ -25,14 +25,27 @@ $envFile = Join-Path $projectRoot ".env"
 Load-EnvFile -EnvFilePath $envFile
 
 # Get database configuration from environment variables
-$DB_NAME = $env:DB_NAME ?? "deployment_assistant"
-$DB_USER = $env:DB_USER ?? "app_user"
-$DB_PASSWORD = $env:DB_PASSWORD ?? "secure_password_123"
+$DB_NAME = $env:DB_NAME
+$DB_USER = $env:DB_USER
+$DB_PASSWORD = $env:DB_PASSWORD
+$POSTGRES_PASSWORD = $env:POSTGRES_PASSWORD
+
+# Validate required environment variables
+if (-not $DB_NAME -or -not $DB_USER -or -not $DB_PASSWORD -or -not $POSTGRES_PASSWORD) {
+    Write-Host "❌ ERROR: Missing required environment variables in .env file" -ForegroundColor Red
+    Write-Host "Please ensure your .env file contains:" -ForegroundColor Yellow
+    Write-Host "   DB_NAME=deployment_assistant" -ForegroundColor Gray
+    Write-Host "   DB_USER=app_user" -ForegroundColor Gray
+    Write-Host "   DB_PASSWORD=your_password" -ForegroundColor Gray
+    Write-Host "   POSTGRES_PASSWORD=your_postgres_password" -ForegroundColor Gray
+    exit 1
+}
 
 Write-Host "🚀 Installing PostgreSQL and Redis on Windows..." -ForegroundColor Green
 Write-Host "Using configuration from .env file:" -ForegroundColor Cyan
 Write-Host "   Database: $DB_NAME" -ForegroundColor Gray
 Write-Host "   User: $DB_USER" -ForegroundColor Gray
+Write-Host "   Admin User: postgres" -ForegroundColor Gray
 
 # Install PostgreSQL using winget
 Write-Host "📊 Installing PostgreSQL..." -ForegroundColor Yellow
@@ -66,7 +79,8 @@ try {
     Start-Sleep -Seconds 5
     
     # Create database and user using psql
-    $env:PGPASSWORD = "postgres"
+    # Use password from environment variable (loaded from .env file)
+    $env:PGPASSWORD = $POSTGRES_PASSWORD
     & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "CREATE DATABASE $DB_NAME;"
     & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
     & "C:\Program Files\PostgreSQL\*\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
