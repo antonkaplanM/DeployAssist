@@ -54,3 +54,4 @@ BEGIN
     RAISE NOTICE '🔐 Page permissions configured for admin and user roles';
 END $$;
 
+
