@@ -21,6 +21,7 @@ const Sidebar = () => {
   const { hasPageAccess } = useAuth();
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [provisioningOpen, setProvisioningOpen] = useState(false);
+  const [customerProductsOpen, setCustomerProductsOpen] = useState(false);
   const [experimentalOpen, setExperimentalOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
@@ -35,12 +36,16 @@ const Sidebar = () => {
     // Check if current path belongs to Provisioning section
     const isProvisioningPath = path.startsWith('/provisioning');
     
+    // Check if current path belongs to Customer Products section
+    const isCustomerProductsPath = path.startsWith('/customer-products') || path.startsWith('/pending-product-requests');
+    
     // Check if current path belongs to Experimental section
     const isExperimentalPath = path.startsWith('/experimental');
     
     // Update states accordingly
     setAnalyticsOpen(isAnalyticsPath);
     setProvisioningOpen(isProvisioningPath);
+    setCustomerProductsOpen(isCustomerProductsPath);
     setExperimentalOpen(isExperimentalPath);
   }, [location.pathname]);
 
@@ -113,10 +118,23 @@ const Sidebar = () => {
     },
     { 
       name: 'Customer Products', 
-      path: '/customer-products', 
       icon: CubeIcon, 
       id: 'nav-customer-products',
-      pageName: 'customer_products'
+      pageName: 'customer_products',
+      submenu: [
+        { 
+          name: 'Product Entitlements', 
+          path: '/customer-products', 
+          id: 'nav-customer-products-view',
+          pageName: 'customer_products'
+        },
+        { 
+          name: 'Pending Requests', 
+          path: '/pending-product-requests', 
+          id: 'nav-pending-product-requests',
+          pageName: 'customer_products'
+        }
+      ]
     },
     {
       name: 'Experimental Pages',
@@ -199,13 +217,16 @@ const Sidebar = () => {
             if (item.submenu) {
               const isOpen = item.name === 'Analytics' ? analyticsOpen : 
                            item.name === 'Provisioning Monitor' ? provisioningOpen :
+                           item.name === 'Customer Products' ? customerProductsOpen :
                            item.name === 'Experimental Pages' ? experimentalOpen : false;
               const setOpen = item.name === 'Analytics' ? setAnalyticsOpen : 
                             item.name === 'Provisioning Monitor' ? setProvisioningOpen :
+                            item.name === 'Customer Products' ? setCustomerProductsOpen :
                             item.name === 'Experimental Pages' ? setExperimentalOpen : null;
 
               const subnavId = item.name === 'Analytics' ? 'analytics-subnav' :
                               item.name === 'Provisioning Monitor' ? 'provisioning-subnav' :
+                              item.name === 'Customer Products' ? 'customer-products-subnav' :
                               item.name === 'Experimental Pages' ? 'experimental-subnav' : undefined;
 
               return (

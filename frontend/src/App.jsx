@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import ComingSoon from './pages/ComingSoon';
 import ProvisioningRequests from './pages/ProvisioningRequests';
 import CustomerProducts from './pages/CustomerProducts';
+import PendingProductRequests from './pages/PendingProductRequests';
 import GhostAccounts from './pages/GhostAccounts';
 import ExpirationMonitor from './pages/ExpirationMonitor';
 import PSAuditTrail from './pages/PSAuditTrail';
@@ -122,6 +123,16 @@ function App() {
                 element={
                   <ProtectedRoute pageName="customer_products">
                     <CustomerProducts />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Pending Product Update Requests */}
+              <Route 
+                path="pending-product-requests" 
+                element={
+                  <ProtectedRoute pageName="customer_products">
+                    <PendingProductRequests />
                   </ProtectedRoute>
                 } 
               />

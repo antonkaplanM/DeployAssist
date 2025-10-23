@@ -2746,6 +2746,211 @@ app.get('/api/customer-products', async (req, res) => {
     }
 });
 
+// ===== PRODUCT UPDATE WORKFLOW ENDPOINTS =====
+
+const productUpdateService = require('./product-update-service');
+
+/**
+ * Get product update options for dropdown menus
+ * GET /api/product-update/options
+ * Optional query params: type (package/product/modifier/region), category (models/data/apps)
+ */
+app.get('/api/product-update/options', async (req, res) => {
+    try {
+        const { type, category } = req.query;
+        
+        if (!type) {
+            // Get all options
+            const result = await productUpdateService.getAllProductOptions();
+            return res.json(result);
+        }
+        
+        const result = await productUpdateService.getProductOptions(type, category);
+        res.json(result);
+    } catch (err) {
+        console.error('❌ Error fetching product options:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch product options'
+        });
+    }
+});
+
+/**
+ * Create a new product update request
+ * POST /api/product-update/requests
+ */
+app.post('/api/product-update/requests', async (req, res) => {
+    try {
+        const requestData = req.body;
+        
+        // Validate required fields
+        if (!requestData.accountName || !requestData.requestedBy || !requestData.changes) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: accountName, requestedBy, changes'
+            });
+        }
+        
+        const result = await productUpdateService.createProductUpdateRequest(requestData);
+        
+        if (result.success) {
+            res.status(201).json(result);
+        } else {
+            res.status(500).json(result);
+        }
+    } catch (err) {
+        console.error('❌ Error creating product update request:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create product update request'
+        });
+    }
+});
+
+/**
+ * Get pending product update requests
+ * GET /api/product-update/requests
+ * Optional query params: accountName, status, requestedBy
+ */
+app.get('/api/product-update/requests', async (req, res) => {
+    try {
+        const filters = {
+            accountName: req.query.accountName,
+            status: req.query.status,
+            requestedBy: req.query.requestedBy
+        };
+        
+        const result = await productUpdateService.getPendingProductUpdateRequests(filters);
+        res.json(result);
+    } catch (err) {
+        console.error('❌ Error fetching product update requests:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch product update requests',
+            requests: []
+        });
+    }
+});
+
+/**
+ * Get a specific product update request
+ * GET /api/product-update/requests/:identifier
+ */
+app.get('/api/product-update/requests/:identifier', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        const result = await productUpdateService.getProductUpdateRequest(identifier);
+        
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(404).json(result);
+        }
+    } catch (err) {
+        console.error('❌ Error fetching product update request:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch product update request'
+        });
+    }
+});
+
+/**
+ * Update product update request status
+ * PATCH /api/product-update/requests/:identifier/status
+ */
+app.patch('/api/product-update/requests/:identifier/status', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        const { status, approvalNotes, errorMessage, psRecordId, psRecordName } = req.body;
+        
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                error: 'Status is required'
+            });
+        }
+        
+        const result = await productUpdateService.updateProductUpdateRequestStatus(
+            identifier,
+            status,
+            { approvalNotes, errorMessage, psRecordId, psRecordName }
+        );
+        
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(404).json(result);
+        }
+    } catch (err) {
+        console.error('❌ Error updating request status:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update request status'
+        });
+    }
+});
+
+/**
+ * Delete a product update request
+ * DELETE /api/product-update/requests/:identifier
+ */
+app.delete('/api/product-update/requests/:identifier', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        const result = await productUpdateService.deleteProductUpdateRequest(identifier);
+        
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(404).json(result);
+        }
+    } catch (err) {
+        console.error('❌ Error deleting product update request:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete product update request'
+        });
+    }
+});
+
+/**
+ * Get product update request history
+ * GET /api/product-update/requests/:identifier/history
+ */
+app.get('/api/product-update/requests/:identifier/history', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        const result = await productUpdateService.getProductUpdateRequestHistory(identifier);
+        res.json(result);
+    } catch (err) {
+        console.error('❌ Error fetching request history:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch request history',
+            history: []
+        });
+    }
+});
+
+/**
+ * Refresh product options from PS audit trail
+ * POST /api/product-update/options/refresh
+ */
+app.post('/api/product-update/options/refresh', async (req, res) => {
+    try {
+        const result = await productUpdateService.refreshProductOptions();
+        res.json(result);
+    } catch (err) {
+        console.error('❌ Error refreshing product options:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to refresh product options'
+        });
+    }
+});
+
 // ===== PACKAGE ENDPOINTS =====
 
 /**

@@ -3,13 +3,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCustomerProducts, searchProvisioning } from '../services/provisioningService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import TypeAheadSearch from '../components/common/TypeAheadSearch';
+import ProductUpdateModal from '../components/features/ProductUpdateModal';
 import { 
   ClockIcon,
   CheckCircleIcon,
   ChartBarIcon,
   DocumentTextIcon,
   ChevronDownIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  PlusCircleIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 
 const CustomerProducts = () => {
@@ -21,6 +24,7 @@ const CustomerProducts = () => {
   const [data, setData] = useState(null);
   const [collapsedRegions, setCollapsedRegions] = useState({});
   const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [showProductUpdateModal, setShowProductUpdateModal] = useState(false);
 
   // Auto-search if account param is present
   React.useEffect(() => {
@@ -58,6 +62,19 @@ const CustomerProducts = () => {
 
   const handleViewAccountHistory = () => {
     navigate(`/analytics/account-history?account=${encodeURIComponent(data.account)}`);
+  };
+
+  const handleViewPendingRequests = () => {
+    navigate(`/pending-product-requests?account=${encodeURIComponent(data.account)}`);
+  };
+
+  const handleProductUpdateRequest = () => {
+    setShowProductUpdateModal(true);
+  };
+
+  const handleRequestCreated = (request) => {
+    // Optionally navigate to pending requests page
+    navigate(`/pending-product-requests?account=${encodeURIComponent(data.account)}`);
   };
 
   const handleClear = () => {
@@ -386,14 +403,32 @@ const CustomerProducts = () => {
                   )}
                 </div>
               </div>
-              <button
-                id="customer-products-view-history"
-                onClick={handleViewAccountHistory}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
-              >
-                <ChartBarIcon className="h-4 w-4" />
-                View Account History
-              </button>
+              <div className="flex gap-2">
+                <button
+                  id="customer-products-pending-requests"
+                  onClick={handleViewPendingRequests}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm font-medium"
+                >
+                  <ClipboardDocumentListIcon className="h-4 w-4" />
+                  Pending Requests
+                </button>
+                <button
+                  id="customer-products-update-request"
+                  onClick={handleProductUpdateRequest}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+                >
+                  <PlusCircleIcon className="h-4 w-4" />
+                  Product Update
+                </button>
+                <button
+                  id="customer-products-view-history"
+                  onClick={handleViewAccountHistory}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  View History
+                </button>
+              </div>
             </div>
             
             {/* Category Count Cards */}
@@ -447,6 +482,17 @@ const CustomerProducts = () => {
             Enter an account name above to view their active products organized by region
           </p>
         </div>
+      )}
+
+      {/* Product Update Modal */}
+      {data && (
+        <ProductUpdateModal
+          isOpen={showProductUpdateModal}
+          onClose={() => setShowProductUpdateModal(false)}
+          accountName={data.account}
+          currentProducts={data.productsByRegion}
+          onRequestCreated={handleRequestCreated}
+        />
       )}
     </div>
   );
