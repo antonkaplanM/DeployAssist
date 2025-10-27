@@ -33,10 +33,10 @@ $envFile = Join-Path $projectRoot ".env"
 Load-EnvFile -EnvFilePath $envFile
 
 # Set defaults if still not set (fallback to .env file values)
-if (-not $DbHost) { $DbHost = $env:DB_HOST ?? "localhost" }
-if (-not $DbPort) { $DbPort = $env:DB_PORT ?? "5432" }
-if (-not $DbName) { $DbName = $env:DB_NAME ?? "deployment_assistant" }
-if (-not $DbUser) { $DbUser = $env:DB_USER ?? "app_user" }
+if (-not $DbHost) { $DbHost = if ($env:DB_HOST) { $env:DB_HOST } else { "localhost" } }
+if (-not $DbPort) { $DbPort = if ($env:DB_PORT) { $env:DB_PORT } else { "5432" } }
+if (-not $DbName) { $DbName = if ($env:DB_NAME) { $env:DB_NAME } else { "deployment_assistant" } }
+if (-not $DbUser) { $DbUser = if ($env:DB_USER) { $env:DB_USER } else { "app_user" } }
 if (-not $DbPassword) { $DbPassword = $env:DB_PASSWORD }
 
 # Validate required parameters
