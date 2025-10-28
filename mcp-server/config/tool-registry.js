@@ -42,9 +42,11 @@ const getProductRequestHistory = require('../tools/customer-products/request-his
 const getExpirationMonitor = require('../tools/expiration/monitor');
 const refreshExpirationData = require('../tools/expiration/refresh-data');
 const getExpirationStatus = require('../tools/expiration/status');
+const queryExpiredProducts = require('../tools/expiration/query-expired-products');
 
 // ===== Account Tools =====
 const listGhostAccounts = require('../tools/accounts/list-ghost-accounts');
+const getGhostAccountProducts = require('../tools/accounts/get-ghost-account-products');
 const reviewGhostAccount = require('../tools/accounts/review-ghost-account');
 const deleteGhostAccount = require('../tools/accounts/delete-ghost-account');
 const getDeprovisionedAccounts = require('../tools/accounts/deprovisioned');
@@ -99,13 +101,15 @@ const tools = [
   updateProductRequestStatus,
   getProductRequestHistory,
   
-  // Expiration Tools (3 tools)
+  // Expiration Tools (4 tools)
   getExpirationMonitor,
   refreshExpirationData,
   getExpirationStatus,
+  queryExpiredProducts,
   
-  // Account Tools (4 tools)
+  // Account Tools (5 tools)
   listGhostAccounts,
+  getGhostAccountProducts,
   reviewGhostAccount,
   deleteGhostAccount,
   getDeprovisionedAccounts,
@@ -162,10 +166,10 @@ function getToolsByCategory() {
     provisioning: tools.slice(8, 15),
     auditTrail: tools.slice(15, 20),
     customerProducts: tools.slice(20, 27),
-    expiration: tools.slice(27, 30),
-    accounts: tools.slice(30, 34),
-    packages: tools.slice(34, 37),
-    integrations: tools.slice(37, 40),
+    expiration: tools.slice(27, 31),
+    accounts: tools.slice(31, 36),
+    packages: tools.slice(36, 39),
+    integrations: tools.slice(39, 42),
   };
 }
 
@@ -180,8 +184,8 @@ function getToolCount() {
       provisioning: 7,
       auditTrail: 5,
       customerProducts: 7,
-      expiration: 3,
-      accounts: 4,
+      expiration: 4,
+      accounts: 5,
       packages: 3,
       integrations: 3,
     },

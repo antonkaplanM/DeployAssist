@@ -1741,9 +1741,9 @@ async function getExpiringEntitlements(expirationWindow = 30, showExtended = fal
  * Shows only active products (endDate >= today), grouped by region and category
  * Uses the latest PS record with status "Tenant Request Completed" from the audit trail
  */
-async function getCustomerProducts(accountName) {
+async function getCustomerProducts(accountName, includeExpired = false) {
     try {
-        console.log(`📦 Fetching customer products for account: ${accountName}`);
+        console.log(`📦 Fetching customer products for account: ${accountName} (includeExpired: ${includeExpired})`);
         
         const db = require('./database');
         
@@ -1795,6 +1795,7 @@ async function getCustomerProducts(accountName) {
                         account: accountName,
                         summary: {
                             totalActive: 0,
+                            totalExpired: 0,
                             byCategory: { models: 0, data: 0, apps: 0 }
                         },
                         productsByRegion: {},
@@ -1830,6 +1831,7 @@ async function getCustomerProducts(accountName) {
                     account: accountName,
                     summary: {
                         totalActive: 0,
+                        totalExpired: 0,
                         byCategory: { models: 0, data: 0, apps: 0 }
                     },
                     productsByRegion: {},
@@ -1857,6 +1859,7 @@ async function getCustomerProducts(accountName) {
                 account: accountName,
                 summary: {
                     totalActive: 0,
+                    totalExpired: 0,
                     byCategory: { models: 0, data: 0, apps: 0 }
                 },
                 productsByRegion: {},
@@ -1888,8 +1891,11 @@ async function getCustomerProducts(accountName) {
                 const startDate = entitlement.startDate ? new Date(entitlement.startDate) : null;
                 const endDate = entitlement.endDate ? new Date(entitlement.endDate) : null;
                 
-                // Skip if no end date or product is expired
-                if (!endDate || endDate < today) {
+                // Determine if the product is expired
+                const isExpired = !endDate || endDate < today;
+                
+                // Skip expired products unless includeExpired is true
+                if (isExpired && !includeExpired) {
                     continue;
                 }
                 
@@ -1915,7 +1921,9 @@ async function getCustomerProducts(accountName) {
                     // Recalculate days remaining and status based on latest end date
                     const daysRemaining = Math.ceil((existing.endDate - today) / (1000 * 60 * 60 * 24));
                     
-                    if (daysRemaining > 90) {
+                    if (daysRemaining < 0) {
+                        existing.status = 'expired';
+                    } else if (daysRemaining > 90) {
                         existing.status = 'active';
                     } else if (daysRemaining > 30) {
                         existing.status = 'expiring-soon';
@@ -1923,6 +1931,7 @@ async function getCustomerProducts(accountName) {
                         existing.status = 'expiring';
                     }
                     existing.daysRemaining = daysRemaining;
+                    existing.isExpired = isExpired;
                     
                     // Update package name if not set
                     if (entitlement.packageName && !existing.packageName) {
@@ -1930,10 +1939,12 @@ async function getCustomerProducts(accountName) {
                     }
                 } else {
                     // Create new product entry
-                    const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+                    const daysRemaining = endDate ? Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)) : 0;
                     
                     let status;
-                    if (daysRemaining > 90) {
+                    if (daysRemaining < 0) {
+                        status = 'expired';
+                    } else if (daysRemaining > 90) {
                         status = 'active';
                     } else if (daysRemaining > 30) {
                         status = 'expiring-soon';
@@ -1951,6 +1962,7 @@ async function getCustomerProducts(accountName) {
                         endDate: endDate,
                         status: status,
                         daysRemaining: daysRemaining,
+                        isExpired: isExpired,
                         sourcePSRecords: [record.ps_record_name],
                         isDataBridge: false
                     });
@@ -1991,13 +2003,20 @@ async function getCustomerProducts(accountName) {
         
         // Calculate summary statistics
         let totalActive = 0;
+        let totalExpired = 0;
         const byCategory = { models: 0, data: 0, apps: 0 };
         
         for (const region in productsByRegion) {
             for (const category of ['models', 'data', 'apps']) {
-                const count = productsByRegion[region][category].length;
-                byCategory[category] += count;
-                totalActive += count;
+                const products = productsByRegion[region][category];
+                for (const product of products) {
+                    if (product.isExpired) {
+                        totalExpired++;
+                    } else {
+                        totalActive++;
+                    }
+                }
+                byCategory[category] += products.length;
             }
         }
         
@@ -2006,6 +2025,7 @@ async function getCustomerProducts(accountName) {
             account: accountName,
             summary: {
                 totalActive: totalActive,
+                totalExpired: totalExpired,
                 byCategory: byCategory
             },
             productsByRegion: productsByRegion,
@@ -3233,6 +3253,139 @@ async function analyzePackageChanges(lookbackYears = 2, startDate = null, endDat
     }
 }
 
+/**
+ * Get expired products/entitlements for a specific account with filtering
+ */
+async function getAccountExpiredProducts(accountId, accountName, filters = {}) {
+    try {
+        console.log(`📦 Fetching expired products for account: ${accountName} (ID: ${accountId})`);
+        
+        const conn = await getConnection();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Query all PS requests for this account
+        const soqlQuery = `
+            SELECT Id, Name, Account__c, Account_Site__c, TenantRequestAction__c,
+                   Status__c, CreatedDate, LastModifiedDate, Payload_Data__c
+            FROM Prof_Services_Request__c
+            WHERE Account__c = '${accountId}'
+            ORDER BY CreatedDate DESC
+            LIMIT 1000
+        `;
+        
+        const result = await conn.query(soqlQuery);
+        const records = result.records || [];
+        
+        if (records.length === 0) {
+            return {
+                success: true,
+                products: [],
+                summary: {
+                    total: 0,
+                    byCategory: {}
+                }
+            };
+        }
+        
+        // Parse all entitlements across all PS records
+        const allProducts = [];
+        const productSet = new Set(); // Track unique products
+        
+        for (const record of records) {
+            const payload = parsePayloadData(record.Payload_Data__c);
+            
+            if (!payload || !payload.hasDetails) {
+                continue;
+            }
+            
+            // Process each entitlement type
+            const entitlementTypes = [
+                { list: payload.modelEntitlements || [], category: 'Model' },
+                { list: payload.dataEntitlements || [], category: 'Data' },
+                { list: payload.appEntitlements || [], category: 'App' }
+            ];
+            
+            for (const { list, category } of entitlementTypes) {
+                for (const entitlement of list) {
+                    if (!entitlement.endDate) {
+                        continue; // Skip entitlements without end dates
+                    }
+                    
+                    const endDate = new Date(entitlement.endDate);
+                    
+                    // Only include expired products
+                    if (endDate >= today) {
+                        continue;
+                    }
+                    
+                    // Apply category filter if specified
+                    if (filters.category && category !== filters.category) {
+                        continue;
+                    }
+                    
+                    const productName = entitlement.productName || entitlement.product || 'Unknown';
+                    
+                    // Apply excludeProduct filter if specified
+                    if (filters.excludeProduct && productName.includes(filters.excludeProduct)) {
+                        continue;
+                    }
+                    
+                    // Create unique key to avoid duplicates
+                    const productKey = `${category}:${productName}:${entitlement.endDate}`;
+                    if (productSet.has(productKey)) {
+                        continue;
+                    }
+                    productSet.add(productKey);
+                    
+                    allProducts.push({
+                        product_name: productName,
+                        product_type: category,
+                        product_code: entitlement.productCode || null,
+                        end_date: entitlement.endDate,
+                        ps_record_id: record.Id,
+                        ps_record_name: record.Name
+                    });
+                }
+            }
+        }
+        
+        // Sort by end date (most recent first)
+        allProducts.sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
+        
+        // Calculate summary
+        const summary = {
+            total: allProducts.length,
+            byCategory: {}
+        };
+        
+        for (const product of allProducts) {
+            const cat = product.product_type;
+            if (!summary.byCategory[cat]) {
+                summary.byCategory[cat] = 0;
+            }
+            summary.byCategory[cat]++;
+        }
+        
+        console.log(`✅ Found ${allProducts.length} expired products for ${accountName}`);
+        
+        return {
+            success: true,
+            products: allProducts,
+            summary: summary
+        };
+        
+    } catch (err) {
+        console.error(`❌ Error fetching expired products for account: ${err.message}`);
+        return {
+            success: false,
+            error: err.message,
+            products: [],
+            summary: { total: 0, byCategory: {} }
+        };
+    }
+}
+
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
@@ -3265,5 +3418,6 @@ module.exports = {
     analyzeAccountForGhostStatus,
     identifyGhostAccounts,
     getRecentlyDeprovisionedAccounts,
-    getAccountExternalIds
+    getAccountExternalIds,
+    getAccountExpiredProducts
 };

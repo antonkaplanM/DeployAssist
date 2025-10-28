@@ -418,6 +418,25 @@ async function getAllAccounts(filters = {}) {
 }
 
 /**
+ * Get a single account by account_id
+ */
+async function getAccount(accountId) {
+    try {
+        const query = `SELECT * FROM all_accounts WHERE account_id = $1`;
+        const result = await pool.query(query, [accountId]);
+        
+        if (result.rows.length === 0) {
+            return { success: false, error: 'Account not found', account: null };
+        }
+        
+        return { success: true, account: result.rows[0] };
+    } catch (error) {
+        console.error('❌ Error fetching account:', error.message);
+        return { success: false, error: error.message, account: null };
+    }
+}
+
+/**
  * Get summary statistics for all accounts
  */
 async function getAllAccountsSummary() {
@@ -1384,6 +1403,7 @@ module.exports = {
     // All accounts functions
     upsertAllAccount,
     getAllAccounts,
+    getAccount,
     getAllAccountsSummary,
     // Ghost accounts functions
     getUniqueAccountsFromExpiration,

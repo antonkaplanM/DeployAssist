@@ -28,6 +28,11 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
   const getModifier = (item) => item.productModifier || item.ProductModifier || '—';
   const getPackageName = (item) => item.packageName || item.package_name || item.PackageName || '—';
 
+  // Check if a product is expired
+  const isProductExpired = (item) => {
+    return item.isExpired === true || item.status === 'expired';
+  };
+
   // Check if an individual item has a validation issue
   const hasValidationIssue = (item, index) => {
     if (!validationResult || validationResult.overallStatus !== 'FAIL') {
@@ -286,14 +291,22 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                       const isMultiple = group.items.length > 1;
                       const isExpanded = expandedGroups.has(groupIndex);
                       
-                      // For single items, check if they have validation issues
+                      // For single items, check if they have validation issues or are expired
                       const singleItemHasIssue = !isMultiple && group.items.length === 1 
                         ? hasValidationIssue(group.items[0], group.items[0].originalIndex)
                         : false;
+                      const singleItemIsExpired = !isMultiple && group.items.length === 1 
+                        ? isProductExpired(group.items[0])
+                        : false;
                       
-                      const mainRowClass = singleItemHasIssue
-                        ? 'border-b bg-red-50 border-red-200 transition-colors'
-                        : `border-b transition-colors ${isMultiple ? 'cursor-pointer hover:bg-gray-50' : 'hover:bg-gray-50'}`;
+                      let mainRowClass;
+                      if (singleItemHasIssue) {
+                        mainRowClass = 'border-b bg-red-50 border-red-200 transition-colors';
+                      } else if (singleItemIsExpired) {
+                        mainRowClass = 'border-b bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 transition-colors';
+                      } else {
+                        mainRowClass = `border-b transition-colors ${isMultiple ? 'cursor-pointer hover:bg-gray-50' : 'hover:bg-gray-50'}`;
+                      }
                       
                       return (
                         <React.Fragment key={groupIndex}>
@@ -301,7 +314,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                           <tr 
                             className={mainRowClass}
                             onClick={isMultiple ? () => toggleGroup(groupIndex) : undefined}
-                            title={singleItemHasIssue ? 'This entitlement has a validation failure' : ''}
+                            title={singleItemHasIssue ? 'This entitlement has a validation failure' : (singleItemIsExpired ? 'This product is expired' : '')}
                           >
                             {/* Expand icon column or warning icon for single item */}
                             <td className="px-1 py-3 w-4 text-center">
@@ -314,6 +327,12 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                                   <path d="M12 9v4"></path>
                                   <path d="m12 17 .01 0"></path>
+                                </svg>
+                              ) : singleItemIsExpired ? (
+                                <svg className="h-3 w-3 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                 </svg>
                               ) : null}
                             </td>
@@ -372,15 +391,22 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                           {/* Child rows (individual items) - shown when expanded */}
                           {isMultiple && isExpanded && group.items.map((item, itemIndex) => {
                             const hasIssue = hasValidationIssue(item, item.originalIndex);
-                            const childRowClass = hasIssue
-                              ? 'border-b bg-red-50 border-red-200'
-                              : 'border-b bg-gray-50';
+                            const itemIsExpired = isProductExpired(item);
+                            
+                            let childRowClass;
+                            if (hasIssue) {
+                              childRowClass = 'border-b bg-red-50 border-red-200';
+                            } else if (itemIsExpired) {
+                              childRowClass = 'border-b bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+                            } else {
+                              childRowClass = 'border-b bg-gray-50';
+                            }
 
                             return (
                               <tr 
                                 key={`${groupIndex}-${itemIndex}`} 
                                 className={childRowClass}
-                                title={hasIssue ? 'This entitlement has a validation failure' : ''}
+                                title={hasIssue ? 'This entitlement has a validation failure' : (itemIsExpired ? 'This product is expired' : '')}
                               >
                                 {/* Empty cell or item number / warning icon */}
                                 <td className="px-1 py-2 w-4 text-center pl-6">
@@ -389,6 +415,12 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                       <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                                       <path d="M12 9v4"></path>
                                       <path d="m12 17 .01 0"></path>
+                                    </svg>
+                                  ) : itemIsExpired ? (
+                                    <svg className="h-3 w-3 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <circle cx="12" cy="12" r="10"></circle>
+                                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                     </svg>
                                   ) : (
                                     <span className="text-xs text-gray-400">{itemIndex + 1}</span>

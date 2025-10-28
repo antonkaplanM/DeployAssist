@@ -6,6 +6,7 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import GhostAccountProductModal from '../components/features/GhostAccountProductModal';
 
 const GhostAccounts = () => {
   const [ghostAccounts, setGhostAccounts] = useState([]);
@@ -20,6 +21,12 @@ const GhostAccounts = () => {
     reviewed: 0
   });
   const [lastRefresh, setLastRefresh] = useState(new Date().toLocaleTimeString());
+  const [productModal, setProductModal] = useState({
+    isOpen: false,
+    allProducts: null,
+    accountName: '',
+  });
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   useEffect(() => {
     fetchGhostAccounts();
@@ -111,6 +118,53 @@ const GhostAccounts = () => {
     const expiry = new Date(expiryDate);
     const today = new Date();
     return Math.floor((today - expiry) / (1000 * 60 * 60 * 24));
+  };
+
+  const handleShowProducts = async (accountName) => {
+    setLoadingProducts(true);
+    try {
+      const response = await fetch(`/api/customer-products?account=${encodeURIComponent(accountName)}&includeExpired=true`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch customer products');
+      }
+      const data = await response.json();
+      
+      if (data.success && data.productsByRegion) {
+        // Flatten all products from all regions
+        const allProducts = {
+          models: [],
+          data: [],
+          apps: []
+        };
+        
+        Object.values(data.productsByRegion).forEach(region => {
+          allProducts.models.push(...(region.models || []));
+          allProducts.data.push(...(region.data || []));
+          allProducts.apps.push(...(region.apps || []));
+        });
+        
+        setProductModal({
+          isOpen: true,
+          allProducts: allProducts,
+          accountName: accountName,
+        });
+      } else {
+        alert('No products found for this account');
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const closeProductModal = () => {
+    setProductModal({
+      isOpen: false,
+      allProducts: null,
+      accountName: '',
+    });
   };
 
   if (loading && ghostAccounts.length === 0) {
@@ -298,9 +352,14 @@ const GhostAccounts = () => {
                         <div className="text-xs text-gray-500">{daysSinceExpiry} days since latest expiry</div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20 px-3 py-1 text-xs font-medium text-red-700">
+                        <button
+                          onClick={() => handleShowProducts(account.account_name)}
+                          disabled={loadingProducts}
+                          className="inline-flex items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Click to view products"
+                        >
                           {account.total_expired_products} products
-                        </span>
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-sm text-gray-900">
@@ -370,6 +429,14 @@ const GhostAccounts = () => {
           </table>
         </div>
       </div>
+
+      {/* Product Modal */}
+      <GhostAccountProductModal
+        isOpen={productModal.isOpen}
+        onClose={closeProductModal}
+        allProducts={productModal.allProducts}
+        accountName={productModal.accountName}
+      />
     </div>
   );
 };

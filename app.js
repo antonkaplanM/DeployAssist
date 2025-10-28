@@ -1728,6 +1728,159 @@ app.get('/api/expiration/status', async (req, res) => {
     }
 });
 
+// Query expired products with filtering
+app.get('/api/expiration/expired-products', async (req, res) => {
+    try {
+        console.log('🔍 Querying expired products...', req.query);
+        
+        const {
+            category,
+            accountName,
+            productName,
+            excludeProduct,
+            region,
+            includeGhostAccountsOnly,
+            limit = 100,
+            groupByAccount = true
+        } = req.query;
+        
+        // Build the query
+        let query = `
+            SELECT 
+                em.account_name,
+                em.product_name,
+                em.product_type,
+                em.end_date,
+                em.account_id as ma_sf_account_id,
+                ga.id as ghost_account_id
+            FROM expiration_monitor em
+            LEFT JOIN ghost_accounts ga ON em.account_name = ga.account_name
+            WHERE em.end_date < CURRENT_DATE
+        `;
+        
+        const params = [];
+        let paramIndex = 1;
+        
+        // Add filters
+        if (category) {
+            query += ` AND em.product_type = $${paramIndex}`;
+            params.push(category);
+            paramIndex++;
+        }
+        
+        if (accountName) {
+            query += ` AND em.account_name ILIKE $${paramIndex}`;
+            params.push(`%${accountName}%`);
+            paramIndex++;
+        }
+        
+        if (productName) {
+            query += ` AND em.product_name ILIKE $${paramIndex}`;
+            params.push(`%${productName}%`);
+            paramIndex++;
+        }
+        
+        if (excludeProduct) {
+            query += ` AND em.product_name NOT ILIKE $${paramIndex}`;
+            params.push(`%${excludeProduct}%`);
+            paramIndex++;
+        }
+        
+        if (includeGhostAccountsOnly === 'true' || includeGhostAccountsOnly === true) {
+            query += ` AND ga.id IS NOT NULL`;
+        }
+        
+        query += ` ORDER BY em.account_name, em.product_name`;
+        query += ` LIMIT $${paramIndex}`;
+        params.push(parseInt(limit));
+        
+        const result = await db.query(query, params);
+        
+        // Process results
+        if (groupByAccount === 'true' || groupByAccount === true) {
+            // Group by account
+            const accountMap = new Map();
+            
+            result.rows.forEach(row => {
+                if (!accountMap.has(row.account_name)) {
+                    accountMap.set(row.account_name, {
+                        account_name: row.account_name,
+                        ma_sf_account_id: row.ma_sf_account_id,
+                        ma_sf_link: row.ma_sf_account_id ? 
+                            `https://moodysanalytics.my.salesforce.com/${row.ma_sf_account_id}` : null,
+                        is_ghost_account: row.ghost_account_id !== null,
+                        expired_products: []
+                    });
+                }
+                
+                accountMap.get(row.account_name).expired_products.push({
+                    product_name: row.product_name,
+                    product_type: row.product_type,
+                    expiration_date: row.end_date
+                });
+            });
+            
+            const accounts = Array.from(accountMap.values());
+            
+            res.json({
+                success: true,
+                accounts: accounts,
+                summary: {
+                    total_accounts: accounts.length,
+                    total_expired_products: result.rows.length,
+                    ghost_accounts: accounts.filter(a => a.is_ghost_account).length,
+                    regular_accounts: accounts.filter(a => !a.is_ghost_account).length
+                },
+                filters: {
+                    category,
+                    accountName,
+                    productName,
+                    excludeProduct,
+                    region,
+                    includeGhostAccountsOnly
+                },
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            // Flat list of products
+            const products = result.rows.map(row => ({
+                account_name: row.account_name,
+                product_name: row.product_name,
+                product_type: row.product_type,
+                expiration_date: row.end_date,
+                ma_sf_account_id: row.ma_sf_account_id,
+                ma_sf_link: row.ma_sf_account_id ? 
+                    `https://moodysanalytics.my.salesforce.com/${row.ma_sf_account_id}` : null,
+                is_ghost_account: row.ghost_account_id !== null
+            }));
+            
+            res.json({
+                success: true,
+                products: products,
+                summary: {
+                    total_products: products.length
+                },
+                filters: {
+                    category,
+                    accountName,
+                    productName,
+                    excludeProduct,
+                    region,
+                    includeGhostAccountsOnly
+                },
+                timestamp: new Date().toISOString()
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error querying expired products:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to query expired products',
+            details: err.message
+        });
+    }
+});
+
 // ===== PACKAGE CHANGE ANALYSIS API ENDPOINTS =====
 
 // Get package change summary statistics
@@ -2619,6 +2772,66 @@ app.post('/api/ghost-accounts/:accountId/review', async (req, res) => {
     }
 });
 
+// Get expired products/entitlements for a specific ghost account
+app.get('/api/ghost-accounts/:accountId/products', async (req, res) => {
+    try {
+        const { accountId } = req.params;
+        const { category, excludeProduct } = req.query;
+        
+        console.log(`📦 Fetching products for ghost account: ${accountId}`);
+        
+        // Check if we have a valid Salesforce connection
+        const hasValidAuth = await salesforce.hasValidAuthentication();
+        if (!hasValidAuth) {
+            return res.status(401).json({
+                success: false,
+                error: 'No Salesforce authentication available'
+            });
+        }
+        
+        // Get the account from database to get the account name
+        const accountResult = await db.getAccount(accountId);
+        if (!accountResult.success || !accountResult.account) {
+            return res.status(404).json({
+                success: false,
+                error: 'Account not found'
+            });
+        }
+        
+        const accountName = accountResult.account.account_name;
+        
+        // Fetch and parse entitlements from Salesforce
+        const productsResult = await salesforce.getAccountExpiredProducts(
+            accountId, 
+            accountName,
+            { category, excludeProduct }
+        );
+        
+        if (productsResult.success) {
+            res.json({
+                success: true,
+                accountId: accountId,
+                accountName: accountName,
+                products: productsResult.products,
+                summary: productsResult.summary,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: productsResult.error
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error fetching ghost account products:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch ghost account products',
+            details: err.message
+        });
+    }
+});
+
 // Remove ghost account from tracking
 app.delete('/api/ghost-accounts/:accountId', async (req, res) => {
     try {
@@ -2711,6 +2924,7 @@ app.get('/api/customer-products', async (req, res) => {
         console.log('📦 Customer products API called...', req.query);
         
         const accountName = req.query.account;
+        const includeExpired = req.query.includeExpired === 'true';
         
         if (!accountName) {
             return res.status(400).json({
@@ -2719,9 +2933,9 @@ app.get('/api/customer-products', async (req, res) => {
             });
         }
         
-        console.log(`🔍 Fetching customer products from audit trail for: ${accountName}`);
+        console.log(`🔍 Fetching customer products from audit trail for: ${accountName} (includeExpired: ${includeExpired})`);
         
-        const result = await salesforce.getCustomerProducts(accountName);
+        const result = await salesforce.getCustomerProducts(accountName, includeExpired);
         
         if (result.success) {
             res.json({
