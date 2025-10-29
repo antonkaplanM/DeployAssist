@@ -1001,6 +1001,126 @@ app.get('/api/analytics/request-types-week', async (req, res) => {
     }
 });
 
+// Analytics API - Weekly provisioning completion times
+app.get('/api/analytics/completion-times', async (req, res) => {
+    try {
+        const database = require('./database');
+        
+        // Starting point: Monday Oct 13, 2025
+        const startDate = new Date('2025-10-13');
+        
+        // Calculate weeks until now
+        const now = new Date();
+        
+        const query = `
+            WITH first_appearance AS (
+                -- Get first appearance of each record with its status
+                SELECT DISTINCT ON (ps_record_id)
+                    ps_record_id,
+                    captured_at as first_seen_at,
+                    status as first_status
+                FROM ps_audit_trail
+                WHERE captured_at >= $1
+                ORDER BY ps_record_id, captured_at ASC
+            ),
+            completed_records AS (
+                -- Get records that reached "Tenant Request Completed" status
+                SELECT DISTINCT 
+                    ps_record_id,
+                    ps_record_name,
+                    MIN(captured_at) FILTER (WHERE status = 'Tenant Request Completed') as completed_at
+                FROM ps_audit_trail
+                WHERE captured_at >= $1
+                    AND status = 'Tenant Request Completed'
+                GROUP BY ps_record_id, ps_record_name
+            ),
+            completion_times AS (
+                -- Calculate completion time for each record
+                -- ONLY include records where first capture was NOT already completed
+                SELECT 
+                    cr.ps_record_id,
+                    cr.ps_record_name,
+                    cr.completed_at,
+                    fa.first_seen_at,
+                    EXTRACT(EPOCH FROM (cr.completed_at - fa.first_seen_at)) / 3600 as hours_to_complete,
+                    -- Calculate week start (Monday) for the completion date
+                    DATE_TRUNC('week', cr.completed_at::date)::date as week_start
+                FROM completed_records cr
+                INNER JOIN first_appearance fa ON cr.ps_record_id = fa.ps_record_id
+                WHERE cr.completed_at IS NOT NULL
+                    AND fa.first_seen_at IS NOT NULL
+                    AND cr.completed_at >= $1
+                    AND fa.first_status != 'Tenant Request Completed'  -- Exclude pre-completed records
+                    AND cr.completed_at > fa.first_seen_at  -- Ensure we tracked the progression
+            )
+            SELECT 
+                week_start,
+                COUNT(*) as completed_count,
+                AVG(hours_to_complete) as avg_hours,
+                MIN(hours_to_complete) as min_hours,
+                MAX(hours_to_complete) as max_hours,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_to_complete) as median_hours,
+                STRING_AGG(ps_record_name, ', ' ORDER BY ps_record_name) as ps_records
+            FROM completion_times
+            WHERE week_start >= $1::date
+            GROUP BY week_start
+            ORDER BY week_start ASC;
+        `;
+        
+        const result = await database.query(query, [startDate]);
+        
+        console.log(`📊 Completion times query returned ${result.rows.length} weeks`);
+        result.rows.forEach(row => {
+            console.log(`  Week ${row.week_start}: ${row.completed_count} records (${row.ps_records})`);
+        });
+        
+        // Format data for chart
+        const chartData = result.rows.map(row => ({
+            weekStart: row.week_start,
+            weekLabel: formatWeekLabel(new Date(row.week_start)),
+            avgHours: parseFloat(row.avg_hours || 0),
+            avgDays: parseFloat((row.avg_hours || 0) / 24).toFixed(2),
+            completedCount: parseInt(row.completed_count),
+            minHours: parseFloat(row.min_hours || 0),
+            maxHours: parseFloat(row.max_hours || 0),
+            medianHours: parseFloat(row.median_hours || 0),
+            psRecords: row.ps_records // Include for debugging
+        }));
+        
+        res.json({
+            success: true,
+            data: chartData,
+            period: {
+                startDate: startDate.toISOString(),
+                endDate: now.toISOString()
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error fetching completion times:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch completion times',
+            data: []
+        });
+    }
+});
+
+// Helper function to format week labels
+function formatWeekLabel(weekStart) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    const formatDate = (date) => {
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        return `${month} ${day}`;
+    };
+    
+    return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+}
+
 // Professional Services Requests API
 app.get('/api/provisioning/requests', async (req, res) => {
     try {

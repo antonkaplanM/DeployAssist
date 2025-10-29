@@ -52,3 +52,14 @@ export const getValidationTrend = async (months = 12) => {
   }
 };
 
+// Get weekly provisioning completion times
+export const getCompletionTimes = async () => {
+  try {
+    const response = await api.get('/analytics/completion-times');
+    return response.data;
+  } catch (error) {
+    console.error('[AnalyticsService] Error fetching completion times:', error);
+    throw error;
+  }
+};
+

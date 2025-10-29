@@ -67,3 +67,4 @@ async function queryGhostAccountsWithApps() {
 queryGhostAccountsWithApps();
 
 
+

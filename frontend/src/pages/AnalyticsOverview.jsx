@@ -5,18 +5,19 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { getRequestTypesAnalytics, getValidationTrend } from '../services/analyticsService';
+import { getRequestTypesAnalytics, getValidationTrend, getCompletionTimes } from '../services/analyticsService';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 
 // Register Chart.js components
 ChartJS.register(
@@ -24,6 +25,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -55,6 +57,12 @@ const AnalyticsOverview = () => {
   const [trendError, setTrendError] = useState(null);
   const [trendPeriod, setTrendPeriod] = useState(null);
   
+  // State for completion times
+  const [completionData, setCompletionData] = useState([]);
+  const [completionLoading, setCompletionLoading] = useState(true);
+  const [completionError, setCompletionError] = useState(null);
+  const [completionPeriod, setCompletionPeriod] = useState(null);
+  
   // State for timeframe selection
   const [timeframeMonths, setTimeframeMonths] = useState(getInitialTimeframe());
   
@@ -74,7 +82,7 @@ const AnalyticsOverview = () => {
 
   const fetchData = async () => {
     setLastRefresh(new Date());
-    await Promise.all([fetchRequestTypesData(), fetchTrendData()]);
+    await Promise.all([fetchRequestTypesData(), fetchTrendData(), fetchCompletionData()]);
   };
 
   // Save user's timeframe preference when they change it
@@ -139,6 +147,29 @@ const AnalyticsOverview = () => {
       setTrendError(err.message);
     } finally {
       setTrendLoading(false);
+    }
+  };
+
+  const fetchCompletionData = async () => {
+    setCompletionLoading(true);
+    setCompletionError(null);
+    try {
+      const data = await getCompletionTimes();
+      console.log('[AnalyticsOverview] Completion times API response:', data);
+      if (data.success) {
+        setCompletionData(data.data || []);
+        if (data.period) {
+          setCompletionPeriod(data.period);
+        }
+      } else {
+        console.error('[AnalyticsOverview] API returned success: false', data);
+        setCompletionError(data.error || 'Failed to load completion times');
+      }
+    } catch (err) {
+      console.error('[AnalyticsOverview] Error fetching completion times:', err);
+      setCompletionError(err.message);
+    } finally {
+      setCompletionLoading(false);
     }
   };
 
@@ -369,10 +400,10 @@ const AnalyticsOverview = () => {
             </div>
             <button
               onClick={fetchData}
-              disabled={requestTypesLoading || trendLoading}
+              disabled={requestTypesLoading || trendLoading || completionLoading}
               className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ArrowPathIcon className={`h-4 w-4 ${(requestTypesLoading || trendLoading) ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`h-4 w-4 ${(requestTypesLoading || trendLoading || completionLoading) ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
@@ -453,125 +484,252 @@ const AnalyticsOverview = () => {
         )}
       </section>
 
-      {/* Validation Trend Chart */}
-      <section className="rounded-lg border bg-white dark:bg-gray-800 shadow-sm">
+      {/* Charts Grid - Side by side on large screens, stacked on small screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Validation Trend Chart */}
+        <section className="rounded-lg border bg-white dark:bg-gray-800 shadow-sm">
+          <div className="p-6 border-b">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Validation Trend - Last {timeframeMonths} {timeframeMonths === 1 ? 'Month' : 'Months'}
+                </h3>
+                <p className="text-sm text-gray-600">Validation failure percentage by request type</p>
+              </div>
+              {trendPeriod && <span className="text-xs text-gray-500">{formatDateRange(trendPeriod)}</span>}
+            </div>
+
+            {/* Toggle Controls */}
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t">
+              <span className="text-sm font-medium text-gray-600">Show:</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={visibleLines.Update}
+                  onChange={(e) => setVisibleLines({
+                    ...visibleLines,
+                    Update: e.target.checked
+                  })}
+                  className="w-4 h-4 text-red-600 dark:text-red-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-gray-100 transition-colors"
+                />
+                <span className="text-sm flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(239, 68, 68)' }}></span>
+                  Update
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={visibleLines.New}
+                  onChange={(e) => setVisibleLines({
+                    ...visibleLines,
+                    New: e.target.checked
+                  })}
+                  className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
+                />
+                <span className="text-sm flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(59, 130, 246)' }}></span>
+                  New
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={visibleLines.Deprovision}
+                  onChange={(e) => setVisibleLines({
+                    ...visibleLines,
+                    Deprovision: e.target.checked
+                  })}
+                  className="w-4 h-4 text-green-600 dark:text-green-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-gray-100 transition-colors"
+                />
+                <span className="text-sm flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(16, 185, 129)' }}></span>
+                  Deprovision
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {trendLoading ? (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <LoadingSpinner />
+                <p className="text-sm text-gray-500">Loading trend data...</p>
+              </div>
+            ) : trendError ? (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <svg className="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <p className="text-sm text-gray-500">Failed to load trend data</p>
+                <p className="text-xs text-red-600">{trendError}</p>
+                <button
+                  onClick={fetchTrendData}
+                  className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : !trendData || trendData.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p className="text-sm text-gray-500">No trend data available</p>
+              </div>
+            ) : !chartData || chartData.datasets.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-gray-500">No data to display (all request types are hidden)</p>
+                <p className="text-xs text-gray-400">
+                  {trendData?.length || 0} trend items, {Object.keys(visibleLines).length} types available
+                </p>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', height: '350px' }}>
+                {chartData && chartData.datasets && chartData.datasets.length > 0 ? (
+                  <>
+                    <Line data={chartData} options={chartOptions} />
+                    <div className="text-xs text-gray-400 text-center mt-2">
+                      Showing {chartData.datasets.length} trend line(s)
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Chart initialization failed
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Provisioning Completion Times Chart */}
+        <section className="rounded-lg border bg-white dark:bg-gray-800 shadow-sm">
         <div className="p-6 border-b">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Validation Trend by Request Type - Last {timeframeMonths} {timeframeMonths === 1 ? 'Month' : 'Months'}
+                Weekly Provisioning Completion Times
               </h3>
-              <p className="text-sm text-gray-600">Validation failure percentage over selected time period</p>
+              <p className="text-sm text-gray-600">
+                Average time to complete provisioning requests per week (from first appearance to completion)
+              </p>
             </div>
-            {trendPeriod && <span className="text-xs text-gray-500">{formatDateRange(trendPeriod)}</span>}
-          </div>
-
-          {/* Toggle Controls */}
-          <div className="flex items-center gap-6 pt-4 border-t">
-            <span className="text-sm font-medium text-gray-600">Show:</span>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={visibleLines.Update}
-                onChange={(e) => setVisibleLines({
-                  ...visibleLines,
-                  Update: e.target.checked
-                })}
-                className="w-4 h-4 text-red-600 dark:text-red-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-gray-100 transition-colors"
-              />
-              <span className="text-sm flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(239, 68, 68)' }}></span>
-                Update
+            {completionPeriod && (
+              <span className="text-xs text-gray-500">
+                Since {new Date(completionPeriod.startDate).toLocaleDateString()}
               </span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={visibleLines.New}
-                onChange={(e) => setVisibleLines({
-                  ...visibleLines,
-                  New: e.target.checked
-                })}
-                className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
-              />
-              <span className="text-sm flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(59, 130, 246)' }}></span>
-                New
-              </span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={visibleLines.Deprovision}
-                onChange={(e) => setVisibleLines({
-                  ...visibleLines,
-                  Deprovision: e.target.checked
-                })}
-                className="w-4 h-4 text-green-600 dark:text-green-400 rounded border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-gray-100 transition-colors"
-              />
-              <span className="text-sm flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(16, 185, 129)' }}></span>
-                Deprovision
-              </span>
-            </label>
+            )}
           </div>
         </div>
 
         <div className="p-6">
-          {trendLoading ? (
+          {completionLoading ? (
             <div className="flex flex-col items-center gap-2 py-12">
               <LoadingSpinner />
-              <p className="text-sm text-gray-500">Loading trend data...</p>
+              <p className="text-sm text-gray-500">Loading completion times...</p>
             </div>
-          ) : trendError ? (
+          ) : completionError ? (
             <div className="flex flex-col items-center gap-2 py-12">
               <svg className="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <p className="text-sm text-gray-500">Failed to load trend data</p>
-              <p className="text-xs text-red-600">{trendError}</p>
+              <p className="text-sm text-gray-500">Failed to load completion times</p>
+              <p className="text-xs text-red-600">{completionError}</p>
               <button
-                onClick={fetchTrendData}
+                onClick={fetchCompletionData}
                 className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800"
               >
                 Try Again
               </button>
             </div>
-          ) : !trendData || trendData.length === 0 ? (
+          ) : !completionData || completionData.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12">
               <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              <p className="text-sm text-gray-500">No trend data available</p>
-            </div>
-          ) : !chartData || chartData.datasets.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12">
-              <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-gray-500">No data to display (all request types are hidden)</p>
-              <p className="text-xs text-gray-400">
-                {trendData?.length || 0} trend items, {Object.keys(visibleLines).length} types available
-              </p>
+              <p className="text-sm text-gray-500">No completion data available</p>
+              <p className="text-xs text-gray-400">Complete at least one provisioning request to see data</p>
             </div>
           ) : (
-            <div style={{ position: 'relative', height: '350px' }}>
-              {chartData && chartData.datasets && chartData.datasets.length > 0 ? (
-                <>
-                  <Line data={chartData} options={chartOptions} />
-                  <div className="text-xs text-gray-400 text-center mt-2">
-                    Showing {chartData.datasets.length} trend line(s)
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Chart initialization failed
-                </div>
-              )}
+            <div>
+              <div style={{ position: 'relative', height: '400px' }}>
+                <Bar
+                  data={{
+                    labels: completionData.map(d => d.weekLabel),
+                    datasets: [{
+                      label: 'Average Hours to Complete',
+                      data: completionData.map(d => parseFloat(d.avgHours)),
+                      backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                      borderColor: 'rgb(59, 130, 246)',
+                      borderWidth: 1,
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            const dataPoint = completionData[context.dataIndex];
+                            const lines = [
+                              `Average: ${dataPoint.avgHours.toFixed(2)} hours (${dataPoint.avgDays} days)`,
+                              `Completed: ${dataPoint.completedCount} request(s)`,
+                              `Min: ${dataPoint.minHours.toFixed(2)} hours`,
+                              `Max: ${dataPoint.maxHours.toFixed(2)} hours`,
+                              `Median: ${dataPoint.medianHours.toFixed(2)} hours`
+                            ];
+                            if (dataPoint.psRecords) {
+                              lines.push(`PS Records: ${dataPoint.psRecords}`);
+                            }
+                            return lines;
+                          }
+                        }
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        title: {
+                          display: true,
+                          text: 'Hours to Complete'
+                        },
+                        ticks: {
+                          callback: function(value) {
+                            return value + ' hrs';
+                          }
+                        }
+                      },
+                      x: {
+                        title: {
+                          display: true,
+                          text: 'Week'
+                        },
+                        ticks: {
+                          maxRotation: 45,
+                          minRotation: 45
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <div className="mt-4 text-center text-sm text-gray-500">
+                Showing {completionData.length} week(s) of data • 
+                Total completed: {completionData.reduce((sum, d) => sum + d.completedCount, 0)} request(s)
+              </div>
             </div>
           )}
         </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 };
