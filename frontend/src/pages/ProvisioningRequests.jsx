@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductModal from '../components/features/ProductModal';
 import ActionsMenu from '../components/common/ActionsMenu';
 import TypeAheadSearch from '../components/common/TypeAheadSearch';
-import { getProvisioningRequests, searchProvisioning } from '../services/provisioningService';
+import { getProvisioningRequests, searchProvisioning, getProvisioningFilterOptions } from '../services/provisioningService';
 import { validateRecord, getValidationTooltip, parseEntitlements, parseTenantName } from '../utils/validationEngine';
 
 const ENABLED_VALIDATION_RULES = [
@@ -30,6 +30,11 @@ const ProvisioningRequests = () => {
     requestType: '',
     status: '',
   });
+  const [filterOptions, setFilterOptions] = useState({
+    requestTypes: [],
+    statuses: [],
+    loading: true,
+  });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -49,6 +54,38 @@ const ProvisioningRequests = () => {
     direction: 'desc',
   });
 
+  // Fetch filter options on mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const data = await getProvisioningFilterOptions();
+        if (data.success) {
+          setFilterOptions({
+            requestTypes: data.requestTypes || [],
+            statuses: data.statuses || [],
+            loading: false,
+          });
+        } else {
+          console.error('Failed to fetch filter options:', data.error);
+          setFilterOptions({
+            requestTypes: [],
+            statuses: [],
+            loading: false,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching filter options:', err);
+        setFilterOptions({
+          requestTypes: [],
+          statuses: [],
+          loading: false,
+        });
+      }
+    };
+
+    fetchFilterOptions();
+  }, []);
+
   // Handle exact match filter from URL
   useEffect(() => {
     const exactMatch = searchParams.get('exact');
@@ -61,12 +98,12 @@ const ProvisioningRequests = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-  }, [filters.requestType, filters.status]);
+  }, [filters.requestType, filters.status, filters.accountId]);
 
   useEffect(() => {
     fetchRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.requestType, filters.status, pagination.currentPage, exactMatchFilter]);
+  }, [filters.requestType, filters.status, filters.accountId, pagination.currentPage, exactMatchFilter]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -76,7 +113,8 @@ const ProvisioningRequests = () => {
         ...filters,
         offset: (pagination.currentPage - 1) * pagination.pageSize,
         pageSize: pagination.pageSize,
-        search: exactMatchFilter || searchTerm || undefined,
+        // Don't send search param if we have a specific accountId filter
+        search: filters.accountId ? undefined : (exactMatchFilter || searchTerm || undefined),
       };
       const data = await getProvisioningRequests(params);
       
@@ -123,10 +161,14 @@ const ProvisioningRequests = () => {
       // Filter by specific technical request
       setSearchTerm(item.name);
       setExactMatchFilter(item.name);
+      // Clear account filter when filtering by technical request
+      setFilters(prev => ({ ...prev, accountId: undefined }));
     } else if (item.type === 'account') {
-      // Filter by account
+      // Filter by account - use account name (not ID) since Account__c field stores names
       setSearchTerm(item.name);
-      setFilters(prev => ({ ...prev, accountId: item.id }));
+      setFilters(prev => ({ ...prev, accountId: item.name }));
+      // Clear exact match filter when filtering by account
+      setExactMatchFilter(null);
     }
   };
 
@@ -409,6 +451,27 @@ const ProvisioningRequests = () => {
         </div>
       )}
 
+      {/* Account Filter Badge */}
+      {filters.accountId && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FunnelIcon className="h-5 w-5 text-green-600" />
+            <span className="text-sm text-green-900 dark:text-green-100">
+              <strong>Account Filter:</strong> Showing only <code className="px-2 py-0.5 bg-green-100 dark:bg-green-800 rounded">{filters.accountId}</code>
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setFilters(prev => ({ ...prev, accountId: undefined }));
+              setSearchTerm('');
+            }}
+            className="px-3 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:bg-green-100 dark:hover:bg-green-800 rounded transition-colors"
+          >
+            Clear Filter
+          </button>
+        </div>
+      )}
+
       {/* Filters and Actions */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Search with Type-Ahead */}
@@ -430,22 +493,28 @@ const ProvisioningRequests = () => {
             value={filters.requestType}
             onChange={(e) => setFilters({ ...filters, requestType: e.target.value })}
             className="px-4 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 transition-colors"
+            disabled={filterOptions.loading}
           >
             <option value="">All Request Types</option>
-            <option value="Tenant Request Add">Add</option>
-            <option value="Tenant Request Update">Update</option>
-            <option value="Tenant Request Remove">Remove</option>
+            {filterOptions.requestTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
 
           <select
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             className="px-4 py-2 border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 transition-colors"
+            disabled={filterOptions.loading}
           >
             <option value="">All Statuses</option>
-            <option value="Completed">Completed</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Pending">Pending</option>
+            {filterOptions.statuses.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
           </select>
         </div>
 

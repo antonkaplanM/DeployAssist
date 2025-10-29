@@ -305,6 +305,10 @@ async function queryProfServicesRequests(filters = {}) {
         if (filters.requestType) {
             whereClause += ` AND TenantRequestAction__c = '${filters.requestType.replace(/'/g, "\\'")}'`;
         }
+        if (filters.accountId) {
+            // Filter by specific account (Account__c contains the account name)
+            whereClause += ` AND Account__c = '${filters.accountId.replace(/'/g, "\\'")}'`;
+        }
         if (filters.search) {
             whereClause += ` AND (Name LIKE '%${filters.search.replace(/'/g, "\\'")}%' OR Account__c LIKE '%${filters.search.replace(/'/g, "\\'")}%')`;
         }

@@ -10,6 +10,7 @@ import {
   FunnelIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ProductChangesModal from '../components/features/ProductChangesModal';
 import { 
   getPendingProductUpdateRequests,
   deleteProductUpdateRequest,
@@ -31,6 +32,14 @@ const PendingProductRequests = () => {
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
   const [accountFilter, setAccountFilter] = useState(searchParams.get('account') || '');
+  
+  // Changes Modal
+  const [changesModalOpen, setChangesModalOpen] = useState(false);
+  const [selectedRequestChanges, setSelectedRequestChanges] = useState({
+    changes: null,
+    requestNumber: '',
+    accountName: ''
+  });
   
   useEffect(() => {
     loadRequests();
@@ -108,6 +117,15 @@ const PendingProductRequests = () => {
       showToast('Error updating request status', 'error');
       console.error('Error updating status:', error);
     }
+  };
+
+  const handleViewChanges = (request) => {
+    setSelectedRequestChanges({
+      changes: request.changes,
+      requestNumber: request.requestNumber,
+      accountName: request.accountName
+    });
+    setChangesModalOpen(true);
   };
 
   const getStatusBadge = (status) => {
@@ -308,7 +326,13 @@ const PendingProductRequests = () => {
                           </button>
                         </td>
                         <td className="px-4 py-3">
-                          {getChangeSummary(request.changes)}
+                          <button
+                            onClick={() => handleViewChanges(request)}
+                            className="flex gap-3 text-sm hover:opacity-80 transition-opacity cursor-pointer"
+                            title="Click to view details"
+                          >
+                            {getChangeSummary(request.changes)}
+                          </button>
                         </td>
                         <td className="px-4 py-3">
                           {getPriorityBadge(request.priority)}
@@ -369,6 +393,15 @@ const PendingProductRequests = () => {
           )}
         </>
       )}
+
+      {/* Product Changes Modal */}
+      <ProductChangesModal
+        isOpen={changesModalOpen}
+        onClose={() => setChangesModalOpen(false)}
+        changes={selectedRequestChanges.changes}
+        requestNumber={selectedRequestChanges.requestNumber}
+        accountName={selectedRequestChanges.accountName}
+      />
     </div>
   );
 };
