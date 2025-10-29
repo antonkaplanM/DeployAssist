@@ -4,12 +4,13 @@ import {
   GlobeAltIcon, 
   ShoppingBagIcon,
   ClipboardDocumentIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
 import { EllipsisVerticalIcon } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 
-const ActionsMenu = ({ request, onRefresh }) => {
+const ActionsMenu = ({ request, onRefresh, onSMLCompare }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
@@ -66,6 +67,13 @@ const ActionsMenu = ({ request, onRefresh }) => {
     setIsOpen(false);
   };
 
+  const handleSMLCompare = () => {
+    if (onSMLCompare) {
+      onSMLCompare(request);
+    }
+    setIsOpen(false);
+  };
+
   return (
     <div className="relative inline-block" ref={menuRef}>
       <button
@@ -117,6 +125,16 @@ const ActionsMenu = ({ request, onRefresh }) => {
             >
               <ClipboardDocumentIcon className="h-4 w-4" />
               View Audit Trail
+            </button>
+
+            {/* SML Compare */}
+            <button
+              onClick={handleSMLCompare}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              role="menuitem"
+            >
+              <ArrowsRightLeftIcon className="h-4 w-4" />
+              SML Compare
             </button>
 
             <div className="border-t border-gray-200 dark:border-gray-700 my-1" />

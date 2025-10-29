@@ -77,7 +77,7 @@ const settingsService = {
     try {
       const response = await api.post('/sml/config', {
         environment,
-        bearerToken,
+        authCookie: bearerToken,  // Backend expects 'authCookie', not 'bearerToken'
       });
       return response.data;
     } catch (error) {

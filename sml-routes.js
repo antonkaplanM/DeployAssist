@@ -172,6 +172,70 @@ router.get('/tenant/:tenantId/products', async (req, res) => {
 });
 
 /**
+ * POST /api/sml/tenant-compare
+ * Fetch tenant details from SML using headless browser
+ * Returns comprehensive tenant details including apps, models, and data entitlements
+ */
+router.post('/tenant-compare', async (req, res) => {
+    try {
+        const { tenantName } = req.body;
+        
+        console.log('📡 POST /api/sml/tenant-compare', { tenantName });
+        
+        if (!tenantName) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant name is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        // Get SML config
+        const config = smlService.getConfig();
+        console.log('🔑 SML Config loaded:', {
+            hasConfig: !!config,
+            environment: config?.environment,
+            hasAuthCookie: !!(config?.authCookie),
+            tokenLength: config?.authCookie?.length
+        });
+        
+        if (!config || !config.authCookie) {
+            return res.status(400).json({
+                success: false,
+                error: 'SML is not configured. Please configure SML authentication in Settings.',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        console.log('🎭 Starting Playwright fetch for tenant:', tenantName);
+        
+        // Fetch tenant details using Playwright
+        const result = await smlService.fetchTenantDetailsWithPlaywright(tenantName, config);
+        
+        console.log('✅ Playwright fetch completed:', {
+            success: result.success,
+            hasDetails: !!(result.tenantDetails),
+            error: result.error
+        });
+        
+        res.json({
+            ...result,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error in SML tenant compare:', error);
+        console.error('Stack trace:', error.stack);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to fetch tenant details',
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
  * POST /api/sml/proxy
  * Proxy endpoint for client-side SML requests (bypasses CORS)
  */

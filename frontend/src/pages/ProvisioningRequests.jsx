@@ -7,10 +7,12 @@ import {
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductModal from '../components/features/ProductModal';
+import SMLComparisonModal from '../components/features/SMLComparisonModal';
 import ActionsMenu from '../components/common/ActionsMenu';
 import TypeAheadSearch from '../components/common/TypeAheadSearch';
 import { getProvisioningRequests, searchProvisioning, getProvisioningFilterOptions } from '../services/provisioningService';
 import { validateRecord, getValidationTooltip, parseEntitlements, parseTenantName } from '../utils/validationEngine';
+import { fetchSMLTenantDetails, getSMLConfig } from '../services/smlCompareService';
 
 const ENABLED_VALIDATION_RULES = [
   'app-quantity-validation',
@@ -48,6 +50,14 @@ const ProvisioningRequests = () => {
     productType: '',
     requestName: '',
     validationResult: null,
+  });
+  const [smlComparisonModal, setSmlComparisonModal] = useState({
+    isOpen: false,
+    salesforceData: null,
+    smlData: null,
+    tenantName: '',
+    loading: false,
+    error: null,
   });
   const [sortConfig, setSortConfig] = useState({
     key: 'created',
@@ -251,6 +261,76 @@ const ProvisioningRequests = () => {
       productType: '',
       requestName: '',
       validationResult: null,
+    });
+  };
+
+  const handleSMLCompare = async (request) => {
+    // Extract tenant name
+    const tenantName = parseTenantName(request);
+    
+    if (!tenantName) {
+      alert('Unable to determine tenant name from this request');
+      return;
+    }
+
+    // Check SML configuration
+    try {
+      const config = await getSMLConfig();
+      if (!config.configured || !config.hasAuthCookie) {
+        alert('SML is not configured. Please configure SML authentication in Settings before using SML Compare.');
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking SML config:', error);
+      alert('Failed to check SML configuration. Please try again.');
+      return;
+    }
+
+    // Open modal in loading state
+    setSmlComparisonModal({
+      isOpen: true,
+      salesforceData: request,
+      smlData: null,
+      tenantName,
+      loading: true,
+      error: null,
+    });
+
+    // Fetch SML tenant details
+    try {
+      const result = await fetchSMLTenantDetails(tenantName);
+      
+      if (result.success && result.tenantDetails) {
+        setSmlComparisonModal(prev => ({
+          ...prev,
+          smlData: result.tenantDetails,
+          loading: false,
+        }));
+      } else {
+        setSmlComparisonModal(prev => ({
+          ...prev,
+          loading: false,
+          error: result.error || 'Failed to fetch SML tenant details',
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching SML tenant details:', error);
+      setSmlComparisonModal(prev => ({
+        ...prev,
+        loading: false,
+        error: error.message || 'Failed to fetch SML tenant details',
+      }));
+    }
+  };
+
+  const closeSMLComparisonModal = () => {
+    setSmlComparisonModal({
+      isOpen: false,
+      salesforceData: null,
+      smlData: null,
+      tenantName: '',
+      loading: false,
+      error: null,
     });
   };
 
@@ -641,7 +721,11 @@ const ProvisioningRequests = () => {
                       <div className="text-sm text-gray-900">{request.CreatedBy?.Name || 'N/A'}</div>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <ActionsMenu request={request} onRefresh={fetchRequests} />
+                      <ActionsMenu 
+                        request={request} 
+                        onRefresh={fetchRequests}
+                        onSMLCompare={handleSMLCompare}
+                      />
                     </td>
                   </tr>
                 ))
@@ -692,6 +776,60 @@ const ProvisioningRequests = () => {
         requestName={productModal.requestName}
         validationResult={productModal.validationResult}
       />
+
+      {/* SML Comparison Modal */}
+      {smlComparisonModal.loading ? (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-md">
+            <div className="flex flex-col items-center gap-4">
+              <LoadingSpinner />
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Fetching SML Data...
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Retrieving tenant details for <strong>{smlComparisonModal.tenantName}</strong>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                  This may take a few moments
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : smlComparisonModal.error ? (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md">
+            <div className="flex flex-col items-center gap-4">
+              <svg className="h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Failed to Fetch SML Data
+                </h3>
+                <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                  {smlComparisonModal.error}
+                </p>
+                <button
+                  onClick={closeSMLComparisonModal}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <SMLComparisonModal
+          isOpen={smlComparisonModal.isOpen && !smlComparisonModal.loading && !smlComparisonModal.error}
+          onClose={closeSMLComparisonModal}
+          salesforceData={smlComparisonModal.salesforceData}
+          smlData={smlComparisonModal.smlData}
+          tenantName={smlComparisonModal.tenantName}
+        />
+      )}
     </div>
   );
 };
