@@ -508,25 +508,25 @@ const SMLComparisonModal = ({ isOpen, onClose, salesforceData, smlData, tenantNa
                   Product Code
                 </th>
                 <th className="px-2 py-2 text-center font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-400" colSpan={columns.length}>
-                  Salesforce
+                  SML (Current)
                 </th>
                 <th className="px-2 py-2 text-center font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-400" colSpan={columns.length}>
-                  SML
+                  Salesforce (Request)
                 </th>
                 <th className="px-2 py-2 text-center font-semibold text-gray-700 dark:text-gray-300" rowSpan="2">
                   Status
                 </th>
               </tr>
               <tr>
-                {/* Salesforce columns */}
+                {/* SML columns */}
                 {columns.map(col => (
-                  <th key={`sf-${col.key}`} className="px-2 py-1.5 text-left text-xs font-medium text-gray-600 dark:text-gray-400 border-r border-gray-300">
+                  <th key={`sml-${col.key}`} className="px-2 py-1.5 text-left text-xs font-medium text-gray-600 dark:text-gray-400 border-r border-gray-300">
                     {col.label}
                   </th>
                 ))}
-                {/* SML columns */}
+                {/* Salesforce columns */}
                 {columns.map((col, idx) => (
-                  <th key={`sml-${col.key}`} className={`px-2 py-1.5 text-left text-xs font-medium text-gray-600 dark:text-gray-400 ${idx === columns.length - 1 ? 'border-r border-gray-400' : 'border-r border-gray-300'}`}>
+                  <th key={`sf-${col.key}`} className={`px-2 py-1.5 text-left text-xs font-medium text-gray-600 dark:text-gray-400 ${idx === columns.length - 1 ? 'border-r border-gray-400' : 'border-r border-gray-300'}`}>
                     {col.label}
                   </th>
                 ))}
@@ -543,23 +543,23 @@ const SMLComparisonModal = ({ isOpen, onClose, salesforceData, smlData, tenantNa
                       {formatValue(product.productCode)}
                     </td>
                     
-                    {/* Salesforce columns */}
+                    {/* SML columns */}
                     {columns.map(col => {
-                      const value = product.sf ? product.sf[col.key] : null;
+                      const value = product.sml ? product.sml[col.key] : null;
                       const isChanged = changedFieldsSet.has(col.key);
                       return (
-                        <td key={`sf-${col.key}`} className={`px-2 py-2 border-r border-gray-300 ${isChanged ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}`}>
+                        <td key={`sml-${col.key}`} className={`px-2 py-2 border-r border-gray-300 ${isChanged ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}`}>
                           {col.key.includes('Date') ? formatDate(value) : formatValue(value)}
                         </td>
                       );
                     })}
                     
-                    {/* SML columns */}
+                    {/* Salesforce columns */}
                     {columns.map((col, colIdx) => {
-                      const value = product.sml ? product.sml[col.key] : null;
+                      const value = product.sf ? product.sf[col.key] : null;
                       const isChanged = changedFieldsSet.has(col.key);
                       return (
-                        <td key={`sml-${col.key}`} className={`px-2 py-2 ${colIdx === columns.length - 1 ? 'border-r border-gray-400' : 'border-r border-gray-300'} ${isChanged ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}`}>
+                        <td key={`sf-${col.key}`} className={`px-2 py-2 ${colIdx === columns.length - 1 ? 'border-r border-gray-400' : 'border-r border-gray-300'} ${isChanged ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}`}>
                           {col.key.includes('Date') ? formatDate(value) : formatValue(value)}
                         </td>
                       );
@@ -591,11 +591,14 @@ const SMLComparisonModal = ({ isOpen, onClose, salesforceData, smlData, tenantNa
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Salesforce vs SML Comparison
+              SML vs Salesforce Comparison
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Tenant: <span className="font-medium">{tenantName || 'Unknown'}</span> | 
               PS Record: <span className="font-medium">{salesforceData.Name}</span>
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 italic">
+              Comparing current live SML state with requested Salesforce changes
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
