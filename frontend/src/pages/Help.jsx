@@ -10,7 +10,8 @@ import {
   Cog6ToothIcon,
   LightBulbIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  CloudArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 const Help = () => {
@@ -63,6 +64,45 @@ const Help = () => {
         'Use the export button to download filtered results',
         'Click product group badges (e.g., "2 Data, 1 App") to see individual product details',
         'The Actions menu (⋮) provides quick access to Audit Trail and other features',
+      ],
+    },
+    {
+      id: 'refresh-sml-data',
+      title: 'Refresh SML Data for Deprovision Requests',
+      icon: CloudArrowDownIcon,
+      color: 'amber',
+      steps: [
+        {
+          step: '1',
+          title: 'Navigate to Provisioning Monitor',
+          description: 'Go to Provisioning → Monitor from the sidebar',
+        },
+        {
+          step: '2',
+          title: 'Click Refresh SML Data Button',
+          description: 'Find the amber "Refresh SML Data" button in the action buttons section at the top of the page.',
+        },
+        {
+          step: '3',
+          title: 'Confirm Refresh',
+          description: 'Click "OK" in the confirmation dialog. The process will fetch fresh entitlement data from SML for all Deprovision requests.',
+        },
+        {
+          step: '4',
+          title: 'Wait for Background Processing',
+          description: 'The refresh runs in the background and takes ~8-10 minutes to process all Deprovision records. You can continue using the application.',
+        },
+        {
+          step: '5',
+          title: 'Refresh Page to See Results',
+          description: 'After a few minutes, refresh the Provisioning Monitor page to see updated entitlements in the Products column with +X★ indicators.',
+        },
+      ],
+      tips: [
+        'SML entitlements show with a amber ★ badge to distinguish them from payload data',
+        'The refresh is manual to give you control over when to fetch fresh data',
+        'All entitlements (including expired) are displayed for Deprovision requests',
+        'Click product buttons to see detailed entitlement information in a modal',
       ],
     },
     {
