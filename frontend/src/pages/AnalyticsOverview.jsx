@@ -5,7 +5,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { getRequestTypesAnalytics, getValidationTrend, getCompletionTimes } from '../services/analyticsService';
+import { getRequestTypesAnalytics, getValidationTrend, getCompletionTimes, publishToConfluence } from '../services/analyticsService';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -63,6 +63,11 @@ const AnalyticsOverview = () => {
   const [completionError, setCompletionError] = useState(null);
   const [completionPeriod, setCompletionPeriod] = useState(null);
   
+  // State for Confluence publishing
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(null);
+  const [publishError, setPublishError] = useState(null);
+  
   // State for timeframe selection
   const [timeframeMonths, setTimeframeMonths] = useState(getInitialTimeframe());
   
@@ -83,6 +88,30 @@ const AnalyticsOverview = () => {
   const fetchData = async () => {
     setLastRefresh(new Date());
     await Promise.all([fetchRequestTypesData(), fetchTrendData(), fetchCompletionData()]);
+  };
+  
+  // Handle publishing to Confluence
+  const handlePublishToConfluence = async () => {
+    setPublishLoading(true);
+    setPublishError(null);
+    setPublishSuccess(null);
+    
+    try {
+      // Anton Kaplan's personal space (account ID format)
+      const result = await publishToConfluence('~71202084b0c0d62c364df5b68d111f1d4f9bf1', 'Provisioning Analytics');
+      setPublishSuccess(`Successfully published to Confluence! View at: ${result.pageUrl}`);
+      
+      // Clear success message after 10 seconds
+      setTimeout(() => setPublishSuccess(null), 10000);
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to publish to Confluence';
+      setPublishError(errorMessage);
+      
+      // Clear error message after 10 seconds
+      setTimeout(() => setPublishError(null), 10000);
+    } finally {
+      setPublishLoading(false);
+    }
   };
 
   // Save user's timeframe preference when they change it
@@ -398,17 +427,80 @@ const AnalyticsOverview = () => {
             <div className="text-sm text-gray-500">
               Last refreshed: {formatTimestamp(lastRefresh)}
             </div>
-            <button
-              onClick={fetchData}
-              disabled={requestTypesLoading || trendLoading || completionLoading}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${(requestTypesLoading || trendLoading || completionLoading) ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={fetchData}
+                disabled={requestTypesLoading || trendLoading || completionLoading}
+                className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowPathIcon className={`h-4 w-4 ${(requestTypesLoading || trendLoading || completionLoading) ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+              
+              <button
+                onClick={handlePublishToConfluence}
+                disabled={publishLoading || requestTypesLoading || trendLoading || completionLoading}
+                className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Publish analytics to Confluence page"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className={`h-4 w-4 ${publishLoading ? 'animate-pulse' : ''}`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                {publishLoading ? 'Publishing...' : 'Publish to Confluence'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Publish Success/Error Messages */}
+      {publishSuccess && (
+        <div className="mx-6 mt-6 rounded-lg bg-green-50 border border-green-200 p-4">
+          <div className="flex items-start">
+            <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">{publishSuccess}</p>
+            </div>
+            <button 
+              onClick={() => setPublishSuccess(null)}
+              className="ml-auto text-green-600 hover:text-green-800"
+            >
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {publishError && (
+        <div className="mx-6 mt-6 rounded-lg bg-red-50 border border-red-200 p-4">
+          <div className="flex items-start">
+            <svg className="h-5 w-5 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{publishError}</p>
+            </div>
+            <button 
+              onClick={() => setPublishError(null)}
+              className="ml-auto text-red-600 hover:text-red-800"
+            >
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats Overview */}
       <section>

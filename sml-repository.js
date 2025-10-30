@@ -24,9 +24,11 @@ class SMLRepository {
             const configData = await fs.readFile(SML_CONFIG_FILE, 'utf8');
             this.config = JSON.parse(configData);
             console.log('✅ SML configuration loaded');
+            return this.config;
         } catch (error) {
             console.log('⚠️  No SML configuration found - needs to be configured in Settings');
             this.config = null;
+            return null;
         }
     }
 
@@ -67,6 +69,11 @@ class SMLRepository {
         console.log('📡 SML API Request:', url.toString());
 
         return new Promise((resolve, reject) => {
+            // Determine origin based on environment
+            const origin = this.config.environment === 'euw1' 
+                ? 'https://tenant-zero.rms.com'
+                : 'https://tenant-zero-us.rms.com';
+
             const requestOptions = {
                 hostname: url.hostname,
                 port: 443,
@@ -74,8 +81,11 @@ class SMLRepository {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${this.config.authCookie}`,
-                    'Accept': 'application/json',
-                    'User-Agent': 'DeploymentAssistant/1.0'
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Origin': origin,
+                    'Referer': `${origin}/`,
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
                 },
                 rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0'
             };

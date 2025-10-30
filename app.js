@@ -55,9 +55,12 @@ app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(cookieParser()); // Parse cookies for authentication
 
-// CORS disabled - serving React build directly from Express on port 8080
-// (VPN blocks port 8090, so we can't use Vite dev server)
-// Note: Static file serving moved to AFTER API routes to prevent conflicts
+// Enable CORS for development (Vite dev server on 8080)
+const cors = require('cors');
+app.use(cors({
+  origin: ['http://localhost:8080', 'http://localhost:5000'],
+  credentials: true
+}));
 
 // ===== AUTHENTICATION SETUP =====
 // Check if JWT_SECRET is set
@@ -1121,6 +1124,438 @@ function formatWeekLabel(weekStart) {
     return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
 }
 
+// Publish Analytics to Confluence
+app.post('/api/analytics/publish-to-confluence', async (req, res) => {
+    try {
+        console.log('📤 Publishing analytics to Confluence...');
+        
+        // Check for required Atlassian credentials
+        const missing = getMissingAtlassianEnvVars();
+        if (missing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                error: `Missing Atlassian credentials: ${missing.join(', ')}`
+            });
+        }
+        
+        const { spaceName, pageTitle } = req.body;
+        
+        if (!spaceName || !pageTitle) {
+            return res.status(400).json({
+                success: false,
+                error: 'Space name and page title are required'
+            });
+        }
+        
+        // Fetch analytics data
+        const validationEngine = require('./validation-engine');
+        const enabledRuleIds = validationEngine.getEnabledValidationRules().map(r => r.id);
+        
+        // Get request types data
+        const requestTypesResult = await salesforce.getWeeklyRequestTypeAnalytics(
+            new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
+            new Date(),
+            enabledRuleIds
+        );
+        
+        // Get completion times data
+        const database = require('./database');
+        const startDate = new Date('2025-10-13');
+        const completionQuery = `
+            WITH first_appearance AS (
+                SELECT DISTINCT ON (ps_record_id)
+                    ps_record_id,
+                    captured_at as first_seen_at,
+                    status as first_status
+                FROM ps_audit_trail
+                WHERE captured_at >= $1
+                ORDER BY ps_record_id, captured_at ASC
+            ),
+            completed_records AS (
+                SELECT DISTINCT 
+                    ps_record_id,
+                    ps_record_name,
+                    MIN(captured_at) FILTER (WHERE status = 'Tenant Request Completed') as completed_at
+                FROM ps_audit_trail
+                WHERE captured_at >= $1
+                    AND status = 'Tenant Request Completed'
+                GROUP BY ps_record_id, ps_record_name
+            ),
+            completion_times AS (
+                SELECT 
+                    cr.ps_record_name,
+                    cr.completed_at,
+                    fa.first_seen_at,
+                    EXTRACT(EPOCH FROM (cr.completed_at - fa.first_seen_at)) / 3600 as hours_to_complete,
+                    DATE_TRUNC('week', cr.completed_at::date)::date as week_start
+                FROM completed_records cr
+                INNER JOIN first_appearance fa ON cr.ps_record_id = fa.ps_record_id
+                WHERE cr.completed_at IS NOT NULL
+                    AND fa.first_seen_at IS NOT NULL
+                    AND cr.completed_at >= $1
+                    AND fa.first_status != 'Tenant Request Completed'
+                    AND cr.completed_at > fa.first_seen_at
+            )
+            SELECT 
+                week_start,
+                COUNT(*) as completed_count,
+                AVG(hours_to_complete) as avg_hours,
+                MIN(hours_to_complete) as min_hours,
+                MAX(hours_to_complete) as max_hours
+            FROM completion_times
+            WHERE week_start >= $1::date
+            GROUP BY week_start
+            ORDER BY week_start ASC;
+        `;
+        
+        const completionResult = await database.query(completionQuery, [startDate]);
+        
+        // Format data for Confluence
+        const confluenceContent = generateConfluenceHTML(requestTypesResult.data, completionResult.rows);
+        
+        // Find and update Confluence page
+        const updateResult = await updateConfluencePage(spaceName, pageTitle, confluenceContent);
+        
+        if (updateResult.success) {
+            res.json({
+                success: true,
+                message: 'Analytics published to Confluence successfully',
+                pageUrl: updateResult.pageUrl
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: updateResult.error
+            });
+        }
+        
+    } catch (err) {
+        console.error('❌ Error publishing to Confluence:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to publish to Confluence: ' + err.message
+        });
+    }
+});
+
+// Helper function to generate Confluence HTML content
+function generateConfluenceHTML(requestTypesData, completionData) {
+    const now = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    let html = `<h2>Provisioning Analytics Dashboard</h2>`;
+    html += `<p><em>Last Updated: ${now}</em></p>`;
+    html += `<ac:structured-macro ac:name="info"><ac:rich-text-body><p>This page is automatically generated from the DeployAssist analytics system.</p></ac:rich-text-body></ac:structured-macro>`;
+    
+    // Request Types Summary with Visual Cards and Pie Chart
+    html += `<h3>Technical Team Requests Summary</h3>`;
+    
+    // Add visual cards for each request type
+    if (requestTypesData && requestTypesData.length > 0) {
+        // Calculate total for percentage visualization
+        const totalRequests = requestTypesData.reduce((sum, item) => sum + item.count, 0);
+        
+        // Add pie chart using Chart from Table macro
+        html += `<div style="text-align: center;">`;
+        html += `<ac:structured-macro ac:name="chart from table" ac:schema-version="1">`;
+        html += `<ac:parameter ac:name="type">pie</ac:parameter>`;
+        html += `<ac:parameter ac:name="width">500</ac:parameter>`;
+        html += `<ac:parameter ac:name="height">350</ac:parameter>`;
+        html += `<ac:parameter ac:name="3D">true</ac:parameter>`;
+        html += `<ac:parameter ac:name="labels">0</ac:parameter>`;
+        html += `<ac:parameter ac:name="values">1</ac:parameter>`;
+        html += `<ac:parameter ac:name="title">Request Types Distribution</ac:parameter>`;
+        html += `<ac:rich-text-body>`;
+        html += `<table><tbody>`;
+        html += `<tr><th>Request Type</th><th>Count</th></tr>`;
+        requestTypesData.forEach(item => {
+            html += `<tr><td>${item.requestType}</td><td>${item.count}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        html += `</ac:rich-text-body>`;
+        html += `</ac:structured-macro>`;
+        html += `</div>`;
+        html += `<p></p>`; // spacing
+        
+        html += `<ac:layout><ac:layout-section ac:type="two_equal">`;
+        
+        requestTypesData.forEach((item, index) => {
+            // Determine color based on request type
+            let statusColor = 'blue';
+            if (item.requestType.includes('New')) statusColor = 'green';
+            else if (item.requestType.includes('Update')) statusColor = 'blue';
+            else if (item.requestType.includes('Deprovision')) statusColor = 'red';
+            
+            // Create a cell for each request type
+            html += `<ac:layout-cell>`;
+            html += `<ac:structured-macro ac:name="panel" ac:schema-version="1">`;
+            html += `<ac:parameter ac:name="borderStyle">solid</ac:parameter>`;
+            html += `<ac:parameter ac:name="borderColor">#ccc</ac:parameter>`;
+            html += `<ac:rich-text-body>`;
+            html += `<p><strong style="font-size: 16px;">${item.requestType}</strong></p>`;
+            html += `<p style="font-size: 32px; font-weight: bold; color: #0052CC; margin: 10px 0;">${item.count}</p>`;
+            html += `<p style="font-size: 14px; color: #6B778C;">${item.percentage}% of total requests</p>`;
+            
+            // Add validation failure info if present
+            if (item.validationFailures > 0) {
+                html += `<p style="font-size: 12px; color: #DE350B; margin-top: 10px;">`;
+                html += `⚠️ ${item.validationFailures} validation failures (${item.validationFailureRate}%)`;
+                html += `</p>`;
+            }
+            
+            html += `</ac:rich-text-body>`;
+            html += `</ac:structured-macro>`;
+            html += `</ac:layout-cell>`;
+            
+            // Start new row after every 2 items
+            if ((index + 1) % 2 === 0 && index < requestTypesData.length - 1) {
+                html += `</ac:layout-section><ac:layout-section ac:type="two_equal">`;
+            }
+        });
+        
+        html += `</ac:layout-section></ac:layout>`;
+        html += `<p></p>`; // spacing
+    }
+    
+    // Add detailed table
+    html += `<table><thead><tr><th>Request Type</th><th>Count</th><th>Percentage</th><th>Validation Failures</th><th>Failure Rate</th></tr></thead><tbody>`;
+    
+    if (requestTypesData && requestTypesData.length > 0) {
+        requestTypesData.forEach(item => {
+            html += `<tr>`;
+            html += `<td><strong>${item.requestType}</strong></td>`;
+            html += `<td>${item.count}</td>`;
+            html += `<td>${item.percentage}%</td>`;
+            html += `<td>${item.validationFailures}</td>`;
+            html += `<td>${item.validationFailureRate}%</td>`;
+            html += `</tr>`;
+        });
+    } else {
+        html += `<tr><td colspan="5"><em>No data available</em></td></tr>`;
+    }
+    
+    html += `</tbody></table>`;
+    
+    // Completion Times with Visual Summary
+    html += `<h3>Weekly Provisioning Completion Times</h3>`;
+    html += `<p>Average time to complete provisioning requests per week (from first appearance to completion).</p>`;
+    
+    // Add summary statistics if we have data
+    if (completionData && completionData.length > 0) {
+        // Calculate overall statistics
+        const totalCompleted = completionData.reduce((sum, row) => sum + parseInt(row.completed_count), 0);
+        const avgCompletionTime = completionData.reduce((sum, row) => sum + parseFloat(row.avg_hours), 0) / completionData.length;
+        const minTime = Math.min(...completionData.map(row => parseFloat(row.min_hours)));
+        const maxTime = Math.max(...completionData.map(row => parseFloat(row.max_hours)));
+        
+        // Add summary panels
+        html += `<ac:layout><ac:layout-section ac:type="three_equal">`;
+        
+        // Total completed
+        html += `<ac:layout-cell>`;
+        html += `<ac:structured-macro ac:name="panel" ac:schema-version="1">`;
+        html += `<ac:parameter ac:name="bgColor">#E3FCEF</ac:parameter>`;
+        html += `<ac:rich-text-body>`;
+        html += `<p style="text-align: center;"><strong>Total Completed</strong></p>`;
+        html += `<p style="text-align: center; font-size: 28px; font-weight: bold; color: #00875A; margin: 5px 0;">${totalCompleted}</p>`;
+        html += `<p style="text-align: center; font-size: 12px; color: #6B778C;">requests</p>`;
+        html += `</ac:rich-text-body>`;
+        html += `</ac:structured-macro>`;
+        html += `</ac:layout-cell>`;
+        
+        // Average time
+        html += `<ac:layout-cell>`;
+        html += `<ac:structured-macro ac:name="panel" ac:schema-version="1">`;
+        html += `<ac:parameter ac:name="bgColor">#DEEBFF</ac:parameter>`;
+        html += `<ac:rich-text-body>`;
+        html += `<p style="text-align: center;"><strong>Average Time</strong></p>`;
+        html += `<p style="text-align: center; font-size: 28px; font-weight: bold; color: #0052CC; margin: 5px 0;">${avgCompletionTime.toFixed(1)}</p>`;
+        html += `<p style="text-align: center; font-size: 12px; color: #6B778C;">hours</p>`;
+        html += `</ac:rich-text-body>`;
+        html += `</ac:structured-macro>`;
+        html += `</ac:layout-cell>`;
+        
+        // Time range
+        html += `<ac:layout-cell>`;
+        html += `<ac:structured-macro ac:name="panel" ac:schema-version="1">`;
+        html += `<ac:parameter ac:name="bgColor">#FFF0B3</ac:parameter>`;
+        html += `<ac:rich-text-body>`;
+        html += `<p style="text-align: center;"><strong>Time Range</strong></p>`;
+        html += `<p style="text-align: center; font-size: 20px; font-weight: bold; color: #FF8B00; margin: 5px 0;">${minTime.toFixed(1)} - ${maxTime.toFixed(1)}</p>`;
+        html += `<p style="text-align: center; font-size: 12px; color: #6B778C;">hours (min - max)</p>`;
+        html += `</ac:rich-text-body>`;
+        html += `</ac:structured-macro>`;
+        html += `</ac:layout-cell>`;
+        
+        html += `</ac:layout-section></ac:layout>`;
+        html += `<p></p>`; // spacing
+    }
+    
+    // Add bar chart for completion times using Chart from Table macro
+    if (completionData && completionData.length > 0) {
+        html += `<div style="text-align: center;">`;
+        html += `<ac:structured-macro ac:name="chart from table" ac:schema-version="1">`;
+        html += `<ac:parameter ac:name="type">bar</ac:parameter>`;
+        html += `<ac:parameter ac:name="width">800</ac:parameter>`;
+        html += `<ac:parameter ac:name="height">400</ac:parameter>`;
+        html += `<ac:parameter ac:name="labels">0</ac:parameter>`;
+        html += `<ac:parameter ac:name="values">1</ac:parameter>`;
+        html += `<ac:parameter ac:name="title">Average Completion Time by Week (Hours)</ac:parameter>`;
+        html += `<ac:parameter ac:name="orientation">vertical</ac:parameter>`;
+        html += `<ac:rich-text-body>`;
+        html += `<table><tbody>`;
+        html += `<tr><th>Week</th><th>Avg Hours</th></tr>`;
+        completionData.forEach(row => {
+            const weekLabel = formatWeekLabel(new Date(row.week_start));
+            html += `<tr><td>${weekLabel}</td><td>${parseFloat(row.avg_hours).toFixed(2)}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        html += `</ac:rich-text-body>`;
+        html += `</ac:structured-macro>`;
+        html += `</div>`;
+        html += `<p></p>`; // spacing
+    }
+    
+    // Add detailed table with visual indicators
+    html += `<h4>Weekly Breakdown</h4>`;
+    html += `<table><thead><tr><th>Week</th><th>Completed Requests</th><th>Avg Hours</th><th>Min Hours</th><th>Max Hours</th><th>Performance</th></tr></thead><tbody>`;
+    
+    if (completionData && completionData.length > 0) {
+        completionData.forEach(row => {
+            const weekLabel = formatWeekLabel(new Date(row.week_start));
+            const avgHours = parseFloat(row.avg_hours);
+            
+            // Determine performance indicator based on average hours
+            let performanceIcon = '🟢';
+            let performanceText = 'Excellent';
+            if (avgHours > 24) {
+                performanceIcon = '🔴';
+                performanceText = 'Needs Attention';
+            } else if (avgHours > 12) {
+                performanceIcon = '🟡';
+                performanceText = 'Good';
+            }
+            
+            html += `<tr>`;
+            html += `<td><strong>${weekLabel}</strong></td>`;
+            html += `<td style="text-align: center;">${row.completed_count}</td>`;
+            html += `<td style="text-align: center;"><strong>${avgHours.toFixed(2)}</strong></td>`;
+            html += `<td style="text-align: center;">${parseFloat(row.min_hours).toFixed(2)}</td>`;
+            html += `<td style="text-align: center;">${parseFloat(row.max_hours).toFixed(2)}</td>`;
+            html += `<td style="text-align: center;">${performanceIcon} ${performanceText}</td>`;
+            html += `</tr>`;
+        });
+    } else {
+        html += `<tr><td colspan="6"><em>No completion data available</em></td></tr>`;
+    }
+    
+    html += `</tbody></table>`;
+    
+    return html;
+}
+
+// Helper function to update Confluence page
+async function updateConfluencePage(spaceName, pageTitle, content) {
+    try {
+        const baseUrl = ATLASSIAN_CONFIG.siteUrl;
+        const authString = `${ATLASSIAN_CONFIG.email}:${ATLASSIAN_CONFIG.apiToken}`;
+        const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+        
+        // Step 1: Find the page by title and space
+        console.log(`🔍 Searching for Confluence page "${pageTitle}" in space "${spaceName}"...`);
+        
+        const searchUrl = `${baseUrl}/wiki/rest/api/content?spaceKey=${encodeURIComponent(spaceName)}&title=${encodeURIComponent(pageTitle)}&expand=version`;
+        const searchResult = await makeHttpsRequest(searchUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!searchResult.success) {
+            console.error('❌ Search API failed:', searchResult.error);
+            return {
+                success: false,
+                error: `Failed to search for page: ${searchResult.error}`
+            };
+        }
+        
+        const searchData = searchResult.data;
+        
+        if (!searchData.results || searchData.results.length === 0) {
+            return {
+                success: false,
+                error: `Page "${pageTitle}" not found in space "${spaceName}"`
+            };
+        }
+        
+        const page = searchData.results[0];
+        const pageId = page.id;
+        const currentVersion = page.version.number;
+        
+        console.log(`✓ Found page: ${pageTitle} (ID: ${pageId}, Version: ${currentVersion})`);
+        
+        // Step 2: Update the page
+        console.log(`📝 Updating page content...`);
+        
+        const updateUrl = `${baseUrl}/wiki/rest/api/content/${pageId}`;
+        const updateBody = JSON.stringify({
+            version: {
+                number: currentVersion + 1
+            },
+            title: pageTitle,
+            type: 'page',
+            body: {
+                storage: {
+                    value: content,
+                    representation: 'storage'
+                }
+            }
+        });
+        
+        const updateResult = await makeHttpsRequest(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: updateBody
+        });
+        
+        if (!updateResult.success) {
+            console.error('❌ Update API failed:', updateResult.error);
+            return {
+                success: false,
+                error: `Failed to update page: ${updateResult.error}`
+            };
+        }
+        
+        const updateData = updateResult.data;
+        const pageUrl = `${baseUrl}/wiki${updateData._links.webui}`;
+        
+        console.log(`✅ Successfully updated Confluence page: ${pageUrl}`);
+        
+        return {
+            success: true,
+            pageUrl: pageUrl
+        };
+        
+    } catch (err) {
+        console.error('❌ Confluence API error:', err.message);
+        return {
+            success: false,
+            error: err.message
+        };
+    }
+}
+
 // Professional Services Requests API
 app.get('/api/provisioning/requests', async (req, res) => {
     try {
@@ -1586,6 +2021,178 @@ app.get('/api/validation/errors', async (req, res) => {
 
 // Note: Duplicate provisioning API endpoints removed to avoid conflicts
 // The main provisioning endpoints are defined earlier in the file
+
+// ===== ASYNC VALIDATION RESULTS API =====
+
+// Get async validation results for PS records
+app.get('/api/validation/async-results', async (req, res) => {
+    try {
+        console.log('📊 Fetching async validation results...', req.query);
+        
+        const { Pool } = require('pg');
+        const pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false
+        });
+        
+        const { recordIds } = req.query; // Comma-separated list of record IDs
+        
+        if (!recordIds) {
+            return res.json({
+                success: true,
+                results: [],
+                count: 0,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        const recordIdArray = recordIds.split(',');
+        
+        // Query async validation results for the given record IDs
+        const query = `
+            SELECT 
+                ps_record_id,
+                ps_record_name,
+                rule_id,
+                rule_name,
+                status,
+                message,
+                details,
+                sml_entitlements,
+                active_entitlements_count,
+                processing_completed_at,
+                created_at,
+                updated_at
+            FROM async_validation_results
+            WHERE ps_record_id = ANY($1)
+            ORDER BY updated_at DESC
+        `;
+        
+        const result = await pool.query(query, [recordIdArray]);
+        await pool.end();
+        
+        res.json({
+            success: true,
+            results: result.rows,
+            count: result.rows.length,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching async validation results:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get async validation processing status
+app.get('/api/validation/async-status', async (req, res) => {
+    try {
+        console.log('📊 Fetching async validation processing status...');
+        
+        const { Pool } = require('pg');
+        const pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false
+        });
+        
+        // Get latest processing log entry
+        const logQuery = `
+            SELECT *
+            FROM async_validation_processing_log
+            ORDER BY created_at DESC
+            LIMIT 1
+        `;
+        
+        // Get summary statistics
+        const statsQuery = `
+            SELECT 
+                COUNT(*) as total_results,
+                COUNT(CASE WHEN status = 'WARNING' THEN 1 END) as warning_count,
+                COUNT(CASE WHEN status = 'PASS' THEN 1 END) as pass_count,
+                COUNT(CASE WHEN status = 'ERROR' THEN 1 END) as error_count,
+                MAX(updated_at) as last_updated
+            FROM async_validation_results
+            WHERE rule_id = 'deprovision-active-entitlements-check'
+        `;
+        
+        const [logResult, statsResult] = await Promise.all([
+            pool.query(logQuery),
+            pool.query(statsQuery)
+        ]);
+        
+        await pool.end();
+        
+        res.json({
+            success: true,
+            lastProcessing: logResult.rows[0] || null,
+            statistics: statsResult.rows[0] || null,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching async validation status:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Trigger SML data refresh for Deprovision records
+app.post('/api/validation/refresh-sml-data', async (req, res) => {
+    try {
+        console.log('🔄 Manual SML data refresh triggered...');
+        
+        const { spawn } = require('child_process');
+        const path = require('path');
+        
+        // Run the background script
+        const scriptPath = path.join(__dirname, 'process-sml-validation.js');
+        const childProcess = spawn('node', [scriptPath], {
+            detached: false,
+            stdio: 'pipe'
+        });
+        
+        let output = '';
+        let errorOutput = '';
+        
+        childProcess.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+        
+        childProcess.stderr.on('data', (data) => {
+            errorOutput += data.toString();
+        });
+        
+        childProcess.on('close', (code) => {
+            if (code === 0) {
+                console.log('✅ SML data refresh completed successfully');
+            } else {
+                console.error('❌ SML data refresh failed with code:', code);
+            }
+        });
+        
+        // Respond immediately with job started status
+        res.json({
+            success: true,
+            message: 'SML data refresh started in background',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error starting SML data refresh:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
 
 // ===== EXPIRATION MONITOR API ENDPOINTS =====
 

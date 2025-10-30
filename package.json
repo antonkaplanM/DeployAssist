@@ -26,11 +26,13 @@
     "type-check": "tsc --noEmit",
     "audit:backfill": "node backfill-ps-audit.js",
     "audit:capture": "node capture-ps-changes.js",
-    "audit:fix-names": "node update-audit-account-names.js"
+    "audit:fix-names": "node update-audit-account-names.js",
+    "audit:analyze-payloads": "node analyze-ps-payloads.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "db-migrate": "^0.11.14",
     "db-migrate-pg": "^1.5.2",
     "dotenv": "^17.2.2",

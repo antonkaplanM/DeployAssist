@@ -231,21 +231,41 @@ export const getValidationTooltip = (result) => {
 
 /**
  * Parse entitlements from payload
+ * Tries multiple paths to find entitlements in the payload
  */
 export const parseEntitlements = (payloadData) => {
-  if (!payloadData) return null;
+  if (!payloadData) {
+    console.log('[parseEntitlements] No payload data provided');
+    return null;
+  }
 
   try {
     const payload = JSON.parse(payloadData);
-    const entitlements = payload.properties?.provisioningDetail?.entitlements || {};
     
-    return {
+    // Try multiple paths to find entitlements (matching backend logic)
+    const entitlements = payload.properties?.provisioningDetail?.entitlements ||
+                        payload.entitlements ||
+                        payload ||
+                        {};
+    
+    const result = {
       models: entitlements.modelEntitlements || [],
       data: entitlements.dataEntitlements || [],
       apps: entitlements.appEntitlements || [],
     };
+    
+    const totalCount = result.models.length + result.data.length + result.apps.length;
+    console.log('[parseEntitlements] Parsed entitlements:', {
+      models: result.models.length,
+      data: result.data.length,
+      apps: result.apps.length,
+      total: totalCount,
+      payloadStructure: Object.keys(payload).slice(0, 5) // Show top-level keys for debugging
+    });
+    
+    return result;
   } catch (error) {
-    console.error('Error parsing entitlements:', error);
+    console.error('[parseEntitlements] Error parsing entitlements:', error);
     return null;
   }
 };

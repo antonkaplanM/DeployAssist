@@ -966,61 +966,105 @@ const Settings = () => {
             {/* Validation Rules */}
             {activeSection === 'validation' && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-900">Data Validation Rules</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Data Validation Rules</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Configure validation rules for Technical Team Request records
                 </p>
                 
                 <div className="pt-4 space-y-4">
+                  {/* Background Processing Info */}
+                  {validationRules.some(r => r.isBackgroundRule && r.enabled) && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <ExclamationCircleIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Background Processing Active</h4>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Some validation rules run asynchronously in the background (every 10 minutes). 
+                            Results are stored in the database and displayed in the Provisioning Monitor. 
+                            The "Test Rules" button will test synchronous rules only.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handleTestValidationRules}
                       disabled={loadingStates.validationTest}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
+                      className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50 text-sm"
                     >
                       {loadingStates.validationTest ? 'Testing...' : 'Test Rules'}
                     </button>
                     <button
                       onClick={handleDebugJSON}
                       disabled={loadingStates.debugJSON}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm"
+                      className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 text-sm"
                     >
                       {loadingStates.debugJSON ? 'Loading...' : 'Debug JSON'}
                   </button>
                   </div>
+                  
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Test the enabled validation rules against recent PS records. Background rules are tested separately by the scheduled task.
+                  </p>
 
                   {/* Rules Summary */}
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="text-xs text-gray-600 mb-1">Total Rules</div>
-                      <div className="text-2xl font-bold text-gray-900">{validationRules.length}</div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Rules</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{validationRules.length}</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="text-xs text-gray-600 mb-1">Enabled Rules</div>
-                      <div className="text-2xl font-bold text-green-600">{enabledRulesCount}</div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Enabled Rules</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{enabledRulesCount}</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="text-xs text-gray-600 mb-1">Last Updated</div>
-                      <div className="text-xs text-gray-900 mt-2">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Last Updated</div>
+                      <div className="text-xs text-gray-900 dark:text-gray-100 mt-2">
                         {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Never'}
                       </div>
                     </div>
                   </div>
 
                   {/* Validation Rules List */}
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-semibold mb-3 text-gray-900">Validation Rules</h3>
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-gray-100">Validation Rules</h3>
                     <div className="space-y-3">
                       {validationRules.map((rule) => (
-                        <div key={rule.id} className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                        <div key={rule.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-gray-900">{rule.name}</h4>
-                              <p className="text-xs text-gray-600 mt-1">{rule.description}</p>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{rule.name}</h4>
+                                {rule.async && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                    Async
+                                  </span>
+                                )}
+                                {rule.requiresSML && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                    SML
+                                  </span>
+                                )}
+                                {rule.isBackgroundRule && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                    Background
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{rule.description}</p>
+                              {rule.isBackgroundRule && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-start gap-1">
+                                  <ExclamationCircleIcon className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                  <span>Results processed in background every 10 minutes. Use "Test Rules" to simulate with sample data.</span>
+                                </p>
+                              )}
                               <div className="flex items-center gap-4 mt-2">
-                                <span className="text-xs text-gray-500">Category: {rule.category}</span>
-                                <span className="text-xs text-gray-500">Version: {rule.version}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Category: {rule.category}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Version: {rule.version}</span>
                               </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -1030,7 +1074,7 @@ const Settings = () => {
                                 checked={rule.enabled}
                                 onChange={() => handleToggleValidationRule(rule.id)}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-700 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                           </div>
                         </div>
@@ -1040,10 +1084,10 @@ const Settings = () => {
 
                   {/* Test Results */}
                   {validationTestResults && (
-                    <div className="border-t pt-4">
-                      <h3 className="text-sm font-semibold mb-3 text-gray-900">Test Results</h3>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <pre className="text-xs overflow-auto max-h-96 text-gray-900">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-gray-100">Test Results</h3>
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
+                        <pre className="text-xs overflow-auto max-h-96 text-gray-900 dark:text-gray-100">
                           {JSON.stringify(validationTestResults, null, 2)}
                         </pre>
                 </div>
@@ -1052,10 +1096,10 @@ const Settings = () => {
 
                   {/* Debug Results */}
                   {debugResults && (
-                    <div className="border-t pt-4">
-                      <h3 className="text-sm font-semibold mb-3 text-gray-900">JSON Structure Analysis</h3>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <pre className="text-xs overflow-auto max-h-96 text-gray-900">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-gray-100">JSON Structure Analysis</h3>
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
+                        <pre className="text-xs overflow-auto max-h-96 text-gray-900 dark:text-gray-100">
                           {JSON.stringify(debugResults, null, 2)}
                         </pre>
                       </div>

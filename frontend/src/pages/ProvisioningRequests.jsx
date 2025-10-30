@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { 
   ArrowPathIcon,
   ArrowDownTrayIcon,
-  FunnelIcon
+  FunnelIcon,
+  CloudArrowDownIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductModal from '../components/features/ProductModal';
@@ -44,6 +45,8 @@ const ProvisioningRequests = () => {
     pageSize: 25,
   });
   const [validationResults, setValidationResults] = useState(new Map());
+  const [asyncValidationResults, setAsyncValidationResults] = useState(new Map());
+  const [smlRefreshLoading, setSmlRefreshLoading] = useState(false);
   const [productModal, setProductModal] = useState({
     isOpen: false,
     products: [],
@@ -151,12 +154,39 @@ const ProvisioningRequests = () => {
           validations.set(record.Id, result);
         });
         setValidationResults(validations);
+
+        // Fetch async validation results for all records
+        if (filteredRecords.length > 0) {
+          fetchAsyncValidationResults(filteredRecords.map(r => r.Id));
+        }
       }
     } catch (err) {
       console.error('Error fetching provisioning requests:', err);
       setError(err.message || 'Failed to load provisioning requests');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAsyncValidationResults = async (recordIds) => {
+    try {
+      const response = await fetch(`/api/validation/async-results?recordIds=${recordIds.join(',')}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Group results by record ID
+        const resultsMap = new Map();
+        data.results.forEach(result => {
+          if (!resultsMap.has(result.ps_record_id)) {
+            resultsMap.set(result.ps_record_id, []);
+          }
+          resultsMap.get(result.ps_record_id).push(result);
+        });
+        setAsyncValidationResults(resultsMap);
+        console.log('📊 Loaded async validation results for', resultsMap.size, 'records');
+      }
+    } catch (err) {
+      console.error('Error fetching async validation results:', err);
     }
   };
 
@@ -191,6 +221,36 @@ const ProvisioningRequests = () => {
         throw error;
       }
       return { success: false, results: { technicalRequests: [], accounts: [] } };
+    }
+  };
+
+  const handleRefreshSMLData = async () => {
+    if (!window.confirm('This will fetch fresh entitlement data from SML for all Deprovision requests. This may take several minutes. Continue?')) {
+      return;
+    }
+
+    setSmlRefreshLoading(true);
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/validation/refresh-sml-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('SML data refresh started! This will run in the background. Refresh the page in a few minutes to see updated results.');
+      } else {
+        alert(`Error: ${data.error || 'Failed to start SML data refresh'}`);
+      }
+    } catch (error) {
+      console.error('Error triggering SML refresh:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setSmlRefreshLoading(false);
     }
   };
 
@@ -356,15 +416,47 @@ const ProvisioningRequests = () => {
   const renderProductsColumn = (request) => {
     const entitlements = parseEntitlements(request.Payload_Data__c);
     const validationResult = validationResults.get(request.Id);
+    const asyncResults = asyncValidationResults.get(request.Id);
     
-    if (!entitlements) {
+    console.log('[renderProductsColumn] Request:', request.Name, 'Entitlements:', entitlements);
+    
+    // Check if this is a Deprovision request with SML entitlements
+    const isDeprovisionRequest = request.TenantRequestAction__c === 'Deprovision';
+    let smlEntitlements = null;
+    
+    if (isDeprovisionRequest && asyncResults) {
+      const deprovisionResult = asyncResults.find(
+        r => r.rule_id === 'deprovision-active-entitlements-check' && r.sml_entitlements
+      );
+      if (deprovisionResult && deprovisionResult.sml_entitlements) {
+        smlEntitlements = deprovisionResult.sml_entitlements;
+      }
+    }
+    
+    if (!entitlements && !smlEntitlements) {
+      console.log('[renderProductsColumn] No entitlements or SML data for', request.Name);
       return <span className="text-xs text-gray-500">No payload data</span>;
     }
 
-    const { models, data, apps } = entitlements;
+    const models = entitlements?.models || [];
+    const data = entitlements?.data || [];
+    const apps = entitlements?.apps || [];
+    
+    // Add SML entitlements for Deprovision requests
+    let smlModels = [];
+    let smlData = [];
+    let smlApps = [];
+    
+    if (smlEntitlements) {
+      smlModels = smlEntitlements.models || [];
+      smlData = smlEntitlements.data || [];
+      smlApps = smlEntitlements.apps || [];
+    }
+    
     const totalCount = models.length + data.length + apps.length;
+    const smlTotalCount = smlModels.length + smlData.length + smlApps.length;
 
-    if (totalCount === 0) {
+    if (totalCount === 0 && smlTotalCount === 0) {
       return <span className="text-xs text-gray-500">No entitlements</span>;
     }
 
@@ -425,42 +517,91 @@ const ProvisioningRequests = () => {
     const dataHasFailure = data.length > 0 && hasValidationFailureForType('data');
     const appsHasFailure = apps.length > 0 && hasValidationFailureForType('apps');
 
+    // Merge payload and SML entitlements for Deprovision requests
+    const mergedModels = isDeprovisionRequest && smlEntitlements ? [...models, ...smlModels] : models;
+    const mergedData = isDeprovisionRequest && smlEntitlements ? [...data, ...smlData] : data;
+    const mergedApps = isDeprovisionRequest && smlEntitlements ? [...apps, ...smlApps] : apps;
+
+    // Create modal data that includes source information
+    const createModalData = (payloadItems, smlItems, type) => {
+      const marked = [...payloadItems.map(item => ({ ...item, source: 'payload' }))];
+      if (isDeprovisionRequest && smlItems.length > 0) {
+        marked.push(...smlItems.map(item => ({ ...item, source: 'sml' })));
+      }
+      return marked;
+    };
+
+    const grandTotal = mergedModels.length + mergedData.length + mergedApps.length;
+
+    console.log('[renderProductsColumn] About to render:', request.Name, {
+      mergedModels: mergedModels.length,
+      mergedData: mergedData.length,
+      mergedApps: mergedApps.length,
+      grandTotal
+    });
+
     return (
       <div className="flex flex-wrap gap-1">
-        {models.length > 0 && (
+        {mergedModels.length > 0 && (
           <button
-            onClick={() => openProductModal(models, 'models', request.Name, validationResult)}
+            onClick={() => openProductModal(
+              createModalData(models, smlModels, 'models'), 
+              'models', 
+              request.Name, 
+              validationResult
+            )}
             className={`inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors ${
               modelsHasFailure ? 'ring-2 ring-red-400' : ''
             }`}
           >
-            📊 Models ({models.length})
+            📊 Models ({mergedModels.length})
+            {smlModels.length > 0 && (
+              <span className="text-[10px] text-blue-500 ml-0.5">+{smlModels.length}★</span>
+            )}
           </button>
         )}
-        {data.length > 0 && (
+        {mergedData.length > 0 && (
           <button
-            onClick={() => openProductModal(data, 'data', request.Name, validationResult)}
+            onClick={() => openProductModal(
+              createModalData(data, smlData, 'data'),
+              'data', 
+              request.Name, 
+              validationResult
+            )}
             className={`inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors ${
               dataHasFailure ? 'ring-2 ring-red-400' : ''
             }`}
           >
-            💾 Data ({data.length})
+            💾 Data ({mergedData.length})
+            {smlData.length > 0 && (
+              <span className="text-[10px] text-green-500 ml-0.5">+{smlData.length}★</span>
+            )}
           </button>
         )}
-        {apps.length > 0 && (
+        {mergedApps.length > 0 && (
           <button
-            onClick={() => openProductModal(apps, 'apps', request.Name, validationResult)}
+            onClick={() => openProductModal(
+              createModalData(apps, smlApps, 'apps'),
+              'apps', 
+              request.Name, 
+              validationResult
+            )}
             className={`inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors ${
               appsHasFailure ? 'ring-2 ring-red-400' : ''
             }`}
           >
-            📱 Apps ({apps.length})
+            📱 Apps ({mergedApps.length})
+            {smlApps.length > 0 && (
+              <span className="text-[10px] text-purple-500 ml-0.5">+{smlApps.length}★</span>
+            )}
           </button>
         )}
-        <span className="text-xs text-gray-500 dark:text-gray-400 px-1">({totalCount} total)</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 px-1">({grandTotal} total)</span>
       </div>
     );
   };
+
+  console.log('[ProvisioningRequests] renderProductsColumn defined, requests count:', requests.length);
 
   const renderValidationColumn = (request) => {
     const result = validationResults.get(request.Id);
@@ -468,7 +609,7 @@ const ProvisioningRequests = () => {
     if (!result) {
       return (
         <span 
-          className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-800"
+          className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
           title="All validation rules passed"
         >
           Pass
@@ -476,9 +617,16 @@ const ProvisioningRequests = () => {
       );
     }
 
-    const statusClass = result.overallStatus === 'PASS' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-red-100 text-red-800';
+    // Determine status class based on overall status: FAIL (red), WARNING (yellow), PASS (green)
+    let statusClass;
+    if (result.overallStatus === 'FAIL') {
+      statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+    } else if (result.overallStatus === 'WARNING') {
+      statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+    } else {
+      statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    }
+    
     const tooltip = getValidationTooltip(result);
 
     return (
@@ -607,6 +755,15 @@ const ProvisioningRequests = () => {
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
+          </button>
+          <button
+            onClick={handleRefreshSMLData}
+            disabled={smlRefreshLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-800 disabled:opacity-50 transition-colors"
+            title="Fetch fresh SML entitlement data for Deprovision requests"
+          >
+            <CloudArrowDownIcon className={`h-4 w-4 ${smlRefreshLoading ? 'animate-bounce' : ''}`} />
+            {smlRefreshLoading ? 'Refreshing SML...' : 'Refresh SML Data'}
           </button>
           <button
             onClick={handleExport}

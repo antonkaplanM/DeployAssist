@@ -5065,7 +5065,16 @@ function renderValidationColumn(record) {
         return `<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-800" title="All validation rules passed">Pass</span>`;
     }
     
-    const statusClass = result.overallStatus === 'PASS' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    // Determine status class based on overall status: FAIL (red), WARNING (yellow), PASS (green)
+    let statusClass;
+    if (result.overallStatus === 'FAIL') {
+        statusClass = 'bg-red-100 text-red-800';
+    } else if (result.overallStatus === 'WARNING') {
+        statusClass = 'bg-yellow-100 text-yellow-800';
+    } else {
+        statusClass = 'bg-green-100 text-green-800';
+    }
+    
     const tooltip = ValidationEngine.getValidationTooltip(result);
     
     return `<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusClass}" title="${tooltip}">${result.overallStatus}</span>`;

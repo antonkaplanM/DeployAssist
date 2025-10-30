@@ -33,9 +33,23 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
     return item.isExpired === true || item.status === 'expired';
   };
 
-  // Check if an individual item has a validation issue
+  // Check if an entitlement is active (not yet expired)
+  const isEntitlementActive = (item) => {
+    const endDate = getEndDate(item);
+    if (!endDate || endDate === '—') return false;
+    
+    try {
+      const endDateObj = new Date(endDate);
+      const now = new Date();
+      return endDateObj > now;
+    } catch {
+      return false;
+    }
+  };
+
+  // Check if an individual item has a validation issue (FAIL or WARNING)
   const hasValidationIssue = (item, index) => {
-    if (!validationResult || validationResult.overallStatus !== 'FAIL') {
+    if (!validationResult || (validationResult.overallStatus !== 'FAIL' && validationResult.overallStatus !== 'WARNING')) {
       return false;
     }
 
@@ -106,15 +120,77 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
         // Exceptions: DATAAPI-LOCINTEL, IC-RISKDATALAKE, RI-COMETA, and DATAAPI-BULK-GEOCODE don't require package names
         const isException = productCode === 'DATAAPI-LOCINTEL' || productCode === 'IC-RISKDATALAKE' || 
                            productCode === 'RI-COMETA' || productCode === 'DATAAPI-BULK-GEOCODE';
-
-        // An app fails if packageName is missing or empty, UNLESS it's an exception product
-        if ((!packageName || packageName === '—' || packageName.trim() === '') && !isException) {
+        
+        if (!isException && (!packageName || packageName === '—' || packageName.trim() === '')) {
           return true;
         }
       }
     }
 
+    // Look for deprovision active entitlements warning
+    const deprovisionRule = validationResult.ruleResults?.find(rule =>
+      rule.ruleId === 'deprovision-active-entitlements-check' && rule.status === 'WARNING'
+    );
+
+    if (deprovisionRule?.details?.activeEntitlements) {
+      // Check if this specific entitlement is in the active list
+      const productCode = getProductCode(item);
+      const endDate = getEndDate(item);
+      
+      const isInActiveList = deprovisionRule.details.activeEntitlements.some(activeEnt => {
+        // Match by product code
+        if (activeEnt.productCode !== productCode) return false;
+        
+        // Also check end date if available
+        if (endDate && endDate !== '—' && activeEnt.endDate) {
+          try {
+            const itemEndDate = new Date(endDate).toISOString().split('T')[0];
+            const activeEndDate = new Date(activeEnt.endDate).toISOString().split('T')[0];
+            return itemEndDate === activeEndDate;
+          } catch {
+            return true; // If date parsing fails, assume it's a match
+          }
+        }
+        
+        return true;
+      });
+      
+      if (isInActiveList && isEntitlementActive(item)) {
+        return 'warning'; // Special return value for warning (yellow) highlighting
+      }
+    }
+
     return false;
+  };
+
+  // Get validation issue type (fail or warning)
+  const getValidationIssueType = (item, index) => {
+    const issue = hasValidationIssue(item, index);
+    return issue === 'warning' ? 'warning' : (issue ? 'fail' : null);
+  };
+
+  // Get row highlight class based on validation issue type
+  const getRowHighlightClass = (item, index) => {
+    const issueType = getValidationIssueType(item, index);
+    
+    if (issueType === 'warning') {
+      return 'bg-yellow-50 dark:bg-yellow-900/10';
+    } else if (issueType === 'fail') {
+      return 'bg-red-50 dark:bg-red-900/10';
+    } else if (isProductExpired(item)) {
+      return 'bg-gray-50 dark:bg-gray-800/50';
+    }
+    
+    return '';
+  };
+
+  // Old function kept for backwards compatibility - now returns boolean
+  const hasValidationIssueOld = (item, index) => {
+    const issue = hasValidationIssue(item, index);
+    if (issue === 'warning') {
+      return true; // For highlighting purposes
+    }
+    return !!issue;
   };
 
   // Group products by product code and aggregate dates
@@ -295,17 +371,22 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                       const singleItemHasIssue = !isMultiple && group.items.length === 1 
                         ? hasValidationIssue(group.items[0], group.items[0].originalIndex)
                         : false;
+                      const singleItemIssueType = !isMultiple && group.items.length === 1
+                        ? getValidationIssueType(group.items[0], group.items[0].originalIndex)
+                        : null;
                       const singleItemIsExpired = !isMultiple && group.items.length === 1 
                         ? isProductExpired(group.items[0])
                         : false;
                       
                       let mainRowClass;
-                      if (singleItemHasIssue) {
-                        mainRowClass = 'border-b bg-red-50 border-red-200 transition-colors';
-                      } else if (singleItemIsExpired) {
+                      if (singleItemIssueType === 'warning') {
                         mainRowClass = 'border-b bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 transition-colors';
+                      } else if (singleItemIssueType === 'fail' || singleItemHasIssue) {
+                        mainRowClass = 'border-b bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 transition-colors';
+                      } else if (singleItemIsExpired) {
+                        mainRowClass = 'border-b bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 transition-colors';
                       } else {
-                        mainRowClass = `border-b transition-colors ${isMultiple ? 'cursor-pointer hover:bg-gray-50' : 'hover:bg-gray-50'}`;
+                        mainRowClass = `border-b transition-colors ${isMultiple ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`;
                       }
                       
                       return (
@@ -322,14 +403,20 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                 <ChevronRightIcon 
                                   className={`h-4 w-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                                 />
-                              ) : singleItemHasIssue ? (
+                              ) : singleItemIssueType === 'warning' ? (
+                                <svg className="h-3 w-3 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                  <path d="M12 9v4"></path>
+                                  <path d="m12 17 .01 0"></path>
+                                </svg>
+                              ) : (singleItemIssueType === 'fail' || singleItemHasIssue) ? (
                                 <svg className="h-3 w-3 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                                   <path d="M12 9v4"></path>
                                   <path d="m12 17 .01 0"></path>
                                 </svg>
                               ) : singleItemIsExpired ? (
-                                <svg className="h-3 w-3 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg className="h-3 w-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <circle cx="12" cy="12" r="10"></circle>
                                   <line x1="12" y1="8" x2="12" y2="12"></line>
                                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -349,11 +436,29 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
 
                               // Special rendering for product code with instance count
                               if (col.key === 'productCode' && isMultiple) {
+                                const hasSMLInGroup = group.items.some(item => item.source === 'sml');
                                 return (
                                   <td key={col.key} className="px-3 py-3 text-sm">
                                     <span className="font-medium">{value}</span>
                                     <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
                                       {group.items.length} instances
+                                    </span>
+                                    {hasSMLInGroup && (
+                                      <span className="ml-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                                        ★ SML Data
+                                      </span>
+                                    )}
+                                  </td>
+                                );
+                              }
+                              
+                              // Add SML badge for single items
+                              if (col.key === 'productCode' && !isMultiple && group.defaultItem?.source === 'sml') {
+                                return (
+                                  <td key={col.key} className="px-3 py-3 text-sm">
+                                    <span className="font-medium">{value}</span>
+                                    <span className="ml-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                                      ★ SML
                                     </span>
                                   </td>
                                 );
@@ -391,49 +496,77 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                           {/* Child rows (individual items) - shown when expanded */}
                           {isMultiple && isExpanded && group.items.map((item, itemIndex) => {
                             const hasIssue = hasValidationIssue(item, item.originalIndex);
+                            const issueType = getValidationIssueType(item, item.originalIndex);
                             const itemIsExpired = isProductExpired(item);
                             
                             let childRowClass;
-                            if (hasIssue) {
-                              childRowClass = 'border-b bg-red-50 border-red-200';
-                            } else if (itemIsExpired) {
+                            let childTitle;
+                            if (issueType === 'warning') {
                               childRowClass = 'border-b bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+                              childTitle = 'This entitlement is still active and will be removed';
+                            } else if (issueType === 'fail' || hasIssue) {
+                              childRowClass = 'border-b bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800';
+                              childTitle = 'This entitlement has a validation failure';
+                            } else if (itemIsExpired) {
+                              childRowClass = 'border-b bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700';
+                              childTitle = 'This product is expired';
                             } else {
-                              childRowClass = 'border-b bg-gray-50';
+                              childRowClass = 'border-b bg-gray-50 dark:bg-gray-700';
+                              childTitle = '';
                             }
 
                             return (
                               <tr 
                                 key={`${groupIndex}-${itemIndex}`} 
                                 className={childRowClass}
-                                title={hasIssue ? 'This entitlement has a validation failure' : (itemIsExpired ? 'This product is expired' : '')}
+                                title={childTitle}
                               >
                                 {/* Empty cell or item number / warning icon */}
                                 <td className="px-1 py-2 w-4 text-center pl-6">
-                                  {hasIssue ? (
+                                  {issueType === 'warning' ? (
+                                    <svg className="h-3 w-3 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                      <path d="M12 9v4"></path>
+                                      <path d="m12 17 .01 0"></path>
+                                    </svg>
+                                  ) : (issueType === 'fail' || hasIssue) ? (
                                     <svg className="h-3 w-3 text-red-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                                       <path d="M12 9v4"></path>
                                       <path d="m12 17 .01 0"></path>
                                     </svg>
                                   ) : itemIsExpired ? (
-                                    <svg className="h-3 w-3 text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg className="h-3 w-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                       <circle cx="12" cy="12" r="10"></circle>
                                       <line x1="12" y1="8" x2="12" y2="12"></line>
                                       <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                     </svg>
                                   ) : (
-                                    <span className="text-xs text-gray-400">{itemIndex + 1}</span>
+                                    <span className="text-xs text-gray-400 dark:text-gray-500">{itemIndex + 1}</span>
                                   )}
                                 </td>
                               
                                 {columns.map((col) => {
                                   const value = col.get(item);
+                                  
+                                  // Special rendering for product code with SML badge
+                                  if (col.key === 'productCode' && item.source === 'sml') {
+                                    return (
+                                      <td key={col.key} className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <div className="flex items-center gap-2">
+                                          <span>{value}</span>
+                                          <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-700">
+                                            ★ SML
+                                          </span>
+                                        </div>
+                                      </td>
+                                    );
+                                  }
 
                                   // Special rendering for package name with info icon
                                   if (col.showInfo && value !== '—' && value) {
                                     return (
-                                      <td key={col.key} className="px-3 py-2 text-sm text-gray-700">
+                                      <td key={col.key} className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                                         <div className="flex items-center gap-2">
                                           <span>{value}</span>
                                           <button
@@ -452,7 +585,7 @@ const ProductModal = ({ isOpen, onClose, products, productType, requestName, val
                                   }
 
                                   return (
-                                    <td key={col.key} className="px-3 py-2 text-sm text-gray-700">
+                                    <td key={col.key} className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                                       {col.key === 'startDate' || col.key === 'endDate' ? formatDate(value) : value}
                                     </td>
                                   );

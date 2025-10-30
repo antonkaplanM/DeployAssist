@@ -63,3 +63,17 @@ export const getCompletionTimes = async () => {
   }
 };
 
+// Publish analytics to Confluence
+export const publishToConfluence = async (spaceName, pageTitle) => {
+  try {
+    const response = await api.post('/analytics/publish-to-confluence', {
+      spaceName,
+      pageTitle
+    });
+    return response.data;
+  } catch (error) {
+    console.error('[AnalyticsService] Error publishing to Confluence:', error);
+    throw error;
+  }
+};
+

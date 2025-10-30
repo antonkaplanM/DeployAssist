@@ -51,6 +51,19 @@ const DEFAULT_VALIDATION_RULES = [
     category: 'product-validation',
     version: '1.0',
     createdDate: '2025-10-15'
+  },
+  {
+    id: 'deprovision-active-entitlements-check',
+    name: 'Deprovision Active Entitlements Check',
+    description: 'Warns if a deprovision request includes entitlements that are still active (not yet expired)',
+    longDescription: 'For PS records with Request Type "Deprovision", this rule checks if any entitlements in SML are still active (end date is after current date). Returns WARNING if active entitlements are found, indicating the request would deprovision resources that haven\'t expired yet. This rule requires SML integration and runs asynchronously in the background.',
+    enabled: true,
+    category: 'deprovision-validation',
+    version: '1.0',
+    createdDate: '2025-10-30',
+    async: true,
+    requiresSML: true,
+    isBackgroundRule: true
   }
 ];
 
