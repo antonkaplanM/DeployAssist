@@ -4329,6 +4329,616 @@ app.get('/api/product-catalogue/sync-status', authenticate, async (req, res) => 
     }
 });
 
+// ===== PRODUCT BUNDLES API ENDPOINTS =====
+
+/**
+ * Get all product bundles
+ * GET /api/bundles
+ * Query params:
+ *   - search: search term for bundle name/description
+ *   - sortBy: 'name', 'created_at' (default: 'created_at')
+ *   - sortOrder: 'asc', 'desc' (default: 'desc')
+ */
+app.get('/api/bundles', authenticate, async (req, res) => {
+    try {
+        const { search, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+        
+        console.log(`📦 Fetching bundles (search: ${search || 'none'}, sortBy: ${sortBy}, sortOrder: ${sortOrder})`);
+        
+        let whereCondition = '';
+        let queryParams = [];
+        
+        if (search) {
+            whereCondition = 'WHERE name ILIKE $1 OR description ILIKE $1';
+            queryParams.push(`%${search}%`);
+        }
+        
+        // Validate sort parameters
+        const validSortFields = ['name', 'created_at'];
+        const validSortOrders = ['asc', 'desc'];
+        const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+        const sortDirection = validSortOrders.includes(sortOrder.toLowerCase()) ? sortOrder.toUpperCase() : 'DESC';
+        
+        const query = `
+            SELECT 
+                pb.id,
+                pb.bundle_id,
+                pb.name,
+                pb.description,
+                pb.created_by,
+                pb.created_at,
+                pb.updated_at,
+                u.username as created_by_username,
+                COUNT(bp.id) as product_count
+            FROM product_bundles pb
+            LEFT JOIN users u ON pb.created_by = u.id
+            LEFT JOIN bundle_products bp ON pb.id = bp.bundle_id
+            ${whereCondition}
+            GROUP BY pb.id, pb.bundle_id, pb.name, pb.description, pb.created_by, pb.created_at, pb.updated_at, u.username
+            ORDER BY pb.${sortField} ${sortDirection}
+        `;
+        
+        const result = await db.query(query, queryParams);
+        
+        res.json({
+            success: true,
+            bundles: result.rows,
+            count: result.rows.length,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error fetching bundles:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch bundles',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Get a specific bundle with its products
+ * GET /api/bundles/:bundleId
+ */
+app.get('/api/bundles/:bundleId', authenticate, async (req, res) => {
+    try {
+        const { bundleId } = req.params;
+        
+        console.log(`🔍 Fetching bundle details: ${bundleId}`);
+        
+        // Get bundle info
+        const bundleQuery = `
+            SELECT 
+                pb.id,
+                pb.bundle_id,
+                pb.name,
+                pb.description,
+                pb.created_by,
+                pb.created_at,
+                pb.updated_at,
+                u.username as created_by_username
+            FROM product_bundles pb
+            LEFT JOIN users u ON pb.created_by = u.id
+            WHERE pb.bundle_id = $1 OR pb.id::text = $1
+        `;
+        
+        const bundleResult = await db.query(bundleQuery, [bundleId]);
+        
+        if (bundleResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        const bundle = bundleResult.rows[0];
+        
+        // Get products in bundle
+        const productsQuery = `
+            SELECT 
+                bp.id as bundle_product_id,
+                bp.quantity,
+                bp.sort_order,
+                bp.added_at,
+                p.salesforce_id as "Id",
+                p.name as "Name",
+                p.product_code as "ProductCode",
+                p.description as "Description",
+                p.family as "Family",
+                p.is_active as "IsActive",
+                p.product_group as "Product_Group__c",
+                p.product_selection_grouping as "Product_Selection_Grouping__c"
+            FROM bundle_products bp
+            LEFT JOIN products p ON bp.product_salesforce_id = p.salesforce_id
+            WHERE bp.bundle_id = $1
+            ORDER BY bp.sort_order, bp.added_at
+        `;
+        
+        const productsResult = await db.query(productsQuery, [bundle.id]);
+        
+        res.json({
+            success: true,
+            bundle: {
+                ...bundle,
+                products: productsResult.rows
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error fetching bundle:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch bundle',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Create a new bundle
+ * POST /api/bundles
+ * Body: { name, description }
+ */
+app.post('/api/bundles', authenticate, async (req, res) => {
+    try {
+        const { name, description = '' } = req.body;
+        const userId = req.user.id;
+        
+        if (!name || name.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Bundle name is required'
+            });
+        }
+        
+        console.log(`📦 Creating new bundle: ${name}`);
+        
+        // Generate sequential bundle ID
+        const sequenceResult = await db.query("SELECT nextval('bundle_id_seq') as seq");
+        const sequenceNum = sequenceResult.rows[0].seq;
+        const bundleId = `BUNDLE-${String(sequenceNum).padStart(3, '0')}`;
+        
+        // Insert bundle
+        const query = `
+            INSERT INTO product_bundles (bundle_id, name, description, created_by)
+            VALUES ($1, $2, $3, $4)
+            RETURNING 
+                id,
+                bundle_id,
+                name,
+                description,
+                created_by,
+                created_at,
+                updated_at
+        `;
+        
+        const result = await db.query(query, [bundleId, name.trim(), description.trim(), userId]);
+        
+        res.status(201).json({
+            success: true,
+            bundle: result.rows[0],
+            message: 'Bundle created successfully',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error creating bundle:', err.message);
+        
+        if (err.constraint === 'unique_bundle_name') {
+            return res.status(409).json({
+                success: false,
+                error: 'A bundle with this name already exists'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create bundle',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Update a bundle
+ * PUT /api/bundles/:bundleId
+ * Body: { name, description }
+ */
+app.put('/api/bundles/:bundleId', authenticate, async (req, res) => {
+    try {
+        const { bundleId } = req.params;
+        const { name, description } = req.body;
+        
+        if (!name || name.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Bundle name is required'
+            });
+        }
+        
+        console.log(`📝 Updating bundle: ${bundleId}`);
+        
+        const query = `
+            UPDATE product_bundles
+            SET 
+                name = $1,
+                description = $2,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE bundle_id = $3 OR id::text = $3
+            RETURNING 
+                id,
+                bundle_id,
+                name,
+                description,
+                created_by,
+                created_at,
+                updated_at
+        `;
+        
+        const result = await db.query(query, [name.trim(), description?.trim() || '', bundleId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            bundle: result.rows[0],
+            message: 'Bundle updated successfully',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error updating bundle:', err.message);
+        
+        if (err.constraint === 'unique_bundle_name') {
+            return res.status(409).json({
+                success: false,
+                error: 'A bundle with this name already exists'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update bundle',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Delete a bundle
+ * DELETE /api/bundles/:bundleId
+ */
+app.delete('/api/bundles/:bundleId', authenticate, async (req, res) => {
+    try {
+        const { bundleId } = req.params;
+        
+        console.log(`🗑️ Deleting bundle: ${bundleId}`);
+        
+        const query = `
+            DELETE FROM product_bundles
+            WHERE bundle_id = $1 OR id::text = $1
+            RETURNING bundle_id, name
+        `;
+        
+        const result = await db.query(query, [bundleId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: `Bundle "${result.rows[0].name}" deleted successfully`,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error deleting bundle:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete bundle',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Duplicate a bundle
+ * POST /api/bundles/:bundleId/duplicate
+ * Body: { name }
+ */
+app.post('/api/bundles/:bundleId/duplicate', authenticate, async (req, res) => {
+    try {
+        const { bundleId } = req.params;
+        const { name } = req.body;
+        const userId = req.user.id;
+        
+        if (!name || name.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'New bundle name is required'
+            });
+        }
+        
+        console.log(`📋 Duplicating bundle: ${bundleId} as "${name}"`);
+        
+        // Get original bundle
+        const originalBundle = await db.query(
+            'SELECT * FROM product_bundles WHERE bundle_id = $1 OR id::text = $1',
+            [bundleId]
+        );
+        
+        if (originalBundle.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        // Generate new bundle ID
+        const sequenceResult = await db.query("SELECT nextval('bundle_id_seq') as seq");
+        const sequenceNum = sequenceResult.rows[0].seq;
+        const newBundleId = `BUNDLE-${String(sequenceNum).padStart(3, '0')}`;
+        
+        // Create new bundle
+        const insertBundleQuery = `
+            INSERT INTO product_bundles (bundle_id, name, description, created_by)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, bundle_id, name, description, created_by, created_at, updated_at
+        `;
+        
+        const newBundle = await db.query(insertBundleQuery, [
+            newBundleId,
+            name.trim(),
+            originalBundle.rows[0].description,
+            userId
+        ]);
+        
+        // Copy products from original bundle
+        const copyProductsQuery = `
+            INSERT INTO bundle_products (bundle_id, product_salesforce_id, quantity, sort_order)
+            SELECT $1, product_salesforce_id, quantity, sort_order
+            FROM bundle_products
+            WHERE bundle_id = $2
+        `;
+        
+        await db.query(copyProductsQuery, [newBundle.rows[0].id, originalBundle.rows[0].id]);
+        
+        res.status(201).json({
+            success: true,
+            bundle: newBundle.rows[0],
+            message: 'Bundle duplicated successfully',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error duplicating bundle:', err.message);
+        
+        if (err.constraint === 'unique_bundle_name') {
+            return res.status(409).json({
+                success: false,
+                error: 'A bundle with this name already exists'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: 'Failed to duplicate bundle',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Add products to a bundle
+ * POST /api/bundles/:bundleId/products
+ * Body: { products: [{ productId, quantity }] }
+ */
+app.post('/api/bundles/:bundleId/products', authenticate, async (req, res) => {
+    try {
+        const { bundleId } = req.params;
+        const { products } = req.body;
+        
+        if (!products || !Array.isArray(products) || products.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Products array is required'
+            });
+        }
+        
+        console.log(`➕ Adding ${products.length} product(s) to bundle: ${bundleId}`);
+        
+        // Get bundle internal ID
+        const bundleResult = await db.query(
+            'SELECT id FROM product_bundles WHERE bundle_id = $1 OR id::text = $1',
+            [bundleId]
+        );
+        
+        if (bundleResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        const bundleInternalId = bundleResult.rows[0].id;
+        
+        // Get current max sort_order
+        const maxSortResult = await db.query(
+            'SELECT COALESCE(MAX(sort_order), 0) as max_sort FROM bundle_products WHERE bundle_id = $1',
+            [bundleInternalId]
+        );
+        let sortOrder = maxSortResult.rows[0].max_sort + 1;
+        
+        // Insert products
+        const insertedProducts = [];
+        for (const product of products) {
+            const { productId, quantity = 1 } = product;
+            
+            try {
+                const insertQuery = `
+                    INSERT INTO bundle_products (bundle_id, product_salesforce_id, quantity, sort_order)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (bundle_id, product_salesforce_id) DO UPDATE
+                    SET quantity = bundle_products.quantity + EXCLUDED.quantity
+                    RETURNING id, product_salesforce_id, quantity, sort_order
+                `;
+                
+                const result = await db.query(insertQuery, [bundleInternalId, productId, quantity, sortOrder]);
+                insertedProducts.push(result.rows[0]);
+                sortOrder++;
+            } catch (err) {
+                console.error(`Failed to add product ${productId}:`, err.message);
+            }
+        }
+        
+        res.json({
+            success: true,
+            addedProducts: insertedProducts,
+            count: insertedProducts.length,
+            message: `${insertedProducts.length} product(s) added to bundle`,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error adding products to bundle:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add products to bundle',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Update product quantity in bundle
+ * PUT /api/bundles/:bundleId/products/:productId
+ * Body: { quantity }
+ */
+app.put('/api/bundles/:bundleId/products/:productId', authenticate, async (req, res) => {
+    try {
+        const { bundleId, productId } = req.params;
+        const { quantity } = req.body;
+        
+        if (!quantity || quantity < 1) {
+            return res.status(400).json({
+                success: false,
+                error: 'Valid quantity is required (minimum 1)'
+            });
+        }
+        
+        console.log(`📝 Updating product quantity in bundle ${bundleId}: ${productId} = ${quantity}`);
+        
+        // Get bundle internal ID
+        const bundleResult = await db.query(
+            'SELECT id FROM product_bundles WHERE bundle_id = $1 OR id::text = $1',
+            [bundleId]
+        );
+        
+        if (bundleResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        const query = `
+            UPDATE bundle_products
+            SET quantity = $1
+            WHERE bundle_id = $2 AND product_salesforce_id = $3
+            RETURNING id, product_salesforce_id, quantity
+        `;
+        
+        const result = await db.query(query, [quantity, bundleResult.rows[0].id, productId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found in bundle'
+            });
+        }
+        
+        res.json({
+            success: true,
+            product: result.rows[0],
+            message: 'Product quantity updated',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error updating product quantity:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update product quantity',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Remove a product from bundle
+ * DELETE /api/bundles/:bundleId/products/:productId
+ */
+app.delete('/api/bundles/:bundleId/products/:productId', authenticate, async (req, res) => {
+    try {
+        const { bundleId, productId } = req.params;
+        
+        console.log(`➖ Removing product from bundle ${bundleId}: ${productId}`);
+        
+        // Get bundle internal ID
+        const bundleResult = await db.query(
+            'SELECT id FROM product_bundles WHERE bundle_id = $1 OR id::text = $1',
+            [bundleId]
+        );
+        
+        if (bundleResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bundle not found'
+            });
+        }
+        
+        const query = `
+            DELETE FROM bundle_products
+            WHERE bundle_id = $1 AND product_salesforce_id = $2
+            RETURNING product_salesforce_id
+        `;
+        
+        const result = await db.query(query, [bundleResult.rows[0].id, productId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found in bundle'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Product removed from bundle',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error removing product from bundle:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to remove product from bundle',
+            message: err.message
+        });
+    }
+});
+
 // ===== PS AUDIT TRAIL API ENDPOINTS =====
 const psAuditService = require('./ps-audit-service');
 

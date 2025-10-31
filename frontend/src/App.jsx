@@ -24,7 +24,7 @@ import Settings from './pages/Settings';
 import Help from './pages/Help';
 import ApiTest from './pages/ApiTest';
 import Roadmap from './pages/Roadmap';
-import ProductCatalogue from './pages/ProductCatalogue';
+import Catalogue from './pages/Catalogue';
 
 function App() {
   return (
@@ -178,12 +178,12 @@ function App() {
                 } 
               />
 
-              {/* Experimental Pages - Product Catalogue */}
+              {/* Experimental Pages - Catalogue (Products & Bundles) */}
               <Route 
                 path="experimental/product-catalogue" 
                 element={
                   <ProtectedRoute pageName="experimental.product-catalogue">
-                    <ProductCatalogue />
+                    <Catalogue />
                   </ProtectedRoute>
                 } 
               />

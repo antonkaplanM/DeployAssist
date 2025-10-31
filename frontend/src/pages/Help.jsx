@@ -11,7 +11,8 @@ import {
   LightBulbIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  CloudArrowDownIcon
+  CloudArrowDownIcon,
+  RectangleStackIcon
 } from '@heroicons/react/24/outline';
 
 const Help = () => {
@@ -235,6 +236,51 @@ const Help = () => {
         'Each product shows source PS record(s) for traceability',
         'Use the clear button to start a new search',
         'Data is real-time from the latest PS records',
+      ],
+    },
+    {
+      id: 'manage-bundles',
+      title: 'Manage Product Bundles',
+      icon: RectangleStackIcon,
+      color: 'cyan',
+      steps: [
+        {
+          step: '1',
+          title: 'Navigate to Catalogue',
+          description: 'Click "Catalogue" under Experimental Pages in the sidebar, then select the "Bundles" tab',
+        },
+        {
+          step: '2',
+          title: 'Create a Bundle',
+          description: 'Click "Create Bundle", enter a name and description, then click "Create Bundle". You\'ll be taken to the builder view.',
+        },
+        {
+          step: '3',
+          title: 'Add Products',
+          description: 'In the builder, select products from the left panel (you can select multiple with checkboxes), then click "Add to Bundle".',
+        },
+        {
+          step: '4',
+          title: 'Set Quantities',
+          description: 'Adjust quantities for each product using the number inputs in the right panel. Default is 1.',
+        },
+        {
+          step: '5',
+          title: 'View Bundle Contents',
+          description: 'Back in the list view, click "View Contents" on any bundle to see all products organized by Selection Grouping.',
+        },
+        {
+          step: '6',
+          title: 'Manage Bundles',
+          description: 'Use Edit to modify bundles, Duplicate to copy with a new name, or Delete to remove bundles.',
+        },
+      ],
+      tips: [
+        'Products are grouped by Selection Grouping in the contents view',
+        'Bundles can contain the same product multiple times with different quantities',
+        'Use the search bar to filter products when building bundles',
+        'Sort bundles by name or creation date for easy organization',
+        'Duplicate existing bundles to create variations quickly',
       ],
     },
     {
