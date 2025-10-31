@@ -27,7 +27,8 @@
     "audit:backfill": "node backfill-ps-audit.js",
     "audit:capture": "node capture-ps-changes.js",
     "audit:fix-names": "node update-audit-account-names.js",
-    "audit:analyze-payloads": "node analyze-ps-payloads.js"
+    "audit:analyze-payloads": "node analyze-ps-payloads.js",
+    "products:sync": "node sync-products-from-salesforce.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

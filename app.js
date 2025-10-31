@@ -4022,6 +4022,313 @@ app.get('/api/packages/summary/stats', async (req, res) => {
     }
 });
 
+// ===== PRODUCT CATALOGUE API ENDPOINTS =====
+
+/**
+ * Get product catalogue from local database
+ * GET /api/product-catalogue
+ * Query params: 
+ *   - search: search term for product name/code/description
+ *   - family: filter by product family
+ *   - isActive: filter by active status (default: true)
+ *   - limit: max results (default: 100, max: 500)
+ *   - offset: pagination offset (default: 0)
+ */
+app.get('/api/product-catalogue', authenticate, async (req, res) => {
+    try {
+        const { search, family, productGroup, productSelectionGrouping, isActive = 'true', limit = 100, offset = 0 } = req.query;
+        
+        console.log(`📦 Fetching product catalogue from local DB (search: ${search || 'none'}, family: ${family || 'all'}, productGroup: ${productGroup || 'all'}, productSelectionGrouping: ${productSelectionGrouping || 'all'})`);
+        
+        // Build SQL query
+        let whereConditions = [];
+        let queryParams = [];
+        let paramIndex = 1;
+        
+        // Add active filter
+        if (isActive === 'true') {
+            whereConditions.push(`is_active = $${paramIndex++}`);
+            queryParams.push(true);
+            whereConditions.push(`is_archived = $${paramIndex++}`);
+            queryParams.push(false);
+        }
+        
+        // Add family filter
+        if (family && family !== 'all') {
+            whereConditions.push(`family = $${paramIndex++}`);
+            queryParams.push(family);
+        }
+        
+        // Add product group filter
+        if (productGroup && productGroup !== 'all') {
+            whereConditions.push(`product_group = $${paramIndex++}`);
+            queryParams.push(productGroup);
+        }
+        
+        // Add product selection grouping filter
+        if (productSelectionGrouping && productSelectionGrouping !== 'all') {
+            whereConditions.push(`product_selection_grouping = $${paramIndex++}`);
+            queryParams.push(productSelectionGrouping);
+        }
+        
+        // Add search filter (using full-text search or ILIKE)
+        if (search) {
+            whereConditions.push(`(
+                name ILIKE $${paramIndex} OR 
+                product_code ILIKE $${paramIndex} OR 
+                description ILIKE $${paramIndex}
+            )`);
+            queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+        
+        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+        
+        // Get total count
+        const countQuery = `SELECT COUNT(*) as total FROM products ${whereClause}`;
+        const countResult = await db.query(countQuery, queryParams);
+        const totalSize = parseInt(countResult.rows[0].total);
+        
+        // Get products with pagination
+        const limitValue = Math.min(parseInt(limit) || 100, 2000);  // Increased cap to 2000 to load all products
+        const offsetValue = parseInt(offset) || 0;
+        
+        const productsQuery = `
+            SELECT 
+                salesforce_id as "Id",
+                name as "Name",
+                product_code as "ProductCode",
+                description as "Description",
+                family as "Family",
+                is_active as "IsActive",
+                is_archived as "IsArchived",
+                display_url as "DisplayUrl",
+                product_group as "Product_Group__c",
+                product_family_l2 as "Product_Family_L2__c",
+                product_reporting_group as "ProductReportingGroup__c",
+                product_variant as "Product_Variant__c",
+                product_versions as "ProductVersions__c",
+                type_of_configuration as "TypeOfConfiguration__c",
+                is_expansion_pack as "IsExpansionPack__c",
+                product_selection_grouping as "Product_Selection_Grouping__c"
+            FROM products
+            ${whereClause}
+            ORDER BY name ASC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `;
+        
+        queryParams.push(limitValue, offsetValue);
+        const productsResult = await db.query(productsQuery, queryParams);
+        
+        // Get distinct families for filter options
+        const familiesQuery = `
+            SELECT DISTINCT family 
+            FROM products 
+            WHERE is_active = true AND is_archived = false AND family IS NOT NULL
+            ORDER BY family
+        `;
+        const familiesResult = await db.query(familiesQuery);
+        const families = familiesResult.rows.map(r => r.family);
+        
+        // Get distinct product groups for filter options
+        const productGroupsQuery = `
+            SELECT DISTINCT product_group 
+            FROM products 
+            WHERE is_active = true AND is_archived = false AND product_group IS NOT NULL
+            ORDER BY product_group
+        `;
+        const productGroupsResult = await db.query(productGroupsQuery);
+        const productGroups = productGroupsResult.rows.map(r => r.product_group);
+        
+        // Get distinct product selection groupings for filter options
+        const productSelectionGroupingsQuery = `
+            SELECT DISTINCT product_selection_grouping 
+            FROM products 
+            WHERE is_active = true AND is_archived = false AND product_selection_grouping IS NOT NULL
+            ORDER BY product_selection_grouping
+        `;
+        const productSelectionGroupingsResult = await db.query(productSelectionGroupingsQuery);
+        const productSelectionGroupings = productSelectionGroupingsResult.rows.map(r => r.product_selection_grouping);
+        
+        res.json({
+            success: true,
+            products: productsResult.rows,
+            count: productsResult.rows.length,
+            totalSize: totalSize,
+            done: (offsetValue + productsResult.rows.length) >= totalSize,
+            filterOptions: {
+                families: families,
+                productGroups: productGroups,
+                productSelectionGroupings: productSelectionGroupings
+            },
+            timestamp: new Date().toISOString(),
+            source: 'local_database'
+        });
+        
+    } catch (err) {
+        console.error('❌ Error fetching product catalogue:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch product catalogue',
+            products: [],
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Get a specific product by ID from local database
+ * GET /api/product-catalogue/:productId
+ */
+app.get('/api/product-catalogue/:productId', authenticate, async (req, res) => {
+    try {
+        const { productId } = req.params;
+        
+        console.log(`🔍 Fetching product details from local DB: ${productId}`);
+        
+        // Query product with all fields
+        const query = `
+            SELECT 
+                salesforce_id as "Id",
+                name as "Name",
+                product_code as "ProductCode",
+                description as "Description",
+                family as "Family",
+                is_active as "IsActive",
+                is_archived as "IsArchived",
+                display_url as "DisplayUrl",
+                product_group as "Product_Group__c",
+                product_family_l2 as "Product_Family_L2__c",
+                product_reporting_group as "ProductReportingGroup__c",
+                product_variant as "Product_Variant__c",
+                product_versions as "ProductVersions__c",
+                type_of_configuration as "TypeOfConfiguration__c",
+                is_expansion_pack as "IsExpansionPack__c",
+                product_selection_grouping as "Product_Selection_Grouping__c",
+                product_selection_restriction as "Product_Selection_Restriction__c",
+                sf_created_date as "CreatedDate",
+                sf_last_modified_date as "LastModifiedDate",
+                sf_created_by_id as "CreatedById",
+                sf_last_modified_by_id as "LastModifiedById",
+                synced_at
+            FROM products
+            WHERE salesforce_id = $1
+            LIMIT 1
+        `;
+        
+        const result = await db.query(query, [productId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found',
+                product: null
+            });
+        }
+        
+        res.json({
+            success: true,
+            product: result.rows[0],
+            timestamp: new Date().toISOString(),
+            source: 'local_database'
+        });
+        
+    } catch (err) {
+        console.error('❌ Error fetching product:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch product',
+            product: null,
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Refresh product catalogue from Salesforce
+ * POST /api/product-catalogue/refresh
+ * Triggers a sync of all products from Salesforce to local database
+ */
+app.post('/api/product-catalogue/refresh', authenticate, requireAdmin, async (req, res) => {
+    try {
+        console.log('🔄 Triggering product catalogue refresh from Salesforce...');
+        
+        // Spawn the sync process in background
+        const { spawn } = require('child_process');
+        const syncProcess = spawn('node', ['sync-products-from-salesforce.js'], {
+            detached: true,
+            stdio: 'ignore'
+        });
+        syncProcess.unref();
+        
+        res.json({
+            success: true,
+            message: 'Product refresh started in background',
+            note: 'Check product_sync_log table for progress',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error triggering product refresh:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to trigger product refresh',
+            message: err.message
+        });
+    }
+});
+
+/**
+ * Get product sync status and history
+ * GET /api/product-catalogue/sync-status
+ */
+app.get('/api/product-catalogue/sync-status', authenticate, async (req, res) => {
+    try {
+        console.log('📊 Fetching product sync status...');
+        
+        // Get latest sync log
+        const latestSync = await db.query(`
+            SELECT * FROM product_sync_log
+            ORDER BY sync_started_at DESC
+            LIMIT 1
+        `);
+        
+        // Get product count
+        const productCount = await db.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE is_active = true) as active,
+                COUNT(*) FILTER (WHERE is_archived = true) as archived
+            FROM products
+        `);
+        
+        // Get last sync time
+        const lastSyncTime = await db.query(`
+            SELECT MAX(synced_at) as last_sync FROM products
+        `);
+        
+        res.json({
+            success: true,
+            syncStatus: latestSync.rows[0] || null,
+            productStats: {
+                total: parseInt(productCount.rows[0].total),
+                active: parseInt(productCount.rows[0].active),
+                archived: parseInt(productCount.rows[0].archived),
+                lastSync: lastSyncTime.rows[0].last_sync
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (err) {
+        console.error('❌ Error fetching sync status:', err.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch sync status',
+            message: err.message
+        });
+    }
+});
+
 // ===== PS AUDIT TRAIL API ENDPOINTS =====
 const psAuditService = require('./ps-audit-service');
 

@@ -24,6 +24,7 @@ import Settings from './pages/Settings';
 import Help from './pages/Help';
 import ApiTest from './pages/ApiTest';
 import Roadmap from './pages/Roadmap';
+import ProductCatalogue from './pages/ProductCatalogue';
 
 function App() {
   return (
@@ -173,6 +174,16 @@ function App() {
                 element={
                   <ProtectedRoute pageName="experimental.roadmap">
                     <Roadmap />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Experimental Pages - Product Catalogue */}
+              <Route 
+                path="experimental/product-catalogue" 
+                element={
+                  <ProtectedRoute pageName="experimental.product-catalogue">
+                    <ProductCatalogue />
                   </ProtectedRoute>
                 } 
               />

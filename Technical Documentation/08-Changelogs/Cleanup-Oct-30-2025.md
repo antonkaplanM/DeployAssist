@@ -103,3 +103,4 @@ All documentation is now properly organized in `Technical Documentation/` with c
 - No functionality was removed, only organizational improvements
 - Help documentation is now synchronized with current feature set
 
+

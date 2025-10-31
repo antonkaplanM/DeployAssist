@@ -147,6 +147,12 @@ const Sidebar = () => {
           path: '/experimental/roadmap', 
           id: 'nav-experimental-roadmap',
           pageName: 'experimental.roadmap'
+        },
+        { 
+          name: 'Product Catalogue', 
+          path: '/experimental/product-catalogue', 
+          id: 'nav-experimental-product-catalogue',
+          pageName: 'experimental.product-catalogue'
         }
       ]
     },
