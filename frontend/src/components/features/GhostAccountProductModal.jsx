@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { XMarkIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
-const GhostAccountProductModal = ({ isOpen, onClose, allProducts, accountName }) => {
+const GhostAccountProductModal = ({ isOpen, onClose, allProducts, accountName, lastSynced, fromCache }) => {
   const [loadingPackage, setLoadingPackage] = useState(false);
   const [packageModalData, setPackageModalData] = useState(null);
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    } catch {
+      return timestamp;
+    }
+  };
 
   // Helper functions to normalize field names
   const getProductCode = (item) => item.productCode || item.product_code || item.ProductCode || item.name || '—';
@@ -234,6 +244,18 @@ const GhostAccountProductModal = ({ isOpen, onClose, allProducts, accountName })
                 <XMarkIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
+
+            {/* Cache Indicator */}
+            {fromCache && lastSynced && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-6 py-2">
+                <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+                  <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Showing cached data from local database (Last synced: {formatTimestamp(lastSynced)})
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Content - All Product Categories */}
             <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">

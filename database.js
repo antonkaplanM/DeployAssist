@@ -1385,6 +1385,540 @@ async function getRecentPackageChanges(timeFrame = '1y', limit = 20) {
     }
 }
 
+// ===== SML TENANT DATA FUNCTIONS =====
+
+/**
+ * Upsert SML tenant data
+ * @param {Object} tenantData - Tenant data from SML
+ * @returns {Promise<Object>} Result
+ */
+async function upsertSMLTenant(tenantData) {
+    try {
+        const query = `
+            INSERT INTO sml_tenant_data (
+                tenant_id, tenant_name, account_name, tenant_display_name,
+                is_deleted, raw_data, product_entitlements, last_synced, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (tenant_id) 
+            DO UPDATE SET
+                tenant_name = EXCLUDED.tenant_name,
+                account_name = EXCLUDED.account_name,
+                tenant_display_name = EXCLUDED.tenant_display_name,
+                is_deleted = EXCLUDED.is_deleted,
+                raw_data = EXCLUDED.raw_data,
+                product_entitlements = EXCLUDED.product_entitlements,
+                last_synced = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+        `;
+        
+        const values = [
+            tenantData.tenantId,
+            tenantData.tenantName,
+            tenantData.accountName || null,
+            tenantData.tenantDisplayName || null,
+            tenantData.isDeleted || false,
+            tenantData.rawData ? JSON.stringify(tenantData.rawData) : null,
+            tenantData.productEntitlements ? JSON.stringify(tenantData.productEntitlements) : null
+        ];
+        
+        const result = await pool.query(query, values);
+        return { success: true, id: result.rows[0].id };
+    } catch (error) {
+        console.error('❌ Error upserting SML tenant:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get all SML tenants with optional filters
+ * @param {Object} filters - Filter criteria
+ * @returns {Promise<Object>} List of tenants
+ */
+async function getSMLTenants(filters = {}) {
+    try {
+        let queryText = `
+            SELECT 
+                id, tenant_id, tenant_name, account_name, tenant_display_name,
+                is_deleted, last_synced, created_at, updated_at
+            FROM sml_tenant_data
+            WHERE 1=1
+        `;
+        const params = [];
+        let paramCount = 1;
+
+        if (filters.tenantSearch) {
+            queryText += ` AND (tenant_name ILIKE $${paramCount} OR account_name ILIKE $${paramCount})`;
+            params.push(`%${filters.tenantSearch}%`);
+            paramCount++;
+        }
+
+        if (filters.accountName) {
+            queryText += ` AND account_name = $${paramCount}`;
+            params.push(filters.accountName);
+            paramCount++;
+        }
+
+        if (filters.isDeleted !== undefined) {
+            queryText += ` AND is_deleted = $${paramCount}`;
+            params.push(filters.isDeleted);
+            paramCount++;
+        }
+
+        queryText += ' ORDER BY tenant_name ASC';
+
+        const result = await pool.query(queryText, params);
+        return { success: true, tenants: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting SML tenants:', error.message);
+        return { success: false, error: error.message, tenants: [] };
+    }
+}
+
+/**
+ * Get single SML tenant by tenant ID
+ * @param {string} tenantId - SML tenant ID
+ * @returns {Promise<Object>} Tenant data
+ */
+async function getSMLTenantById(tenantId) {
+    try {
+        const query = `
+            SELECT 
+                id, tenant_id, tenant_name, account_name, tenant_display_name,
+                is_deleted, raw_data, product_entitlements, last_synced, created_at, updated_at
+            FROM sml_tenant_data
+            WHERE tenant_id = $1
+        `;
+        
+        const result = await pool.query(query, [tenantId]);
+        
+        if (result.rowCount === 0) {
+            return { success: false, error: 'Tenant not found', tenant: null };
+        }
+        
+        return { success: true, tenant: result.rows[0] };
+    } catch (error) {
+        console.error('❌ Error getting SML tenant:', error.message);
+        return { success: false, error: error.message, tenant: null };
+    }
+}
+
+/**
+ * Clear all SML tenant data (for refresh)
+ * @returns {Promise<Object>} Result
+ */
+async function clearSMLTenants() {
+    try {
+        const result = await pool.query('DELETE FROM sml_tenant_data');
+        console.log(`🗑️ Cleared ${result.rowCount} SML tenants from cache`);
+        return { success: true, deletedCount: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error clearing SML tenants:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Try to find account name for a tenant name by searching in existing tables
+ * @param {string} tenantName - Tenant name to search for
+ * @returns {Promise<Object>} Account name if found
+ */
+async function findAccountNameForTenant(tenantName) {
+    try {
+        // Search in ps_audit_trail table for tenant_name matching
+        // Get the most recent record with this tenant name
+        const query = `
+            SELECT account_name
+            FROM ps_audit_trail
+            WHERE tenant_name = $1
+            AND account_name IS NOT NULL
+            AND account_name != ''
+            ORDER BY last_modified_date DESC
+            LIMIT 1
+        `;
+        
+        const result = await pool.query(query, [tenantName]);
+        
+        if (result.rowCount > 0) {
+            return { success: true, accountName: result.rows[0].account_name };
+        }
+        
+        return { success: false, accountName: null };
+    } catch (error) {
+        console.error('❌ Error finding account name for tenant:', error.message);
+        return { success: false, error: error.message, accountName: null };
+    }
+}
+
+// ===== SML GHOST ACCOUNTS FUNCTIONS =====
+
+/**
+ * Upsert SML ghost account
+ * @param {Object} ghostAccountData - Ghost account data from SML
+ * @returns {Promise<Object>} Result
+ */
+async function upsertSMLGhostAccount(ghostAccountData) {
+    try {
+        const query = `
+            INSERT INTO sml_ghost_accounts (
+                tenant_id, tenant_name, account_name, total_expired_products, 
+                latest_expiry_date, last_checked, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (tenant_id) 
+            DO UPDATE SET
+                tenant_name = EXCLUDED.tenant_name,
+                account_name = EXCLUDED.account_name,
+                total_expired_products = EXCLUDED.total_expired_products,
+                latest_expiry_date = EXCLUDED.latest_expiry_date,
+                last_checked = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+        `;
+        
+        const values = [
+            ghostAccountData.tenantId,
+            ghostAccountData.tenantName,
+            ghostAccountData.accountName || null,
+            ghostAccountData.totalExpiredProducts,
+            ghostAccountData.latestExpiryDate
+        ];
+        
+        const result = await pool.query(query, values);
+        return { success: true, id: result.rows[0].id };
+    } catch (error) {
+        console.error('❌ Error upserting SML ghost account:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get all SML ghost accounts with filters
+ * @param {Object} filters - Filter criteria
+ * @returns {Promise<Object>} List of ghost accounts
+ */
+async function getSMLGhostAccounts(filters = {}) {
+    try {
+        let queryText = `
+            SELECT 
+                id, tenant_id, tenant_name, account_name, total_expired_products,
+                latest_expiry_date, last_checked, is_reviewed,
+                reviewed_at, reviewed_by, notes, data_source, created_at, updated_at
+            FROM sml_ghost_accounts
+            WHERE 1=1
+        `;
+        const params = [];
+        let paramCount = 1;
+
+        // Filter by reviewed status
+        if (filters.isReviewed !== undefined) {
+            queryText += ` AND is_reviewed = $${paramCount}`;
+            params.push(filters.isReviewed);
+            paramCount++;
+        }
+
+        // Filter by tenant/account name search
+        if (filters.accountSearch) {
+            queryText += ` AND (tenant_name ILIKE $${paramCount} OR account_name ILIKE $${paramCount})`;
+            params.push(`%${filters.accountSearch}%`);
+            paramCount++;
+        }
+
+        // Filter by expiry date range
+        if (filters.expiryBefore) {
+            queryText += ` AND latest_expiry_date <= $${paramCount}`;
+            params.push(filters.expiryBefore);
+            paramCount++;
+        }
+
+        if (filters.expiryAfter) {
+            queryText += ` AND latest_expiry_date >= $${paramCount}`;
+            params.push(filters.expiryAfter);
+            paramCount++;
+        }
+
+        queryText += ' ORDER BY latest_expiry_date DESC, tenant_name ASC';
+
+        const result = await pool.query(queryText, params);
+        return { success: true, ghostAccounts: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting SML ghost accounts:', error.message);
+        return { success: false, error: error.message, ghostAccounts: [] };
+    }
+}
+
+/**
+ * Mark SML ghost account as reviewed
+ * @param {string} tenantId - Tenant ID
+ * @param {string} reviewedBy - Username/email of reviewer
+ * @param {string} notes - Optional notes
+ * @returns {Promise<Object>} Result
+ */
+async function markSMLGhostAccountReviewed(tenantId, reviewedBy, notes = null) {
+    try {
+        const query = `
+            UPDATE sml_ghost_accounts
+            SET 
+                is_reviewed = TRUE,
+                reviewed_at = CURRENT_TIMESTAMP,
+                reviewed_by = $2,
+                notes = $3,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE tenant_id = $1
+            RETURNING id
+        `;
+        
+        const values = [tenantId, reviewedBy, notes];
+        const result = await pool.query(query, values);
+        
+        if (result.rowCount === 0) {
+            return { success: false, error: 'Tenant not found' };
+        }
+        
+        return { success: true, id: result.rows[0].id };
+    } catch (error) {
+        console.error('❌ Error marking SML ghost account as reviewed:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Remove SML ghost account from tracking
+ * @param {string} tenantId - Tenant ID
+ * @returns {Promise<Object>} Result
+ */
+async function removeSMLGhostAccount(tenantId) {
+    try {
+        const query = `DELETE FROM sml_ghost_accounts WHERE tenant_id = $1`;
+        const result = await pool.query(query, [tenantId]);
+        
+        return { success: true, deleted: result.rowCount > 0 };
+    } catch (error) {
+        console.error('❌ Error removing SML ghost account:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Clear all SML ghost accounts (for refresh)
+ * @returns {Promise<Object>} Result
+ */
+async function clearSMLGhostAccounts() {
+    try {
+        const result = await pool.query('DELETE FROM sml_ghost_accounts');
+        console.log(`🗑️ Cleared ${result.rowCount} SML ghost accounts from cache`);
+        return { success: true, deletedCount: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error clearing SML ghost accounts:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get SML ghost accounts summary statistics
+ * @returns {Promise<Object>} Summary data
+ */
+async function getSMLGhostAccountsSummary() {
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) as total_ghost_accounts,
+                COUNT(*) FILTER (WHERE is_reviewed = false) as unreviewed,
+                COUNT(*) FILTER (WHERE is_reviewed = true) as reviewed,
+                MIN(latest_expiry_date) as earliest_expiry,
+                MAX(latest_expiry_date) as most_recent_expiry,
+                SUM(total_expired_products) as total_expired_products
+            FROM sml_ghost_accounts
+        `;
+        
+        const result = await pool.query(query);
+        return { success: true, summary: result.rows[0] };
+    } catch (error) {
+        console.error('❌ Error getting SML ghost accounts summary:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get unique expired products from all SML ghost accounts
+ * Returns a list of unique product codes/names for filtering
+ * @returns {Promise<Object>} List of unique products
+ */
+async function getSMLUniqueExpiredProducts() {
+    try {
+        // Query each category separately to maintain category information
+        const query = `
+            SELECT DISTINCT
+                'apps' as category,
+                jsonb_array_elements(st.product_entitlements->'appEntitlements') as product_data
+            FROM sml_ghost_accounts sg
+            JOIN sml_tenant_data st ON sg.tenant_id = st.tenant_id
+            WHERE st.product_entitlements IS NOT NULL
+            AND st.product_entitlements ? 'appEntitlements'
+            
+            UNION ALL
+            
+            SELECT DISTINCT
+                'models' as category,
+                jsonb_array_elements(st.product_entitlements->'modelEntitlements') as product_data
+            FROM sml_ghost_accounts sg
+            JOIN sml_tenant_data st ON sg.tenant_id = st.tenant_id
+            WHERE st.product_entitlements IS NOT NULL
+            AND st.product_entitlements ? 'modelEntitlements'
+            
+            UNION ALL
+            
+            SELECT DISTINCT
+                'data' as category,
+                jsonb_array_elements(st.product_entitlements->'dataEntitlements') as product_data
+            FROM sml_ghost_accounts sg
+            JOIN sml_tenant_data st ON sg.tenant_id = st.tenant_id
+            WHERE st.product_entitlements IS NOT NULL
+            AND st.product_entitlements ? 'dataEntitlements'
+        `;
+        
+        const result = await pool.query(query);
+        
+        // Extract product codes and names, filter for expired products only
+        const productsMap = new Map();
+        const today = new Date();
+        
+        for (const row of result.rows) {
+            const product = row.product_data;
+            const category = row.category;
+            if (!product) continue;
+            
+            // Check if product is expired
+            const endDate = product.endDate ? new Date(product.endDate) : null;
+            if (endDate && endDate < today) {
+                const productCode = product.productCode || product.code;
+                const productName = product.productName || product.name;
+                
+                if (productCode && !productsMap.has(productCode)) {
+                    productsMap.set(productCode, {
+                        productCode: productCode,
+                        productName: productName || productCode,
+                        category: category
+                    });
+                }
+            }
+        }
+        
+        // Group products by category
+        const productsByCategory = {
+            apps: [],
+            models: [],
+            data: []
+        };
+        
+        for (const product of productsMap.values()) {
+            if (product.category && productsByCategory[product.category]) {
+                productsByCategory[product.category].push(product);
+            }
+        }
+        
+        // Sort products within each category
+        productsByCategory.apps.sort((a, b) => a.productName.localeCompare(b.productName));
+        productsByCategory.models.sort((a, b) => a.productName.localeCompare(b.productName));
+        productsByCategory.data.sort((a, b) => a.productName.localeCompare(b.productName));
+        
+        const totalCount = productsByCategory.apps.length + 
+                          productsByCategory.models.length + 
+                          productsByCategory.data.length;
+        
+        return { 
+            success: true, 
+            productsByCategory: productsByCategory,
+            count: totalCount 
+        };
+    } catch (error) {
+        console.error('❌ Error getting unique expired products:', error.message);
+        return { success: false, error: error.message, productsByCategory: { apps: [], models: [], data: [] } };
+    }
+}
+
+/**
+ * Get SML ghost accounts filtered by product
+ * @param {Object} filters - Filter criteria including productCode
+ * @returns {Promise<Object>} List of ghost accounts with the specified product
+ */
+async function getSMLGhostAccountsByProduct(filters = {}) {
+    try {
+        if (!filters.productCodes || filters.productCodes.length === 0) {
+            // If no product filter, use the regular function
+            return getSMLGhostAccounts(filters);
+        }
+        
+        // Support both single productCode (for backwards compatibility) and array productCodes
+        const productCodes = Array.isArray(filters.productCodes) 
+            ? filters.productCodes 
+            : [filters.productCode || filters.productCodes];
+        
+        // Query that filters ghost accounts by checking if they have any of the specified expired products
+        let queryText = `
+            SELECT DISTINCT
+                sg.id, sg.tenant_id, sg.tenant_name, sg.account_name, sg.total_expired_products,
+                sg.latest_expiry_date, sg.last_checked, sg.is_reviewed,
+                sg.reviewed_at, sg.reviewed_by, sg.notes, sg.data_source, sg.created_at, sg.updated_at
+            FROM sml_ghost_accounts sg
+            JOIN sml_tenant_data st ON sg.tenant_id = st.tenant_id
+            WHERE st.product_entitlements IS NOT NULL
+            AND (
+                EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(st.product_entitlements->'appEntitlements') AS app
+                    WHERE (app->>'productCode' = ANY($1) OR app->>'code' = ANY($1))
+                    AND (app->>'endDate')::timestamp < NOW()
+                )
+                OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(st.product_entitlements->'modelEntitlements') AS model
+                    WHERE (model->>'productCode' = ANY($1) OR model->>'code' = ANY($1))
+                    AND (model->>'endDate')::timestamp < NOW()
+                )
+                OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(st.product_entitlements->'dataEntitlements') AS data
+                    WHERE (data->>'productCode' = ANY($1) OR data->>'code' = ANY($1))
+                    AND (data->>'endDate')::timestamp < NOW()
+                )
+            )
+        `;
+        
+        const params = [productCodes];
+        let paramCount = 2;
+        
+        // Add additional filters
+        if (filters.isReviewed !== undefined) {
+            queryText += ` AND sg.is_reviewed = $${paramCount}`;
+            params.push(filters.isReviewed);
+            paramCount++;
+        }
+        
+        if (filters.accountSearch) {
+            queryText += ` AND (sg.tenant_name ILIKE $${paramCount} OR sg.account_name ILIKE $${paramCount})`;
+            params.push(`%${filters.accountSearch}%`);
+            paramCount++;
+        }
+        
+        if (filters.expiryBefore) {
+            queryText += ` AND sg.latest_expiry_date <= $${paramCount}`;
+            params.push(filters.expiryBefore);
+            paramCount++;
+        }
+        
+        if (filters.expiryAfter) {
+            queryText += ` AND sg.latest_expiry_date >= $${paramCount}`;
+            params.push(filters.expiryAfter);
+            paramCount++;
+        }
+        
+        queryText += ' ORDER BY sg.latest_expiry_date DESC, sg.tenant_name ASC';
+        
+        const result = await pool.query(queryText, params);
+        return { success: true, ghostAccounts: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting SML ghost accounts by product:', error.message);
+        return { success: false, error: error.message, ghostAccounts: [] };
+    }
+}
+
 module.exports = {
     query,
     getClient,
@@ -1413,6 +1947,21 @@ module.exports = {
     removeGhostAccount,
     clearGhostAccounts,
     getGhostAccountsSummary,
+    // SML tenant data functions
+    upsertSMLTenant,
+    getSMLTenants,
+    getSMLTenantById,
+    clearSMLTenants,
+    findAccountNameForTenant,
+    // SML ghost accounts functions
+    upsertSMLGhostAccount,
+    getSMLGhostAccounts,
+    getSMLGhostAccountsByProduct,
+    getSMLUniqueExpiredProducts,
+    markSMLGhostAccountReviewed,
+    removeSMLGhostAccount,
+    clearSMLGhostAccounts,
+    getSMLGhostAccountsSummary,
     // Package functions
     upsertPackage,
     getPackageById,
