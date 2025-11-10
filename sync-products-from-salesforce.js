@@ -3,6 +3,7 @@
  * Pulls all products from Salesforce Product2 object and stores in local database
  */
 
+require('dotenv').config();
 const salesforce = require('./salesforce');
 const db = require('./database');
 
@@ -34,14 +35,34 @@ async function syncProducts() {
                    Product_Group__c, Product_Family_L2__c, ProductReportingGroup__c,
                    Product_Variant__c, ProductVersions__c, TypeOfConfiguration__c,
                    IsExpansionPack__c, Product_Selection_Grouping__c, Product_Selection_Restriction__c,
+                   Continent__c, IRP_Bundle_Region__c, IRP_Bundle_Subregion__c,
+                   Country__c, RI_Platform_Region__c, RI_Platform_Sub_Region__c,
+                   Model_Type__c, Model_Subtype__c, Data_API_Name__c, Peril__c, Data_Type__c,
                    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
             FROM Product2
             WHERE IsDeleted = false
             ORDER BY Name ASC
         `;
         
-        const result = await conn.query(soql);
+        // Query with pagination to get all records
+        let result = await conn.query(soql);
+        let allRecords = [...result.records];
+        
+        // Fetch additional records if there are more
+        while (!result.done) {
+            console.log(`   Fetching more records... (${allRecords.length} so far)`);
+            result = await conn.queryMore(result.nextRecordsUrl);
+            allRecords.push(...result.records);
+        }
+        
+        // Update result with all records
+        result = {
+            records: allRecords,
+            totalSize: result.totalSize
+        };
+        
         console.log(`✅ Found ${result.totalSize} products in Salesforce\n`);
+        console.log(`✅ Fetched ${result.records.length} product records\n`);
         
         let productsAdded = 0;
         let productsUpdated = 0;
@@ -79,6 +100,17 @@ async function syncProducts() {
                     is_expansion_pack: product.IsExpansionPack__c || false,
                     product_selection_grouping: product.Product_Selection_Grouping__c || null,
                     product_selection_restriction: product.Product_Selection_Restriction__c || null,
+                    continent: product.Continent__c || null,
+                    irp_bundle_region: product.IRP_Bundle_Region__c || null,
+                    irp_bundle_subregion: product.IRP_Bundle_Subregion__c || null,
+                    country: product.Country__c || null,
+                    ri_platform_region: product.RI_Platform_Region__c || null,
+                    ri_platform_sub_region: product.RI_Platform_Sub_Region__c || null,
+                    model_type: product.Model_Type__c || null,
+                    model_subtype: product.Model_Subtype__c || null,
+                    data_api_name: product.Data_API_Name__c || null,
+                    peril: product.Peril__c || null,
+                    data_type: product.Data_Type__c || null,
                     sf_created_date: product.CreatedDate || null,
                     sf_last_modified_date: product.LastModifiedDate || null,
                     sf_created_by_id: product.CreatedById || null,
@@ -95,10 +127,13 @@ async function syncProducts() {
                             product_group, product_family_l2, product_reporting_group,
                             product_variant, product_versions, type_of_configuration,
                             is_expansion_pack, product_selection_grouping, product_selection_restriction,
+                            continent, irp_bundle_region, irp_bundle_subregion,
+                            country, ri_platform_region, ri_platform_sub_region,
+                            model_type, model_subtype, data_api_name, peril, data_type,
                             sf_created_date, sf_last_modified_date, sf_created_by_id, sf_last_modified_by_id,
                             synced_at
                         ) VALUES (
-                            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+                            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33
                         )
                     `, [
                         productData.salesforce_id, productData.name, productData.product_code,
@@ -108,6 +143,10 @@ async function syncProducts() {
                         productData.product_variant, productData.product_versions,
                         productData.type_of_configuration, productData.is_expansion_pack,
                         productData.product_selection_grouping, productData.product_selection_restriction,
+                        productData.continent, productData.irp_bundle_region, productData.irp_bundle_subregion,
+                        productData.country, productData.ri_platform_region, productData.ri_platform_sub_region,
+                        productData.model_type, productData.model_subtype, productData.data_api_name,
+                        productData.peril, productData.data_type,
                         productData.sf_created_date, productData.sf_last_modified_date,
                         productData.sf_created_by_id, productData.sf_last_modified_by_id,
                         productData.synced_at
@@ -127,9 +166,12 @@ async function syncProducts() {
                                 product_variant = $12, product_versions = $13, type_of_configuration = $14,
                                 is_expansion_pack = $15, product_selection_grouping = $16,
                                 product_selection_restriction = $17,
-                                sf_created_date = $18, sf_last_modified_date = $19,
-                                sf_created_by_id = $20, sf_last_modified_by_id = $21,
-                                synced_at = $22, updated_at = $22
+                                continent = $18, irp_bundle_region = $19, irp_bundle_subregion = $20,
+                                country = $21, ri_platform_region = $22, ri_platform_sub_region = $23,
+                                model_type = $24, model_subtype = $25, data_api_name = $26, peril = $27, data_type = $28,
+                                sf_created_date = $29, sf_last_modified_date = $30,
+                                sf_created_by_id = $31, sf_last_modified_by_id = $32,
+                                synced_at = $33, updated_at = $33
                             WHERE salesforce_id = $1
                         `, [
                             productData.salesforce_id, productData.name, productData.product_code,
@@ -139,6 +181,10 @@ async function syncProducts() {
                             productData.product_variant, productData.product_versions,
                             productData.type_of_configuration, productData.is_expansion_pack,
                             productData.product_selection_grouping, productData.product_selection_restriction,
+                            productData.continent, productData.irp_bundle_region, productData.irp_bundle_subregion,
+                            productData.country, productData.ri_platform_region, productData.ri_platform_sub_region,
+                            productData.model_type, productData.model_subtype, productData.data_api_name,
+                            productData.peril, productData.data_type,
                             productData.sf_created_date, productData.sf_last_modified_date,
                             productData.sf_created_by_id, productData.sf_last_modified_by_id,
                             productData.synced_at

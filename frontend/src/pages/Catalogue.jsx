@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { CubeIcon, RectangleStackIcon } from '@heroicons/react/24/solid';
+import { ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import ProductCatalogueTab from './ProductCatalogueTab';
 import BundlesTab from './BundlesTab';
+import PackagesCatalogueTab from './PackagesCatalogueTab';
 
 const Catalogue = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -12,6 +14,12 @@ const Catalogue = () => {
       name: 'Products',
       icon: CubeIcon,
       description: 'Browse all available products'
+    },
+    {
+      id: 'packages',
+      name: 'Packages',
+      icon: ArchiveBoxIcon,
+      description: 'Browse all available packages'
     },
     {
       id: 'bundles',
@@ -79,6 +87,7 @@ const Catalogue = () => {
       {/* Tab Content */}
       <div className="mt-6">
         {activeTab === 'products' && <ProductCatalogueTab />}
+        {activeTab === 'packages' && <PackagesCatalogueTab />}
         {activeTab === 'bundles' && <BundlesTab />}
       </div>
     </div>

@@ -86,8 +86,117 @@ export async function getProductById(productId) {
   }
 }
 
+/**
+ * Get packages associated with a product
+ * @param {string} productCode - Product code
+ * @returns {Promise<Object>} Associated packages
+ */
+export async function getPackagesForProduct(productCode) {
+  try {
+    const response = await api.get(`/products/${encodeURIComponent(productCode)}/packages`);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        packages: response.data.packages || [],
+        count: response.data.count || 0
+      };
+    } else {
+      throw new Error(response.data.error || 'Failed to fetch packages for product');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching packages for product:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch packages for product',
+      packages: [],
+      count: 0
+    };
+  }
+}
+
+/**
+ * Export product catalogue to Excel
+ * Triggers a download of all products in Excel format
+ * @returns {Promise<void>}
+ */
+export async function exportProductCatalogueToExcel() {
+  try {
+    console.log('🔵 Starting export to Excel...');
+    
+    // Make API call to get the Excel file
+    const response = await api.get('/product-catalogue/export', {
+      responseType: 'blob' // Important: tell axios to expect a binary file
+    });
+
+    console.log('🔵 Received response:', response.status, response.headers['content-type']);
+    console.log('🔵 Blob size:', response.data.size, 'bytes');
+
+    // Check if response is actually an error JSON
+    if (response.data.type === 'application/json') {
+      // The server returned JSON (likely an error) instead of Excel
+      const text = await response.data.text();
+      const errorData = JSON.parse(text);
+      throw new Error(errorData.error || errorData.message || 'Server returned an error');
+    }
+
+    // Create a blob from the response
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    console.log('🔵 Created blob:', blob.size, 'bytes');
+
+    // Create a temporary download link and trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Generate filename with current date
+    const timestamp = new Date().toISOString().split('T')[0];
+    link.download = `Product_Catalogue_${timestamp}.xlsx`;
+    
+    console.log('🔵 Triggering download:', link.download);
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup with a slight delay to ensure download starts
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      console.log('🔵 Download cleanup complete');
+    }, 100);
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error exporting product catalogue:', error);
+    console.error('❌ Error details:', error.response?.data, error.response?.status);
+    
+    // If the error response is a blob, try to read it as text
+    if (error.response?.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        console.error('❌ Error response body:', text);
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.error || errorData.message || 'Server error');
+      } catch (parseError) {
+        // If we can't parse it, throw the original error
+        throw new Error(error.message || 'Failed to export product catalogue');
+      }
+    }
+    
+    throw new Error(
+      error.response?.data?.message || error.message || 'Failed to export product catalogue'
+    );
+  }
+}
+
 export default {
   getProductCatalogue,
-  getProductById
+  getProductById,
+  getPackagesForProduct,
+  exportProductCatalogueToExcel
 };
 

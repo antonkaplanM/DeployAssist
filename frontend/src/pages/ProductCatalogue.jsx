@@ -140,24 +140,24 @@ const ProductCatalogue = () => {
     if (!product) return [];
 
     const fieldsToShow = [
-      { key: 'Id', label: 'Salesforce ID' },
       { key: 'Name', label: 'Product Name' },
       { key: 'ProductCode', label: 'Product Code' },
+      { key: 'Id', label: 'Salesforce ID' },
       { key: 'Description', label: 'Description' },
       { key: 'Family', label: 'Product Family' },
-      { key: 'Product_Group__c', label: 'Product Service Name (L3)' },
-      { key: 'Product_Family_L2__c', label: 'Product Family (L2)' },
-      { key: 'ProductReportingGroup__c', label: 'Product Group' },
-      { key: 'Product_Variant__c', label: 'Product Variant' },
-      { key: 'ProductVersions__c', label: 'Product Versions' },
-      { key: 'TypeOfConfiguration__c', label: 'Type of Configuration' },
-      { key: 'IsExpansionPack__c', label: 'Is Expansion Pack' },
+      { key: 'Product_Group__c', label: 'Product Group' },
       { key: 'Product_Selection_Grouping__c', label: 'Product Selection Grouping' },
-      { key: 'IsActive', label: 'Active' },
-      { key: 'IsArchived', label: 'Archived' },
-      { key: 'DisplayUrl', label: 'Display URL' },
-      { key: 'CreatedDate', label: 'Created Date' },
-      { key: 'LastModifiedDate', label: 'Last Modified Date' }
+      { key: 'Country__c', label: 'Country' },
+      { key: 'Continent__c', label: 'Continent' },
+      { key: 'RI_Platform_Region__c', label: 'RI Region' },
+      { key: 'RI_Platform_Sub_Region__c', label: 'RI Subregion' },
+      { key: 'Model_Type__c', label: 'Model Type' },
+      { key: 'Model_Subtype__c', label: 'Model Subtype' },
+      { key: 'IRP_Bundle_Region__c', label: 'Bundle Region' },
+      { key: 'IRP_Bundle_Subregion__c', label: 'Bundle Subregion' },
+      { key: 'Data_API_Name__c', label: 'Data API Name' },
+      { key: 'Peril__c', label: 'Peril' },
+      { key: 'Data_Type__c', label: 'Data Type' }
     ];
 
     return fieldsToShow

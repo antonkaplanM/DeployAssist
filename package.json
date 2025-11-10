@@ -28,7 +28,10 @@
     "audit:capture": "node capture-ps-changes.js",
     "audit:fix-names": "node update-audit-account-names.js",
     "audit:analyze-payloads": "node analyze-ps-payloads.js",
-    "products:sync": "node sync-products-from-salesforce.js"
+    "products:sync": "node sync-products-from-salesforce.js",
+    "products:export": "node export-product-catalogue.js",
+    "mappings:extract": "node extract-all-package-product-mappings.js",
+    "mappings:populate": "node populate-package-product-mappings.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

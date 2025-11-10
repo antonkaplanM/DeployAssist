@@ -4,13 +4,16 @@ import {
   ArrowPathIcon,
   XMarkIcon,
   FunnelIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { CubeIcon } from '@heroicons/react/24/solid';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { getProductCatalogue, getProductById } from '../services/productCatalogueService';
+import { getProductCatalogue, getProductById, getPackagesForProduct, exportProductCatalogueToExcel } from '../services/productCatalogueService';
+import { useToast } from '../context/ToastContext';
 
 const ProductCatalogueTab = () => {
+  const { showToast } = useToast();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +26,11 @@ const ProductCatalogueTab = () => {
   const [productGroups, setProductGroups] = useState([]);
   const [productSelectionGroupings, setProductSelectionGroupings] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProductPackages, setSelectedProductPackages] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [totalSize, setTotalSize] = useState(0);
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   // Load products on component mount
   useEffect(() => {
@@ -103,12 +108,41 @@ const ProductCatalogueTab = () => {
     loadProducts();
   };
 
+  const handleExportToExcel = async () => {
+    setExporting(true);
+    try {
+      await exportProductCatalogueToExcel();
+      showToast({ 
+        title: 'Success', 
+        message: 'Product catalogue exported successfully!' 
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      showToast({ 
+        title: 'Export Failed', 
+        message: error.message || 'Failed to export product catalogue' 
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleProductClick = async (productId) => {
     setLoading(true);
     try {
       const result = await getProductById(productId);
       if (result.success) {
         setSelectedProduct(result.product);
+        
+        // Also fetch related packages
+        // Note: ProductCode is returned with capital letters from the API
+        const packagesResult = await getPackagesForProduct(result.product.ProductCode);
+        if (packagesResult.success) {
+          setSelectedProductPackages(packagesResult.packages);
+        } else {
+          setSelectedProductPackages([]);
+        }
+        
         setShowModal(true);
       } else {
         setError(result.error || 'Failed to load product details');
@@ -124,6 +158,7 @@ const ProductCatalogueTab = () => {
   const closeModal = () => {
     setShowModal(false);
     setSelectedProduct(null);
+    setSelectedProductPackages([]);
   };
 
   const formatFieldLabel = (fieldName) => {
@@ -140,24 +175,24 @@ const ProductCatalogueTab = () => {
     if (!product) return [];
 
     const fieldsToShow = [
-      { key: 'Id', label: 'Salesforce ID' },
       { key: 'Name', label: 'Product Name' },
       { key: 'ProductCode', label: 'Product Code' },
+      { key: 'Id', label: 'Salesforce ID' },
       { key: 'Description', label: 'Description' },
       { key: 'Family', label: 'Product Family' },
-      { key: 'Product_Group__c', label: 'Product Service Name (L3)' },
-      { key: 'Product_Family_L2__c', label: 'Product Family (L2)' },
-      { key: 'ProductReportingGroup__c', label: 'Product Group' },
-      { key: 'Product_Variant__c', label: 'Product Variant' },
-      { key: 'ProductVersions__c', label: 'Product Versions' },
-      { key: 'TypeOfConfiguration__c', label: 'Type of Configuration' },
-      { key: 'IsExpansionPack__c', label: 'Is Expansion Pack' },
+      { key: 'Product_Group__c', label: 'Product Group' },
       { key: 'Product_Selection_Grouping__c', label: 'Product Selection Grouping' },
-      { key: 'IsActive', label: 'Active' },
-      { key: 'IsArchived', label: 'Archived' },
-      { key: 'DisplayUrl', label: 'Display URL' },
-      { key: 'CreatedDate', label: 'Created Date' },
-      { key: 'LastModifiedDate', label: 'Last Modified Date' }
+      { key: 'Country__c', label: 'Country' },
+      { key: 'Continent__c', label: 'Continent' },
+      { key: 'RI_Platform_Region__c', label: 'RI Region' },
+      { key: 'RI_Platform_Sub_Region__c', label: 'RI Subregion' },
+      { key: 'Model_Type__c', label: 'Model Type' },
+      { key: 'Model_Subtype__c', label: 'Model Subtype' },
+      { key: 'IRP_Bundle_Region__c', label: 'Bundle Region' },
+      { key: 'IRP_Bundle_Subregion__c', label: 'Bundle Subregion' },
+      { key: 'Data_API_Name__c', label: 'Data API Name' },
+      { key: 'Peril__c', label: 'Peril' },
+      { key: 'Data_Type__c', label: 'Data Type' }
     ];
 
     return fieldsToShow
@@ -260,15 +295,29 @@ const ProductCatalogueTab = () => {
             </div>
           </div>
 
-          {/* Refresh Button */}
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 h-10 px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ArrowPathIcon className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            {/* Export to Excel Button */}
+            <button
+              onClick={handleExportToExcel}
+              disabled={exporting || loading || filteredProducts.length === 0}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 h-10 px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Export all active products to Excel"
+            >
+              <ArrowDownTrayIcon className={`h-4 w-4 mr-2 ${exporting ? 'animate-bounce' : ''}`} />
+              {exporting ? 'Exporting...' : 'Export to Excel'}
+            </button>
+
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 h-10 px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Results Count */}
@@ -426,6 +475,30 @@ const ProductCatalogueTab = () => {
 
               {/* Modal Body */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                {/* Related Packages Section */}
+                {selectedProductPackages.length > 0 && (
+                  <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                      Related Packages ({selectedProductPackages.length})
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProductPackages.map((pkg) => (
+                        <span
+                          key={pkg.package_name}
+                          className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900 px-3 py-1 text-xs font-medium text-green-800 dark:text-green-200"
+                          title={`Seen ${pkg.occurrence_count} time(s)`}
+                        >
+                          {pkg.package_name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Product Details */}
                 <div className="space-y-4">
                   {getProductFieldsForDisplay(selectedProduct).map(({ label, value }) => (
                     <div key={label} className="grid grid-cols-3 gap-4">
