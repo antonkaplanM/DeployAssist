@@ -178,6 +178,119 @@ class ProductCatalogueService {
             XLSX.utils.book_append_sheet(workbook, packagesWorksheet, 'Packages');
         }
 
+        // ===== Add Regional Bundles Tab =====
+        logger.info('Adding Regional Bundles tab to export');
+        
+        // Get all regional bundle products from repository
+        // Wrapped in try-catch in case bundle columns don't exist yet
+        let bundles = [];
+        try {
+            const bundlesQuery = `
+            SELECT 
+                p.name,
+                p.product_code,
+                p.salesforce_id,
+                p.description,
+                p.family,
+                p.product_group,
+                p.product_selection_grouping,
+                p.country,
+                p.continent,
+                p.ri_platform_region,
+                p.ri_platform_sub_region,
+                p.model_type,
+                p.model_subtype,
+                p.irp_bundle_region,
+                p.irp_bundle_subregion,
+                p.data_api_name,
+                p.peril,
+                p.data_type,
+                p.constituents,
+                COALESCE(
+                    string_agg(DISTINCT m.package_name, ', ' ORDER BY m.package_name),
+                    ''
+                ) as related_packages
+            FROM products p
+            LEFT JOIN package_product_mapping m ON p.product_code = m.product_code
+            WHERE p.is_active = true 
+            AND p.is_archived = false
+            AND p.is_bundle = true
+            GROUP BY p.id, p.name, p.product_code, p.salesforce_id, p.description, p.family, 
+                     p.product_group, p.product_selection_grouping,
+                     p.country, p.continent, p.ri_platform_region, p.ri_platform_sub_region,
+                     p.model_type, p.model_subtype, p.irp_bundle_region, p.irp_bundle_subregion,
+                     p.data_api_name, p.peril, p.data_type, p.constituents
+            ORDER BY p.name ASC
+        `;
+        
+            const bundlesResult = await db.query(bundlesQuery);
+            bundles = bundlesResult.rows;
+            
+            logger.info(`Found ${bundles.length} regional bundles to add to export`);
+        } catch (error) {
+            logger.warn(`Could not load regional bundles for export: ${error.message}`);
+            logger.warn('Skipping Regional Bundles tab. Run bundle migration to enable.');
+            bundles = [];
+        }
+        
+        if (bundles.length > 0) {
+            // Transform bundles into Excel format
+            const bundlesExcelData = bundles.map(bundle => {
+                return {
+                    'Product Name': bundle.name || '',
+                    'Product Code': bundle.product_code || '',
+                    'Salesforce ID': bundle.salesforce_id || '',
+                    'Description': bundle.description || '',
+                    'Product Family': bundle.family || '',
+                    'Product Group': bundle.product_group || '',
+                    'Product Selection Grouping': bundle.product_selection_grouping || '',
+                    'Country': bundle.country || '',
+                    'Continent': bundle.continent || '',
+                    'RI Region': bundle.ri_platform_region || '',
+                    'RI Subregions (Bundle)': bundle.ri_platform_sub_region || '',
+                    'Constituents': bundle.constituents || '',
+                    'Model Type': bundle.model_type || '',
+                    'Model Subtype': bundle.model_subtype || '',
+                    'Bundle Region': bundle.irp_bundle_region || '',
+                    'Bundle Subregion': bundle.irp_bundle_subregion || '',
+                    'Data API Name': bundle.data_api_name || '',
+                    'Peril': bundle.peril || '',
+                    'Data Type': bundle.data_type || '',
+                    'Related Packages': bundle.related_packages || ''
+                };
+            });
+
+            // Create Regional Bundles worksheet
+            const bundlesWorksheet = XLSX.utils.json_to_sheet(bundlesExcelData);
+
+            // Set column widths for better readability
+            bundlesWorksheet['!cols'] = [
+                { wch: 50 },  // Product Name
+                { wch: 20 },  // Product Code
+                { wch: 20 },  // Salesforce ID
+                { wch: 60 },  // Description
+                { wch: 25 },  // Product Family
+                { wch: 25 },  // Product Group
+                { wch: 30 },  // Product Selection Grouping
+                { wch: 15 },  // Country
+                { wch: 20 },  // Continent
+                { wch: 20 },  // RI Region
+                { wch: 50 },  // RI Subregions (Bundle) - wider for multiple values
+                { wch: 60 },  // Constituents - wider for multiple product codes
+                { wch: 20 },  // Model Type
+                { wch: 20 },  // Model Subtype
+                { wch: 20 },  // Bundle Region
+                { wch: 20 },  // Bundle Subregion
+                { wch: 40 },  // Data API Name
+                { wch: 20 },  // Peril
+                { wch: 20 },  // Data Type
+                { wch: 40 }   // Related Packages
+            ];
+
+            // Add Regional Bundles worksheet to workbook
+            XLSX.utils.book_append_sheet(workbook, bundlesWorksheet, 'Regional Bundles');
+        }
+
         // Generate buffer
         const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
@@ -185,13 +298,15 @@ class ProductCatalogueService {
         const timestamp = new Date().toISOString().split('T')[0];
         const filename = `Product_Catalogue_${timestamp}.xlsx`;
 
-        logger.info(`Excel file generated: ${filename} (${products.length} products, ${packages.length} packages)`);
+        const bundleCount = bundles ? bundles.length : 0;
+        logger.info(`Excel file generated: ${filename} (${products.length} products, ${packages.length} packages, ${bundleCount} bundles)`);
         
         return {
             buffer: excelBuffer,
             filename: filename,
             productCount: products.length,
-            packageCount: packages.length
+            packageCount: packages.length,
+            bundleCount: bundleCount
         };
     }
 
@@ -276,8 +391,47 @@ class ProductCatalogueService {
                 IsActive: product.is_active,
                 IsArchived: product.is_archived,
                 CreatedDate: product.sf_created_date,
-                LastModifiedDate: product.sf_last_modified_date
+                LastModifiedDate: product.sf_last_modified_date,
+                Constituents: product.constituents
             },
+            source: 'local_database'
+        };
+    }
+
+    /**
+     * Get regional bundle products from local database with filters
+     * @param {Object} filters - Query filters
+     * @returns {Promise<Object>} Regional bundles data
+     */
+    async getRegionalBundles(filters = {}) {
+        const { isActive = 'true', limit = 100, offset = 0 } = filters;
+        
+        logger.info(`Fetching regional bundles from local DB (search: ${filters.search || 'none'}, family: ${filters.family || 'all'})`);
+        
+        // Normalize filters
+        const normalizedFilters = {
+            ...filters,
+            isActive: isActive === 'true',
+            isArchived: false,
+            limit: Math.min(parseInt(limit) || 100, 2000),
+            offset: parseInt(offset) || 0
+        };
+        
+        // Get bundles from repository
+        const bundles = await productRepository.findBundlesWithFilters(normalizedFilters);
+        
+        // Get total count
+        const totalSize = await productRepository.countBundlesWithFilters(normalizedFilters);
+        
+        // Get filter options (same as regular products)
+        const filterOptions = await productRepository.getFilterOptions();
+        
+        return {
+            bundles,
+            count: bundles.length,
+            totalSize,
+            done: (normalizedFilters.offset + bundles.length) >= totalSize,
+            filterOptions,
             source: 'local_database'
         };
     }

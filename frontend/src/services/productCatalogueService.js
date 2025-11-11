@@ -116,6 +116,52 @@ export async function getPackagesForProduct(productCode) {
 }
 
 /**
+ * Get regional bundles (products with multiple RI Subregion values)
+ * @param {Object} params - Query parameters (same as getProductCatalogue)
+ * @returns {Promise<Object>} Regional bundles data
+ */
+export async function getRegionalBundles(params = {}) {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    if (params.search) queryParams.append('search', params.search);
+    if (params.family && params.family !== 'all') queryParams.append('family', params.family);
+    if (params.productGroup && params.productGroup !== 'all') queryParams.append('productGroup', params.productGroup);
+    if (params.productSelectionGrouping && params.productSelectionGrouping !== 'all') queryParams.append('productSelectionGrouping', params.productSelectionGrouping);
+    if (params.isActive !== undefined) queryParams.append('isActive', params.isActive);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.offset) queryParams.append('offset', params.offset);
+    
+    const url = `/product-catalogue/regional-bundles?${queryParams.toString()}`;
+    const response = await api.get(url);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        bundles: response.data.bundles || [],
+        count: response.data.count || 0,
+        totalSize: response.data.totalSize || 0,
+        done: response.data.done || true,
+        filterOptions: response.data.filterOptions || { families: [] },
+        timestamp: response.data.timestamp
+      };
+    } else {
+      throw new Error(response.data.error || 'Failed to fetch regional bundles');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching regional bundles:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch regional bundles',
+      bundles: [],
+      count: 0,
+      totalSize: 0,
+      filterOptions: { families: [] }
+    };
+  }
+}
+
+/**
  * Export product catalogue to Excel
  * Triggers a download of all products in Excel format
  * @returns {Promise<void>}
@@ -197,6 +243,7 @@ export default {
   getProductCatalogue,
   getProductById,
   getPackagesForProduct,
+  getRegionalBundles,
   exportProductCatalogueToExcel
 };
 

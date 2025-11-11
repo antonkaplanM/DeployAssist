@@ -9,6 +9,7 @@ const productCatalogueService = require('../services/product-catalogue.service')
 const { asyncHandler } = require('../middleware/error-handler');
 const { success } = require('../utils/response');
 const logger = require('../utils/logger');
+const { requireBundleColumns } = require('../middleware/check-bundle-columns');
 
 // NOTE: Middleware imports - these should be added when mounting in app.js:
 // - authenticate: JWT authentication middleware
@@ -90,9 +91,27 @@ router.get('/sync-status', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * Get regional bundles (products with multiple RI Subregion values)
+ * GET /api/product-catalogue/regional-bundles
+ * Query params: same as main catalogue
+ * NOTE: This route MUST come before the :productId route to avoid conflicts
+ * NOTE: Requires bundle columns to exist (run migration first)
+ */
+router.get('/regional-bundles', requireBundleColumns, asyncHandler(async (req, res) => {
+    const result = await productCatalogueService.getRegionalBundles(req.query);
+    
+    // Return flat structure for backwards compatibility
+    res.json({
+        success: true,
+        ...result,
+        timestamp: new Date().toISOString()
+    });
+}));
+
+/**
  * Get a specific product by ID from local database
  * GET /api/product-catalogue/:productId
- * NOTE: This route with :productId param MUST come AFTER specific routes like /export
+ * NOTE: This route with :productId param MUST come AFTER specific routes like /export and /regional-bundles
  */
 router.get('/:productId', asyncHandler(async (req, res) => {
     const { productId } = req.params;

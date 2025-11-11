@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { CubeIcon, RectangleStackIcon } from '@heroicons/react/24/solid';
+import { CubeIcon, RectangleStackIcon, GlobeAltIcon } from '@heroicons/react/24/solid';
 import { ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import ProductCatalogueTab from './ProductCatalogueTab';
 import BundlesTab from './BundlesTab';
 import PackagesCatalogueTab from './PackagesCatalogueTab';
+import RegionalBundlesTab from './RegionalBundlesTab';
 
 const Catalogue = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -13,13 +14,19 @@ const Catalogue = () => {
       id: 'products',
       name: 'Products',
       icon: CubeIcon,
-      description: 'Browse all available products'
+      description: 'Browse all available base products'
     },
     {
       id: 'packages',
       name: 'Packages',
       icon: ArchiveBoxIcon,
       description: 'Browse all available packages'
+    },
+    {
+      id: 'regional-bundles',
+      name: 'Regional Bundles',
+      icon: GlobeAltIcon,
+      description: 'Products with multiple RI Subregions'
     },
     {
       id: 'bundles',
@@ -88,6 +95,7 @@ const Catalogue = () => {
       <div className="mt-6">
         {activeTab === 'products' && <ProductCatalogueTab />}
         {activeTab === 'packages' && <PackagesCatalogueTab />}
+        {activeTab === 'regional-bundles' && <RegionalBundlesTab />}
         {activeTab === 'bundles' && <BundlesTab />}
       </div>
     </div>

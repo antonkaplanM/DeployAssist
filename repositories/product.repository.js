@@ -9,6 +9,35 @@ const logger = require('../utils/logger');
 class ProductRepository extends BaseRepository {
     constructor() {
         super('products');
+        this.bundleColumnsChecked = false;
+        this.bundleColumnsExist = false;
+    }
+
+    /**
+     * Check if bundle columns exist (cached check)
+     * @returns {Promise<boolean>}
+     */
+    async checkBundleColumns() {
+        if (this.bundleColumnsChecked) {
+            return this.bundleColumnsExist;
+        }
+
+        try {
+            const result = await this.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'products' 
+                AND column_name IN ('is_bundle', 'constituents')
+            `);
+            
+            this.bundleColumnsExist = result.rows.length === 2;
+            this.bundleColumnsChecked = true;
+            
+            return this.bundleColumnsExist;
+        } catch (error) {
+            logger.error('Error checking bundle columns:', error.message);
+            return false;
+        }
     }
 
     /**
@@ -24,6 +53,7 @@ class ProductRepository extends BaseRepository {
             productSelectionGrouping,
             isActive = true,
             isArchived = false,
+            excludeBundles = true,  // By default, exclude bundle products
             limit = 100,
             offset = 0
         } = filters;
@@ -40,6 +70,15 @@ class ProductRepository extends BaseRepository {
         if (isArchived !== undefined) {
             whereConditions.push(`is_archived = $${paramIndex++}`);
             queryParams.push(isArchived);
+        }
+
+        // Exclude bundles filter (default: true for base products only)
+        // Only apply if bundle columns exist (to avoid errors before migration)
+        if (excludeBundles) {
+            const bundleColumnsExist = await this.checkBundleColumns();
+            if (bundleColumnsExist) {
+                whereConditions.push(`(is_bundle IS NULL OR is_bundle = false)`);
+            }
         }
 
         // Family filter
@@ -120,7 +159,8 @@ class ProductRepository extends BaseRepository {
             productGroup,
             productSelectionGrouping,
             isActive = true,
-            isArchived = false
+            isArchived = false,
+            excludeBundles = true
         } = filters;
 
         let whereConditions = [];
@@ -135,6 +175,16 @@ class ProductRepository extends BaseRepository {
             whereConditions.push(`is_archived = $${paramIndex++}`);
             queryParams.push(isArchived);
         }
+        
+        // Exclude bundles filter (default: true for base products only)
+        // Only apply if bundle columns exist (to avoid errors before migration)
+        if (excludeBundles) {
+            const bundleColumnsExist = await this.checkBundleColumns();
+            if (bundleColumnsExist) {
+                whereConditions.push(`(is_bundle IS NULL OR is_bundle = false)`);
+            }
+        }
+        
         if (family && family !== 'all') {
             whereConditions.push(`family = $${paramIndex++}`);
             queryParams.push(family);
@@ -275,6 +325,8 @@ class ProductRepository extends BaseRepository {
                 COUNT(*) as total,
                 COUNT(*) FILTER (WHERE is_active = true) as active,
                 COUNT(*) FILTER (WHERE is_archived = true) as archived,
+                COUNT(*) FILTER (WHERE is_active = true AND is_bundle = true) as bundles,
+                COUNT(*) FILTER (WHERE is_active = true AND (is_bundle = false OR is_bundle IS NULL)) as base_products,
                 MAX(synced_at) as last_sync
             FROM ${this.tableName}
         `;
@@ -286,10 +338,169 @@ class ProductRepository extends BaseRepository {
             total: parseInt(stats.total),
             active: parseInt(stats.active),
             archived: parseInt(stats.archived),
+            bundles: parseInt(stats.bundles),
+            baseProducts: parseInt(stats.base_products),
             lastSync: stats.last_sync
         };
+    }
+
+    /**
+     * Find bundle products with filters
+     * @param {Object} filters - Query filters
+     * @returns {Promise<Array>} Bundle products
+     */
+    async findBundlesWithFilters(filters = {}) {
+        const {
+            search,
+            family,
+            productGroup,
+            productSelectionGrouping,
+            isActive = true,
+            isArchived = false,
+            limit = 100,
+            offset = 0
+        } = filters;
+
+        let whereConditions = ['is_bundle = true'];
+        let queryParams = [];
+        let paramIndex = 1;
+
+        // Active/archived filters
+        if (isActive !== undefined) {
+            whereConditions.push(`is_active = $${paramIndex++}`);
+            queryParams.push(isActive);
+        }
+        if (isArchived !== undefined) {
+            whereConditions.push(`is_archived = $${paramIndex++}`);
+            queryParams.push(isArchived);
+        }
+
+        // Family filter
+        if (family && family !== 'all') {
+            whereConditions.push(`family = $${paramIndex++}`);
+            queryParams.push(family);
+        }
+
+        // Product group filter
+        if (productGroup && productGroup !== 'all') {
+            whereConditions.push(`product_group = $${paramIndex++}`);
+            queryParams.push(productGroup);
+        }
+
+        // Product selection grouping filter
+        if (productSelectionGrouping && productSelectionGrouping !== 'all') {
+            whereConditions.push(`product_selection_grouping = $${paramIndex++}`);
+            queryParams.push(productSelectionGrouping);
+        }
+
+        // Search filter
+        if (search) {
+            whereConditions.push(`(
+                name ILIKE $${paramIndex} OR 
+                product_code ILIKE $${paramIndex} OR 
+                description ILIKE $${paramIndex}
+            )`);
+            queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        const whereClause = whereConditions.length > 0 
+            ? `WHERE ${whereConditions.join(' AND ')}` 
+            : '';
+
+        const query = `
+            SELECT 
+                salesforce_id as "Id",
+                name as "Name",
+                product_code as "ProductCode",
+                description as "Description",
+                family as "Family",
+                is_active as "IsActive",
+                is_archived as "IsArchived",
+                display_url as "DisplayUrl",
+                product_group as "Product_Group__c",
+                product_selection_grouping as "Product_Selection_Grouping__c",
+                continent as "Continent__c",
+                country as "Country__c",
+                ri_platform_region as "RI_Platform_Region__c",
+                ri_platform_sub_region as "RI_Platform_Sub_Region__c",
+                model_type as "Model_Type__c",
+                model_subtype as "Model_Subtype__c",
+                irp_bundle_region as "IRP_Bundle_Region__c",
+                irp_bundle_subregion as "IRP_Bundle_Subregion__c",
+                data_api_name as "Data_API_Name__c",
+                peril as "Peril__c",
+                data_type as "Data_Type__c",
+                constituents as "Constituents"
+            FROM ${this.tableName}
+            ${whereClause}
+            ORDER BY name ASC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `;
+
+        queryParams.push(limit, offset);
+        return await this.executeQuery(query, queryParams);
+    }
+
+    /**
+     * Count bundle products with filters
+     * @param {Object} filters - Query filters
+     * @returns {Promise<Number>} Count
+     */
+    async countBundlesWithFilters(filters = {}) {
+        const {
+            search,
+            family,
+            productGroup,
+            productSelectionGrouping,
+            isActive = true,
+            isArchived = false
+        } = filters;
+
+        let whereConditions = ['is_bundle = true'];
+        let queryParams = [];
+        let paramIndex = 1;
+
+        if (isActive !== undefined) {
+            whereConditions.push(`is_active = $${paramIndex++}`);
+            queryParams.push(isActive);
+        }
+        if (isArchived !== undefined) {
+            whereConditions.push(`is_archived = $${paramIndex++}`);
+            queryParams.push(isArchived);
+        }
+        if (family && family !== 'all') {
+            whereConditions.push(`family = $${paramIndex++}`);
+            queryParams.push(family);
+        }
+        if (productGroup && productGroup !== 'all') {
+            whereConditions.push(`product_group = $${paramIndex++}`);
+            queryParams.push(productGroup);
+        }
+        if (productSelectionGrouping && productSelectionGrouping !== 'all') {
+            whereConditions.push(`product_selection_grouping = $${paramIndex++}`);
+            queryParams.push(productSelectionGrouping);
+        }
+        if (search) {
+            whereConditions.push(`(
+                name ILIKE $${paramIndex} OR 
+                product_code ILIKE $${paramIndex} OR 
+                description ILIKE $${paramIndex}
+            )`);
+            queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        const whereClause = whereConditions.length > 0 
+            ? `WHERE ${whereConditions.join(' AND ')}` 
+            : '';
+
+        const query = `SELECT COUNT(*) as count FROM ${this.tableName} ${whereClause}`;
+        const result = await this.query(query, queryParams);
+        return parseInt(result.rows[0].count);
     }
 }
 
 module.exports = new ProductRepository();
+
 

@@ -17,11 +17,8 @@ class PackageRepository extends BaseRepository {
      * @returns {Promise<Object>} Packages and count
      */
     async findAllPackages(options = {}) {
-        const { includeDeleted = false } = options;
-
-        let whereClause = includeDeleted ? '' : 'WHERE deleted_at IS NULL';
-
-        const query = `SELECT * FROM ${this.tableName} ${whereClause} ORDER BY package_name ASC`;
+        // Note: packages table doesn't have deleted_at column, ignoring includeDeleted option
+        const query = `SELECT * FROM ${this.tableName} ORDER BY package_name ASC`;
         const result = await this.query(query);
 
         return {
@@ -176,7 +173,6 @@ class PackageRepository extends BaseRepository {
                 ) as related_products
             FROM ${this.tableName} pkg
             LEFT JOIN package_product_mapping m ON pkg.package_name = m.package_name
-            WHERE pkg.deleted_at IS NULL
             GROUP BY pkg.id, pkg.package_name, pkg.ri_package_name, pkg.package_type,
                      pkg.locations, pkg.max_concurrent_model, pkg.max_concurrent_non_model,
                      pkg.max_concurrent_accumulation_jobs, pkg.max_concurrent_non_accumulation_jobs,
@@ -193,4 +189,5 @@ class PackageRepository extends BaseRepository {
 }
 
 module.exports = new PackageRepository();
+
 
