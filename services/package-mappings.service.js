@@ -3,7 +3,7 @@
  * Business logic for package-product mappings
  */
 
-const db = require('../database');
+const packageMappingRepository = require('../repositories/package-mapping.repository');
 const logger = require('../utils/logger');
 
 class PackageMappingsService {
@@ -15,19 +15,12 @@ class PackageMappingsService {
     async getProductsForPackage(packageName) {
         logger.info(`Fetching products for package: ${packageName}`);
         
-        const query = `
-            SELECT product_code, confidence_score, occurrence_count
-            FROM package_product_mapping
-            WHERE package_name = $1
-            ORDER BY occurrence_count DESC, product_code
-        `;
-        
-        const result = await db.query(query, [packageName]);
+        const products = await packageMappingRepository.findByPackageName(packageName);
         
         return {
             package: packageName,
-            products: result.rows,
-            count: result.rows.length
+            products,
+            count: products.length
         };
     }
 
@@ -39,19 +32,12 @@ class PackageMappingsService {
     async getPackagesForProduct(productCode) {
         logger.info(`Fetching packages for product: ${productCode}`);
         
-        const query = `
-            SELECT package_name, confidence_score, occurrence_count
-            FROM package_product_mapping
-            WHERE product_code = $1
-            ORDER BY occurrence_count DESC, package_name
-        `;
-        
-        const result = await db.query(query, [productCode]);
+        const packages = await packageMappingRepository.findByProductCode(productCode);
         
         return {
             product: productCode,
-            packages: result.rows,
-            count: result.rows.length
+            packages,
+            count: packages.length
         };
     }
 
@@ -62,23 +48,11 @@ class PackageMappingsService {
     async getAllMappings() {
         logger.info('Fetching all package-product mappings');
         
-        const query = `
-            SELECT 
-                package_name,
-                product_code,
-                confidence_score,
-                occurrence_count,
-                source,
-                last_seen
-            FROM package_product_mapping
-            ORDER BY package_name, occurrence_count DESC
-        `;
-        
-        const result = await db.query(query);
+        const mappings = await packageMappingRepository.findAllWithDetails();
         
         return {
-            mappings: result.rows,
-            count: result.rows.length
+            mappings,
+            count: mappings.length
         };
     }
 }

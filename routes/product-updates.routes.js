@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const productUpdateService = require('../product-update-service');
+const productUpdateService = require('../services/product-update.service');
 const { asyncHandler } = require('../middleware/error-handler');
 const { success, created, badRequest, notFound } = require('../utils/response');
 const logger = require('../utils/logger');

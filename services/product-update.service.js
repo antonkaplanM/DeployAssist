@@ -1,7 +1,7 @@
 // Product Update Workflow Service
 // Handles all business logic for product update requests
 
-const db = require('./database');
+const db = require('../database');
 
 /**
  * Get product update options for dropdown menus

@@ -3,7 +3,7 @@
  * Business logic for SML operations
  */
 
-const SMLRepository = require('./sml-repository');
+const SMLRepository = require('../repositories/sml.repository');
 const { chromium } = require('@playwright/test');
 
 class SMLService {

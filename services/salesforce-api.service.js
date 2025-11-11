@@ -54,7 +54,7 @@ class SalesforceApiService {
 
         // Get enabled rules if not provided
         if (!enabledRuleIds) {
-            const validationEngine = require('../validation-engine');
+            const validationEngine = require('./validation-engine.service');
             enabledRuleIds = validationEngine.getEnabledValidationRules().map(r => r.id);
         }
 
@@ -84,7 +84,7 @@ class SalesforceApiService {
 
         // Get enabled rules if not provided
         if (!enabledRuleIds) {
-            const validationEngine = require('../validation-engine');
+            const validationEngine = require('./validation-engine.service');
             enabledRuleIds = validationEngine.getEnabledValidationRules().map(r => r.id);
         }
 
@@ -344,6 +344,7 @@ class SalesforceApiService {
         // Check if we have a valid Salesforce connection
         const hasValidAuth = await salesforce.hasValidAuthentication();
         if (!hasValidAuth) {
+            logger.warn('No Salesforce authentication - returning empty results');
             return {
                 newRecords: [],
                 totalNew: 0,
@@ -352,45 +353,73 @@ class SalesforceApiService {
             };
         }
 
-        logger.info(`Checking for new PS records since ${sinceTimestamp}`);
+        try {
+            logger.info(`🔍 Checking for new PS records since ${sinceTimestamp}`);
 
-        // Query for new records created after the provided timestamp
-        const conn = await salesforce.getConnection();
+            // Query for new records created after the provided timestamp
+            const conn = await salesforce.getConnection();
 
-        // Convert ISO timestamp to Salesforce datetime format
-        const sinceDate = new Date(sinceTimestamp);
-        const soqlTimestamp = sinceDate.toISOString().replace('.000Z', 'Z');
+            // Convert ISO timestamp to SOQL datetime literal format
+            // SOQL requires format: YYYY-MM-DDTHH:mm:ssZ (no milliseconds)
+            const sinceDate = new Date(sinceTimestamp);
+            
+            // Format as SOQL datetime literal (remove milliseconds, ensure UTC)
+            const soqlTimestamp = sinceDate.toISOString().replace(/\.\d{3}Z$/, 'Z');
+            
+            logger.info(`📅 Querying records created after: ${soqlTimestamp}`);
 
-        const soqlQuery = `
-            SELECT Id, Name, TenantRequestAction__c, Account__c, Account_Site__c, 
-                   Status__c, CreatedDate, LastModifiedDate
-            FROM Prof_Services_Request__c
-            WHERE CreatedDate > ${soqlTimestamp}
-            ORDER BY CreatedDate DESC
-            LIMIT 10
-        `;
+            const soqlQuery = `
+                SELECT Id, Name, TenantRequestAction__c, Account__c, Account_Site__c, 
+                       Status__c, CreatedDate, LastModifiedDate
+                FROM Prof_Services_Request__c
+                WHERE CreatedDate > ${soqlTimestamp}
+                ORDER BY CreatedDate DESC
+                LIMIT 20
+            `;
 
-        const result = await conn.query(soqlQuery);
-        const records = result.records || [];
+            logger.info(`🔍 Executing SOQL: ${soqlQuery.replace(/\s+/g, ' ').trim()}`);
 
-        logger.info(`Found ${records.length} new PS record(s) since ${sinceTimestamp}`);
+            const result = await conn.query(soqlQuery);
+            const records = result.records || [];
 
-        // Format records for notification display
-        const newRecords = records.map(record => ({
-            id: record.Id,
-            name: record.Name,
-            requestType: record.TenantRequestAction__c || 'Unknown',
-            account: record.Account__c,
-            accountSite: record.Account_Site__c,
-            status: record.Status__c,
-            createdDate: record.CreatedDate
-        }));
+            logger.info(`✅ Found ${records.length} new PS record(s) since ${sinceTimestamp}`);
 
-        return {
-            newRecords: newRecords,
-            totalNew: newRecords.length,
-            checkTimestamp: new Date().toISOString()
-        };
+            // Log first record for debugging (if any)
+            if (records.length > 0) {
+                logger.info(`📋 First record: ${records[0].Name} - ${records[0].TenantRequestAction__c}`);
+            }
+
+            // Format records for notification display
+            const newRecords = records.map(record => ({
+                id: record.Id,
+                name: record.Name,
+                requestType: record.TenantRequestAction__c || 'Unknown',
+                account: record.Account__c,
+                accountSite: record.Account_Site__c,
+                status: record.Status__c,
+                createdDate: record.CreatedDate
+            }));
+
+            return {
+                newRecords: newRecords,
+                totalNew: newRecords.length,
+                checkTimestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            logger.error('❌ Error querying for new PS records:', {
+                error: error.message,
+                stack: error.stack,
+                sinceTimestamp
+            });
+            
+            // Return empty result instead of throwing to prevent notification polling from breaking
+            return {
+                newRecords: [],
+                totalNew: 0,
+                checkTimestamp: new Date().toISOString(),
+                error: error.message
+            };
+        }
     }
 
     /**

@@ -4,7 +4,7 @@
  */
 
 const salesforce = require('../salesforce');
-const validationEngine = require('../validation-engine');
+const validationEngine = require('./validation-engine.service');
 const logger = require('../utils/logger');
 
 class ValidationService {

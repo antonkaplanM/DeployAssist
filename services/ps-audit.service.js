@@ -5,7 +5,7 @@
  * It tracks changes over time, especially status changes.
  */
 
-const database = require('./database');
+const database = require('../database');
 
 /**
  * Capture a snapshot of a PS record

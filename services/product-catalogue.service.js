@@ -5,6 +5,8 @@
 
 const XLSX = require('xlsx');
 const { spawn } = require('child_process');
+const productRepository = require('../repositories/product.repository');
+const packageRepository = require('../repositories/package.repository');
 const db = require('../database');
 const logger = require('../utils/logger');
 const { NotFoundError } = require('../middleware/error-handler');
@@ -16,135 +18,34 @@ class ProductCatalogueService {
      * @returns {Promise<Object>} Product catalogue data
      */
     async getProductCatalogue(filters = {}) {
-        const { search, family, productGroup, productSelectionGrouping, isActive = 'true', limit = 100, offset = 0 } = filters;
+        const { isActive = 'true', limit = 100, offset = 0 } = filters;
         
-        logger.info(`Fetching product catalogue from local DB (search: ${search || 'none'}, family: ${family || 'all'}, productGroup: ${productGroup || 'all'}, productSelectionGrouping: ${productSelectionGrouping || 'all'})`);
+        logger.info(`Fetching product catalogue from local DB (search: ${filters.search || 'none'}, family: ${filters.family || 'all'}, productGroup: ${filters.productGroup || 'all'})`);
         
-        // Build SQL query
-        let whereConditions = [];
-        let queryParams = [];
-        let paramIndex = 1;
+        // Normalize isActive filter
+        const normalizedFilters = {
+            ...filters,
+            isActive: isActive === 'true',
+            isArchived: false,
+            limit: Math.min(parseInt(limit) || 100, 2000),
+            offset: parseInt(offset) || 0
+        };
         
-        // Add active filter
-        if (isActive === 'true') {
-            whereConditions.push(`is_active = $${paramIndex++}`);
-            queryParams.push(true);
-            whereConditions.push(`is_archived = $${paramIndex++}`);
-            queryParams.push(false);
-        }
-        
-        // Add family filter
-        if (family && family !== 'all') {
-            whereConditions.push(`family = $${paramIndex++}`);
-            queryParams.push(family);
-        }
-        
-        // Add product group filter
-        if (productGroup && productGroup !== 'all') {
-            whereConditions.push(`product_group = $${paramIndex++}`);
-            queryParams.push(productGroup);
-        }
-        
-        // Add product selection grouping filter
-        if (productSelectionGrouping && productSelectionGrouping !== 'all') {
-            whereConditions.push(`product_selection_grouping = $${paramIndex++}`);
-            queryParams.push(productSelectionGrouping);
-        }
-        
-        // Add search filter (using full-text search or ILIKE)
-        if (search) {
-            whereConditions.push(`(
-                name ILIKE $${paramIndex} OR 
-                product_code ILIKE $${paramIndex} OR 
-                description ILIKE $${paramIndex}
-            )`);
-            queryParams.push(`%${search}%`);
-            paramIndex++;
-        }
-        
-        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+        // Get products from repository
+        const products = await productRepository.findWithFilters(normalizedFilters);
         
         // Get total count
-        const countQuery = `SELECT COUNT(*) as total FROM products ${whereClause}`;
-        const countResult = await db.query(countQuery, queryParams);
-        const totalSize = parseInt(countResult.rows[0].total);
+        const totalSize = await productRepository.countWithFilters(normalizedFilters);
         
-        // Get products with pagination
-        const limitValue = Math.min(parseInt(limit) || 100, 2000);  // Increased cap to 2000 to load all products
-        const offsetValue = parseInt(offset) || 0;
-        
-        const productsQuery = `
-            SELECT 
-                salesforce_id as "Id",
-                name as "Name",
-                product_code as "ProductCode",
-                description as "Description",
-                family as "Family",
-                is_active as "IsActive",
-                is_archived as "IsArchived",
-                display_url as "DisplayUrl",
-                product_group as "Product_Group__c",
-                product_selection_grouping as "Product_Selection_Grouping__c",
-                continent as "Continent__c",
-                country as "Country__c",
-                ri_platform_region as "RI_Platform_Region__c",
-                ri_platform_sub_region as "RI_Platform_Sub_Region__c",
-                model_type as "Model_Type__c",
-                model_subtype as "Model_Subtype__c",
-                irp_bundle_region as "IRP_Bundle_Region__c",
-                irp_bundle_subregion as "IRP_Bundle_Subregion__c",
-                data_api_name as "Data_API_Name__c",
-                peril as "Peril__c",
-                data_type as "Data_Type__c"
-            FROM products
-            ${whereClause}
-            ORDER BY name ASC
-            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-        `;
-        
-        queryParams.push(limitValue, offsetValue);
-        const productsResult = await db.query(productsQuery, queryParams);
-        
-        // Get distinct families for filter options
-        const familiesQuery = `
-            SELECT DISTINCT family 
-            FROM products 
-            WHERE is_active = true AND is_archived = false AND family IS NOT NULL
-            ORDER BY family
-        `;
-        const familiesResult = await db.query(familiesQuery);
-        const families = familiesResult.rows.map(r => r.family);
-        
-        // Get distinct product groups for filter options
-        const productGroupsQuery = `
-            SELECT DISTINCT product_group 
-            FROM products 
-            WHERE is_active = true AND is_archived = false AND product_group IS NOT NULL
-            ORDER BY product_group
-        `;
-        const productGroupsResult = await db.query(productGroupsQuery);
-        const productGroups = productGroupsResult.rows.map(r => r.product_group);
-        
-        // Get distinct product selection groupings for filter options
-        const productSelectionGroupingsQuery = `
-            SELECT DISTINCT product_selection_grouping 
-            FROM products 
-            WHERE is_active = true AND is_archived = false AND product_selection_grouping IS NOT NULL
-            ORDER BY product_selection_grouping
-        `;
-        const productSelectionGroupingsResult = await db.query(productSelectionGroupingsQuery);
-        const productSelectionGroupings = productSelectionGroupingsResult.rows.map(r => r.product_selection_grouping);
+        // Get filter options
+        const filterOptions = await productRepository.getFilterOptions();
         
         return {
-            products: productsResult.rows,
-            count: productsResult.rows.length,
-            totalSize: totalSize,
-            done: (offsetValue + productsResult.rows.length) >= totalSize,
-            filterOptions: {
-                families: families,
-                productGroups: productGroups,
-                productSelectionGroupings: productSelectionGroupings
-            },
+            products,
+            count: products.length,
+            totalSize,
+            done: (normalizedFilters.offset + products.length) >= totalSize,
+            filterOptions,
             source: 'local_database'
         };
     }
@@ -156,44 +57,8 @@ class ProductCatalogueService {
     async exportProductCatalogue() {
         logger.info('Exporting product catalogue to Excel');
         
-        // Query all active products with related packages from the database
-        const query = `
-            SELECT 
-                p.name,
-                p.product_code,
-                p.salesforce_id,
-                p.description,
-                p.family,
-                p.product_group,
-                p.product_selection_grouping,
-                p.country,
-                p.continent,
-                p.ri_platform_region,
-                p.ri_platform_sub_region,
-                p.model_type,
-                p.model_subtype,
-                p.irp_bundle_region,
-                p.irp_bundle_subregion,
-                p.data_api_name,
-                p.peril,
-                p.data_type,
-                COALESCE(
-                    string_agg(DISTINCT m.package_name, ', ' ORDER BY m.package_name),
-                    ''
-                ) as related_packages
-            FROM products p
-            LEFT JOIN package_product_mapping m ON p.product_code = m.product_code
-            WHERE p.is_active = true AND p.is_archived = false
-            GROUP BY p.id, p.name, p.product_code, p.salesforce_id, p.description, p.family, 
-                     p.product_group, p.product_selection_grouping,
-                     p.country, p.continent, p.ri_platform_region, p.ri_platform_sub_region,
-                     p.model_type, p.model_subtype, p.irp_bundle_region, p.irp_bundle_subregion,
-                     p.data_api_name, p.peril, p.data_type
-            ORDER BY p.name ASC
-        `;
-
-        const result = await db.query(query);
-        const products = result.rows;
+        // Get all active products with related packages from repository
+        const products = await productRepository.findAllForExport();
 
         logger.info(`Found ${products.length} products to export`);
 
@@ -259,41 +124,8 @@ class ProductCatalogueService {
         // ===== Add Packages Tab =====
         logger.info('Adding Packages tab to export');
         
-        let packages = []; // Initialize outside to access later
-        
-        // Query all packages with related products
-        const packagesQuery = `
-            SELECT 
-                pkg.package_name,
-                pkg.ri_package_name,
-                pkg.package_type,
-                pkg.description,
-                pkg.locations,
-                pkg.max_concurrent_model,
-                pkg.max_concurrent_non_model,
-                pkg.max_jobs_day,
-                pkg.max_users,
-                pkg.number_edms,
-                pkg.max_exposure_storage_tb,
-                pkg.max_other_storage_tb,
-                pkg.api_rps,
-                pkg.sf_package_id,
-                COALESCE(
-                    string_agg(DISTINCT m.product_code, ', ' ORDER BY m.product_code),
-                    ''
-                ) as related_products
-            FROM packages pkg
-            LEFT JOIN package_product_mapping m ON pkg.package_name = m.package_name
-            GROUP BY pkg.id, pkg.package_name, pkg.ri_package_name, pkg.package_type,
-                     pkg.description, pkg.locations, pkg.max_concurrent_model, 
-                     pkg.max_concurrent_non_model, pkg.max_jobs_day, pkg.max_users, 
-                     pkg.number_edms, pkg.max_exposure_storage_tb, pkg.max_other_storage_tb,
-                     pkg.api_rps, pkg.sf_package_id
-            ORDER BY pkg.package_name ASC
-        `;
-        
-        const packagesResult = await db.query(packagesQuery);
-        packages = packagesResult.rows; // Assign to outer scope variable
+        // Get all packages with related products from repository
+        const packages = await packageRepository.findAllForExport();
         
         logger.info(`Found ${packages.length} packages to add to export`);
         
@@ -397,28 +229,12 @@ class ProductCatalogueService {
             LIMIT 1
         `);
         
-        // Get product count
-        const productCount = await db.query(`
-            SELECT 
-                COUNT(*) as total,
-                COUNT(*) FILTER (WHERE is_active = true) as active,
-                COUNT(*) FILTER (WHERE is_archived = true) as archived
-            FROM products
-        `);
-        
-        // Get last sync time
-        const lastSyncTime = await db.query(`
-            SELECT MAX(synced_at) as last_sync FROM products
-        `);
+        // Get product stats from repository
+        const productStats = await productRepository.getStats();
         
         return {
             syncStatus: latestSync.rows[0] || null,
-            productStats: {
-                total: parseInt(productCount.rows[0].total),
-                active: parseInt(productCount.rows[0].active),
-                archived: parseInt(productCount.rows[0].archived),
-                lastSync: lastSyncTime.rows[0].last_sync
-            }
+            productStats
         };
     }
 
@@ -430,44 +246,38 @@ class ProductCatalogueService {
     async getProductById(productId) {
         logger.info(`Fetching product details from local DB: ${productId}`);
         
-        // Query product with all fields
-        const query = `
-            SELECT 
-                salesforce_id as "Id",
-                name as "Name",
-                product_code as "ProductCode",
-                description as "Description",
-                family as "Family",
-                product_group as "Product_Group__c",
-                product_selection_grouping as "Product_Selection_Grouping__c",
-                continent as "Continent__c",
-                country as "Country__c",
-                ri_platform_region as "RI_Platform_Region__c",
-                ri_platform_sub_region as "RI_Platform_Sub_Region__c",
-                model_type as "Model_Type__c",
-                model_subtype as "Model_Subtype__c",
-                irp_bundle_region as "IRP_Bundle_Region__c",
-                irp_bundle_subregion as "IRP_Bundle_Subregion__c",
-                data_api_name as "Data_API_Name__c",
-                peril as "Peril__c",
-                data_type as "Data_Type__c",
-                is_active as "IsActive",
-                is_archived as "IsArchived",
-                sf_created_date as "CreatedDate",
-                sf_last_modified_date as "LastModifiedDate"
-            FROM products
-            WHERE salesforce_id = $1
-            LIMIT 1
-        `;
+        const product = await productRepository.findBySalesforceId(productId);
         
-        const result = await db.query(query, [productId]);
-        
-        if (result.rows.length === 0) {
+        if (!product) {
             throw new NotFoundError('Product not found');
         }
         
+        // Format product for response
         return {
-            product: result.rows[0],
+            product: {
+                Id: product.salesforce_id,
+                Name: product.name,
+                ProductCode: product.product_code,
+                Description: product.description,
+                Family: product.family,
+                Product_Group__c: product.product_group,
+                Product_Selection_Grouping__c: product.product_selection_grouping,
+                Continent__c: product.continent,
+                Country__c: product.country,
+                RI_Platform_Region__c: product.ri_platform_region,
+                RI_Platform_Sub_Region__c: product.ri_platform_sub_region,
+                Model_Type__c: product.model_type,
+                Model_Subtype__c: product.model_subtype,
+                IRP_Bundle_Region__c: product.irp_bundle_region,
+                IRP_Bundle_Subregion__c: product.irp_bundle_subregion,
+                Data_API_Name__c: product.data_api_name,
+                Peril__c: product.peril,
+                Data_Type__c: product.data_type,
+                IsActive: product.is_active,
+                IsArchived: product.is_archived,
+                CreatedDate: product.sf_created_date,
+                LastModifiedDate: product.sf_last_modified_date
+            },
             source: 'local_database'
         };
     }

@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const psAuditService = require('../ps-audit-service');
+const psAuditService = require('../services/ps-audit.service');
 const db = require('../database');
 const { asyncHandler } = require('../middleware/error-handler');
 const { success } = require('../utils/response');

@@ -3,7 +3,7 @@
  * Business logic for package management
  */
 
-const db = require('../database');
+const packageRepository = require('../repositories/package.repository');
 const logger = require('../utils/logger');
 const { NotFoundError, InternalServerError } = require('../middleware/error-handler');
 const excelBuilder = require('../utils/excel-builder');
@@ -22,11 +22,11 @@ class PackagesService {
         let result;
         
         if (type === 'Base') {
-            result = await db.getBasePackages();
+            result = await packageRepository.findBasePackages();
         } else if (type === 'Expansion') {
-            result = await db.getExpansionPackages();
+            result = await packageRepository.findExpansionPackages();
         } else {
-            result = await db.getAllPackages({
+            result = await packageRepository.findAllPackages({
                 includeDeleted: includeDeleted === true || includeDeleted === 'true'
             });
         }
@@ -50,11 +50,11 @@ class PackagesService {
         logger.info(`Fetching package: ${identifier}`);
         
         // Try to find by name first (most common), then by SF ID
-        let result = await db.getPackageByName(identifier);
+        let result = await packageRepository.findByPackageName(identifier);
         
         if (!result.success || !result.package) {
             // Try by Salesforce ID
-            result = await db.getPackageBySfId(identifier);
+            result = await packageRepository.findBySalesforceId(identifier);
         }
         
         if (!result.success) {
@@ -75,7 +75,7 @@ class PackagesService {
     async getPackagesSummary() {
         logger.info('Fetching packages summary');
         
-        const result = await db.getPackagesSummary();
+        const result = await packageRepository.getSummaryStats();
         
         if (!result.success) {
             throw new InternalServerError(result.error || 'Failed to fetch packages summary');
@@ -91,49 +91,8 @@ class PackagesService {
     async exportPackagesToExcel() {
         logger.info('Exporting packages to Excel');
         
-        // Get all packages with related products from the database
-        const query = `
-            SELECT 
-                pkg.package_name,
-                pkg.ri_package_name,
-                pkg.package_type,
-                pkg.locations,
-                pkg.max_concurrent_model,
-                pkg.max_concurrent_non_model,
-                pkg.max_concurrent_accumulation_jobs,
-                pkg.max_concurrent_non_accumulation_jobs,
-                pkg.max_jobs_day,
-                pkg.max_users,
-                pkg.number_edms,
-                pkg.max_exposure_storage_tb,
-                pkg.max_other_storage_tb,
-                pkg.max_risks_accumulated_day,
-                pkg.max_risks_single_accumulation,
-                pkg.api_rps,
-                pkg.description,
-                pkg.sf_package_id,
-                pkg.parent_package_id,
-                pkg.first_synced,
-                pkg.last_synced,
-                COALESCE(
-                    string_agg(DISTINCT m.product_code, ', ' ORDER BY m.product_code),
-                    ''
-                ) as related_products
-            FROM packages pkg
-            LEFT JOIN package_product_mapping m ON pkg.package_name = m.package_name
-            GROUP BY pkg.id, pkg.package_name, pkg.ri_package_name, pkg.package_type,
-                     pkg.locations, pkg.max_concurrent_model, pkg.max_concurrent_non_model,
-                     pkg.max_concurrent_accumulation_jobs, pkg.max_concurrent_non_accumulation_jobs,
-                     pkg.max_jobs_day, pkg.max_users, pkg.number_edms,
-                     pkg.max_exposure_storage_tb, pkg.max_other_storage_tb,
-                     pkg.max_risks_accumulated_day, pkg.max_risks_single_accumulation,
-                     pkg.api_rps, pkg.description, pkg.sf_package_id, pkg.parent_package_id,
-                     pkg.first_synced, pkg.last_synced
-            ORDER BY pkg.package_name ASC
-        `;
-        
-        const result = await db.query(query);
-        const packages = result.rows;
+        // Get all packages with related products from repository
+        const packages = await packageRepository.findAllForExport();
         
         logger.info(`Found ${packages.length} packages to export`);
 

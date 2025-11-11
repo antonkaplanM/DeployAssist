@@ -4,7 +4,7 @@
  */
 
 const express = require('express');
-const SMLService = require('./sml-service');
+const SMLService = require('../services/sml.service');
 
 const router = express.Router();
 const smlService = new SMLService();

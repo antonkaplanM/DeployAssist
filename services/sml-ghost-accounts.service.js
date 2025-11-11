@@ -3,8 +3,8 @@
  * Handles syncing tenants from SML and analyzing them for ghost status
  */
 
-const SMLService = require('./sml-service');
-const db = require('./database');
+const SMLService = require('./sml.service');
+const db = require('../database');
 
 class SMLGhostAccountsService {
     constructor() {

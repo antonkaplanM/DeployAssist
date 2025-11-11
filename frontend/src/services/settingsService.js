@@ -65,7 +65,7 @@ const settingsService = {
   // Salesforce Integration Test
   testSalesforceConnection: async () => {
     try {
-      const response = await api.get('/test-salesforce');
+      const response = await api.get('/test/salesforce');
       return response.data;
     } catch (error) {
       throw error;
