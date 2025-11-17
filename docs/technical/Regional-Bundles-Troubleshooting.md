@@ -168,6 +168,91 @@ router.get('/regional-bundles', requireBundleColumns, asyncHandler(...));
 
 ---
 
+## 🐛 Common Issues and Solutions
+
+### Issue #1: Cannot Open Bundle/Product Cards (500 Error)
+**Symptoms:**
+- Clicking on any bundle or product card results in 500 error
+- Error logs show: `column "deleted_at" does not exist`
+- URL pattern: `/api/packages/{id}`
+
+**Cause:**
+- PackageRepository methods trying to filter by non-existent `deleted_at` column
+- Affects: `findByPackageName()`, `findBySalesforceId()`, `findBasePackages()`, `findExpansionPackages()`, `getSummaryStats()`
+
+**Solution:**
+✅ Fixed in latest version - removed all `deleted_at` filters from PackageRepository
+
+**Action Required:**
+```bash
+# Restart backend to apply fix
+npm start
+```
+
+### Issue #2: Excel Export Fails (500 Error)
+**Symptoms:**
+- Export to Excel button results in 500 error
+- Error logs show: `column pkg.deleted_at does not exist`
+
+**Cause:**
+- `findAllForExport()` method in PackageRepository using `deleted_at` filter
+
+**Solution:**
+✅ Fixed in latest version - removed `deleted_at` filter from export query
+
+**Action Required:**
+```bash
+# Restart backend to apply fix
+npm start
+```
+
+### Issue #3: Regional Bundles Tab Not Loading
+**Symptoms:**
+- Regional Bundles tab shows 503 or 500 error
+- Error logs show: `column "is_bundle" does not exist`
+
+**Cause:**
+- Database migration not run yet
+
+**Solution:**
+```bash
+# Run the migration
+node scripts/database/run-bundle-constituents-migration.js
+
+# Restart backend
+npm start
+```
+
+### Issue #4: Missing Package/Product Relationships
+**Symptoms:**
+- Product cards don't show "Related Packages" information
+- Package cards don't show "Related Products" information
+- List appears but relationship data is missing
+
+**Cause:**
+- Repository queries not including LEFT JOIN with `package_product_mapping` table
+- `RelatedPackages` or `related_products` fields missing from SELECT
+
+**Solution:**
+✅ Fixed in latest version - all repository methods now include relationship data
+
+**What Was Fixed:**
+- **ProductRepository**: Added `RelatedPackages` field with LEFT JOIN to all product queries
+- **PackageRepository**: Added `related_products` field with LEFT JOIN to all package queries
+- Uses `string_agg()` to concatenate multiple related items into comma-separated list
+
+**Action Required:**
+```bash
+# Restart backend to apply fix
+npm start
+```
+
+**Expected Result:**
+- Product cards show: "Related Packages: Package1, Package2, Package3"
+- Package cards show: "Related Products: PROD001, PROD002, PROD003"
+
+---
+
 ## 📝 Files Modified for Error Handling
 
 ### New Files

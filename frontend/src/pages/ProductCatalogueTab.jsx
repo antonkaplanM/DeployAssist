@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CubeIcon } from '@heroicons/react/24/solid';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { getProductCatalogue, getProductById, getPackagesForProduct, exportProductCatalogueToExcel } from '../services/productCatalogueService';
+import { getProductCatalogue, getProductById, exportProductCatalogueToExcel } from '../services/productCatalogueService';
 import { useToast } from '../context/ToastContext';
 
 const ProductCatalogueTab = () => {
@@ -134,14 +134,9 @@ const ProductCatalogueTab = () => {
       if (result.success) {
         setSelectedProduct(result.product);
         
-        // Also fetch related packages
-        // Note: ProductCode is returned with capital letters from the API
-        const packagesResult = await getPackagesForProduct(result.product.ProductCode);
-        if (packagesResult.success) {
-          setSelectedProductPackages(packagesResult.packages);
-        } else {
-          setSelectedProductPackages([]);
-        }
+        // RelatedPackages is now included directly in the product data
+        // No need for separate API call
+        setSelectedProductPackages([]);
         
         setShowModal(true);
       } else {
@@ -182,6 +177,7 @@ const ProductCatalogueTab = () => {
       { key: 'Family', label: 'Product Family' },
       { key: 'Product_Group__c', label: 'Product Group' },
       { key: 'Product_Selection_Grouping__c', label: 'Product Selection Grouping' },
+      { key: 'RelatedPackages', label: 'Related Packages' },
       { key: 'Country__c', label: 'Country' },
       { key: 'Continent__c', label: 'Continent' },
       { key: 'RI_Platform_Region__c', label: 'RI Region' },

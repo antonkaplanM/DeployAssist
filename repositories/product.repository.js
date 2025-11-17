@@ -116,30 +116,40 @@ class ProductRepository extends BaseRepository {
 
         const query = `
             SELECT 
-                salesforce_id as "Id",
-                name as "Name",
-                product_code as "ProductCode",
-                description as "Description",
-                family as "Family",
-                is_active as "IsActive",
-                is_archived as "IsArchived",
-                display_url as "DisplayUrl",
-                product_group as "Product_Group__c",
-                product_selection_grouping as "Product_Selection_Grouping__c",
-                continent as "Continent__c",
-                country as "Country__c",
-                ri_platform_region as "RI_Platform_Region__c",
-                ri_platform_sub_region as "RI_Platform_Sub_Region__c",
-                model_type as "Model_Type__c",
-                model_subtype as "Model_Subtype__c",
-                irp_bundle_region as "IRP_Bundle_Region__c",
-                irp_bundle_subregion as "IRP_Bundle_Subregion__c",
-                data_api_name as "Data_API_Name__c",
-                peril as "Peril__c",
-                data_type as "Data_Type__c"
-            FROM ${this.tableName}
-            ${whereClause}
-            ORDER BY name ASC
+                p.salesforce_id as "Id",
+                p.name as "Name",
+                p.product_code as "ProductCode",
+                p.description as "Description",
+                p.family as "Family",
+                p.is_active as "IsActive",
+                p.is_archived as "IsArchived",
+                p.display_url as "DisplayUrl",
+                p.product_group as "Product_Group__c",
+                p.product_selection_grouping as "Product_Selection_Grouping__c",
+                p.continent as "Continent__c",
+                p.country as "Country__c",
+                p.ri_platform_region as "RI_Platform_Region__c",
+                p.ri_platform_sub_region as "RI_Platform_Sub_Region__c",
+                p.model_type as "Model_Type__c",
+                p.model_subtype as "Model_Subtype__c",
+                p.irp_bundle_region as "IRP_Bundle_Region__c",
+                p.irp_bundle_subregion as "IRP_Bundle_Subregion__c",
+                p.data_api_name as "Data_API_Name__c",
+                p.peril as "Peril__c",
+                p.data_type as "Data_Type__c",
+                COALESCE(
+                    string_agg(DISTINCT m.package_name, ', ' ORDER BY m.package_name),
+                    ''
+                ) as "RelatedPackages"
+            FROM ${this.tableName} p
+            LEFT JOIN package_product_mapping m ON p.product_code = m.product_code
+            ${whereClause.replace(/(?<!p\.)\b(is_active|is_archived|is_bundle|name|product_code|description|family|product_group|product_selection_grouping)\b/g, 'p.$1')}
+            GROUP BY p.id, p.salesforce_id, p.name, p.product_code, p.description, p.family, 
+                     p.is_active, p.is_archived, p.display_url, p.product_group, 
+                     p.product_selection_grouping, p.continent, p.country, p.ri_platform_region, 
+                     p.ri_platform_sub_region, p.model_type, p.model_subtype, p.irp_bundle_region, 
+                     p.irp_bundle_subregion, p.data_api_name, p.peril, p.data_type
+            ORDER BY p.name ASC
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
@@ -258,7 +268,21 @@ class ProductRepository extends BaseRepository {
      * @returns {Promise<Object|null>} Product
      */
     async findBySalesforceId(salesforceId) {
-        return await this.findById(salesforceId, 'salesforce_id');
+        const query = `
+            SELECT 
+                p.*,
+                COALESCE(
+                    string_agg(DISTINCT m.package_name, ', ' ORDER BY m.package_name),
+                    ''
+                ) as "RelatedPackages"
+            FROM ${this.tableName} p
+            LEFT JOIN package_product_mapping m ON p.product_code = m.product_code
+            WHERE p.salesforce_id = $1
+            GROUP BY p.id
+            LIMIT 1
+        `;
+        const result = await this.query(query, [salesforceId]);
+        return result.rows[0] || null;
     }
 
     /**
@@ -267,7 +291,19 @@ class ProductRepository extends BaseRepository {
      * @returns {Promise<Object|null>} Product
      */
     async findByProductCode(productCode) {
-        const query = `SELECT * FROM ${this.tableName} WHERE product_code = $1 LIMIT 1`;
+        const query = `
+            SELECT 
+                p.*,
+                COALESCE(
+                    string_agg(DISTINCT m.package_name, ', ' ORDER BY m.package_name),
+                    ''
+                ) as "RelatedPackages"
+            FROM ${this.tableName} p
+            LEFT JOIN package_product_mapping m ON p.product_code = m.product_code
+            WHERE p.product_code = $1
+            GROUP BY p.id
+            LIMIT 1
+        `;
         const result = await this.query(query, [productCode]);
         return result.rows[0] || null;
     }
@@ -410,31 +446,41 @@ class ProductRepository extends BaseRepository {
 
         const query = `
             SELECT 
-                salesforce_id as "Id",
-                name as "Name",
-                product_code as "ProductCode",
-                description as "Description",
-                family as "Family",
-                is_active as "IsActive",
-                is_archived as "IsArchived",
-                display_url as "DisplayUrl",
-                product_group as "Product_Group__c",
-                product_selection_grouping as "Product_Selection_Grouping__c",
-                continent as "Continent__c",
-                country as "Country__c",
-                ri_platform_region as "RI_Platform_Region__c",
-                ri_platform_sub_region as "RI_Platform_Sub_Region__c",
-                model_type as "Model_Type__c",
-                model_subtype as "Model_Subtype__c",
-                irp_bundle_region as "IRP_Bundle_Region__c",
-                irp_bundle_subregion as "IRP_Bundle_Subregion__c",
-                data_api_name as "Data_API_Name__c",
-                peril as "Peril__c",
-                data_type as "Data_Type__c",
-                constituents as "Constituents"
-            FROM ${this.tableName}
-            ${whereClause}
-            ORDER BY name ASC
+                p.salesforce_id as "Id",
+                p.name as "Name",
+                p.product_code as "ProductCode",
+                p.description as "Description",
+                p.family as "Family",
+                p.is_active as "IsActive",
+                p.is_archived as "IsArchived",
+                p.display_url as "DisplayUrl",
+                p.product_group as "Product_Group__c",
+                p.product_selection_grouping as "Product_Selection_Grouping__c",
+                p.continent as "Continent__c",
+                p.country as "Country__c",
+                p.ri_platform_region as "RI_Platform_Region__c",
+                p.ri_platform_sub_region as "RI_Platform_Sub_Region__c",
+                p.model_type as "Model_Type__c",
+                p.model_subtype as "Model_Subtype__c",
+                p.irp_bundle_region as "IRP_Bundle_Region__c",
+                p.irp_bundle_subregion as "IRP_Bundle_Subregion__c",
+                p.data_api_name as "Data_API_Name__c",
+                p.peril as "Peril__c",
+                p.data_type as "Data_Type__c",
+                p.constituents as "Constituents",
+                COALESCE(
+                    string_agg(DISTINCT m.package_name, ', ' ORDER BY m.package_name),
+                    ''
+                ) as "RelatedPackages"
+            FROM ${this.tableName} p
+            LEFT JOIN package_product_mapping m ON p.product_code = m.product_code
+            ${whereClause.replace(/(?<!p\.)\b(is_active|is_archived|is_bundle|name|product_code|description|family|product_group|product_selection_grouping)\b/g, 'p.$1')}
+            GROUP BY p.id, p.salesforce_id, p.name, p.product_code, p.description, p.family, 
+                     p.is_active, p.is_archived, p.display_url, p.product_group, 
+                     p.product_selection_grouping, p.continent, p.country, p.ri_platform_region, 
+                     p.ri_platform_sub_region, p.model_type, p.model_subtype, p.irp_bundle_region, 
+                     p.irp_bundle_subregion, p.data_api_name, p.peril, p.data_type, p.constituents
+            ORDER BY p.name ASC
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 

@@ -377,6 +377,7 @@ class ProductCatalogueService {
                 Family: product.family,
                 Product_Group__c: product.product_group,
                 Product_Selection_Grouping__c: product.product_selection_grouping,
+                RelatedPackages: product.RelatedPackages || '',
                 Continent__c: product.continent,
                 Country__c: product.country,
                 RI_Platform_Region__c: product.ri_platform_region,

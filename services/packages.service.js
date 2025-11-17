@@ -49,8 +49,13 @@ class PackagesService {
     async getPackageByIdentifier(identifier) {
         logger.info(`Fetching package: ${identifier}`);
         
-        // Try to find by name first (most common), then by SF ID
+        // Try to find by name first (most common)
         let result = await packageRepository.findByPackageName(identifier);
+        
+        if (!result.success || !result.package) {
+            // Try by RI package name (e.g., P1, P2, P5, X1)
+            result = await packageRepository.findByRIPackageName(identifier);
+        }
         
         if (!result.success || !result.package) {
             // Try by Salesforce ID

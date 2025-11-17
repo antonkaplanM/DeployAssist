@@ -1,8 +1,11 @@
 # 📡 DeployAssist API Reference
 
-**Version:** 2.0  
-**Last Updated:** November 11, 2025  
+**Version:** 2.1  
+**Last Updated:** November 15, 2025  
 **Base URL:** `http://localhost:5000/api`
+
+**Latest Changes:**
+- ✅ Package lookup now supports RI package codes (P1-P12, X1, etc.)
 
 ---
 
@@ -412,27 +415,53 @@ GET /api/packages
 }
 ```
 
-#### Get Package by Name
+#### Get Package by Identifier
 
 ```http
-GET /api/packages/:packageName
+GET /api/packages/:identifier
 ```
+
+**Description:**  
+Lookup a package by its identifier. The system will search in the following order:
+1. Full package name (e.g., "Risk Intelligence Platform P5")
+2. RI package code (e.g., "P5", "P1", "X1")
+3. Salesforce package ID (e.g., "a0X...")
+
+**URL Parameters:**
+- `identifier` (string) - Can be:
+  - Full package name (e.g., "Standard Package")
+  - RI package code (e.g., "P5")
+  - Salesforce package ID (e.g., "SF-PKG-001")
 
 **Response:**
 ```json
 {
     "success": true,
-    "data": {
-        "package_id": 1,
-        "package_name": "Standard Package",
-        "products": [
-            {
-                "product_code": "PROD-001",
-                "product_name": "Flood Risk Model"
-            }
-        ]
+    "package": {
+        "id": 1,
+        "package_name": "Risk Intelligence Platform P5",
+        "ri_package_name": "P5",
+        "sf_package_id": "a0X...",
+        "package_type": "Base",
+        "locations": 50000,
+        "max_concurrent_model": 10,
+        "max_concurrent_non_model": 20,
+        "max_jobs_day": 100,
+        "max_users": 50,
+        "description": "Medium enterprise package",
+        "related_products": "IC-RISKMODELER, RI-EXPOSURE-MANAGEMENT"
     },
-    "meta": { ... }
+    "timestamp": "2025-11-15T12:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - Package not found
+```json
+{
+    "success": false,
+    "error": "Package not found: P5",
+    "statusCode": 404
 }
 ```
 

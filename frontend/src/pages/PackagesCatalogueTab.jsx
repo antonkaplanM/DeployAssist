@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CubeIcon } from '@heroicons/react/24/solid';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { getPackages, getPackageByIdentifier, getProductsForPackage, exportPackagesToExcel } from '../services/packageService';
+import { getPackages, getPackageByIdentifier, exportPackagesToExcel } from '../services/packageService';
 import { useToast } from '../context/ToastContext';
 
 const PackagesCatalogueTab = () => {
@@ -113,13 +113,9 @@ const PackagesCatalogueTab = () => {
       if (result.success) {
         setSelectedPackage(result.package);
         
-        // Also fetch related products
-        const productsResult = await getProductsForPackage(result.package.package_name);
-        if (productsResult.success) {
-          setSelectedPackageProducts(productsResult.products);
-        } else {
-          setSelectedPackageProducts([]);
-        }
+        // related_products is now included directly in the package data
+        // No need for separate API call
+        setSelectedPackageProducts([]);
         
         setShowModal(true);
       } else {
@@ -152,6 +148,7 @@ const PackagesCatalogueTab = () => {
       { key: 'package_name', label: 'Package Name' },
       { key: 'ri_package_name', label: 'RI Package Name' },
       { key: 'package_type', label: 'Package Type' },
+      { key: 'related_products', label: 'Related Products' },
       { key: 'locations', label: 'Locations', formatter: formatNumber },
       { key: 'max_concurrent_model', label: 'Max Concurrent Model', formatter: formatNumber },
       { key: 'max_concurrent_non_model', label: 'Max Concurrent Non-Model', formatter: formatNumber },

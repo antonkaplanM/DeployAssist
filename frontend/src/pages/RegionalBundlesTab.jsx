@@ -150,6 +150,7 @@ const RegionalBundlesTab = () => {
       { key: 'Family', label: 'Product Family' },
       { key: 'Product_Group__c', label: 'Product Group' },
       { key: 'Product_Selection_Grouping__c', label: 'Product Selection Grouping' },
+      { key: 'RelatedPackages', label: 'Related Packages' },
       { key: 'Country__c', label: 'Country' },
       { key: 'Continent__c', label: 'Continent' },
       { key: 'RI_Platform_Region__c', label: 'RI Region' },
