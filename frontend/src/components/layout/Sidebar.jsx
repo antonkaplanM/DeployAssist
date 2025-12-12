@@ -153,6 +153,12 @@ const Sidebar = () => {
           path: '/experimental/product-catalogue', 
           id: 'nav-experimental-product-catalogue',
           pageName: 'experimental.product-catalogue'
+        },
+        { 
+          name: 'Staging', 
+          path: '/experimental/staging', 
+          id: 'nav-experimental-staging',
+          pageName: 'experimental.staging'
         }
       ]
     },

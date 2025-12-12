@@ -24,6 +24,104 @@ class SMLService {
         return this.repository.getConfig();
     }
 
+    /**
+     * Get token expiration information
+     */
+    getTokenInfo() {
+        const config = this.repository.getConfig();
+        
+        if (!config || !config.authCookie) {
+            return { 
+                hasToken: false, 
+                expired: true, 
+                expiresAt: null, 
+                remainingMinutes: 0 
+            };
+        }
+        
+        // Decode JWT to get expiration
+        try {
+            const parts = config.authCookie.split('.');
+            if (parts.length !== 3) {
+                return { hasToken: true, expired: true, expiresAt: null, remainingMinutes: 0 };
+            }
+            
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+            
+            if (!payload.exp) {
+                return { hasToken: true, expired: false, expiresAt: null, remainingMinutes: 0 };
+            }
+            
+            const now = Math.floor(Date.now() / 1000);
+            const remainingSeconds = Math.max(0, payload.exp - now);
+            const remainingMinutes = Math.floor(remainingSeconds / 60);
+            
+            return {
+                hasToken: true,
+                expired: remainingSeconds <= 0,
+                expiresAt: new Date(payload.exp * 1000),
+                remainingMinutes
+            };
+        } catch (e) {
+            console.error('Error parsing JWT:', e);
+            return { hasToken: true, expired: true, expiresAt: null, remainingMinutes: 0 };
+        }
+    }
+
+    /**
+     * Refresh token using Playwright SSO flow
+     */
+    async refreshToken() {
+        const config = this.repository.getConfig();
+        const environment = config?.environment || 'euw1';
+        
+        console.log('🔄 Triggering SML token refresh via Playwright', { environment });
+        
+        try {
+            // Spawn the token refresh script
+            const { spawn } = require('child_process');
+            const path = require('path');
+            
+            const scriptPath = path.join(__dirname, '..', 'scripts', 'sml-token-refresh.ts');
+            
+            return new Promise((resolve) => {
+                const child = spawn('npx', ['ts-node', scriptPath, 'force', environment], {
+                    cwd: path.join(__dirname, '..'),
+                    shell: true,
+                    stdio: 'inherit'
+                });
+                
+                const timeout = setTimeout(() => {
+                    child.kill();
+                    console.warn('⚠️ SML token refresh timed out');
+                    resolve(false);
+                }, 300000); // 5 minute timeout
+                
+                child.on('close', (code) => {
+                    clearTimeout(timeout);
+                    if (code === 0) {
+                        console.log('✅ SML token refresh completed successfully');
+                        // Reload the config
+                        this.repository.reloadConfig();
+                        resolve(true);
+                    } else {
+                        console.warn('⚠️ SML token refresh failed with code:', code);
+                        resolve(false);
+                    }
+                });
+                
+                child.on('error', (error) => {
+                    clearTimeout(timeout);
+                    console.error('❌ SML token refresh error:', error);
+                    resolve(false);
+                });
+            });
+        } catch (error) {
+            console.error('❌ Failed to start token refresh:', error);
+            return false;
+        }
+    }
+
     async testConnection() {
         try {
             const config = this.repository.getConfig();

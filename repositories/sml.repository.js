@@ -47,6 +47,13 @@ class SMLRepository {
         return this.config;
     }
 
+    /**
+     * Reload configuration from disk (useful after token refresh)
+     */
+    async reloadConfig() {
+        return await this.loadConfig();
+    }
+
     getBaseUrl() {
         if (!this.config || !this.config.environment) {
             throw new Error('SML environment not configured');
@@ -165,7 +172,8 @@ class SMLRepository {
 
     async fetchModels(tenantId) {
         try {
-            const path = `/v1/tenants/${encodeURIComponent(tenantId)}/models/current`;
+            // Note: Requires /sml/entitlements/v1/ prefix for proper authorization
+            const path = `/sml/entitlements/v1/tenants/${encodeURIComponent(tenantId)}/models/current`;
             return await this.makeRequest(path);
         } catch (error) {
             console.error('Failed to fetch SML models:', error);
@@ -175,7 +183,8 @@ class SMLRepository {
 
     async fetchData(tenantId) {
         try {
-            const path = `/v1/tenants/${encodeURIComponent(tenantId)}/data/current`;
+            // Note: Requires /sml/entitlements/v1/ prefix for proper authorization
+            const path = `/sml/entitlements/v1/tenants/${encodeURIComponent(tenantId)}/data/current`;
             return await this.makeRequest(path);
         } catch (error) {
             console.error('Failed to fetch SML data:', error);

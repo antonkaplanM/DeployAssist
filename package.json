@@ -31,7 +31,11 @@
     "products:sync": "node sync-products-from-salesforce.js",
     "products:export": "node export-product-catalogue.js",
     "mappings:extract": "node extract-all-package-product-mappings.js",
-    "mappings:populate": "node populate-package-product-mappings.js"
+    "mappings:populate": "node populate-package-product-mappings.js",
+    "sml:refresh": "npx ts-node scripts/sml-token-refresh.ts",
+    "sml:refresh:euw1": "npx ts-node scripts/sml-token-refresh.ts euw1",
+    "sml:refresh:use1": "npx ts-node scripts/sml-token-refresh.ts use1",
+    "sml:check": "npx ts-node scripts/sml-token-refresh.ts check"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

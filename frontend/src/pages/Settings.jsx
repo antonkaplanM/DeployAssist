@@ -38,6 +38,7 @@ const Settings = () => {
   // SML Config
   const [smlEnvironment, setSmlEnvironment] = useState('euw1');
   const [smlBearerToken, setSmlBearerToken] = useState('');
+  const [smlTokenStatus, setSmlTokenStatus] = useState(null);
   
   // Validation Rules
   const [validationRules, setValidationRules] = useState([]);
@@ -75,6 +76,13 @@ const Settings = () => {
     }));
   }, [contextInterval]);
 
+  // Reload token status when SML section is opened
+  useEffect(() => {
+    if (activeSection === 'sml') {
+      reloadSMLTokenStatus();
+    }
+  }, [activeSection]);
+
   const loadInitialData = async () => {
     const settings = settingsService.getAppSettings();
     // Sync with context interval
@@ -103,8 +111,26 @@ const Settings = () => {
       const smlConfig = await settingsService.getSMLConfig();
       if (smlConfig.environment) setSmlEnvironment(smlConfig.environment);
       if (smlConfig.bearerToken) setSmlBearerToken(smlConfig.bearerToken);
+      
+      // Also load token status
+      try {
+        const tokenStatus = await settingsService.getSMLTokenStatus();
+        setSmlTokenStatus(tokenStatus);
+      } catch (e) {
+        console.log('Could not get SML token status:', e);
+      }
     } catch (error) {
       console.log('No SML config found or error loading:', error);
+    }
+  };
+  
+  // Reload SML token status
+  const reloadSMLTokenStatus = async () => {
+    try {
+      const tokenStatus = await settingsService.getSMLTokenStatus();
+      setSmlTokenStatus(tokenStatus);
+    } catch (e) {
+      console.log('Could not get SML token status:', e);
     }
   };
 
@@ -205,6 +231,37 @@ const Settings = () => {
       });
     } finally {
       setLoading('smlTest', false);
+    }
+  };
+
+  // SML Token Refresh (Playwright-based)
+  const handleRefreshSMLToken = async () => {
+    setLoading('smlRefresh', true);
+    setTestResult('smlRefresh', null);
+    
+    try {
+      const result = await settingsService.refreshSMLToken();
+      if (result.success) {
+        setTestResult('smlRefresh', {
+          success: true,
+          message: `Token refreshed successfully! Expires at ${new Date(result.expiresAt).toLocaleString()}`,
+        });
+        // Reload token status
+        await reloadSMLTokenStatus();
+      } else {
+        setTestResult('smlRefresh', {
+          success: false,
+          message: result.error || 'Token refresh failed',
+        });
+      }
+    } catch (error) {
+      setTestResult('smlRefresh', {
+        success: false,
+        message: 'Token refresh failed. Run manually: npm run sml:refresh',
+        error: error.message
+      });
+    } finally {
+      setLoading('smlRefresh', false);
     }
   };
 
@@ -581,6 +638,73 @@ const Settings = () => {
                   Configure SML (Service Management Layer) integration for product entitlements
                 </p>
                 
+                {/* Token Status Card */}
+                {smlTokenStatus && (
+                  <div className={`rounded-lg border p-4 ${
+                    smlTokenStatus.valid 
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                  } transition-colors`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        {smlTokenStatus.valid ? (
+                          <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <XCircleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <p className={`text-sm font-medium ${
+                            smlTokenStatus.valid ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
+                          }`}>
+                            {smlTokenStatus.valid ? 'Token Valid' : smlTokenStatus.hasToken ? 'Token Expired' : 'No Token Configured'}
+                          </p>
+                          {smlTokenStatus.expiresAt && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              Expires: {new Date(smlTokenStatus.expiresAt).toLocaleString()}
+                            </p>
+                          )}
+                          {smlTokenStatus.remainingMinutes > 0 && (
+                            <p className={`text-xs mt-1 ${
+                              smlTokenStatus.remainingMinutes > 30 
+                                ? 'text-green-600 dark:text-green-400' 
+                                : smlTokenStatus.remainingMinutes > 10 
+                                  ? 'text-yellow-600 dark:text-yellow-400'
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {smlTokenStatus.remainingMinutes} minutes remaining
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRefreshSMLToken}
+                        disabled={loadingStates.smlRefresh}
+                        className="px-3 py-1.5 bg-blue-600 dark:bg-blue-700 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {loadingStates.smlRefresh ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Refreshing...
+                          </>
+                        ) : (
+                          '🔄 Refresh Token'
+                        )}
+                      </button>
+                    </div>
+                    {!smlTokenStatus.valid && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-3 ml-8">
+                        Click "Refresh Token" to open a browser window and authenticate via SSO.
+                        Alternatively, run: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">npm run sml:refresh</code>
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {renderTestResult('smlRefresh')}
+                
                 <div className="pt-4 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -612,7 +736,14 @@ const Settings = () => {
                     />
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-2 transition-colors">
                       <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
-                        <strong>How to get the Bearer token:</strong>
+                        <strong>🔄 Automatic Token Refresh (Recommended)</strong>
+                      </p>
+                      <p className="text-xs text-blue-800 dark:text-blue-300 mb-3">
+                        Use the "Refresh Token" button above to automatically authenticate via browser SSO. 
+                        This will open a browser window, handle the Okta login, and capture the token automatically.
+                      </p>
+                      <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                        <strong>Manual Token Entry:</strong>
                       </p>
                       <ol className="text-xs text-blue-800 dark:text-blue-300 list-decimal list-inside space-y-1 ml-2">
                         <li>Log into the SML portal</li>
@@ -623,7 +754,7 @@ const Settings = () => {
                         <li>Copy the token value AFTER "Bearer " (the long JWT string)</li>
                       </ol>
                       <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
-                        <strong>⚠️ Note:</strong> The Bearer token expires periodically and must be refreshed.
+                        <strong>⚠️ Note:</strong> The Bearer token expires after ~1 hour and must be refreshed.
                       </p>
                     </div>
                   </div>

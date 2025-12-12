@@ -1,7 +1,12 @@
 /**
  * SML Repository
  * Data access layer for SML API operations
- * Handles HTTP requests to SML endpoints with cookie-based authentication
+ * Handles HTTP requests to SML endpoints with Bearer token authentication
+ * 
+ * Features:
+ * - Automatic token expiration detection
+ * - Integration with Playwright-based token refresh
+ * - Support for EUW1 and USE1 environments
  */
 
 import * as https from 'https';
@@ -17,6 +22,12 @@ import {
   SMLConfig,
   SMLEnvironments
 } from '../types/sml.types';
+import {
+  isTokenExpired,
+  getTokenExpiration,
+  triggerTokenRefresh,
+  validateToken
+} from '../utils/sml-auth';
 
 const SML_BASE_URLS: SMLEnvironments = {
   euw1: 'https://api-euw1.rms.com',
@@ -30,9 +41,18 @@ const SML_CONFIG_FILE = '.sml_config.json';
  */
 export class SMLRepository {
   private config: SMLConfig | null = null;
+  private autoRefreshEnabled: boolean = false;
 
-  constructor() {
+  constructor(options: { autoRefresh?: boolean } = {}) {
+    this.autoRefreshEnabled = options.autoRefresh ?? false;
     this.loadConfig();
+  }
+
+  /**
+   * Enable or disable automatic token refresh
+   */
+  setAutoRefresh(enabled: boolean): void {
+    this.autoRefreshEnabled = enabled;
   }
 
   /**
@@ -43,10 +63,30 @@ export class SMLRepository {
       const configData = await fs.readFile(SML_CONFIG_FILE, 'utf8');
       this.config = JSON.parse(configData);
       Logger.info('SML configuration loaded');
+      
+      // Check token status
+      if (this.config?.authCookie) {
+        const expInfo = getTokenExpiration(this.config.authCookie);
+        if (expInfo.expired) {
+          Logger.warn('SML token is expired');
+        } else {
+          Logger.info('SML token status', { 
+            expiresAt: expInfo.expiresAt?.toISOString(),
+            remainingMinutes: expInfo.remainingMinutes
+          });
+        }
+      }
     } catch (error) {
       Logger.warn('No SML configuration found - auth cookie needs to be set');
       this.config = null;
     }
+  }
+
+  /**
+   * Reload configuration from disk (useful after token refresh)
+   */
+  async reloadConfig(): Promise<void> {
+    await this.loadConfig();
   }
 
   /**
@@ -88,12 +128,97 @@ export class SMLRepository {
   }
 
   /**
+   * Check if the current token is valid (not expired)
+   */
+  isTokenValid(): boolean {
+    if (!this.hasAuthentication()) return false;
+    return !isTokenExpired(this.config!.authCookie);
+  }
+
+  /**
+   * Get token expiration information
+   */
+  getTokenInfo(): { 
+    hasToken: boolean;
+    expired: boolean;
+    expiresAt: Date | null;
+    remainingMinutes: number;
+  } {
+    if (!this.hasAuthentication()) {
+      return { hasToken: false, expired: true, expiresAt: null, remainingMinutes: 0 };
+    }
+    
+    const expInfo = getTokenExpiration(this.config!.authCookie);
+    return {
+      hasToken: true,
+      expired: expInfo.expired,
+      expiresAt: expInfo.expiresAt,
+      remainingMinutes: expInfo.remainingMinutes
+    };
+  }
+
+  /**
+   * Refresh the token using Playwright SSO flow
+   * Opens a browser window for authentication
+   */
+  async refreshToken(): Promise<boolean> {
+    const environment = this.config?.environment || 'euw1';
+    Logger.info('Starting SML token refresh', { environment });
+    
+    const success = await triggerTokenRefresh(environment);
+    
+    if (success) {
+      await this.reloadConfig();
+      Logger.info('Token refresh successful');
+    } else {
+      Logger.error('Token refresh failed', new Error('Refresh process did not complete successfully'));
+    }
+    
+    return success;
+  }
+
+  /**
+   * Ensure token is valid, optionally triggering refresh
+   */
+  private async ensureValidToken(): Promise<void> {
+    if (!this.hasAuthentication()) {
+      throw new SMLAuthError('SML authentication not configured. Please set up authentication in Settings.');
+    }
+
+    const validation = validateToken(this.config!.authCookie);
+    
+    if (!validation.valid) {
+      Logger.warn('SML token validation failed', { error: validation.error });
+      
+      if (validation.error === 'Token is expired' && this.autoRefreshEnabled) {
+        Logger.info('Auto-refresh enabled, attempting token refresh...');
+        const refreshed = await this.refreshToken();
+        
+        if (!refreshed) {
+          throw new SMLAuthError(
+            'SML token has expired and automatic refresh failed. ' +
+            'Please refresh the token manually using: npx ts-node scripts/sml-token-refresh.ts'
+          );
+        }
+        return;
+      }
+      
+      if (validation.error === 'Token is expired') {
+        throw new SMLAuthError(
+          'SML token has expired. Please refresh the token using: npx ts-node scripts/sml-token-refresh.ts'
+        );
+      }
+      
+      throw new SMLAuthError(`SML authentication invalid: ${validation.error}`);
+    }
+  }
+
+  /**
    * Make HTTPS request to SML API
    */
   private async makeRequest<T>(path: string): Promise<T> {
-    if (!this.hasAuthentication()) {
-      throw new SMLAuthError('SML authentication cookie not configured');
-    }
+    // Validate token before making request
+    await this.ensureValidToken();
 
     const baseUrl = this.getBaseUrl();
     const url = new URL(path, baseUrl);
@@ -200,10 +325,11 @@ export class SMLRepository {
 
   /**
    * Fetch Models entitlements for a tenant
+   * Note: Requires /sml/entitlements/v1/ prefix for proper authorization
    */
   async fetchModels(tenantId: string): Promise<SMLModelsResponse> {
     try {
-      const path = `/v1/tenants/${encodeURIComponent(tenantId)}/models/current`;
+      const path = `/sml/entitlements/v1/tenants/${encodeURIComponent(tenantId)}/models/current`;
       return await this.makeRequest<SMLModelsResponse>(path);
     } catch (error) {
       Logger.error('Failed to fetch SML models', error as Error, { tenantId });
@@ -213,10 +339,11 @@ export class SMLRepository {
 
   /**
    * Fetch Data entitlements for a tenant
+   * Note: Requires /sml/entitlements/v1/ prefix for proper authorization
    */
   async fetchData(tenantId: string): Promise<SMLDataResponse> {
     try {
-      const path = `/v1/tenants/${encodeURIComponent(tenantId)}/data/current`;
+      const path = `/sml/entitlements/v1/tenants/${encodeURIComponent(tenantId)}/data/current`;
       return await this.makeRequest<SMLDataResponse>(path);
     } catch (error) {
       Logger.error('Failed to fetch SML data', error as Error, { tenantId });

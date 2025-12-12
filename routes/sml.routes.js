@@ -37,6 +37,76 @@ router.get('/config', async (req, res) => {
 });
 
 /**
+ * GET /api/sml/token/status
+ * Get detailed token status including expiration
+ */
+router.get('/token/status', async (req, res) => {
+    try {
+        console.log('📡 GET /api/sml/token/status');
+        
+        const tokenInfo = smlService.getTokenInfo();
+        const config = smlService.getConfig();
+        
+        res.json({
+            success: true,
+            hasToken: tokenInfo.hasToken,
+            expired: tokenInfo.expired,
+            valid: tokenInfo.hasToken && !tokenInfo.expired,
+            expiresAt: tokenInfo.expiresAt?.toISOString() || null,
+            remainingMinutes: tokenInfo.remainingMinutes,
+            environment: config?.environment || null,
+            refreshCommand: 'npm run sml:refresh',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error getting SML token status:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/sml/token/refresh
+ * Trigger Playwright-based token refresh
+ * Note: This opens a browser window on the server for SSO
+ */
+router.post('/token/refresh', async (req, res) => {
+    try {
+        console.log('📡 POST /api/sml/token/refresh');
+        
+        const success = await smlService.refreshToken();
+        
+        if (success) {
+            const tokenInfo = smlService.getTokenInfo();
+            res.json({
+                success: true,
+                message: 'Token refreshed successfully',
+                expiresAt: tokenInfo.expiresAt?.toISOString() || null,
+                remainingMinutes: tokenInfo.remainingMinutes,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Token refresh failed. Please run manually: npm run sml:refresh',
+                timestamp: new Date().toISOString()
+            });
+        }
+    } catch (error) {
+        console.error('Error refreshing SML token:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Token refresh failed. This may require manual intervention.',
+            command: 'npm run sml:refresh',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
  * POST /api/sml/config
  * Set SML authentication configuration
  */

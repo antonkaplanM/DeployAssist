@@ -103,6 +103,26 @@ const settingsService = {
     }
   },
 
+  // SML Token Status - Get detailed token status
+  getSMLTokenStatus: async () => {
+    try {
+      const response = await api.get('/sml/token/status');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // SML Token Refresh - Trigger Playwright-based token refresh
+  refreshSMLToken: async () => {
+    try {
+      const response = await api.post('/sml/token/refresh');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Application Settings (stored in localStorage)
   getAppSettings: () => {
     const defaults = {

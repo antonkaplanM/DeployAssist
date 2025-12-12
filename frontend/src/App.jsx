@@ -25,6 +25,7 @@ import Help from './pages/Help';
 import ApiTest from './pages/ApiTest';
 import Roadmap from './pages/Roadmap';
 import Catalogue from './pages/Catalogue';
+import Staging from './pages/Staging';
 
 function App() {
   return (
@@ -184,6 +185,16 @@ function App() {
                 element={
                   <ProtectedRoute pageName="experimental.product-catalogue">
                     <Catalogue />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Experimental Pages - Staging */}
+              <Route 
+                path="experimental/staging" 
+                element={
+                  <ProtectedRoute pageName="experimental.staging">
+                    <Staging />
                   </ProtectedRoute>
                 } 
               />

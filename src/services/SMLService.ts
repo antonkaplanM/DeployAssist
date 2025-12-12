@@ -2,6 +2,11 @@
  * SML Service
  * Business logic layer for SML operations
  * Handles data transformation, normalization, and aggregation
+ * 
+ * Features:
+ * - Token status monitoring
+ * - Automatic token refresh via Playwright
+ * - Data normalization for apps, models, and data products
  */
 
 import { SMLRepository } from '../repositories/SMLRepository';
@@ -44,6 +49,40 @@ export class SMLService {
    */
   getConfig(): SMLConfig | null {
     return this.repository.getConfig();
+  }
+
+  /**
+   * Get token expiration information
+   */
+  getTokenInfo(): {
+    hasToken: boolean;
+    expired: boolean;
+    expiresAt: Date | null;
+    remainingMinutes: number;
+  } {
+    return this.repository.getTokenInfo();
+  }
+
+  /**
+   * Check if the current token is valid
+   */
+  isTokenValid(): boolean {
+    return this.repository.isTokenValid();
+  }
+
+  /**
+   * Refresh the token using Playwright SSO flow
+   * Opens a browser window for authentication
+   */
+  async refreshToken(): Promise<boolean> {
+    return this.repository.refreshToken();
+  }
+
+  /**
+   * Reload configuration from disk
+   */
+  async reloadConfig(): Promise<void> {
+    await this.repository.reloadConfig();
   }
 
   /**
