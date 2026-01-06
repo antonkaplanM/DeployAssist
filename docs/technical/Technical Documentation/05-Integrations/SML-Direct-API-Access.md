@@ -167,9 +167,13 @@ Alternatively, tokens can be manually refreshed by:
 ## Common Issues
 
 ### 401 Unauthorized
-- Token has expired
-- Token is malformed
-- Solution: Get fresh token from browser
+- **Cause**: Token has expired (tokens last ~1 hour)
+- **Detection**: The system now validates token expiration before making API calls
+- **Solution**: 
+  1. Go to **Settings → SML Configuration**
+  2. Click **"Refresh Token"** button (uses Playwright SSO)
+  3. Or manually get a fresh token from the browser Network tab
+- **New API Endpoint**: `GET /api/current-accounts/sml-status` returns token validity status
 
 ### 403 Forbidden
 - Incorrect endpoint path (use `/sml/entitlements/v1/` prefix)
@@ -200,3 +204,8 @@ Alternatively, tokens can be manually refreshed by:
 
 ## Date Tested
 December 11, 2025
+
+
+
+
+

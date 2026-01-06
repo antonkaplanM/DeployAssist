@@ -81,6 +81,12 @@ const Sidebar = () => {
           path: '/analytics/package-changes', 
           id: 'nav-package-changes',
           pageName: 'analytics.package_changes'
+        },
+        { 
+          name: 'Current Accounts', 
+          path: '/analytics/current-accounts', 
+          id: 'nav-current-accounts',
+          pageName: 'analytics.current_accounts'
         }
       ]
     },

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Customer Products** feature provides a comprehensive, region-organized view of all active products for a specific customer account. It aggregates data from all Professional Services (PS) records and displays products grouped by geographic region and category (Models, Data, Apps).
+The **Customer Products** feature provides a comprehensive, region-organized view of all active products for a specific customer account. It now fetches data directly from the **SML (Service Management Layer)** API, providing real-time entitlement data. Products are displayed grouped by category (Models, Data, Apps).
 
 ## Location
 
@@ -10,18 +10,35 @@ The Customer Products page is accessible via:
 - **Provisioning → Customer Products** in the main navigation
 - Direct navigation from Account History page via "View Customer Products" button (if implemented)
 
+## Data Source: SML Integration (Updated December 2024)
+
+The Customer Products page now uses **SML as the primary data source** instead of Salesforce payload aggregation. This provides:
+- **Real-time entitlement data** directly from SML
+- **Consistent data** that matches the SML Compare feature in Provisioning Monitor
+- **Search by tenant name or account name**
+
+### SML Configuration Required
+
+Before using Customer Products, SML must be configured in Settings:
+1. Navigate to **Settings** page
+2. Expand the **SML Integration** section
+3. Configure the environment (euw1 or use1) and Bearer token
+4. Test the connection
+
+See [SML Integration Summary](../05-Integrations/SML-Integration-Summary.md) for detailed setup instructions.
+
 ## Key Features
 
-### 1. Real-Time Product Aggregation
+### 1. Real-Time SML Data
 
 **Data Source:**
-- Queries all PS records for the selected account from Salesforce
-- Parses payload data to extract entitlements
-- Aggregates and merges products in real-time on each page load
+- Fetches entitlements directly from SML API using headless browser (Playwright)
+- Searches for tenant by name, then retrieves full tenant details
+- Displays Apps, Models, and Data entitlements from `extensionData`
 
 **Active Products Only:**
-- Shows only products where `endDate >= today`
-- Expired products are automatically filtered out
+- Shows all current entitlements from SML
+- Calculates days remaining and expiration status
 - Focus on current customer subscriptions
 
 ### 2. Smart Product Merging
@@ -100,16 +117,23 @@ Each product card displays:
 
 ### 6. Search and Discovery
 
-**Account Search:**
-- Type-ahead autocomplete for account names
+**Enhanced Search (Updated December 2024):**
+- Type-ahead autocomplete for **both account names AND tenant names**
 - Minimum 2 characters to trigger search
 - 300ms debounce for performance
-- Shows account names with request counts
+- Shows accounts and tenants in separate sections in dropdown
+- Tenants section highlighted with 🏢 icon
 
 **Search Methods:**
-- Type account name directly
-- Select from autocomplete dropdown
+- Type account name or tenant name directly
+- Select from autocomplete dropdown (accounts or tenants)
 - Press Enter or click Search button
+- Search term is passed to SML for tenant lookup
+
+**Tenant vs Account Search:**
+- **Account Name**: Customer/organization name (e.g., "Bank of America")
+- **Tenant Name**: SML tenant identifier (e.g., "bofa-prod-tenant")
+- Both work interchangeably - SML searches by tenant name/display name
 
 ### 7. Summary Statistics
 
@@ -164,18 +188,30 @@ Each product card displays:
 
 ## Technical Implementation
 
-### Backend Architecture
+### SML-Based Architecture (Updated December 2024)
 
-**API Endpoint:**
+**Frontend Flow:**
+1. User enters account name or tenant name in search box
+2. Frontend calls `fetchSMLTenantDetails(tenantName)` from `smlCompareService.js`
+3. Backend uses Playwright to fetch tenant details from SML API
+4. Response is transformed to UI format using `transformSMLDataForUI()`
+5. Products are displayed organized by category
+
+**API Endpoint (SML):**
 ```
-GET /api/customer-products?account={accountName}
+POST /api/sml/tenant-compare
+Body: { "tenantName": "tenant-name-here" }
 ```
 
-**Response Structure:**
+**SML Response Transformation:**
+The SML tenant details are transformed to match the UI structure:
 ```json
 {
   "success": true,
   "account": "Bank of America",
+  "tenantName": "bofa-prod-tenant",
+  "tenantId": "12345",
+  "source": "SML",
   "summary": {
     "totalActive": 15,
     "byCategory": {
@@ -185,25 +221,27 @@ GET /api/customer-products?account={accountName}
     }
   },
   "productsByRegion": {
-    "North America": {
-      "models": [...],
-      "data": [...],
-      "apps": [...]
-    },
-    "Europe": {
+    "SML Entitlements - bofa-prod-tenant": {
       "models": [...],
       "data": [...],
       "apps": [...]
     }
   },
   "lastUpdated": {
-    "psRecordId": "PS-4567",
-    "date": "2025-09-15T10:30:00Z"
-  },
-  "psRecordsAnalyzed": 12,
-  "timestamp": "2025-10-02T14:30:00Z"
+    "date": "2025-12-22T14:30:00Z",
+    "source": "SML API"
+  }
 }
 ```
+
+### Legacy Backend Architecture (Deprecated)
+
+**API Endpoint:**
+```
+GET /api/customer-products?account={accountName}
+```
+
+This endpoint still exists for backwards compatibility but the frontend now uses SML directly.
 
 **Product Object Structure:**
 ```json
@@ -464,15 +502,32 @@ npx playwright test tests/e2e/customer-products.spec.ts
 
 ### Common Issues
 
+**Issue: "SML Integration Not Configured" warning**
+- **Solution**: Navigate to Settings → SML Integration
+- **Solution**: Configure environment and Bearer token
+- **Solution**: Test connection to verify configuration
+- **Solution**: See [SML Quick Start](../05-Integrations/SML-Quick-Start.md)
+
+**Issue: "SML authentication expired" error**
+- **Solution**: Bearer token has expired (typical lifespan: few hours)
+- **Solution**: Get a fresh token from SML portal Network tab
+- **Solution**: Update token in Settings → SML Integration
+
+**Issue: "Could not find tenant" error**
+- **Solution**: Verify tenant name spelling (try variations)
+- **Solution**: Search by account name instead
+- **Solution**: Check if tenant exists in SML portal
+- **Solution**: Try the exact tenant display name from SML
+
 **Issue: Search returns no results**
-- **Solution**: Verify account name is correct (case-sensitive)
-- **Solution**: Check if account has any PS records in Salesforce
-- **Solution**: Verify Salesforce authentication is valid
+- **Solution**: Verify account/tenant name is correct
+- **Solution**: Try searching with partial name
+- **Solution**: Check if tenant exists in SML
 
 **Issue: Products not appearing**
-- **Solution**: Check if products have valid end dates
-- **Solution**: Verify products are not expired (endDate < today)
-- **Solution**: Check payload data format in PS records
+- **Solution**: Check if SML is configured correctly
+- **Solution**: Verify tenant has entitlements in SML
+- **Solution**: Check browser console for API errors
 
 **Issue: Duplicate products in same region**
 - **Solution**: Expected for DataBridge products (can have multiple instances)
@@ -562,7 +617,25 @@ console.log(currentCustomerProducts);
 
 ## Changelog
 
-### Version 1.0 (Current)
+### Version 2.0 (December 2024) - Current
+
+**SML Integration Update:**
+- ✅ **NEW**: SML as primary data source (replaces Salesforce payload aggregation)
+- ✅ **NEW**: Search by tenant name OR account name
+- ✅ **NEW**: Tenant search in type-ahead dropdown
+- ✅ **NEW**: SML configuration status indicator
+- ✅ **NEW**: Display tenant ID and name in results
+- ✅ **NEW**: Source indicator showing "SML" as data source
+- ✅ Reuses SML integration code from Provisioning Monitor SML Compare
+- ✅ Real-time entitlement data from SML API
+- ✅ Compatible with existing UI structure
+
+**Migration Notes:**
+- SML must be configured in Settings before using Customer Products
+- Search now supports both account and tenant names
+- Data source changed from Salesforce aggregation to direct SML API
+
+### Version 1.0 (Initial Release)
 
 **Initial Release:**
 - ✅ Real-time product aggregation

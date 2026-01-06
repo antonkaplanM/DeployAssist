@@ -185,7 +185,7 @@ router.post('/refresh-sml-data', async (req, res) => {
         const path = require('path');
         
         // Run the background script
-        const scriptPath = path.join(__dirname, '../process-sml-validation.js');
+        const scriptPath = path.join(__dirname, '../scripts/audit/process-sml-validation.js');
         const childProcess = spawn('node', [scriptPath], {
             detached: false,
             stdio: 'pipe'

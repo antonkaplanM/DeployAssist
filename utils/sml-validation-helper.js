@@ -3,8 +3,8 @@
  * Helper functions for validating deprovision requests against SML active entitlements
  */
 
-const SMLService = require('./sml-service');
-const SMLRepository = require('./sml-repository');
+const SMLService = require('../services/sml.service');
+const SMLRepository = require('../repositories/sml.repository');
 
 class SMLValidationHelper {
     constructor() {

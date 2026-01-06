@@ -32,6 +32,7 @@ const smlGhostAccountsRoutes = require('./routes/sml-ghost-accounts.routes');
 const jiraRoutes = require('./routes/jira.routes');
 const testingRoutes = require('./routes/testing.routes');
 const stagingRoutes = require('./routes/staging.routes');
+const currentAccountsRoutes = require('./routes/current-accounts.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
@@ -193,6 +194,9 @@ app.use('/api/test', testingRoutes);
 
 // Staging endpoints (Experimental PoC for PS record staging)
 app.use('/api/staging', authenticate, stagingRoutes);
+
+// Current Accounts endpoints (Analytics section)
+app.use('/api/current-accounts', authenticate, currentAccountsRoutes);
 
 console.log('✅ All extracted route modules mounted successfully');
 

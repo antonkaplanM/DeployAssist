@@ -26,6 +26,7 @@ import ApiTest from './pages/ApiTest';
 import Roadmap from './pages/Roadmap';
 import Catalogue from './pages/Catalogue';
 import Staging from './pages/Staging';
+import CurrentAccounts from './pages/CurrentAccounts';
 
 function App() {
   return (
@@ -81,6 +82,14 @@ function App() {
                 element={
                   <ProtectedRoute pageName="analytics.package_changes">
                     <PackageChangesAnalytics />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="analytics/current-accounts" 
+                element={
+                  <ProtectedRoute pageName="analytics.current_accounts">
+                    <CurrentAccounts />
                   </ProtectedRoute>
                 } 
               />

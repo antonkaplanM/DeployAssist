@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getCustomerProducts, searchProvisioning } from '../services/provisioningService';
+import { searchProvisioning } from '../services/provisioningService';
+import { fetchSMLTenantDetails, getSMLConfig } from '../services/smlCompareService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import TypeAheadSearch from '../components/common/TypeAheadSearch';
 import ProductUpdateModal from '../components/features/ProductUpdateModal';
@@ -12,43 +13,164 @@ import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ExclamationTriangleIcon,
+  ServerIcon
 } from '@heroicons/react/24/outline';
 
 const CustomerProducts = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [accountName, setAccountName] = useState(searchParams.get('account') || '');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('account') || searchParams.get('tenant') || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
   const [collapsedRegions, setCollapsedRegions] = useState({});
   const [collapsedCategories, setCollapsedCategories] = useState({});
   const [showProductUpdateModal, setShowProductUpdateModal] = useState(false);
+  const [smlConfigured, setSmlConfigured] = useState(null);
+  const [searchType, setSearchType] = useState(null); // 'account' or 'tenant'
 
-  // Auto-search if account param is present
+  // Check SML configuration on mount
+  React.useEffect(() => {
+    const checkSMLConfig = async () => {
+      try {
+        const config = await getSMLConfig();
+        setSmlConfigured(config.configured && config.hasAuthCookie);
+      } catch (err) {
+        console.error('Error checking SML config:', err);
+        setSmlConfigured(false);
+      }
+    };
+    checkSMLConfig();
+  }, []);
+
+  // Auto-search if account or tenant param is present
   React.useEffect(() => {
     const accountParam = searchParams.get('account');
+    const tenantParam = searchParams.get('tenant');
     if (accountParam && !data && !loading) {
-      setAccountName(accountParam);
-      handleSearchWithAccount(accountParam);
+      setSearchTerm(accountParam);
+      setSearchType('account');
+      handleSearchWithTenant(accountParam, 'account');
+    } else if (tenantParam && !data && !loading) {
+      setSearchTerm(tenantParam);
+      setSearchType('tenant');
+      handleSearchWithTenant(tenantParam, 'tenant');
     }
   }, [searchParams]);
 
-  const handleSearchWithAccount = async (account) => {
-    if (!account.trim()) return;
+  /**
+   * Transform SML tenant details to the format expected by the UI
+   */
+  const transformSMLDataForUI = (smlData, tenantName) => {
+    const extensionData = smlData?.extensionData || {};
+    const modelEntitlements = extensionData.modelEntitlements || [];
+    const dataEntitlements = extensionData.dataEntitlements || [];
+    const appEntitlements = extensionData.appEntitlements || [];
+
+    // Helper to calculate days remaining and status
+    const calculateProductStatus = (endDate) => {
+      if (!endDate) return { status: 'active', daysRemaining: null };
+      const now = new Date();
+      const end = new Date(endDate);
+      const diffTime = end.getTime() - now.getTime();
+      const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (daysRemaining < 0) {
+        return { status: 'expired', daysRemaining };
+      } else if (daysRemaining < 30) {
+        return { status: 'expiring-soon', daysRemaining };
+      } else if (daysRemaining < 90) {
+        return { status: 'expiring', daysRemaining };
+      }
+      return { status: 'active', daysRemaining };
+    };
+
+    // Transform entitlements to product format
+    const transformEntitlement = (entitlement) => {
+      const { status, daysRemaining } = calculateProductStatus(entitlement.endDate);
+      return {
+        productCode: entitlement.productCode,
+        productName: entitlement.productName || entitlement.productCode,
+        packageName: entitlement.packageName || null,
+        quantity: entitlement.quantity || null,
+        productModifier: entitlement.productModifier || null,
+        startDate: entitlement.startDate,
+        endDate: entitlement.endDate,
+        status,
+        daysRemaining,
+        source: 'SML',
+        sourcePSRecords: []
+      };
+    };
+
+    // Group by region (SML doesn't have region info, so we use the SML environment)
+    const regionName = `SML Entitlements - ${tenantName}`;
+    
+    const models = modelEntitlements.map(transformEntitlement);
+    const dataProducts = dataEntitlements.map(transformEntitlement);
+    const apps = appEntitlements.map(transformEntitlement);
+
+    return {
+      account: smlData.accountName || tenantName,
+      tenantName: smlData.tenantName || tenantName,
+      tenantId: smlData.tenantId,
+      source: 'SML',
+      productsByRegion: {
+        [regionName]: {
+          models,
+          data: dataProducts,
+          apps
+        }
+      },
+      summary: {
+        totalActive: models.length + dataProducts.length + apps.length,
+        byCategory: {
+          models: models.length,
+          data: dataProducts.length,
+          apps: apps.length
+        }
+      },
+      lastUpdated: {
+        date: new Date().toISOString(),
+        source: 'SML API'
+      }
+    };
+  };
+
+  const handleSearchWithTenant = async (term, type = 'tenant') => {
+    if (!term.trim()) return;
 
     setLoading(true);
     setError(null);
+    setSearchType(type);
+
     try {
-      const result = await getCustomerProducts(account.trim());
-      // Map regions to productsByRegion to match test expectations
-      setData({
-        ...result,
-        productsByRegion: result.regions || result.productsByRegion || {}
-      });
+      // Check SML configuration
+      const config = await getSMLConfig();
+      if (!config.configured || !config.hasAuthCookie) {
+        setError('SML is not configured. Please configure SML authentication in Settings before viewing customer products.');
+        setSmlConfigured(false);
+        setLoading(false);
+        return;
+      }
+      setSmlConfigured(true);
+
+      // Fetch tenant details from SML
+      console.log(`🔍 Fetching SML data for: ${term} (type: ${type})`);
+      const result = await fetchSMLTenantDetails(term.trim());
+      
+      if (result.success && result.tenantDetails) {
+        const transformedData = transformSMLDataForUI(result.tenantDetails, term.trim());
+        setData(transformedData);
+      } else {
+        setError(result.error || `Could not find tenant "${term}" in SML. Try searching with a different name.`);
+        setData(null);
+      }
     } catch (err) {
-      setError(err.message || 'Failed to load customer products');
+      console.error('Error fetching customer products from SML:', err);
+      setError(err.message || 'Failed to load customer products from SML');
       setData(null);
     } finally {
       setLoading(false);
@@ -57,15 +179,18 @@ const CustomerProducts = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    await handleSearchWithAccount(accountName);
+    // Default to tenant search when manually typing
+    await handleSearchWithTenant(searchTerm, 'tenant');
   };
 
   const handleViewAccountHistory = () => {
-    navigate(`/analytics/account-history?account=${encodeURIComponent(data.account)}`);
+    const param = data.tenantName || data.account;
+    navigate(`/analytics/account-history?account=${encodeURIComponent(param)}`);
   };
 
   const handleViewPendingRequests = () => {
-    navigate(`/pending-product-requests?account=${encodeURIComponent(data.account)}`);
+    const param = data.tenantName || data.account;
+    navigate(`/pending-product-requests?account=${encodeURIComponent(param)}`);
   };
 
   const handleProductUpdateRequest = () => {
@@ -74,13 +199,15 @@ const CustomerProducts = () => {
 
   const handleRequestCreated = (request) => {
     // Optionally navigate to pending requests page
-    navigate(`/pending-product-requests?account=${encodeURIComponent(data.account)}`);
+    const param = data.tenantName || data.account;
+    navigate(`/pending-product-requests?account=${encodeURIComponent(param)}`);
   };
 
   const handleClear = () => {
-    setAccountName('');
+    setSearchTerm('');
     setData(null);
     setError(null);
+    setSearchType(null);
     setCollapsedRegions({});
     setCollapsedCategories({});
   };
@@ -88,23 +215,30 @@ const CustomerProducts = () => {
   // Handle type-ahead search selection
   const handleSearchSelect = (item) => {
     if (item.type === 'account') {
-      setAccountName(item.name);
+      setSearchTerm(item.name);
+      setSearchType('account');
       // Automatically trigger search when account is selected
-      handleSearchWithAccount(item.name);
+      handleSearchWithTenant(item.name, 'account');
+    } else if (item.type === 'tenant') {
+      setSearchTerm(item.name);
+      setSearchType('tenant');
+      // Automatically trigger search when tenant is selected
+      handleSearchWithTenant(item.name, 'tenant');
     }
   };
 
-  // Wrapper for searchProvisioning that shows only accounts
+  // Wrapper for searchProvisioning that shows accounts and tenants
   const searchFunction = async (term, limit) => {
     try {
       const response = await searchProvisioning(term, limit);
       if (response.success) {
-        // Return only accounts for Customer Products page
+        // Return accounts and tenants for Customer Products page
         return {
           success: true,
           results: {
             technicalRequests: [], // Hide technical requests
-            accounts: response.results.accounts || []
+            accounts: response.results.accounts || [],
+            tenants: response.results.tenants || []
           }
         };
       }
@@ -113,7 +247,7 @@ const CustomerProducts = () => {
       if (error.name !== 'AbortError') {
         throw error;
       }
-      return { success: false, results: { technicalRequests: [], accounts: [] } };
+      return { success: false, results: { technicalRequests: [], accounts: [], tenants: [] } };
     }
   };
 
@@ -326,25 +460,52 @@ const CustomerProducts = () => {
         </p>
       </div>
 
+      {/* SML Configuration Status */}
+      {smlConfigured === false && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon className="h-5 w-5 text-amber-500 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">SML Integration Not Configured</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Customer Products now uses SML as the data source. Please configure SML authentication in{' '}
+                <a href="/settings" className="underline hover:no-underline">Settings</a> to view product entitlements.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search Box */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ServerIcon className="h-5 w-5 text-blue-500" />
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            Data Source: <span className="text-blue-600 dark:text-blue-400">SML (Service Management Layer)</span>
+          </span>
+          {smlConfigured && (
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Connected
+            </span>
+          )}
+        </div>
         <div className="flex gap-4">
           <div className="flex-1">
             <TypeAheadSearch
               searchFunction={searchFunction}
               onSelect={handleSearchSelect}
-              placeholder="Enter customer account name..."
+              placeholder="Enter customer account name or tenant name..."
               debounceDelay={300}
               minSearchLength={2}
-              value={accountName}
-              onChange={setAccountName}
+              value={searchTerm}
+              onChange={setSearchTerm}
             />
           </div>
           <button
             id="customer-products-search-btn"
             type="button"
             onClick={handleSearch}
-            disabled={!accountName.trim() || loading}
+            disabled={!searchTerm.trim() || loading || smlConfigured === false}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Search
@@ -359,6 +520,9 @@ const CustomerProducts = () => {
             </button>
           )}
         </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Search by customer account name or tenant name. Results are fetched directly from SML.
+        </p>
       </div>
 
       {/* Loading State */}
@@ -386,6 +550,14 @@ const CustomerProducts = () => {
                 <h2 id="customer-products-account-name" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   {data.account}
                 </h2>
+                {data.tenantName && data.tenantName !== data.account && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    Tenant: <span className="font-mono text-gray-700 dark:text-gray-300">{data.tenantName}</span>
+                    {data.tenantId && (
+                      <span className="ml-2 text-xs text-gray-400">(ID: {data.tenantId})</span>
+                    )}
+                  </p>
+                )}
                 <div className="flex items-center gap-6 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <CheckCircleIcon className="h-5 w-5 text-green-500" />
@@ -393,6 +565,14 @@ const CustomerProducts = () => {
                       {data.summary?.totalActive || 0} active product{data.summary?.totalActive !== 1 ? 's' : ''}
                     </span>
                   </div>
+                  {data.source && (
+                    <div className="flex items-center gap-2">
+                      <ServerIcon className="h-5 w-5 text-blue-400" />
+                      <span className="text-blue-600 dark:text-blue-400 font-medium">
+                        Source: {data.source}
+                      </span>
+                    </div>
+                  )}
                   {data.lastUpdated && (
                     <div className="flex items-center gap-2">
                       <ClockIcon className="h-5 w-5 text-gray-400" />
@@ -489,7 +669,7 @@ const CustomerProducts = () => {
         <ProductUpdateModal
           isOpen={showProductUpdateModal}
           onClose={() => setShowProductUpdateModal(false)}
-          accountName={data.account}
+          accountName={data.tenantName || data.account}
           currentProducts={data.productsByRegion}
           onRequestCreated={handleRequestCreated}
         />

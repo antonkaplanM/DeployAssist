@@ -10,8 +10,8 @@
  */
 
 require('dotenv').config();
-const salesforce = require('./salesforce');
-const { SMLValidationHelper } = require('./sml-validation-helper');
+const salesforce = require('../../salesforce');
+const { SMLValidationHelper } = require('../../utils/sml-validation-helper');
 const { Pool } = require('pg');
 
 // Database connection

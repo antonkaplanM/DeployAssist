@@ -96,8 +96,8 @@ const TypeAheadSearch = ({
   // Get total number of results
   const getTotalResults = () => {
     if (!results) return 0;
-    const { technicalRequests = [], accounts = [] } = results;
-    return technicalRequests.length + accounts.length;
+    const { technicalRequests = [], accounts = [], tenants = [] } = results;
+    return technicalRequests.length + accounts.length + tenants.length;
   };
 
   // Check if an item is selected
@@ -194,6 +194,35 @@ const TypeAheadSearch = ({
                       {account.type && `Type: ${account.type}`}
                       {account.type && account.industry && ' • '}
                       {account.industry && `Industry: ${account.industry}`}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!error && results.tenants && results.tenants.length > 0 && (
+            <div>
+              <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-xs font-medium text-blue-700 dark:text-blue-400 border-b border-blue-200 dark:border-blue-800">
+                🏢 Tenants ({results.tenants.length})
+              </div>
+              {results.tenants.map((tenant, index) => {
+                const globalIndex = (results.technicalRequests?.length || 0) + (results.accounts?.length || 0) + index;
+                return (
+                  <div
+                    key={`tenant-${tenant.id}`}
+                    className={`px-3 py-3 cursor-pointer border-b border-gray-100 hover:bg-blue-50 transition-colors ${
+                      isItemSelected(globalIndex) ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => selectResult(tenant, 'tenant')}
+                  >
+                    <div className="font-medium text-sm text-gray-900">
+                      {highlightMatch(tenant.name, searchTerm)}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {tenant.accountName && `Account: ${tenant.accountName}`}
+                      {tenant.accountName && tenant.environment && ' • '}
+                      {tenant.environment && `Environment: ${tenant.environment}`}
                     </div>
                   </div>
                 );

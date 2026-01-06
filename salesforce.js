@@ -521,7 +521,61 @@ async function searchAccounts(searchTerm, limit = 10) {
     }
 }
 
-// Combined search function for both Technical Team Requests and Accounts
+// Search for tenants by name from Prof_Services_Request__c
+async function searchTenants(searchTerm, limit = 10) {
+    try {
+        if (!searchTerm || searchTerm.length < 2) {
+            return { success: true, records: [] };
+        }
+        
+        const conn = await getConnection();
+        
+        // Search for unique tenant names from Prof_Services_Request__c
+        const soql = `
+            SELECT Tenant_Name__c, Account__c, Id
+            FROM Prof_Services_Request__c 
+            WHERE Tenant_Name__c LIKE '%${searchTerm.replace(/'/g, "\\'")}%'
+            AND Tenant_Name__c != null
+            ORDER BY Tenant_Name__c ASC 
+            LIMIT ${limit * 5}
+        `;
+        
+        console.log('🔍 Searching Tenants:', soql);
+        const result = await conn.query(soql);
+        
+        // Deduplicate tenant names
+        const uniqueTenants = new Map();
+        result.records.forEach(record => {
+            if (!uniqueTenants.has(record.Tenant_Name__c)) {
+                uniqueTenants.set(record.Tenant_Name__c, {
+                    id: record.Tenant_Name__c,
+                    name: record.Tenant_Name__c,
+                    accountName: record.Account__c,
+                    type: 'tenant'
+                });
+            }
+        });
+        
+        // Return only up to the limit
+        const tenantsArray = Array.from(uniqueTenants.values()).slice(0, limit);
+        console.log(`✅ Found ${tenantsArray.length} unique tenants`);
+        
+        return {
+            success: true,
+            records: tenantsArray
+        };
+        
+    } catch (err) {
+        console.error('❌ Error searching Tenants:', err.message);
+        return {
+            success: false,
+            error: err.message,
+            records: []
+        };
+    }
+}
+
+// Combined search function for Technical Team Requests, Accounts, and Tenants
 async function searchProvisioningData(searchTerm, limit = 20) {
     try {
         if (!searchTerm || searchTerm.length < 2) {
@@ -529,15 +583,17 @@ async function searchProvisioningData(searchTerm, limit = 20) {
                 success: true,
                 results: {
                     technicalRequests: [],
-                    accounts: []
+                    accounts: [],
+                    tenants: []
                 }
             };
         }
         
-        // Search both in parallel
-        const [techResults, accountResults] = await Promise.all([
-            searchTechnicalTeamRequests(searchTerm, Math.ceil(limit / 2)),
-            searchAccounts(searchTerm, Math.ceil(limit / 2))
+        // Search all three in parallel
+        const [techResults, accountResults, tenantResults] = await Promise.all([
+            searchTechnicalTeamRequests(searchTerm, Math.ceil(limit / 3)),
+            searchAccounts(searchTerm, Math.ceil(limit / 3)),
+            searchTenants(searchTerm, Math.ceil(limit / 3))
         ]);
         
         return {
@@ -545,7 +601,10 @@ async function searchProvisioningData(searchTerm, limit = 20) {
             results: {
                 technicalRequests: techResults.success ? techResults.records : [],
                 accounts: accountResults.success ? accountResults.records : [],
-                totalCount: (techResults.records?.length || 0) + (accountResults.records?.length || 0)
+                tenants: tenantResults.success ? tenantResults.records : [],
+                totalCount: (techResults.records?.length || 0) + 
+                           (accountResults.records?.length || 0) + 
+                           (tenantResults.records?.length || 0)
             }
         };
         
@@ -556,7 +615,8 @@ async function searchProvisioningData(searchTerm, limit = 20) {
             error: err.message,
             results: {
                 technicalRequests: [],
-                accounts: []
+                accounts: [],
+                tenants: []
             }
         };
     }

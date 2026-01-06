@@ -12,6 +12,54 @@ class SMLGhostAccountsService {
     }
 
     /**
+     * Check if SML token is valid and not expired
+     * @returns {Object} Token status with hasToken, expired, remainingMinutes
+     */
+    checkTokenStatus() {
+        return this.smlService.getTokenInfo();
+    }
+
+    /**
+     * Validate SML authentication and check token expiration
+     * Returns error object if token is missing or expired
+     */
+    async validateAuthentication() {
+        const config = this.smlService.getConfig();
+        
+        if (!config || !config.authCookie) {
+            return {
+                valid: false,
+                error: 'SML authentication not configured. Please configure SML in Settings → SML Configuration.'
+            };
+        }
+
+        // Check token expiration
+        const tokenInfo = this.smlService.getTokenInfo();
+        
+        if (tokenInfo.expired) {
+            const expiryMessage = tokenInfo.expiresAt 
+                ? `Token expired at ${tokenInfo.expiresAt.toLocaleString()}`
+                : 'Token has expired';
+            
+            return {
+                valid: false,
+                error: `SML authentication expired (401 Unauthorized). ${expiryMessage}. Please refresh your SML token in Settings → SML Configuration → Refresh Token.`,
+                tokenExpired: true,
+                expiresAt: tokenInfo.expiresAt
+            };
+        }
+
+        // Token is valid - show remaining time
+        console.log(`✅ SML token valid, expires in ${tokenInfo.remainingMinutes} minutes`);
+        
+        return {
+            valid: true,
+            remainingMinutes: tokenInfo.remainingMinutes,
+            expiresAt: tokenInfo.expiresAt
+        };
+    }
+
+    /**
      * Sync all tenants from SML to local database
      * This fetches all tenants from SML API and stores them with account name mapping
      */
@@ -19,14 +67,19 @@ class SMLGhostAccountsService {
         try {
             console.log('🔄 Starting SML tenant sync...');
             
-            // Check if SML is configured
-            const config = this.smlService.getConfig();
-            if (!config || !config.authCookie) {
+            // Validate authentication and check token expiration BEFORE making API calls
+            const authValidation = await this.validateAuthentication();
+            if (!authValidation.valid) {
+                console.error('❌ SML authentication validation failed:', authValidation.error);
                 return {
                     success: false,
-                    error: 'SML authentication not configured'
+                    error: authValidation.error,
+                    tokenExpired: authValidation.tokenExpired || false
                 };
             }
+
+            // Get config for API calls
+            const config = this.smlService.getConfig();
 
             const BASE_URL = config.environment === 'euw1' 
                 ? 'https://api-euw1.rms.com' 
@@ -125,6 +178,7 @@ class SMLGhostAccountsService {
 
     /**
      * Fetch all tenants from SML using Playwright
+     * Uses the same header configuration as the working SML Compare feature
      */
     async _fetchAllTenantsWithPlaywright(config, baseUrl) {
         const { chromium } = require('@playwright/test');
@@ -137,21 +191,15 @@ class SMLGhostAccountsService {
                 args: ['--ignore-certificate-errors']
             });
 
-            // Determine origin based on environment (required for SML authentication)
-            const origin = config.environment === 'euw1' 
-                ? 'https://tenant-zero.rms.com'
-                : 'https://tenant-zero-us.rms.com';
-
+            // Use minimal headers - matches the working SML Compare implementation
+            // Note: Origin/Referer headers cause 401 errors from SML API
             const context = await browser.newContext({
                 ignoreHTTPSErrors: true,
                 extraHTTPHeaders: {
                     'Authorization': `Bearer ${config.authCookie}`,
                     'Accept': 'application/json',
                     'Accept-Encoding': 'gzip, deflate, br',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Origin': origin,
-                    'Referer': `${origin}/`,
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
             });
 
@@ -190,8 +238,16 @@ class SMLGhostAccountsService {
 
                 const status = response.status();
                 
+                if (status === 401) {
+                    throw new Error('SML authentication failed (401 Unauthorized). Your SML token has expired. Please refresh your token in Settings → SML Configuration → Refresh Token.');
+                }
+                
+                if (status === 403) {
+                    throw new Error('SML authorization failed (403 Forbidden). You may not have access to this resource.');
+                }
+                
                 if (status !== 200) {
-                    throw new Error(`API request failed with status ${status}`);
+                    throw new Error(`SML API request failed with status ${status}`);
                 }
 
                 const data = await response.json();
@@ -481,6 +537,7 @@ class SMLGhostAccountsService {
 
     /**
      * Fetch tenant products using Playwright (more reliable than direct HTTP)
+     * Uses the same header configuration as the working SML Compare feature
      */
     async _fetchTenantProductsWithPlaywright(tenantId, config, baseUrl) {
         const { chromium } = require('@playwright/test');
@@ -492,21 +549,15 @@ class SMLGhostAccountsService {
                 args: ['--ignore-certificate-errors']
             });
 
-            // Determine origin based on environment (required for SML authentication)
-            const origin = config.environment === 'euw1' 
-                ? 'https://tenant-zero.rms.com'
-                : 'https://tenant-zero-us.rms.com';
-
+            // Use minimal headers - matches the working SML Compare implementation
+            // Note: Origin/Referer headers cause 401 errors from SML API
             const context = await browser.newContext({
                 ignoreHTTPSErrors: true,
                 extraHTTPHeaders: {
                     'Authorization': `Bearer ${config.authCookie}`,
                     'Accept': 'application/json',
                     'Accept-Encoding': 'gzip, deflate, br',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Origin': origin,
-                    'Referer': `${origin}/`,
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
             });
 
@@ -518,8 +569,15 @@ class SMLGhostAccountsService {
                 timeout: 30000
             });
 
-            if (response.status() !== 200) {
-                console.warn(`Failed to fetch tenant ${tenantId}: Status ${response.status()}`);
+            const status = response.status();
+            
+            if (status === 401) {
+                console.error(`❌ SML authentication failed for tenant ${tenantId}: Token expired (401)`);
+                throw new Error('SML token expired - please refresh token in Settings');
+            }
+            
+            if (status !== 200) {
+                console.warn(`Failed to fetch tenant ${tenantId}: Status ${status}`);
                 return null;
             }
 
@@ -544,6 +602,19 @@ class SMLGhostAccountsService {
     async refreshGhostAccountsFromSML() {
         try {
             console.log('🔄 Starting full SML ghost accounts refresh (fetching from SML)...');
+            
+            // Validate authentication BEFORE starting the sync
+            const authValidation = await this.validateAuthentication();
+            if (!authValidation.valid) {
+                console.error('❌ Cannot refresh: SML authentication issue');
+                return {
+                    success: false,
+                    error: authValidation.error,
+                    tokenExpired: authValidation.tokenExpired || false
+                };
+            }
+            
+            console.log(`✅ SML token valid (${authValidation.remainingMinutes} minutes remaining)`);
             
             // Step 1: Sync all tenants from SML (includes fetching entitlements)
             console.log('📥 Step 1: Syncing tenants and entitlements from SML...');
@@ -635,14 +706,18 @@ class SMLGhostAccountsService {
      */
     async getTenantExpiredProducts(tenantId, tenantName, filters = {}) {
         try {
-            // Get SML config
-            const config = this.smlService.getConfig();
-            if (!config || !config.authCookie) {
+            // Validate authentication and check token expiration BEFORE making API calls
+            const authValidation = await this.validateAuthentication();
+            if (!authValidation.valid) {
                 return {
                     success: false,
-                    error: 'SML authentication not configured'
+                    error: authValidation.error,
+                    tokenExpired: authValidation.tokenExpired || false
                 };
             }
+
+            // Get SML config
+            const config = this.smlService.getConfig();
 
             const baseUrl = config.environment === 'euw1' 
                 ? 'https://api-euw1.rms.com' 
