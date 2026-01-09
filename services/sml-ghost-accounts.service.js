@@ -60,6 +60,151 @@ class SMLGhostAccountsService {
     }
 
     /**
+     * Fetch only the tenant list from SML (no entitlements/details)
+     * This is fast - just gets tenant IDs and names
+     * @returns {Promise<Object>} Result with tenants array
+     */
+    async fetchTenantListOnly() {
+        try {
+            console.log('🔄 Fetching tenant list from SML (list only)...');
+            
+            // Validate authentication first
+            const authValidation = await this.validateAuthentication();
+            if (!authValidation.valid) {
+                return {
+                    success: false,
+                    error: authValidation.error,
+                    tokenExpired: authValidation.tokenExpired || false
+                };
+            }
+
+            const config = this.smlService.getConfig();
+            const BASE_URL = config.environment === 'euw1' 
+                ? 'https://api-euw1.rms.com' 
+                : 'https://api-use1.rms.com';
+
+            // Fetch all tenants using Playwright (just the list, no details)
+            const tenantsResult = await this._fetchAllTenantsWithPlaywright(config, BASE_URL);
+            
+            if (!tenantsResult.success) {
+                return {
+                    success: false,
+                    error: tenantsResult.error,
+                    tokenExpired: tenantsResult.error?.includes('401') || tenantsResult.error?.includes('expired')
+                };
+            }
+
+            console.log(`✅ Fetched ${tenantsResult.tenants.length} tenant names from SML`);
+            return {
+                success: true,
+                tenants: tenantsResult.tenants
+            };
+
+        } catch (error) {
+            console.error('❌ Error fetching tenant list:', error.message);
+            return {
+                success: false,
+                error: error.message,
+                tokenExpired: error.message?.includes('401') || error.message?.includes('expired')
+            };
+        }
+    }
+
+    /**
+     * Sync only specific tenants from SML (fetch details only for these)
+     * This is much faster when you only need a subset of tenants
+     * @param {Array} tenants - Array of tenant objects with tenantId and tenantName
+     * @returns {Promise<Object>} Result with sync stats
+     */
+    async syncSpecificTenants(tenants) {
+        try {
+            console.log(`🔄 Syncing ${tenants.length} specific tenants from SML...`);
+            
+            // Validate authentication first
+            const authValidation = await this.validateAuthentication();
+            if (!authValidation.valid) {
+                return {
+                    success: false,
+                    error: authValidation.error,
+                    tokenExpired: authValidation.tokenExpired || false
+                };
+            }
+
+            const config = this.smlService.getConfig();
+            const BASE_URL = config.environment === 'euw1' 
+                ? 'https://api-euw1.rms.com' 
+                : 'https://api-use1.rms.com';
+
+            let newCount = 0;
+            let updatedCount = 0;
+            let mappedCount = 0;
+
+            for (let i = 0; i < tenants.length; i++) {
+                const tenant = tenants[i];
+                const tenantId = tenant.tenantId;
+                const tenantName = tenant.tenantName;
+                
+                // Try to find account name mapping
+                const accountNameResult = await db.findAccountNameForTenant(tenantName);
+                const accountName = accountNameResult.accountName;
+                
+                if (accountName) {
+                    mappedCount++;
+                    console.log(`  ✓ Mapped ${tenantName} → ${accountName}`);
+                }
+
+                // Fetch full tenant details with entitlements
+                console.log(`  [${i + 1}/${tenants.length}] Fetching entitlements for ${tenantName}...`);
+                const tenantDetails = await this._fetchTenantProductsWithPlaywright(tenantId, config, BASE_URL);
+                
+                const tenantData = {
+                    tenantId: tenantId,
+                    tenantName: tenantName,
+                    accountName: accountName,
+                    tenantDisplayName: tenant.tenantDisplayName || null,
+                    isDeleted: tenant.isDeleted || false,
+                    rawData: tenant,
+                    productEntitlements: tenantDetails?.extensionData || null
+                };
+
+                // Check if tenant already exists
+                const existingResult = await db.getSMLTenantById(tenantId);
+                
+                const result = await db.upsertSMLTenant(tenantData);
+                
+                if (result.success) {
+                    if (existingResult.success && existingResult.tenant) {
+                        updatedCount++;
+                    } else {
+                        newCount++;
+                    }
+                }
+            }
+
+            console.log(`✅ Synced ${tenants.length} specific tenants:`);
+            console.log(`   New: ${newCount}`);
+            console.log(`   Updated: ${updatedCount}`);
+            console.log(`   Mapped to accounts: ${mappedCount}`);
+
+            return {
+                success: true,
+                totalTenants: tenants.length,
+                newTenants: newCount,
+                updatedTenants: updatedCount,
+                mappedTenants: mappedCount
+            };
+
+        } catch (error) {
+            console.error('❌ Error syncing specific tenants:', error.message);
+            return {
+                success: false,
+                error: error.message,
+                tokenExpired: error.message?.includes('401') || error.message?.includes('expired')
+            };
+        }
+    }
+
+    /**
      * Sync all tenants from SML to local database
      * This fetches all tenants from SML API and stores them with account name mapping
      */

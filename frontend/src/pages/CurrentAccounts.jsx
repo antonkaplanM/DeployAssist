@@ -14,6 +14,7 @@ import {
     getCurrentAccounts,
     getSyncStatus,
     triggerSync,
+    triggerQuickSync,
     updateComments,
     exportAccounts
 } from '../services/currentAccountsService';
@@ -41,6 +42,7 @@ const CurrentAccounts = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [syncLoading, setSyncLoading] = useState(false);
+    const [quickSyncLoading, setQuickSyncLoading] = useState(false);
     const [syncStatus, setSyncStatus] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [includeRemoved, setIncludeRemoved] = useState(false);
@@ -151,6 +153,34 @@ const CurrentAccounts = () => {
             alert(`Sync failed: ${err.message}`);
         } finally {
             setSyncLoading(false);
+        }
+    };
+
+    // Handle quick sync - only adds new tenants
+    const handleQuickSync = async () => {
+        if (!window.confirm('Quick Sync will only add NEW tenants that don\'t already exist in the database.\n\nThis is faster than a full sync but won\'t update existing records.\n\nContinue?')) {
+            return;
+        }
+
+        setQuickSyncLoading(true);
+        try {
+            const result = await triggerQuickSync();
+            if (result.success) {
+                const stats = result.stats || {};
+                alert(`Quick Sync completed!\n\nSML tenants scanned: ${stats.smlTenantsScanned || 0}\nExisting tenants in DB: ${stats.existingTenants || 0}\nNew tenants found: ${stats.newTenantsFound || 0}\nRecords created: ${stats.recordsCreated || 0}`);
+                fetchAccounts();
+                fetchSyncStatus();
+            } else {
+                if (result.tokenExpired) {
+                    alert(`Quick Sync failed: ${result.error}\n\n${result.resolution}`);
+                } else {
+                    alert(`Quick Sync failed: ${result.error}`);
+                }
+            }
+        } catch (err) {
+            alert(`Quick Sync failed: ${err.message}`);
+        } finally {
+            setQuickSyncLoading(false);
         }
     };
 
@@ -345,12 +375,23 @@ const CurrentAccounts = () => {
                     </button>
 
                     <button
+                        onClick={handleQuickSync}
+                        disabled={quickSyncLoading || syncLoading}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                        title="Only add new tenants (faster)"
+                    >
+                        <ArrowPathIcon className={`h-4 w-4 ${quickSyncLoading ? 'animate-spin' : ''}`} />
+                        {quickSyncLoading ? 'Quick Syncing...' : 'Quick Sync'}
+                    </button>
+
+                    <button
                         onClick={handleSync}
-                        disabled={syncLoading}
+                        disabled={syncLoading || quickSyncLoading}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                        title="Full sync - updates all records"
                     >
                         <ArrowPathIcon className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-                        {syncLoading ? 'Syncing...' : 'Sync Data'}
+                        {syncLoading ? 'Syncing...' : 'Full Sync'}
                     </button>
 
                     <button
@@ -534,7 +575,8 @@ const CurrentAccounts = () => {
                                 <li>Each row represents a unique Tenant + App combination</li>
                                 <li>Click on any column header to sort the data</li>
                                 <li>Click on the Comments field to add or edit notes (preserved on sync)</li>
-                                <li>Use "Sync Data" to refresh from source systems (may take several minutes)</li>
+                                <li><strong>Quick Sync:</strong> Only adds NEW tenants that don't exist yet (faster)</li>
+                                <li><strong>Full Sync:</strong> Updates all records from source systems (comprehensive, slower)</li>
                                 <li><strong>Type:</strong> POC if term &lt; 1 year, Subscription if ≥ 1 year</li>
                                 <li><strong>PS Record:</strong> The Salesforce Professional Services record that provisioned this tenant</li>
                             </ul>

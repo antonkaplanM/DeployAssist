@@ -117,10 +117,11 @@ router.post('/sync', async (req, res) => {
         // Start sync (this may take a while)
         const result = await currentAccountsService.syncAccounts(initiatedBy);
 
-        // Handle token expiration with 401 status
+        // Handle SML token expiration - use 503 (not 401) to avoid triggering app logout
+        // 401 is reserved for main app session auth issues
         if (!result.success && result.tokenExpired) {
-            console.error('❌ SML token expired - returning 401');
-            return res.status(401).json({
+            console.error('❌ SML token expired - returning 503 (Service Unavailable)');
+            return res.status(503).json({
                 ...result,
                 errorCode: 'SML_TOKEN_EXPIRED',
                 resolution: 'Please refresh your SML token in Settings → SML Configuration',
@@ -135,15 +136,65 @@ router.post('/sync', async (req, res) => {
     } catch (error) {
         console.error('❌ Error in POST /api/current-accounts/sync:', error);
         
-        // Check if error message indicates token expiration
+        // Check if error message indicates SML token expiration
         const isTokenError = error.message?.includes('401') || 
                             error.message?.includes('expired') ||
-                            error.message?.includes('authentication');
+                            error.message?.includes('Unauthorized');
         
-        res.status(isTokenError ? 401 : 500).json({
+        // Use 503 for SML token errors (not 401) to avoid triggering app logout
+        res.status(isTokenError ? 503 : 500).json({
             success: false,
             error: error.message,
             errorCode: isTokenError ? 'SML_TOKEN_EXPIRED' : 'SYNC_ERROR',
+            resolution: isTokenError ? 'Please refresh your SML token in Settings → SML Configuration' : null,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/quick-sync
+ * Quick sync - only add new tenants that don't already exist
+ * Faster than full sync as it skips existing records
+ */
+router.post('/quick-sync', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/quick-sync');
+
+        // Get user info from request (if authenticated)
+        const initiatedBy = req.user?.email || req.user?.username || 'manual';
+
+        // Start quick sync
+        const result = await currentAccountsService.quickSyncNewAccounts(initiatedBy);
+
+        // Handle SML token expiration - use 503 (not 401) to avoid triggering app logout
+        if (!result.success && result.tokenExpired) {
+            console.error('❌ SML token expired - returning 503 (Service Unavailable)');
+            return res.status(503).json({
+                ...result,
+                errorCode: 'SML_TOKEN_EXPIRED',
+                resolution: 'Please refresh your SML token in Settings → SML Configuration',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            ...result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/quick-sync:', error);
+        
+        // Check if error message indicates SML token expiration
+        const isTokenError = error.message?.includes('401') || 
+                            error.message?.includes('expired') ||
+                            error.message?.includes('Unauthorized');
+        
+        // Use 503 for SML token errors (not 401) to avoid triggering app logout
+        res.status(isTokenError ? 503 : 500).json({
+            success: false,
+            error: error.message,
+            errorCode: isTokenError ? 'SML_TOKEN_EXPIRED' : 'QUICK_SYNC_ERROR',
             resolution: isTokenError ? 'Please refresh your SML token in Settings → SML Configuration' : null,
             timestamp: new Date().toISOString()
         });

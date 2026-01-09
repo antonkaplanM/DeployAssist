@@ -608,6 +608,170 @@ class CurrentAccountsService {
     }
 
     /**
+     * Quick sync - only add NEW tenants that don't exist in current_accounts
+     * This is faster than full sync because it:
+     * 1. First checks which tenants already exist in the DB
+     * 2. Only fetches details/entitlements from SML for NEW tenants
+     * @param {string} initiatedBy - Username who initiated the sync
+     * @returns {Promise<Object>} Sync result
+     */
+    async quickSyncNewAccounts(initiatedBy = 'system') {
+        const syncStarted = new Date();
+        let syncLogId = null;
+
+        try {
+            // Create sync log entry
+            const logResult = await db.query(`
+                INSERT INTO current_accounts_sync_log 
+                (sync_started, status, initiated_by)
+                VALUES ($1, 'in_progress', $2)
+                RETURNING id
+            `, [syncStarted, initiatedBy]);
+            syncLogId = logResult.rows[0].id;
+
+            console.log('🚀 Starting Quick Sync (new tenants only)...');
+
+            // Step 1: Get list of tenant_names that already exist in current_accounts FIRST
+            console.log('🔍 Step 1: Finding tenants that already exist in database...');
+            const existingTenantsResult = await db.query(`
+                SELECT DISTINCT tenant_name FROM current_accounts WHERE tenant_name IS NOT NULL
+            `);
+            const existingTenantNames = new Set(
+                existingTenantsResult.rows.map(r => r.tenant_name?.toLowerCase())
+            );
+            console.log(`📊 Found ${existingTenantNames.size} existing tenants in current_accounts`);
+
+            // Step 2: Fetch ONLY the tenant list from SML (fast - no entitlements)
+            console.log('📥 Step 2: Fetching tenant list from SML (list only, no details)...');
+            const tenantListResult = await this.smlGhostService.fetchTenantListOnly();
+            
+            if (!tenantListResult.success) {
+                const error = new Error(`Failed to fetch tenant list: ${tenantListResult.error}`);
+                error.tokenExpired = tenantListResult.tokenExpired || false;
+                throw error;
+            }
+            
+            const allTenants = tenantListResult.tenants;
+            console.log(`✅ Fetched ${allTenants.length} tenant names from SML`);
+
+            // Step 3: Filter to only NEW tenants (not in current_accounts)
+            const newTenants = allTenants.filter(t => 
+                t.tenantName && !existingTenantNames.has(t.tenantName.toLowerCase())
+            );
+            console.log(`🆕 Found ${newTenants.length} NEW tenants to add`);
+
+            if (newTenants.length === 0) {
+                // No new tenants to add
+                await db.query(`
+                    UPDATE current_accounts_sync_log
+                    SET sync_completed = CURRENT_TIMESTAMP,
+                        tenants_processed = 0,
+                        records_created = 0,
+                        records_updated = 0,
+                        records_marked_removed = 0,
+                        status = 'completed'
+                    WHERE id = $1
+                `, [syncLogId]);
+
+                console.log('✅ Quick Sync complete: No new tenants to add');
+                return {
+                    success: true,
+                    stats: {
+                        smlTenantsScanned: allTenants.length,
+                        existingTenants: existingTenantNames.size,
+                        newTenantsFound: 0,
+                        recordsCreated: 0,
+                        syncDuration: Date.now() - syncStarted.getTime()
+                    }
+                };
+            }
+
+            // Step 4: Only now fetch details for NEW tenants and sync them
+            console.log(`📦 Step 3: Fetching details and syncing ${newTenants.length} NEW tenants...`);
+            const syncResult = await this.smlGhostService.syncSpecificTenants(newTenants);
+            
+            if (!syncResult.success) {
+                const error = new Error(`Failed to sync new tenants: ${syncResult.error}`);
+                error.tokenExpired = syncResult.tokenExpired || false;
+                throw error;
+            }
+
+            // Step 5: Process only the new tenants from sml_tenant_data
+            let recordsCreated = 0;
+            const processedKeys = new Set();
+
+            // Get the newly synced tenant data
+            const newTenantNames = newTenants.map(t => t.tenantName);
+            const placeholders = newTenantNames.map((_, i) => `$${i + 1}`).join(', ');
+            const newTenantsData = await db.query(`
+                SELECT tenant_id, tenant_name, account_name, raw_data, product_entitlements
+                FROM sml_tenant_data
+                WHERE tenant_name IN (${placeholders})
+            `, newTenantNames);
+
+            console.log(`📦 Step 4: Processing ${newTenantsData.rows.length} new tenants into current_accounts...`);
+            for (const tenant of newTenantsData.rows) {
+                try {
+                    await this._processTenant(tenant, processedKeys, (created, updated) => {
+                        recordsCreated += created;
+                    });
+                } catch (tenantError) {
+                    console.error(`⚠️ Error processing new tenant ${tenant.tenant_name}:`, tenantError.message);
+                }
+            }
+
+            // Update sync log
+            await db.query(`
+                UPDATE current_accounts_sync_log
+                SET sync_completed = CURRENT_TIMESTAMP,
+                    tenants_processed = $1,
+                    records_created = $2,
+                    records_updated = 0,
+                    records_marked_removed = 0,
+                    status = 'completed'
+                WHERE id = $3
+            `, [newTenants.length, recordsCreated, syncLogId]);
+
+            console.log('✅ Quick Sync completed:', {
+                smlTenantsScanned: allTenants.length,
+                existingTenants: existingTenantNames.size,
+                newTenantsProcessed: newTenants.length,
+                recordsCreated
+            });
+
+            return {
+                success: true,
+                stats: {
+                    smlTenantsScanned: allTenants.length,
+                    existingTenants: existingTenantNames.size,
+                    newTenantsFound: newTenants.length,
+                    recordsCreated,
+                    syncDuration: Date.now() - syncStarted.getTime()
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ Quick Sync failed:', error);
+
+            if (syncLogId) {
+                await db.query(`
+                    UPDATE current_accounts_sync_log
+                    SET sync_completed = CURRENT_TIMESTAMP,
+                        status = 'failed',
+                        error_message = $1
+                    WHERE id = $2
+                `, [error.message, syncLogId]);
+            }
+
+            return {
+                success: false,
+                error: error.message,
+                tokenExpired: error.tokenExpired || false
+            };
+        }
+    }
+
+    /**
      * Get sync status and history
      * @returns {Promise<Object>} Sync status info
      */

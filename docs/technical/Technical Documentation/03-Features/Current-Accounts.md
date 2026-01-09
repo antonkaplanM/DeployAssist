@@ -70,7 +70,7 @@ Get paginated list of current accounts.
 
 ### POST `/api/current-accounts/sync`
 
-Trigger a manual sync of data from Salesforce and SML.
+Trigger a full sync of data from Salesforce and SML. Updates all existing records and marks removed tenants.
 
 **Response:**
 ```json
@@ -82,6 +82,24 @@ Trigger a manual sync of data from Salesforce and SML.
         "recordsUpdated": 50,
         "recordsMarkedRemoved": 5,
         "syncDuration": 45000
+    }
+}
+```
+
+### POST `/api/current-accounts/quick-sync`
+
+Quick sync - only adds new tenants that don't already exist in the database. Faster than full sync as it skips updating existing records.
+
+**Response:**
+```json
+{
+    "success": true,
+    "stats": {
+        "smlTenantsRefreshed": 500,
+        "existingTenants": 450,
+        "newTenantsFound": 50,
+        "recordsCreated": 125,
+        "syncDuration": 30000
     }
 }
 ```
@@ -105,18 +123,43 @@ Get sync status and statistics.
 
 Export all records as CSV.
 
-## Sync Process
+## Sync Options
 
-The sync process fetches **fresh data directly from SML** using the SML integration (same approach as the "SML Compare" function in the Provisioning Monitor).
+There are two sync options available:
 
-1. **Refresh SML Data**: Fetch all tenants and their entitlements directly from the SML API using Playwright (bypasses CORS and handles authentication)
+### Full Sync
+The full sync process fetches **fresh data directly from SML** and updates all records:
+
+1. **Refresh SML Data**: Fetch all tenants and their entitlements directly from the SML API using Playwright
 2. **Cache Updated Data**: Store refreshed tenant data in `sml_tenant_data` table
-3. **Correlate PS Records**: Find associated PS records in `ps_audit_trail` for metadata (CSM/Owner, status, dates)
+3. **Correlate PS Records**: Find associated PS records for metadata (CSM/Owner, status, dates)
 4. **Extract Apps**: Parse entitlements from SML data to get individual apps
 5. **Calculate Type**: POC if term < 365 days, else Subscription
 6. **Upsert Records**: Insert new or update existing records
 7. **Mark Removed**: Records not updated are marked as 'removed'
 8. **Preserve Comments**: User comments are never overwritten
+
+### Quick Sync (New Tenants Only)
+The quick sync is optimized and only fetches data for NEW tenants:
+
+1. **Find Existing Tenants FIRST**: Query `current_accounts` to get list of existing tenant names
+2. **Fetch Tenant List Only**: Get just the tenant list from SML (fast - no entitlements)
+3. **Filter New Tenants**: Identify tenants in SML that don't exist in current_accounts
+4. **Fetch Details for New Only**: Only fetch entitlements/details for NEW tenants (the slow part is skipped for existing tenants)
+5. **Process New Only**: Insert records only for new tenants
+6. **Skip Updates**: Existing records are not modified or marked as removed
+
+**Key Optimization**: The slow part (fetching entitlements for each tenant) is only done for new tenants, not for all tenants. This makes Quick Sync significantly faster when most tenants already exist.
+
+**When to use Quick Sync:**
+- Daily routine checks to catch newly provisioned tenants
+- When you want a fast update without modifying existing data
+- To add new records without risking changes to existing ones
+
+**When to use Full Sync:**
+- Periodic comprehensive refresh (weekly/monthly)
+- After significant changes in source systems
+- When you need to update existing records with new data
 
 **Note**: Entitlement data (apps, models, data products) comes directly from SML, not from PS records. This ensures accuracy as PS records may have stale or different data.
 
@@ -174,7 +217,14 @@ This means an account with 5 different apps will have 5 rows in the table.
 2. Click **Current Accounts**
 
 ### Syncing Data
-1. Click the **Sync Data** button
+
+**Quick Sync (Recommended for daily use):**
+1. Click the **Quick Sync** button (green)
+2. Confirm the operation
+3. Only new tenants will be added (faster)
+
+**Full Sync (Comprehensive refresh):**
+1. Click the **Full Sync** button (amber)
 2. Confirm the operation
 3. Wait for sync to complete (may take several minutes)
 

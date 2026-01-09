@@ -63,6 +63,45 @@ export const triggerSync = async () => {
         return response.data;
     } catch (error) {
         console.error('[CurrentAccountsService] Error triggering sync:', error);
+        
+        // Handle SML token expiration (503 with SML_TOKEN_EXPIRED)
+        if (error.response?.status === 503 && error.response?.data?.errorCode === 'SML_TOKEN_EXPIRED') {
+            return {
+                success: false,
+                tokenExpired: true,
+                error: error.response.data.error,
+                errorCode: 'SML_TOKEN_EXPIRED',
+                resolution: error.response.data.resolution || 'Please refresh your SML token in Settings → SML Configuration'
+            };
+        }
+        
+        throw error;
+    }
+};
+
+/**
+ * Trigger a quick sync - only adds new tenants that don't exist
+ * Faster than full sync as it skips updating existing records
+ * @returns {Promise<Object>} Sync result
+ */
+export const triggerQuickSync = async () => {
+    try {
+        const response = await api.post('/current-accounts/quick-sync');
+        return response.data;
+    } catch (error) {
+        console.error('[CurrentAccountsService] Error triggering quick sync:', error);
+        
+        // Handle SML token expiration (503 with SML_TOKEN_EXPIRED)
+        if (error.response?.status === 503 && error.response?.data?.errorCode === 'SML_TOKEN_EXPIRED') {
+            return {
+                success: false,
+                tokenExpired: true,
+                error: error.response.data.error,
+                errorCode: 'SML_TOKEN_EXPIRED',
+                resolution: error.response.data.resolution || 'Please refresh your SML token in Settings → SML Configuration'
+            };
+        }
+        
         throw error;
     }
 };
@@ -107,6 +146,7 @@ export default {
     getCurrentAccounts,
     getSyncStatus,
     triggerSync,
+    triggerQuickSync,
     updateComments,
     exportAccounts
 };
