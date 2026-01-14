@@ -16,18 +16,39 @@ const SML_CONFIG_FILE = '.sml_config.json';
 class SMLRepository {
     constructor() {
         this.config = null;
-        this.loadConfig();
+        this.configLoaded = false;
+        // Initial load - async but we don't block on it
+        this.loadConfigSync();
+    }
+
+    /**
+     * Synchronous config load for constructor (best-effort)
+     */
+    loadConfigSync() {
+        try {
+            const fsSync = require('fs');
+            const configData = fsSync.readFileSync(SML_CONFIG_FILE, 'utf8');
+            this.config = JSON.parse(configData);
+            this.configLoaded = true;
+            console.log('✅ SML configuration loaded (sync)');
+        } catch (error) {
+            console.log('⚠️  No SML configuration found - needs to be configured in Settings');
+            this.config = null;
+            this.configLoaded = true;
+        }
     }
 
     async loadConfig() {
         try {
             const configData = await fs.readFile(SML_CONFIG_FILE, 'utf8');
             this.config = JSON.parse(configData);
+            this.configLoaded = true;
             console.log('✅ SML configuration loaded');
             return this.config;
         } catch (error) {
             console.log('⚠️  No SML configuration found - needs to be configured in Settings');
             this.config = null;
+            this.configLoaded = true;
             return null;
         }
     }

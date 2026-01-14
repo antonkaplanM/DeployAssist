@@ -9,6 +9,7 @@ import {
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductModal from '../components/features/ProductModal';
 import SMLComparisonModal from '../components/features/SMLComparisonModal';
+import RawDataModal from '../components/features/RawDataModal';
 import ActionsMenu from '../components/common/ActionsMenu';
 import TypeAheadSearch from '../components/common/TypeAheadSearch';
 import { getProvisioningRequests, searchProvisioning, getProvisioningFilterOptions } from '../services/provisioningService';
@@ -61,6 +62,11 @@ const ProvisioningRequests = () => {
     tenantName: '',
     loading: false,
     error: null,
+  });
+  const [rawDataModal, setRawDataModal] = useState({
+    isOpen: false,
+    data: null,
+    title: '',
   });
   const [sortConfig, setSortConfig] = useState({
     key: 'created',
@@ -391,6 +397,25 @@ const ProvisioningRequests = () => {
       tenantName: '',
       loading: false,
       error: null,
+    });
+  };
+
+  const handleViewPayload = (request) => {
+    if (!request.Payload_Data__c) {
+      return;
+    }
+    setRawDataModal({
+      isOpen: true,
+      data: request.Payload_Data__c,
+      title: `Payload Data - ${request.Name}`,
+    });
+  };
+
+  const closeRawDataModal = () => {
+    setRawDataModal({
+      isOpen: false,
+      data: null,
+      title: '',
     });
   };
 
@@ -808,6 +833,9 @@ const ProvisioningRequests = () => {
                   Products
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">
+                  Payload
+                </th>
+                <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">
                   Data Validations
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
@@ -827,7 +855,7 @@ const ProvisioningRequests = () => {
             <tbody className="divide-y divide-gray-200">
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan="11" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="12" className="px-4 py-8 text-center text-gray-500">
                     No provisioning requests found
                   </td>
                 </tr>
@@ -854,6 +882,19 @@ const ProvisioningRequests = () => {
                     </td>
                     <td className="px-4 py-3">
                       {renderProductsColumn(request)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {request.Payload_Data__c ? (
+                        <button
+                          onClick={() => handleViewPayload(request)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded transition-colors cursor-pointer"
+                          title="View raw JSON payload"
+                        >
+                          <span className="font-mono">{'{}'}</span> JSON
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {renderValidationColumn(request)}
@@ -987,6 +1028,14 @@ const ProvisioningRequests = () => {
           tenantName={smlComparisonModal.tenantName}
         />
       )}
+
+      {/* Raw Data Modal */}
+      <RawDataModal
+        isOpen={rawDataModal.isOpen}
+        onClose={closeRawDataModal}
+        data={rawDataModal.data}
+        title={rawDataModal.title}
+      />
     </div>
   );
 };

@@ -287,13 +287,17 @@ class CurrentAccountsService {
             ? `https://${tenant.tenant_name}.rms.com`
             : null;
 
-        // Step 4: Create records - one per app, or one placeholder if no apps
+        // Step 4: Calculate account type based on LONGEST entitlement across ALL products
+        // POC if longest term < 90 days, Subscription if >= 90 days
+        const accountType = this._calculateAccountType(tenant);
+
+        // Step 5: Create records - one per app, or one placeholder if no apps
         if (apps.length === 0) {
             // No apps - create one placeholder record so tenant still appears
             const record = {
                 client: tenant.account_name || enrichmentData.accountName || 'Unknown',
                 services: 'No apps',
-                account_type: 'Unknown',
+                account_type: accountType,
                 csm_owner: enrichmentData.csmOwner,
                 provisioning_status: enrichmentData.status || 'Provisioned',
                 completion_date: enrichmentData.completionDate,
@@ -318,7 +322,7 @@ class CurrentAccountsService {
         } else {
             // Create one record per app
             for (const app of apps) {
-                const record = this._buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now);
+                const record = this._buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now, accountType);
                 const result = await this._upsertRecord(record, processedKeys);
                 if (result.created) created++;
                 if (result.updated) updated++;
@@ -342,6 +346,58 @@ class CurrentAccountsService {
         }
 
         return entitlements?.appEntitlements || [];
+    }
+
+    /**
+     * Calculate account type based on the LONGEST entitlement across ALL products
+     * POC if longest term < 90 days, Subscription if >= 90 days
+     * @private
+     */
+    _calculateAccountType(tenant) {
+        let entitlements = null;
+        
+        if (tenant.product_entitlements) {
+            entitlements = typeof tenant.product_entitlements === 'string'
+                ? JSON.parse(tenant.product_entitlements)
+                : tenant.product_entitlements;
+        }
+
+        if (!entitlements) {
+            return 'Unknown';
+        }
+
+        // Collect ALL products from all categories
+        const allProducts = [
+            ...(entitlements.appEntitlements || []),
+            ...(entitlements.modelEntitlements || []),
+            ...(entitlements.dataEntitlements || [])
+        ];
+
+        if (allProducts.length === 0) {
+            return 'Unknown';
+        }
+
+        // Find the longest term across all products
+        let longestTermDays = 0;
+
+        for (const product of allProducts) {
+            const startDate = product.startDate ? new Date(product.startDate) : null;
+            const endDate = product.endDate ? new Date(product.endDate) : null;
+
+            if (startDate && endDate) {
+                const termInDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                if (termInDays > longestTermDays) {
+                    longestTermDays = termInDays;
+                }
+            }
+        }
+
+        // POC if longest term < 90 days, Subscription if >= 90 days
+        if (longestTermDays === 0) {
+            return 'Unknown';
+        }
+
+        return longestTermDays >= 90 ? 'Subscription' : 'POC';
     }
 
     /**
@@ -490,19 +546,18 @@ class CurrentAccountsService {
 
     /**
      * Build a record for a single app
+     * @param {Object} tenant - Tenant data from SML
+     * @param {Object} app - App entitlement data
+     * @param {Object} enrichmentData - Data from Salesforce PS records
+     * @param {string} tenantUrl - Constructed tenant URL
+     * @param {Date} now - Current timestamp
+     * @param {string} accountType - Pre-calculated account type based on longest entitlement
      * @private
      */
-    _buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now) {
+    _buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now, accountType) {
         // Parse dates - don't skip if missing
         let startDate = app.startDate ? new Date(app.startDate) : null;
         let endDate = app.endDate ? new Date(app.endDate) : null;
-
-        // Calculate account type based on term
-        let accountType = 'Unknown';
-        if (startDate && endDate) {
-            const termInDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
-            accountType = termInDays >= 365 ? 'Subscription' : 'POC';
-        }
 
         return {
             client: tenant.account_name || enrichmentData.accountName || 'Unknown',

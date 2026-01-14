@@ -346,6 +346,8 @@ class ConfluenceService {
                 <th>Size</th>
                 <th>Region</th>
                 <th>Tenant</th>
+                <th>Tenant ID</th>
+                <th>SF Account ID</th>
                 <th>Tenant URL</th>
                 <th>Admin</th>
                 <th>Comments</th>
@@ -381,6 +383,8 @@ class ConfluenceService {
                     <td>${this.escapeHtml(account.size || '—')}</td>
                     <td>${this.escapeHtml(account.region || '—')}</td>
                     <td>${this.escapeHtml(account.tenant_name || '—')}</td>
+                    <td>${this.escapeHtml(account.tenant_id || '—')}</td>
+                    <td>${this.escapeHtml(account.salesforce_account_id || '—')}</td>
                     <td>${tenantUrlHtml}</td>
                     <td>${this.escapeHtml(account.initial_tenant_admin || '—')}</td>
                     <td>${this.escapeHtml(account.comments || '')}</td>

@@ -24,6 +24,10 @@ class SMLGhostAccountsService {
      * Returns error object if token is missing or expired
      */
     async validateAuthentication() {
+        // IMPORTANT: Always reload config from disk before validation
+        // This ensures we get the latest token after it's been refreshed via Settings UI
+        await this.smlService.repository.reloadConfig();
+        
         const config = this.smlService.getConfig();
         
         if (!config || !config.authCookie) {

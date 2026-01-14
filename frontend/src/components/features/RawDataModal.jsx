@@ -1,8 +1,9 @@
 import React from 'react';
-import { XMarkIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ClipboardDocumentIcon, CheckIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 const RawDataModal = ({ isOpen, onClose, data, title = 'Raw JSON Data' }) => {
   const [copied, setCopied] = React.useState(false);
+  const [downloaded, setDownloaded] = React.useState(false);
 
   if (!isOpen) return null;
 
@@ -32,6 +33,31 @@ const RawDataModal = ({ isOpen, onClose, data, title = 'Raw JSON Data' }) => {
     navigator.clipboard.writeText(jsonString);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    // Generate filename from title, sanitizing for file system
+    const sanitizedTitle = title
+      .replace(/[^a-zA-Z0-9-_ ]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `${sanitizedTitle}_${timestamp}.json`;
+
+    // Create blob and download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    // Show feedback
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 2000);
   };
 
   // Syntax highlight JSON
@@ -100,6 +126,23 @@ const RawDataModal = ({ isOpen, onClose, data, title = 'Raw JSON Data' }) => {
                   <>
                     <ClipboardDocumentIcon className="h-4 w-4" />
                     Copy
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleDownload}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                title="Download as JSON file"
+              >
+                {downloaded ? (
+                  <>
+                    <CheckIcon className="h-4 w-4 text-green-600" />
+                    Saved!
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    Download
                   </>
                 )}
               </button>

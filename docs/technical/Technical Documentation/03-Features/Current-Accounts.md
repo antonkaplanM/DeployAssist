@@ -15,6 +15,9 @@ The Current Accounts page is a sub-page under the Analytics section that provide
 - **CSV Export**: Download data for offline analysis
 - **Publish to Confluence**: Publish table to Confluence page for sharing
 - **Removed Records**: Option to view removed/inactive accounts
+- **Truncated Columns**: Column values are limited to 20 characters with ellipsis (…) and tooltip for full text
+- **PS Record Products Modal**: Click on PS Record badge to view all products (Models, Data, Apps) with collapsible categories
+- **Payload Viewer**: Click JSON badge to view raw payload data with syntax highlighting
 
 ## Data Model
 
@@ -24,7 +27,7 @@ The Current Accounts page is a sub-page under the Analytics section that provide
 |--------|------|-------------|
 | `client` | VARCHAR(255) | Account name (same as Account__c on Provisioning Monitor) |
 | `services` | VARCHAR(255) | App name - one app per row |
-| `account_type` | VARCHAR(50) | 'POC' (term < 1 year) or 'Subscription' (term ≥ 1 year) |
+| `account_type` | VARCHAR(50) | 'POC' (longest entitlement < 90 days) or 'Subscription' (longest entitlement ≥ 90 days) |
 | `csm_owner` | VARCHAR(255) | CreatedBy.Name from Provisioning Monitor |
 | `provisioning_status` | VARCHAR(100) | Status from Provisioning Monitor |
 | `completion_date` | TIMESTAMP | CreatedDate from Provisioning Monitor |
@@ -161,7 +164,7 @@ The full sync process fetches **fresh data directly from SML** and updates all r
 2. **Cache Updated Data**: Store refreshed tenant data in `sml_tenant_data` table
 3. **Correlate PS Records**: Find associated PS records for metadata (CSM/Owner, status, dates)
 4. **Extract Apps**: Parse entitlements from SML data to get individual apps
-5. **Calculate Type**: POC if term < 365 days, else Subscription
+5. **Calculate Type**: Find longest entitlement across all products (Apps, Models, Data). POC if longest term < 90 days, else Subscription
 6. **Upsert Records**: Insert new or update existing records
 7. **Mark Removed**: Records not updated are marked as 'removed'
 8. **Preserve Comments**: User comments are never overwritten
@@ -232,6 +235,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 ### Frontend
 - `frontend/src/pages/CurrentAccounts.jsx` - Page component
 - `frontend/src/services/currentAccountsService.js` - API service
+- `frontend/src/components/features/PSRecordProductsModal.jsx` - Modal for viewing PS record products
 
 ### Configuration
 - `frontend/src/App.jsx` - Route definition
@@ -261,6 +265,29 @@ This means an account with 5 different apps will have 5 rows in the table.
 2. Type your comment
 3. Press Enter or click the checkmark to save
 4. Press Escape to cancel
+
+### Viewing Truncated Values
+For readability, column values are limited to 20 characters. If a value exceeds this limit:
+1. The text displays with an ellipsis (…) at the end
+2. Hover over the cell to see a tooltip with the full value
+3. The cursor changes to a help icon to indicate a tooltip is available
+
+### Viewing PS Record Products
+Click on any PS Record badge to view all products associated with that provisioning request:
+1. Click on the purple PS Record badge in any row
+2. A modal opens showing all products organized by category:
+   - **Model Entitlements** (blue) - Analytical models
+   - **Data Entitlements** (green) - Data feeds and datasets
+   - **App Entitlements** (purple) - Application products with package info
+3. Each category is collapsible - click the header to expand/collapse
+4. For App entitlements, click the info icon next to Package Name to view package details
+
+### Viewing Raw Payload Data
+Click on the JSON badge in the Payload column to view the raw JSON payload:
+1. Click on the gray "JSON" badge in the Payload column
+2. A modal opens displaying the complete raw JSON payload with syntax highlighting
+3. Use the "Copy" button to copy the JSON to clipboard
+4. The modal shows line count and file size at the bottom
 
 ### Exporting Data
 1. Apply any desired filters/search
@@ -306,7 +333,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 The sync fetches data directly from SML and requires a valid token:
 1. Navigate to Settings → Integrations → SML
 2. Click "Refresh Token" or run `npm run sml:refresh`
-3. Retry the sync operation
+3. Retry the sync operation (no server restart required - config is reloaded automatically)
 
 ### Comments Not Saving
 1. Check network tab for API response

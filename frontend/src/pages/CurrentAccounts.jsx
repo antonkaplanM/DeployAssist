@@ -10,6 +10,8 @@ import {
     ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import PSRecordProductsModal from '../components/features/PSRecordProductsModal';
+import RawDataModal from '../components/features/RawDataModal';
 import {
     getCurrentAccounts,
     getSyncStatus,
@@ -19,13 +21,15 @@ import {
     publishToConfluence,
     exportAccounts
 } from '../services/currentAccountsService';
+import { getStagingRecordById } from '../services/stagingService';
 
 const COLUMNS = [
     { key: 'client', label: 'Client', sortable: true },
     { key: 'services', label: 'Services', sortable: true },
-    { key: 'account_type', label: 'Type', sortable: true },
+    { key: 'account_type', label: 'Type', subscript: '(Calculated Best Guess)', sortable: true },
     { key: 'csm_owner', label: 'CSM/Owner', sortable: true },
     { key: 'ps_record_name', label: 'PS Record', sortable: true },
+    { key: 'payload', label: 'Payload', sortable: false },
     { key: 'completion_date', label: 'Completion Date', sortable: true },
     { key: 'size', label: 'Size', sortable: true },
     { key: 'region', label: 'Region', sortable: true },
@@ -36,6 +40,29 @@ const COLUMNS = [
     { key: 'initial_tenant_admin', label: 'Initial Tenant Admin', sortable: true },
     { key: 'comments', label: 'Comments', sortable: false, editable: true }
 ];
+
+const MAX_CELL_CHARS = 20;
+
+// Truncated cell component with tooltip
+const TruncatedCell = ({ value, maxChars = MAX_CELL_CHARS }) => {
+    if (!value || typeof value !== 'string') {
+        return <span>{value || '—'}</span>;
+    }
+    
+    const needsTruncation = value.length > maxChars;
+    const displayValue = needsTruncation 
+        ? `${value.substring(0, maxChars)}…` 
+        : value;
+    
+    return (
+        <span 
+            className={`block max-w-[20ch] truncate ${needsTruncation ? 'cursor-help' : ''}`}
+            title={needsTruncation ? value : undefined}
+        >
+            {displayValue}
+        </span>
+    );
+};
 
 const CurrentAccounts = () => {
     // State
@@ -66,6 +93,21 @@ const CurrentAccounts = () => {
     const [editingId, setEditingId] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [savingComment, setSavingComment] = useState(false);
+
+    // PS Record Modal state
+    const [psRecordModal, setPsRecordModal] = useState({
+        isOpen: false,
+        psRecordId: null,
+        psRecordName: null
+    });
+
+    // Raw Data Modal state
+    const [rawDataModal, setRawDataModal] = useState({
+        isOpen: false,
+        data: null,
+        title: ''
+    });
+    const [loadingPayload, setLoadingPayload] = useState(null); // Track which record is loading
 
     // Fetch accounts
     const fetchAccounts = useCallback(async () => {
@@ -271,6 +313,30 @@ const CurrentAccounts = () => {
         }
     };
 
+    // Open raw data modal for a PS record
+    const handleViewPayload = async (psRecordId, psRecordName) => {
+        if (!psRecordId) return;
+        
+        setLoadingPayload(psRecordId);
+        try {
+            const result = await getStagingRecordById(psRecordId);
+            if (result.success && result.record) {
+                setRawDataModal({
+                    isOpen: true,
+                    data: result.record.Payload_Data__c,
+                    title: `Payload - ${psRecordName || psRecordId}`
+                });
+            } else {
+                alert('Failed to load payload data');
+            }
+        } catch (err) {
+            console.error('Error fetching payload:', err);
+            alert(`Failed to load payload: ${err.message}`);
+        } finally {
+            setLoadingPayload(null);
+        }
+    };
+
     // Format date
     const formatDate = (dateStr) => {
         if (!dateStr) return '—';
@@ -315,14 +381,74 @@ const CurrentAccounts = () => {
         }
 
         if (column.key === 'ps_record_name') {
+            const needsTruncation = value && value.length > MAX_CELL_CHARS;
+            const displayValue = needsTruncation 
+                ? `${value.substring(0, MAX_CELL_CHARS)}…` 
+                : value;
+            
+            // Get the ps_record_id from the account for the modal
+            const psRecordId = account.ps_record_id;
+            
             return value ? (
-                <span className="inline-flex items-center px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 text-xs font-medium">
-                    {value}
-                </span>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (psRecordId) {
+                            setPsRecordModal({
+                                isOpen: true,
+                                psRecordId: psRecordId,
+                                psRecordName: value
+                            });
+                        }
+                    }}
+                    className={`inline-flex items-center px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 text-xs font-medium max-w-[20ch] hover:bg-indigo-200 dark:hover:bg-indigo-800/50 transition-colors ${psRecordId ? 'cursor-pointer' : 'cursor-default'}`}
+                    title={needsTruncation ? `${value} - Click to view products` : 'Click to view products'}
+                    disabled={!psRecordId}
+                >
+                    {displayValue}
+                </button>
             ) : '—';
         }
+
+        if (column.key === 'payload') {
+            const psRecordId = account.ps_record_id;
+            const psRecordName = account.ps_record_name;
+            const isLoading = loadingPayload === psRecordId;
+            
+            return psRecordId ? (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewPayload(psRecordId, psRecordName);
+                    }}
+                    disabled={isLoading}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    title="View raw JSON payload"
+                >
+                    {isLoading ? (
+                        <>
+                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading...
+                        </>
+                    ) : (
+                        <>
+                            <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+                            </svg>
+                            JSON
+                        </>
+                    )}
+                </button>
+            ) : (
+                <span className="text-gray-400 text-xs">—</span>
+            );
+        }
         
-        return value || '—';
+        // For regular text fields, use truncation with tooltip
+        return <TruncatedCell value={value} />;
     };
 
     // Render sort indicator
@@ -503,14 +629,21 @@ const CurrentAccounts = () => {
                                         <th
                                             key={column.key}
                                             onClick={() => column.sortable && handleSort(column.key)}
-                                            className={`px-3 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap ${
+                                            className={`px-3 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap max-w-[20ch] ${
                                                 column.sortable 
                                                     ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 select-none' 
                                                     : ''
                                             }`}
                                         >
                                             <div className="flex items-center">
-                                                {column.label}
+                                                <span>
+                                                    {column.label}
+                                                    {column.subscript && (
+                                                        <span className="block text-[9px] font-normal text-gray-400 dark:text-gray-500 leading-tight">
+                                                            {column.subscript}
+                                                        </span>
+                                                    )}
+                                                </span>
                                                 {renderSortIndicator(column)}
                                             </div>
                                         </th>
@@ -540,7 +673,7 @@ const CurrentAccounts = () => {
                                             {COLUMNS.map((column) => (
                                                 <td 
                                                     key={column.key} 
-                                                    className="px-3 py-3 text-gray-900 dark:text-gray-100 whitespace-nowrap"
+                                                    className="px-3 py-3 text-gray-900 dark:text-gray-100 max-w-[20ch]"
                                                 >
                                                     {column.editable && column.key === 'comments' ? (
                                                         editingId === account.id ? (
@@ -573,10 +706,18 @@ const CurrentAccounts = () => {
                                                         ) : (
                                                             <div 
                                                                 onClick={() => startEditing(account)}
-                                                                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded min-w-[100px] min-h-[24px]"
-                                                                title="Click to edit"
+                                                                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded min-w-[100px] min-h-[24px] max-w-[20ch]"
+                                                                title={account.comments && account.comments.length > MAX_CELL_CHARS ? account.comments : "Click to edit"}
                                                             >
-                                                                {account.comments || <span className="text-gray-400 italic text-xs">Click to add...</span>}
+                                                                {account.comments ? (
+                                                                    <span className="block truncate">
+                                                                        {account.comments.length > MAX_CELL_CHARS 
+                                                                            ? `${account.comments.substring(0, MAX_CELL_CHARS)}…` 
+                                                                            : account.comments}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-gray-400 italic text-xs">Click to add...</span>
+                                                                )}
                                                             </div>
                                                         )
                                                     ) : (
@@ -650,13 +791,30 @@ const CurrentAccounts = () => {
                                 <li>Click on the Comments field to add or edit notes (preserved on sync)</li>
                                 <li><strong>Quick Sync:</strong> Only adds NEW tenants that don't exist yet (faster)</li>
                                 <li><strong>Full Sync:</strong> Updates all records from source systems (comprehensive, slower)</li>
-                                <li><strong>Type:</strong> POC if term &lt; 1 year, Subscription if ≥ 1 year</li>
-                                <li><strong>PS Record:</strong> The Salesforce Professional Services record that provisioned this tenant</li>
+                                <li><strong>Type:</strong> POC if longest entitlement &lt; 90 days, Subscription if ≥ 90 days</li>
+                                <li><strong>PS Record:</strong> Click the badge to view all products in that PS record</li>
+                                <li><strong>Payload:</strong> Click the JSON badge to view the raw payload data</li>
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* PS Record Products Modal */}
+            <PSRecordProductsModal
+                isOpen={psRecordModal.isOpen}
+                onClose={() => setPsRecordModal({ isOpen: false, psRecordId: null, psRecordName: null })}
+                psRecordId={psRecordModal.psRecordId}
+                psRecordName={psRecordModal.psRecordName}
+            />
+
+            {/* Raw Data Modal */}
+            <RawDataModal
+                isOpen={rawDataModal.isOpen}
+                onClose={() => setRawDataModal({ isOpen: false, data: null, title: '' })}
+                data={rawDataModal.data}
+                title={rawDataModal.title}
+            />
         </div>
     );
 };
