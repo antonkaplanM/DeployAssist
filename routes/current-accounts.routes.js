@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const currentAccountsService = require('../services/current-accounts.service');
 const SMLGhostAccountsService = require('../services/sml-ghost-accounts.service');
+const confluenceService = require('../services/confluence.service');
 
 // SML service instance for token status checks
 const smlGhostService = new SMLGhostAccountsService();
@@ -238,6 +239,94 @@ router.patch('/:id/comments', async (req, res) => {
         });
     } catch (error) {
         console.error(`❌ Error in PATCH /api/current-accounts/${req.params.id}/comments:`, error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/publish-to-confluence
+ * Publish current accounts data to Confluence page
+ */
+router.post('/publish-to-confluence', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/publish-to-confluence');
+
+        const { 
+            spaceKey = null, // Not needed when using page ID
+            pageTitle = 'Current Accounts',
+            pageId = null // Will use known page ID from config if not provided
+        } = req.body;
+
+        // Get all active accounts (no pagination for publishing)
+        // Sort by completion_date DESC (latest first) for Confluence display
+        const accountsResult = await currentAccountsService.getAccounts({
+            page: 1,
+            pageSize: 10000, // Get all records
+            sortBy: 'completion_date',
+            sortOrder: 'DESC',
+            includeRemoved: false
+        });
+
+        if (!accountsResult.success) {
+            return res.status(500).json({
+                success: false,
+                error: accountsResult.error || 'Failed to fetch accounts',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const accounts = accountsResult.accounts || [];
+        
+        if (accounts.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No accounts to publish. Please sync data first.',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Get stats for the header
+        const syncStatus = await currentAccountsService.getSyncStatus();
+        const stats = {
+            totalCount: accountsResult.pagination?.totalCount || accounts.length,
+            activeCount: syncStatus.stats?.active_records || accounts.length,
+            uniqueClients: syncStatus.stats?.unique_clients || '—',
+            uniqueTenants: syncStatus.stats?.unique_tenants || '—'
+        };
+
+        // Generate HTML content
+        const htmlContent = confluenceService.generateCurrentAccountsHTML(accounts, stats);
+
+        // Publish to Confluence (uses known page ID for 'Current Accounts' if not specified)
+        const result = await confluenceService.publishPage(spaceKey, pageTitle, htmlContent, pageId);
+
+        if (!result.success) {
+            return res.status(500).json({
+                success: false,
+                error: result.error || 'Failed to publish to Confluence',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        console.log(`✅ Published ${accounts.length} accounts to Confluence: ${result.pageUrl}`);
+
+        res.json({
+            success: true,
+            pageUrl: result.pageUrl,
+            pageId: result.pageId,
+            title: result.title,
+            recordCount: accounts.length,
+            created: result.created || false,
+            updated: result.updated || false,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/publish-to-confluence:', error);
         res.status(500).json({
             success: false,
             error: error.message,

@@ -125,6 +125,28 @@ export const updateComments = async (id, comments) => {
 };
 
 /**
+ * Publish current accounts to Confluence
+ * @param {string} spaceKey - Confluence space key (optional, uses default)
+ * @param {string} pageTitle - Page title (optional, defaults to 'Current Accounts')
+ * @returns {Promise<Object>} Publish result with page URL
+ */
+export const publishToConfluence = async (spaceKey = null, pageTitle = 'Current Accounts') => {
+    try {
+        const response = await api.post('/current-accounts/publish-to-confluence', {
+            spaceKey,
+            pageTitle
+        });
+        return response.data;
+    } catch (error) {
+        console.error('[CurrentAccountsService] Error publishing to Confluence:', error);
+        
+        // Extract error message from response
+        const errorMessage = error.response?.data?.error || error.message || 'Failed to publish to Confluence';
+        throw new Error(errorMessage);
+    }
+};
+
+/**
  * Export current accounts data as CSV
  * @param {boolean} includeRemoved - Whether to include removed records
  * @returns {Promise<Blob>} CSV file blob
@@ -148,6 +170,7 @@ export default {
     triggerSync,
     triggerQuickSync,
     updateComments,
+    publishToConfluence,
     exportAccounts
 };
 

@@ -10,8 +10,10 @@ The Current Accounts page is a sub-page under the Analytics section that provide
 - **Sortable Columns**: Click any column header to sort data
 - **Search**: Filter accounts by client, services, tenant name, or CSM/Owner
 - **Editable Comments**: Click to add/edit comments (preserved during sync)
-- **Manual Sync**: Trigger data refresh from source systems
+- **Quick Sync**: Fast sync that only adds new tenants
+- **Full Sync**: Comprehensive sync that updates all records
 - **CSV Export**: Download data for offline analysis
+- **Publish to Confluence**: Publish table to Confluence page for sharing
 - **Removed Records**: Option to view removed/inactive accounts
 
 ## Data Model
@@ -119,6 +121,31 @@ Update comments for a specific record.
 
 Get sync status and statistics.
 
+### POST `/api/current-accounts/publish-to-confluence`
+
+Publish current accounts data to a Confluence page.
+
+**Request Body:**
+```json
+{
+    "spaceKey": "~71202084b0c0d62c364df5b68d111f1d4f9bf1",
+    "pageTitle": "Current Accounts"
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "pageUrl": "https://yoursite.atlassian.net/wiki/spaces/.../Current+Accounts",
+    "pageId": "123456",
+    "title": "Current Accounts",
+    "recordCount": 500,
+    "created": false,
+    "updated": true
+}
+```
+
 ### GET `/api/current-accounts/export`
 
 Export all records as CSV.
@@ -199,6 +226,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 ### Backend
 - `database/init-scripts/16-current-accounts.sql` - Database schema
 - `services/current-accounts.service.js` - Business logic & sync
+- `services/confluence.service.js` - Confluence API integration for publishing
 - `routes/current-accounts.routes.js` - API endpoints
 
 ### Frontend
@@ -238,6 +266,18 @@ This means an account with 5 different apps will have 5 rows in the table.
 1. Apply any desired filters/search
 2. Click **Export CSV**
 3. File downloads automatically
+
+### Publishing to Confluence
+1. Ensure you have data synced
+2. Click the **Publish to Confluence** button (indigo)
+3. Confirm the operation
+4. A success banner will appear with a link to view the page
+5. The page will be created if it doesn't exist, or updated if it does
+
+**Note:** Publishing to Confluence requires Atlassian API credentials configured in environment variables:
+- `ATLASSIAN_EMAIL`
+- `ATLASSIAN_API_TOKEN`
+- `ATLASSIAN_SITE_URL`
 
 ## Performance Considerations
 

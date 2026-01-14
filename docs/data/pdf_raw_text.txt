@@ -1,0 +1,4440 @@
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+All Products - Printable View
+Number of records       1000
+Displaying records 1 - 1,000. This page can only display the first 1,000 records although more records are available. To show fewer records, please
+refine your list view criteria. To print more than 1,000 records, please run a report and then click the Printable View button on the report.
+Product Name       Active (Product)       Division       Product Code       L1 Hierarchy       L2 Hierarchy       L3 Hierarchy       L4 Hierarchy       L5 Hierarchy       L6 Hierarchy       Portal Product       Created Date
+Decision   Know Your   GRID
+314a Processing       BVD       69895       GRID Review       RDC       RDC       GRID Review       5/27/2021
+Solutions   Customer   Services    
+Decision
+Able Core Platform       71572       Banking       Lending       CreditLens       Able       CreditLens       2/28/2024
+Solutions    
+Decision
+Able Maintenance       71573       Banking       Lending       CreditLens       Able       CreditLens       2/28/2024
+Solutions    
+Able Managed CMS   Decision
+71579       Banking       Lending       CreditLens       Able       CreditLens       2/28/2024
+Integration       Solutions    
+Able Managed CRM   Decision
+71580       Banking       Lending       CreditLens       Able       CreditLens       2/28/2024
+Integration       Solutions    
+Able Managed LOS   Decision
+71578       Banking       Lending       CreditLens       Able       CreditLens       2/28/2024
+Integration       Solutions    
+Able Portfolio   Decision
+71574       Banking       Lending       CreditLens       Able       CreditLens       2/28/2024
+Monitoring Solution       Solutions    
+Decision
+Able Services       71534       Banking       Lending       CreditLens       Able       1/10/2024
+Solutions    
+Decision
+Able Software       71533       Banking       Lending       CreditLens       Able       CreditLens       1/10/2024
+Solutions    
+Data and   Data   Acquire   Acquire Media
+ABN Newswire       BVD       69391       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+ABS Discloser - Deal   Research   Structured   Structured -
+LEW       67146       ABS Discloser       ABS Discloser       Subscriptions       8/6/2020
+Reporter Hosted       and Insights   Finance   Issuer    
+ABS Discloser -
+Research   Structured   Structured -
+Rating Agency   LEW       67147       ABS Discloser       ABS Discloser       Subscriptions       8/6/2020
+and Insights   Finance   Issuer    
+Reporter Hosted
+Research   Structured   Structured -   ABS ESG
+ABS ESG       LEW       70118       Moody's ABS       ABS ESG       2/14/2022
+and Insights   Finance   Issuer   Products    
+ABS Lender -   Research   Structured   Structured -
+71528       Lender       Implementation       12/12/2023
+Services       and Insights   Finance   Issuer    
+ABS Suite -   Research   Structured   Structured -
+LEW       67121       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Accounting Hosted       and Insights   Finance   Issuer    
+ABS Suite -   Research   Structured   Structured -
+LEW       67084       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Accounting Installed       and Insights   Finance   Issuer    
+ABS Suite - All   Research   Structured   Structured -
+LEW       67123       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Modules Hosted       and Insights   Finance   Issuer    
+ABS Suite - All   Research   Structured   Structured -
+LEW       67086       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Modules Installed       and Insights   Finance   Issuer    
+ABS Suite -
+Research   Structured   Structured -
+Collateral   LEW       67124       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Forecasting Hosted
+ABS Suite -
+Research   Structured   Structured -
+Collateral   LEW       67087       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Forecasting Installed
+ABS Suite -
+Research   Structured   Structured -
+Collateral Import   LEW       67125       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite -
+Research   Structured   Structured -
+Collateral Import   LEW       67088       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Installed
+ABS Suite -
+Research   Structured   Structured -
+Collateral Servicing   LEW       67126       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite -
+Research   Structured   Structured -
+Collateral Servicing   LEW       67089       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Installed
+ABS Suite - Hosting   Research   Structured   Structured -
+LEW       67131       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Fee       and Insights   Finance   Issuer    
+ABS Suite - Investor   Research   Structured   Structured -
+LEW       67127       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Reporting Hosted       and Insights   Finance   Issuer    
+ABS Suite - Investor   Research   Structured   Structured -
+LEW       67090       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Reporting Installed       and Insights   Finance   Issuer    
+ABS Suite - IRA   Research   Structured   Structured -
+LEW       67093       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Package Installed       and Insights   Finance   Issuer    
+ABS Suite -   Research   Structured   Structured -
+LEW       67133       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Maintenance       and Insights   Finance   Issuer    
+ABS Suite - Pool   Research   Structured   Structured -
+LEW       67128       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Selection Hosted       and Insights   Finance   Issuer    
+ABS Suite - Pool   Research   Structured   Structured -
+LEW       67091       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Selection Installed       and Insights   Finance   Issuer    
+Research   Structured   Structured -
+ABS Suite - Services       LEW       67136       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       1/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+ABS Suite -
+Research   Structured   Structured -
+Transaction   LEW       67129       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Forecasting Hosted
+ABS Suite -
+Research   Structured   Structured -
+Transaction   LEW       67092       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+and Insights   Finance   Issuer    
+Forecasting Installed
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69560       ABS Suite Plus       Moody's ABS       3/31/2021
+Accounting - Hosted       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69561       ABS Suite Plus       Moody's ABS       3/31/2021
+Accounting - Installed       and Insights   Finance   Issuer    
+ABS Suite Plus -
+Research   Structured   Structured -
+Collateral Forecaster   LEW       69562       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+- Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Collateral Forecaster   LEW       69563       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+- Installed
+ABS Suite Plus -
+Research   Structured   Structured -
+Collateral Import -   LEW       69552       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Collateral Import -   LEW       69553       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Installed
+ABS Suite Plus -
+Research   Structured   Structured -
+Collateral Servicing -   LEW       69554       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Collateral Servicing -   LEW       69555       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Installed
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69580       ABS Suite Plus       Moody's ABS       3/31/2021
+Forecast - Hosted       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69572       ABS Suite Plus       Moody's ABS       3/31/2021
+Funding - Hosted       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69573       ABS Suite Plus       Moody's ABS       3/31/2021
+Funding - Installed       and Insights   Finance   Issuer    
+ABS Suite Plus -
+Research   Structured   Structured -
+Funding & Reporting   LEW       69590       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Package - Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Funding & Reporting   LEW       69591       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Package - Installed
+ABS Suite Plus -
+Research   Structured   Structured -
+Funding Optimizer -   LEW       69574       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Funding Package -   LEW       69582       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69550       ABS Suite Plus       Moody's ABS       3/31/2021
+Hosting Fee       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69551       ABS Suite Plus       Moody's ABS       3/31/2021
+Hosting Package       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69570       ABS Suite Plus       Moody's ABS       3/31/2021
+Insight - Hosted       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69571       ABS Suite Plus       Moody's ABS       3/31/2021
+Insight - Installed       and Insights   Finance   Issuer    
+ABS Suite Plus -
+Research   Structured   Structured -
+Investor Reporting -   LEW       69558       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Investor Reporting -   LEW       69559       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Installed
+ABS Suite Plus - IRA   Research   Structured   Structured -
+LEW       69587       ABS Suite Plus       Moody's ABS       3/31/2021
+Package - Installed       and Insights   Finance   Issuer    
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69578       ABS Suite Plus       Moody's ABS       3/31/2021
+Ledger - Hosted       and Insights   Finance   Issuer    
+ABS Suite Plus -
+Payment   Research   Structured   Structured -
+LEW       69566       ABS Suite Plus       Moody's ABS       3/31/2021
+Management -   and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Payment   Research   Structured   Structured -
+LEW       69567       ABS Suite Plus       Moody's ABS       3/31/2021
+Management -   and Insights   Finance   Issuer    
+Installed
+ABS Suite Plus -
+Research   Structured   Structured -
+Pool Selection -   LEW       69556       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+Pool Selection -   LEW       69557       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Installed
+ABS Suite Plus -
+Research   Structured   Structured -
+Transaction   LEW       69564       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Forecaster - Hosted
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       2/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+ABS Suite Plus -
+Research   Structured   Structured -
+Transaction   LEW       69565       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Forecaster - Installed
+ABS Suite Plus -   Research   Structured   Structured -
+LEW       69576       ABS Suite Plus       Moody's ABS       3/31/2021
+Waterfall - Hosted       and Insights   Finance   Issuer    
+ABS Suite Plus -
+Research   Structured   Structured -
+XML Reporter -   LEW       69568       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Hosted
+ABS Suite Plus -
+Research   Structured   Structured -
+XML Reporter -   LEW       69569       ABS Suite Plus       Moody's ABS       3/31/2021
+and Insights   Finance   Issuer    
+Installed
+ABS Suite Premium   Research   Structured   Structured -
+LEW       67130       ABS Suite Plus       Moody's ABS       ABS Suite       8/6/2020
+Support       and Insights   Finance   Issuer    
+ABS Suite ‚Äì   Research   Structured   Structured -
+MWSA       67925       ABS Suite Plus       Moody's ABS       Software       10/1/2020
+Hosting Surcharge       and Insights   Finance   Issuer    
+ABS System - Cash   Research   Structured   Structured -
+LEW       67096       ABS System       Moody's ABS       Subscriptions       8/6/2020
+Flow Analysis       and Insights   Finance   Issuer    
+ABS System - Cash   Research   Structured   Structured -
+LEW       67097       ABS System       Moody's ABS       Software       8/6/2020
+Management       and Insights   Finance   Issuer    
+ABS System -
+Research   Structured   Structured -
+Collateral   LEW       67098       ABS System       Moody's ABS       ABS System       8/6/2020
+and Insights   Finance   Issuer    
+Management
+ABS System - Data   Research   Structured   Structured -
+LEW       67099       ABS System       Moody's ABS       Subscriptions       8/6/2020
+Reconciliation       and Insights   Finance   Issuer    
+ABS System - G/L   Research   Structured   Structured -
+LEW       67100       ABS System       Moody's ABS       ABS System       8/6/2020
+Installed       and Insights   Finance   Issuer    
+ABS System -   Research   Structured   Structured -
+LEW       67101       ABS System       Moody's ABS       ABS System       8/6/2020
+Liability Management       and Insights   Finance   Issuer    
+ABS System -   Research   Structured   Structured -
+LEW       67137       ABS System       Moody's ABS       Maintenance       8/6/2020
+Maintenance       and Insights   Finance   Issuer    
+ABS System -   Research   Structured   Structured -
+LEW       67102       ABS System       Moody's ABS       Subscriptions       8/6/2020
+Package       and Insights   Finance   Issuer    
+ABS System - Pool   Research   Structured   Structured -
+LEW       67103       ABS System       Moody's ABS       ABS System       8/6/2020
+Selection       and Insights   Finance   Issuer    
+ABS System -
+Research   Structured   Structured -
+Regulatory Reporter   LEW       67138       ABS System       Moody's ABS       Subscriptions       8/6/2020
+and Insights   Finance   Issuer    
+Hosted
+ABS System -
+Research   Structured   Structured -
+Service Bureau   LEW       67139       ABS System       Moody's ABS       Subscriptions       8/6/2020
+and Insights   Finance   Issuer    
+Hosted
+ABSNet - SENG   Research   Structured   Structured -
+LEW       67617       SF Data       SF Data       SEV6       SF Data       9/21/2020
+Feed (Global)       and Insights   Finance   Investor    
+Accelerate Farm   Decision   Accel Farm   Accelerated Farm   Accel Farm
+MKMV       70086       Banking       Lending       12/10/2021
+Profits       Solutions       Profits Products   Profits   Profits Products    
+Accelerated 10   Decision
+ISG       68968       Banking       Learning       e-Learning       E-Learning       1/12/2021
+Programme (ACC10)       Solutions    
+Access au BODACC   Data and   Data
+BVD       64870       Orbis       Orbis National       DIANE       Direct CPP       Orbis National       2/27/2019
+a partir DIANE       Information   Solutions    
+Data and   Data   Acquire   Acquire Media
+Access Fee       BVD       69319       NewsEdge       AM       3/22/2021
+Information   Solutions   Media   Products    
+Access Fee (Direct   Data and   Data   Acquire   Acquire Media
+BVD       69374       Syndication       AM       3/22/2021
+Licensed Content)       Information   Solutions   Media   Products    
+Access to Moody's
+Risk
+RMS Location   Decision   Model &   RMS Model &
+70353       Management   Software       7/17/2022
+Intelligence Data   Solutions   Data   Data Product    
+Solutions
+Collection
+Data and   Data   Acquire   Acquire Media
+AccessWire - Alert       BVD       70057       Alert       AM       11/15/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Accesswire - Signal       BVD       69354       Signal       AM       3/22/2021
+Information   Solutions   Media   Products    
+Accesswire Press   Data and   Data   Acquire   Acquire Media
+BVD       69392       Content Feed       AM       3/22/2021
+Releases       Information   Solutions   Media   Products    
+Accounting for Credit   Decision
+ISG       68457       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Professionals       Solutions    
+Data and   Data   Acquire   Acquire Media
+ACN Newswire       BVD       69393       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Acquire Media CC   Data and   Data   Acquire   Acquire Media
+BVD       70010       AM       AM       9/24/2021
+Sales       Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Acquire Media CDR       BVD       68954       AM       AM       1/7/2021
+Information   Solutions   Media   Products    
+Acquire Media   Data and   Data   Acquire   Acquire Media
+BVD       69321       Services       AM       3/22/2021
+Services       Information   Solutions   Media   Products    
+Acquire Media Spider   Data and   Data   Acquire   Acquire Media
+BVD       69893       Content Feed       AM       5/26/2021
+- Financial Times       Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Action Economics       BVD       69394       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       3/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Data and   Data   Acquire   Acquire Media
+ActusNews       BVD       69395       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+ADD-IN EXCEL   Data and   Data
+BVD       64879       Orbis       Catalysts       ADD-IN       Direct CPP       2/27/2019
+Standard       Information   Solutions    
+ADD-IN
+Data and   Data
+POWERPOINT   BVD       64880       Orbis       Catalysts       ADD-IN       Direct CPP       2/27/2019
+Information   Solutions    
+Standard
+Data and   Data   Acquire   Acquire Media
+Additional Alerts       BVD       69347       Alert       AM       3/22/2021
+Information   Solutions   Media   Products    
+Additional BvD   Data and   Data   Orbis
+BVD       65435       Orbis       BvD credits       Direct CPP       12/4/2019
+credits       Information   Solutions       International    
+Additional Delivery   Data and   Data   Delivery
+ISG       66187       Data Feeds       MIS Data Feeds       MIS Data Feeds       6/3/2020
+Method       Information   Solutions       Methods    
+Additional Mentoring   Decision
+ISG       68458       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Toolkit       Solutions    
+Additional Sites:   Decision   Portfolio and
+MKMV       66391       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+RiskFrontier Hosted       Solutions       Capital Strategy    
+Additional Sites:   Decision   Portfolio and
+MKMV       66722       Banking       Risk       RiskFrontier       Risk       RiskFrontier       7/14/2020
+RiskFrontier Installed       Solutions       Capital Strategy    
+Decision
+Additional Storage       MKMV       66322       Banking       Finance       ImpairmentStudio       ImpairmentStudio       Finance       ImpairmentStudio       6/17/2020
+Solutions    
+Additional Storage -   Decision
+WES       65935       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+Lending Cloud       Solutions    
+Additional Storage –   Decision
+73067       Banking       Risk       PortfolioStudio       4/4/2025
+PortfolioStudio       Solutions    
+Decision
+Administration Toolkit       BVD       67392       Banking       Lending       FACT       FACT       Lending       FACT       9/12/2020
+Solutions    
+Data and   Data   Acquire   Acquire Media
+ADP Debt News       BVD       69396       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Advanced Developer   Decision
+BVD       67394       Banking       Lending       FACT       FACT       Lending       FACT       9/12/2020
+Toolkit       Solutions    
+Advanced Funding &   Research   Structured   Structured -   Adv Funding &
+LEW       73058       ABS Suite Plus       Moody's ABS       3/27/2025
+Reporting Package       and Insights   Finance   Issuer       Reporting Pkg    
+Advanced Funding   Research   Structured   Structured -   Adv Funding
+LEW       73055       ABS Suite Plus       Moody's ABS       3/27/2025
+with Borrowing Base       and Insights   Finance   Issuer       with BB    
+Advanced Funding
+Research   Structured   Structured -   Adv Funding
+without Borrowing   LEW       73056       ABS Suite Plus       Moody's ABS       3/27/2025
+and Insights   Finance   Issuer       without BB    
+Base
+Advanced Quant PY   Research   Structured   Structured -
+71468       SF Portal       Octaura       CLO       SF Portal       10/17/2023
+for CLOs       and Insights   Finance   Investor    
+Advancing Customer   Decision
+ISG       68459       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Connections       Solutions    
+Advancing Member   Decision
+ISG       68460       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Connections       Solutions    
+Adverse Media by   Data and   Data
+BVD       65396       Orbis       Orbis News       NEWS SERVICE       Direct CPP       11/4/2019
+ML Fabric       Information   Solutions    
+Adverse Media   Decision   Know Your   GRID
+BVD       68746       GRID Review       GRID Review       11/3/2020
+Readers License       Solutions   Customer   Services    
+Advisory & Delivery   Decision
+MKMV       66985       Banking       Risk       Modeling       Modeling       Risk       7/31/2020
+Services       Solutions    
+Africa Press   Data and   Data   Acquire   Acquire Media
+BVD       69397       Content Feed       AM       3/22/2021
+Organization (APO)       Information   Solutions   Media   Products    
+Ag Cost Template   Decision   Financial
+71117       Banking       Lending       CreditLens       CreditLens       7/26/2023
+SaaS       Solutions       Template - SaaS    
+Ag Peer Comparison   Decision
+WES       65932       Banking       Lending       Lending Cloud       Lending Cloud       Lending       Lending Cloud       5/18/2020
+- My Data       Solutions    
+Ag Peer Comparison:   Decision
+WES       65933       Banking       Lending       Lending Cloud       Lending Cloud       Lending       Lending Cloud       5/18/2020
+Moody's Data       Solutions    
+Ag Production   Decision   Financial
+71116       Banking       Lending       CreditLens       CreditLens       7/26/2023
+Template SaaS       Solutions       Template - SaaS    
+Research   Predictive   Credit
+Ag Scorecard       MKMV       65934       EDF-X       EDF X Private       EDF X Private       EDF-X       5/18/2020
+and Insights   Analytics   Analytics    
+Agence France   Data and   Data   Acquire   Acquire Media
+BVD       69398       Content Feed       AM       3/22/2021
+Presse       Information   Solutions   Media   Products    
+Decision   Know Your   GRID
+Agent Review       72996       GRID Review       GRID Review       1/27/2025
+Solutions   Customer   Services    
+Agreed share of   Data and   Data
+BVD       65375       Orbis       IP Sales       SABI       IP Royalty       10/4/2019
+sales due on SABI       Information   Solutions    
+Agreed share of
+Data and   Data
+sales due on SABI   BVD       65376       Orbis       IP Sales       SABI       IP Royalty       10/4/2019
+Information   Solutions    
+EXTENDED
+Agribusiness   Decision
+ISG       68461       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Lending 04       Solutions    
+Agricultural Lending   Decision
+70683       Banking       Learning       e-Learning       E-Learning       10/12/2022
+06       Solutions    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       4/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+AI Assisted Credit   Decision   Automated Credit
+73026       Banking       Lending       Lending Cloud       Lending Cloud       2/25/2025
+Action       Solutions       Presentation    
+Data and   Data
+AI Comparability Tool       73271       Orbis       Catalysts       6/10/2025
+Information   Solutions    
+Decision   Know Your   GRID
+AI Review       BVD       69275       GRID Review       RDC       Screening       GRID Review       3/11/2021
+Solutions   Customer   Services    
+AI Review Essentials   Decision   Know Your   GRID
+71127       GRID Review       RDC       Screening       GRID Review       8/24/2023
+Package       Solutions   Customer   Services    
+AI Review Essentials   Decision   Know Your   GRID
+71128       GRID Review       RDC       Screening       GRID Review       8/24/2023
+Plus Package       Solutions   Customer   Services    
+AI Review Premium   Decision   Know Your   GRID
+71129       GRID Review       RDC       Screening       GRID Review       8/24/2023
+Package       Solutions   Customer   Services    
+Decision
+AICC Proxy Launch       ISG       68462       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+AIDA Access to PEC   Data and   Data
+BVD       65333       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       10/4/2019
+mails       Information   Solutions    
+AIDA Cadastral   Data and   Data
+BVD       65334       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       10/4/2019
+report       Information   Solutions    
+Data and   Data
+AIDA DC       BVD       64966       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA DFKA       BVD       64967       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA Images       BVD       64976       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+AIDA Market Outlook   Data and   Data
+BVD       65392       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       11/4/2019
+Prometeia       Information   Solutions    
+AIDA Mid and Small   Data and   Data
+BVD       65047       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Companies       Information   Solutions    
+Aida Non-Limited   Data and   Data
+BVD       69915       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       6/9/2021
+Companies       Information   Solutions    
+Data and   Data
+AIDA PA       BVD       65044       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA PA - PD       BVD       68763       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       11/13/2020
+Information   Solutions    
+AIDA PA - Ratings   Data and   Data
+BVD       68764       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       11/13/2020
+DSO Sanità       Information   Solutions    
+Data and   Data
+AIDA PA Alert       BVD       64972       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA PA Check Up       BVD       64965       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA PD       BVD       64971       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA RGM       BVD       64973       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA SF       BVD       64974       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+AIDA SOA certified   Data and   Data
+BVD       65332       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       10/4/2019
+companies       Information   Solutions    
+Data and   Data
+AIDA SPL       BVD       64975       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+AIDA Top 200,000       BVD       65042       Orbis       Orbis National       AIDA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data   Acquire   Acquire Media
+Alert       BVD       69349       Alert       AM       3/22/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Alert API       BVD       70052       Alert       AM       11/15/2021
+Information   Solutions   Media   Products    
+Data and   Data
+All EPS Products       BVD       64998       Orbis       EPS       EPS       EPS       2/27/2019
+Information   Solutions    
+Economic
+All Precis Reports   Research   Predictive   Research   Economic   Research:
+71656       Publications       4/22/2024
+Package       and Insights   Analytics   and   Publications       Sub-national    
+Forecasts
+Data and   Data
+All Rating News       ISG       66188       Data Feeds       Press Release       Press Release       Press Release       6/3/2020
+Information   Solutions    
+Data and   Data
+All Research       ISG       66189       Data Feeds       MIS Data Feeds       MIS Data Feeds       Research       6/3/2020
+Information   Solutions    
+Data and   Data   Acquire   Acquire Media
+Alliance News       BVD       69400       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Decision
+ALLL Cloud       WES       65920       Banking       Lending       Lending Cloud       Lending Cloud       Lending       Lending Cloud       5/18/2020
+Solutions    
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72436       Management   10/14/2024
+Argentina-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71146       Management   9/24/2023
+Australia-Allocated       Solutions   Data   Data Product    
+Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       5/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72032       Management   10/14/2024
+Australia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72051       Management   10/14/2024
+Australia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72063       Management   10/14/2024
+Austria-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72074       Management   10/14/2024
+Belgium-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72136       Management   10/14/2024
+Belize-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72437       Management   10/14/2024
+Bolivia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72438       Management   10/14/2024
+Brazil-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71147       Management   9/24/2023
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72103       Management   10/14/2024
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72385       Management   10/14/2024
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71148       Management   9/24/2023
+Caribbean-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72121       Management   10/14/2024
+Caribbean-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72285       Management   10/14/2024
+Caribbean-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Earthquake
+Risk
+Central and South   Decision   Model &   RMS Model &
+71155       Management   9/24/2023
+America Bundle-   Solutions   Data   Data Product    
+Solutions
+Allocated
+ALM Earthquake
+Risk
+Central and South   Decision   Model &   RMS Model &
+72286       Management   10/14/2024
+America Bundle-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72439       Management   10/14/2024
+Chile-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71149       Management   9/24/2023
+China-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71933       Management   10/14/2024
+China-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72440       Management   10/14/2024
+Colombia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72137       Management   10/14/2024
+Costa Rica-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72138       Management   10/14/2024
+Ecuador-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake El   Decision   Model &   RMS Model &
+72143       Management   10/14/2024
+Salvador-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+Europe 21 Country   71150       Management   9/24/2023
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+Europe 21 Country   72190       Management   10/14/2024
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72208       Management   10/14/2024
+France-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72220       Management   10/14/2024
+Germany-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72139       Management   10/14/2024
+Guatemala-Allocated       Solutions   Data   Data Product    
+Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       6/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72140       Management   10/14/2024
+Honduras-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71152       Management   9/24/2023
+India-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71934       Management   10/14/2024
+India-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72230       Management   10/14/2024
+India-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72244       Management   10/14/2024
+Italy-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71153       Management   9/24/2023
+Japan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71935       Management   10/14/2024
+Japan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72266       Management   10/14/2024
+Japan-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+Liechtenstein-   72508       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+Luxembourg-   72075       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71156       Management   9/24/2023
+Mexico-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72315       Management   10/14/2024
+Mexico-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72287       Management   10/14/2024
+Mexico-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+Netherlands-   72076       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+New Zealand-   71157       Management   9/24/2023
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+New Zealand-   72033       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+New Zealand-   72338       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72141       Management   10/14/2024
+Nicaragua-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72142       Management   10/14/2024
+Panama-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72441       Management   10/14/2024
+Peru-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Earthquake SE   Risk
+Decision   Model &   RMS Model &
+Asia 6 Country   71159       Management   9/24/2023
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+ALM Earthquake SE   Risk
+Decision   Model &   RMS Model &
+Asia 6 Country   71937       Management   10/14/2024
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+ALM Earthquake SE   Risk
+Decision   Model &   RMS Model &
+Asia 6 Country   72477       Management   10/14/2024
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+South Korea-   71154       Management   9/24/2023
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+South Korea-   71936       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+South Korea-   72420       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+Switzerland-   72507       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       7/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71160       Management   9/24/2023
+Taiwan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+71938       Management   10/14/2024
+Taiwan-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+United Kingdom-   72524       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+United States-   71161       Management   9/24/2023
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+United States-   72386       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Earthquake   Risk
+Decision   Model &   RMS Model &
+United States-   72560       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+ALM Earthquake   Decision   Model &   RMS Model &
+72442       Management   10/14/2024
+Venezuela-Allocated       Solutions   Data   Data Product    
+Solutions
+Economic
+ALM Economic Rate   Research   Predictive   Research
+MEDC       69944       Economic Data       Economic Data       Data: Forecast       ZM ALM       6/28/2021
+Scenarios       and Insights   Analytics   and
+Forecasts
+Economic
+ALM Economic   Research   Predictive   Research
+MEDC       69943       Economic Data       Economic Data       Data: Forecast       ZM ALM       6/28/2021
+Scenarios       and Insights   Analytics   and
+Forecasts
+Risk
+ALM Flood Belgium-   Decision   Model &   RMS Model &
+71162       Management   9/24/2023
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Belgium-   Decision   Model &   RMS Model &
+72069       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Belgium-   Decision   Model &   RMS Model &
+72191       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood China-   Decision   Model &   RMS Model &
+71163       Management   9/24/2023
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood China-   Decision   Model &   RMS Model &
+71939       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Germany-   Decision   Model &   RMS Model &
+71164       Management   9/24/2023
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Germany-   Decision   Model &   RMS Model &
+72214       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Germany-   Decision   Model &   RMS Model &
+72192       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Great   Decision   Model &   RMS Model &
+71166       Management   9/24/2023
+Britain-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Great   Decision   Model &   RMS Model &
+72193       Management   10/14/2024
+Britain-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Flood Great   Decision   Model &   RMS Model &
+72517       Management   10/14/2024
+Britain-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM India Flood-   Decision   Model &   RMS Model &
+71165       Management   9/24/2023
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM India Flood-   Decision   Model &   RMS Model &
+71940       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM India Flood-   Decision   Model &   RMS Model &
+72231       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Philippines   Risk
+Decision   Model &   RMS Model &
+Typhoon and Inland   71179       Management   9/24/2023
+Solutions   Data   Data Product    
+Flood-Allocated   Solutions
+ALM Philippines   Risk
+Decision   Model &   RMS Model &
+Typhoon and Inland   71944       Management   10/14/2024
+Solutions   Data   Data Product    
+Flood-Allocated   Solutions
+ALM Philippines   Risk
+Decision   Model &   RMS Model &
+Typhoon and Inland   72478       Management   10/14/2024
+Solutions   Data   Data Product    
+Flood-Allocated   Solutions
+ALM Severe   Risk
+Decision   Model &   RMS Model &
+Convective Storm   71167       Management   9/24/2023
+Solutions   Data   Data Product    
+Australia-Allocated   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       8/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+ALM Severe   Risk
+Decision   Model &   RMS Model &
+Convective Storm   72034       Management   10/14/2024
+Solutions   Data   Data Product    
+Australia-Allocated   Solutions
+ALM Severe   Risk
+Decision   Model &   RMS Model &
+Convective Storm   72052       Management   10/14/2024
+Solutions   Data   Data Product    
+Australia-Allocated   Solutions
+ALM Severe   Risk
+Decision   Model &   RMS Model &
+Convective Storm   71168       Management   9/24/2023
+Solutions   Data   Data Product    
+Canada-Allocated   Solutions
+ALM Severe   Risk
+Decision   Model &   RMS Model &
+Convective Storm   72104       Management   10/14/2024
+Solutions   Data   Data Product    
+Canada-Allocated   Solutions
+ALM Severe   Risk
+Decision   Model &   RMS Model &
+Convective Storm   72387       Management   10/14/2024
+Solutions   Data   Data Product    
+Canada-Allocated   Solutions
+ALM Severe
+Risk
+Convective Storm   Decision   Model &   RMS Model &
+71169       Management   9/24/2023
+United States-   Solutions   Data   Data Product    
+Solutions
+Allocated
+ALM Severe
+Risk
+Convective Storm   Decision   Model &   RMS Model &
+72388       Management   10/14/2024
+United States-   Solutions   Data   Data Product    
+Solutions
+Allocated
+ALM Severe
+Risk
+Convective Storm   Decision   Model &   RMS Model &
+72561       Management   10/14/2024
+United States-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Risk
+ALM Typhoon Korea-   Decision   Model &   RMS Model &
+71177       Management   9/24/2023
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Typhoon Korea-   Decision   Model &   RMS Model &
+71943       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Typhoon Korea-   Decision   Model &   RMS Model &
+72421       Management   10/14/2024
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Typhoon   Decision   Model &   RMS Model &
+71180       Management   9/24/2023
+Taiwan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Typhoon   Decision   Model &   RMS Model &
+71945       Management   10/14/2024
+Taiwan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71170       Management   9/24/2023
+Australia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72035       Management   10/14/2024
+Australia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72053       Management   10/14/2024
+Australia-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72064       Management   10/14/2024
+Austria-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72077       Management   10/14/2024
+Belgium-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71172       Management   9/24/2023
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72105       Management   10/14/2024
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72389       Management   10/14/2024
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71173       Management   9/24/2023
+Caribbean-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72122       Management   10/14/2024
+Caribbean-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72289       Management   10/14/2024
+Caribbean-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+Central America   71171       Management   9/24/2023
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+Central America   72131       Management   10/14/2024
+Solutions   Data   Data Product    
+Bundle-Allocated   Solutions
+ALM Windstorm   72288       Decision   Risk   Model &   RMS Model &   10/14/2024
+Central America   Solutions   Management   Data   Data Product
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       9/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Bundle-Allocated       Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71174       Management   9/24/2023
+China-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71941       Management   10/14/2024
+China-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72164       Management   10/14/2024
+Denmark-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Windstorm
+Risk
+Europe Bundle - All   Decision   Model &   RMS Model &
+71175       Management   9/24/2023
+EUWS Countries-   Solutions   Data   Data Product    
+Solutions
+Allocated
+ALM Windstorm
+Risk
+Europe Bundle - All   Decision   Model &   RMS Model &
+72194       Management   10/14/2024
+EUWS Countries-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72209       Management   10/14/2024
+France-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72221       Management   10/14/2024
+Germany-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+73259       Management   6/6/2025
+India-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+73266       Management   6/8/2025
+India-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71176       Management   9/24/2023
+Japan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71942       Management   10/14/2024
+Japan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72267       Management   10/14/2024
+Japan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72078       Management   10/14/2024
+Luxemburg-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+71178       Management   9/24/2023
+Mexico-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72316       Management   10/14/2024
+Mexico-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Windstorm   Decision   Model &   RMS Model &
+72290       Management   10/14/2024
+Mexico-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+Netherlands-   72079       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+Switzerland-   72509       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+United Kingdom-   72518       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+United States-   71181       Management   9/24/2023
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+United States-   72390       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Windstorm   Risk
+Decision   Model &   RMS Model &
+United States-   72562       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+ALM Winterstorm   Decision   Model &   RMS Model &
+71182       Management   9/24/2023
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Winterstorm   Decision   Model &   RMS Model &
+72106       Management   10/14/2024
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+ALM Winterstorm   Decision   Model &   RMS Model &
+72391       Management   10/14/2024
+Canada-Allocated       Solutions   Data   Data Product    
+Solutions
+ALM Winterstorm   Risk
+Decision   Model &   RMS Model &
+United States-   71183       Management   9/24/2023
+Solutions   Data   Data Product    
+Allocated   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       10/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+ALM Winterstorm   Risk
+Decision   Model &   RMS Model &
+United States-   72392       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+ALM Winterstorm   Risk
+Decision   Model &   RMS Model &
+United States-   72563       Management   10/14/2024
+Solutions   Data   Data Product    
+Allocated   Solutions
+Data and   Data   Acquire   Acquire Media
+AM Expense       70807       2/3/2023
+Information   Solutions   Media   Products    
+AMADEUS All   Data and   Data   Orbis   Orbis
+BVD       65041       Orbis       AMADEUS       Direct CPP       2/27/2019
+Companies       Information   Solutions       International       International    
+Data and   Data   Orbis   Orbis
+AMADEUS VL       BVD       65040       Orbis       AMADEUS       Direct CPP       2/27/2019
+Information   Solutions       International       International    
+Data and   Data   Orbis   Orbis
+AMADEUS VL/L       BVD       65039       Orbis       AMADEUS       Direct CPP       2/27/2019
+Information   Solutions       International       International    
+Data and   Data   Orbis   Orbis
+AMADEUS VL/L/M       BVD       65038       Orbis       AMADEUS       Direct CPP       2/27/2019
+Information   Solutions       International       International    
+AML/KYC   Data and   Data   AML/KYC
+BVD       64902       Orbis       Orbis Specialty       Direct CPP       2/27/2019
+Documents Standard       Information   Solutions       Documents    
+Data and   Data   Acquire   Acquire Media
+AMPS       BVD       69786       Content Feed       AM       5/4/2021
+Information   Solutions   Media   Products    
+Data and   Data
+AnaCredit       73242       Orbis       Orbis Specialty       Digital Intelligence       Direct CPP       5/7/2025
+Information   Solutions    
+Decision   Know Your   GRID
+Analyst Review       BVD       69282       GRID Review       RDC       RDC       GRID Review       3/11/2021
+Solutions   Customer   Services    
+Analyzing
+Decision
+Commercial Real   ISG       68463       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Estate
+Andrew Davidson
+Andrew Davidson
+LoanDynamics   Decision
+73065       Banking       Finance       ImpairmentStudio   LoanDynamics   4/2/2025
+Model -   Solutions    
+Model
+ImpairmentStudio
+Andrew Davidson   Andrew Davidson
+Decision
+LoanDynamics   73062       Banking       Finance       ZM ALM   LoanDynamics   4/2/2025
+Solutions    
+Model - Online ALM   Model
+Annual Fees -   Decision
+WES       65955       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+(License Records)       Solutions    
+Annual Fees -
+Decision
+(Subscription   WES       65956       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+Solutions    
+Records)
+Data and   Data   Acquire   Acquire Media
+AP - Signal       BVD       69358       Signal       AM       3/22/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+AP Financial       BVD       69336       Alert       AM       3/22/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+AP Financial News       BVD       69865       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Risk
+aPCR - Origination   Decision
+LEW       73075       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+(Home Equity)       Solutions
+Solutions
+aPCR - Whole Loan   Risk
+Decision
+Trading (Home   LEW       73076       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Solutions
+Equity)   Solutions
+aPCR - Whole Loan
+Trading (Non-   Risk
+Decision
+Performing (NPL)   LEW       73077       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Solutions
+and Re-Performing   Solutions
+Loan (RPL))
+Decision
+API - Core ILD       WES       67406       Banking       Lending       Lending Cloud       Lending Cloud       Lending       9/12/2020
+Solutions    
+API - Core Remote   Decision
+WES       65938       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+Repository       Solutions    
+API - Loan Doc   Decision
+WES       65925       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+System       Solutions    
+Decision
+API Capability       WES       67404       Banking       Lending       Lending Cloud       Lending Cloud       Lending       9/12/2020
+Solutions    
+Data and   Data   Acquire   Acquire Media
+API Delivery       BVD       69869       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Data and   Data
+API Webservice       BVD       65397       Orbis       Catalysts       ADD-IN       Direct CPP       11/4/2019
+Information   Solutions    
+App Center Custom   Decision
+71691       Banking       Risk       CAP       App Center       CAP       5/9/2024
+App       Solutions    
+App Center Custom   Decision
+71698       Banking       Risk       CAP       CAP       5/9/2024
+App - CAP Allocated       Solutions    
+App Center Custom
+Decision
+App - Modeling   71699       Banking       Risk       Modeling       5/9/2024
+Solutions    
+Allocated
+App Center Standard
+App - IFRS9   Decision
+71690       Banking       Risk       CAP       App Center       CAP       5/9/2024
+Probability of Default   Solutions    
+Model Monitoring
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       11/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+App Center Standard
+App - IFRS9
+Decision
+Probability of Default   71696       Banking       Risk       CAP       CAP       5/9/2024
+Solutions    
+Model Monitoring -
+CAP Allocated
+App Center Standard
+App - IFRS9
+Decision
+Probability of Default   71697       Banking       Risk       Modeling       5/9/2024
+Solutions    
+Model Monitoring -
+Modeling Allocated
+App Center Standard
+Decision
+App - Model Risk   71685       Banking       Risk       CAP       App Center       CAP       5/9/2024
+Solutions    
+Management
+App Center Standard
+App - Model Risk   Decision
+71686       Banking       Risk       CAP       CAP       5/9/2024
+Management - CAP   Solutions    
+Allocated
+App Center Standard
+App - Model Risk   Decision
+71687       Banking       Risk       Modeling       5/9/2024
+Management -   Solutions    
+Modeling Allocated
+App Center Standard
+App - Probability of   Decision
+71689       Banking       Risk       CAP       App Center       CAP       5/9/2024
+Default Model   Solutions    
+Validation
+App Center Standard   Decision
+71688       Banking       Risk       CAP       App Center       CAP       5/9/2024
+App - Stress Testing       Solutions    
+App Center Standard
+Decision
+App - Stress Testing -   71692       Banking       Risk       CAP       CAP       5/9/2024
+Solutions    
+CAP Allocated
+App Center Standard
+App – Probability of
+Decision
+Default Model   71694       Banking       Risk       CAP       CAP       5/9/2024
+Solutions    
+Validation - CAP
+Allocated
+App Center Standard
+App – Probability of
+Decision
+Default Model   71695       Banking       Risk       Modeling       5/9/2024
+Solutions    
+Validation - Modeling
+Allocated
+Data and   Data   Orbis
+Arachne       71536       Orbis       Vadis       1/10/2024
+Information   Solutions       International    
+Data and   Data
+Arachne Licenses       71720       Orbis       Orbis National       Vadis       5/24/2024
+Information   Solutions    
+Data and   Data   Orbis
+Arachne Services       71538       Orbis       Vadis       1/10/2024
+Information   Solutions       International    
+Data and   Data   Acquire   Acquire Media
+Archive       BVD       69891       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Archive - CCS       BVD       69894       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Archive - ICS       BVD       69886       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Archive - OCS       BVD       69887       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Decision
+Archive Manager       BVD       67390       Banking       Lending       FACT       FACT       Lending       FACT       9/12/2020
+Solutions    
+aRMadillo original   Data and   Data
+BVD       65323       Orbis       IP Sales       BvD credits       IP Royalty       10/4/2019
+documents       Information   Solutions    
+Assessing and   Decision
+70784       Banking       Learning       e-Learning       E-Learning       12/22/2022
+Managing ESG Risk       Solutions    
+Asset Backed
+Research   Digital   MIS Credit   Core - Structured   CV - SF -
+Securities_V2 - CV   71056       CreditView       7/21/2023
+and Insights   Insights   Research       Finance   Global    
+Allocated
+Asset Backed
+Research   Structured   Structured -
+Securities_V2 - SAV   71057       SF Data       Web       Web       SF Data       7/21/2023
+and Insights   Finance   Investor    
+Allocated
+Data and   Data
+Asset Manager       ISG       66199       Data Feeds       MIS Data Feeds       MIS Data Feeds       Internal       6/3/2020
+Information   Solutions    
+Asset Manager   Data and   Data
+ISG       66203       Data Feeds       MIS Data Feeds       MIS Data Feeds       Internal       6/3/2020
+History       Information   Solutions    
+Data and   Data   Acquire   Acquire Media
+Associated Press       BVD       69402       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Associated Press   Data and   Data   Acquire   Acquire Media
+BVD       69403       Content Feed       AM       3/22/2021
+Financial News       Information   Solutions   Media   Products    
+Associated Press   Data and   Data   Acquire   Acquire Media
+BVD       69855       Content Feed       AM       5/26/2021
+News       Information   Solutions   Media   Products    
+Astree - all   Data and   Data
+BVD       65293       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       10/4/2019
+companies       Information   Solutions    
+Data and   Data
+ASTREE A       BVD       65037       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       12/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Data and   Data
+ASTREE Analyse       BVD       64981       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+ASTREE B       BVD       65036       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+ASTREE C       BVD       65035       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+ASTREE Credits       BVD       64979       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+ASTREE Maps       BVD       64982       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+ASTREE
+Data and   Data
+Supplementary   BVD       64980       Orbis       Orbis National       ASTREE       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Credits
+Data and   Data   Acquire   Acquire Media
+ASX Delivery       BVD       69890       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Decision
+Attachments       WES       65940       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+Solutions    
+Wealth
+Attitude to Risk   Decision
+MKMV       65745       Buyside       WPI       WPI Products       WPI   Management &   WPI Products       3/4/2020
+Questionnaire Report       Solutions    
+Pension
+Data and   Data
+AURELIA Standard       BVD       65032       Orbis       Orbis National       AURELIA       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Australia -
+Risk
+Whereonearth   Decision   Model &   RMS Model &
+72045       Management   10/14/2024
+(Geozip) Base-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Australia -
+Risk
+Whereonearth   Decision   Model &   RMS Model &
+72061       Management   10/14/2024
+(Geozip) Base-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Australia Cyclone   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73350       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Australia Earthquake   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73332       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Economic
+Australia Subnational   Research   Predictive   Research   Economic   Models: Sub-
+71029       Economic Models       7/13/2023
+Model       and Insights   Analytics   and   Models       national    
+Forecasts
+Australian Associated   Data and   Data   Acquire   Acquire Media
+BVD       69405       Content Feed       AM       3/22/2021
+Press       Information   Solutions   Media   Products    
+Austria -
+Risk
+Whereonearth   Decision   Model &   RMS Model &
+72062       Management   10/14/2024
+(Geozip) Street-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Economic
+Research   Predictive   Research
+AutoCycle       MEDC       67036       Economic Data       Economics Data       AutoCycle       8/6/2020
+and Insights   Analytics   and
+Forecasts
+Economic
+Research   Predictive   Research
+AutoCycle Australia       MEDC       68834       Economic Data       Economics Data       AutoCycle       12/11/2020
+and Insights   Analytics   and
+Forecasts
+Economic
+AutoCycle Australia   Research   Predictive   Research
+MEDC       68835       Economic Data       Economics Data       AutoCycle       12/11/2020
+Additional Vehicles       and Insights   Analytics   and
+Forecasts
+Economic
+Research   Predictive   Research   AutoCycle
+AutoCycle Consulting       MEDC       67044       Economic Data       Economics Data       8/6/2020
+and Insights   Analytics   and   Consulting    
+Forecasts
+Economic
+AutoCycle Full   Research   Predictive   Research
+MEDC       69779       Economic Data       Economics Data       AutoCycle       5/4/2021
+Access       and Insights   Analytics   and
+Forecasts
+Economic
+AutoCycle Full
+Research   Predictive   Research
+Access + Regulatory   MEDC       69781       Economic Data       Economics Data       AutoCycle       5/4/2021
+and Insights   Analytics   and
+Scenarios
+Forecasts
+Automated
+Automated   Decision   Lending Suite
+71668       Banking       Lending       Covenants   CreditLens       4/22/2024
+Covenants       Solutions       Monitoring
+Management
+Automated Credit   Decision   Automated Credit
+71730       Banking       Lending       CreditLens       CreditLens       5/31/2024
+Memo       Solutions       Presentation    
+Automated   Decision   Automated
+73064       Banking       Lending       CreditLens       4/2/2025
+Spreading       Solutions       Spreading    
+AWP Original Press   Data and   Data   Acquire   Acquire Media
+BVD       69406       Content Feed       AM       3/22/2021
+Releases       Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+AWS S3       BVD       69788       Content Feed       AM       5/4/2021
+Information   Solutions   Media   Products    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       13/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+AXIS All Modules for   Decision
+70717       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       12/12/2022
+Consultants       Solutions    
+Decision
+AXIS Annuity       GGY       65528       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+AXIS   Decision
+GGY       65529       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Asset/Reinvestment       Solutions    
+Decision
+AXIS Base System       GGY       65530       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Decision
+AXIS Daily Hedging       GGY       65531       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Decision
+AXIS DataLink       GGY       65532       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Decision
+AXIS Disability       GGY       65533       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+AXIS Earnings by
+Decision
+Source Annuity   GGY       65534       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+(EBS)
+AXIS Earnings by
+Decision
+Source Disability   GGY       65535       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+(EBS)
+AXIS Earnings by
+Decision
+Source Participating   GGY       65536       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Life (EBS)
+AXIS Earnings by
+Decision
+Source Regular Life   GGY       65537       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+(EBS)
+AXIS Earnings by
+Decision
+Source Universal Life   GGY       65538       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+(EBS)
+Decision   AXIS   AXIS &
+AXIS EnterpriseLink       GGY       65539       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Solutions       Consumption       Consumption    
+AXIS EnterpriseLink   Decision   AXIS   AXIS &
+GGY       65561       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Front End       Solutions       Consumption       Consumption    
+AXIS EnterpriseLink
+Decision   AXIS   AXIS &
+Front End - Disaster   GGY       65562       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Solutions       Consumption       Consumption    
+Recovery
+AXIS EnterpriseLink   Decision   AXIS   AXIS &
+GGY       65563       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Secure Storage       Solutions       Consumption       Consumption    
+Decision
+AXIS FormulaLink       GGY       65540       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+AXIS GridLink On   Decision
+GGY       65560       Insurance       AXIS       AXIS Products       AXIS       Gridlink       AXIS Products       3/4/2020
+Premise       Solutions    
+AXIS GridLink On   Decision
+GGY       65526       Insurance       AXIS       AXIS Products       AXIS       Gridlink       AXIS Products       3/4/2020
+Premise SAM       Solutions    
+Decision
+AXIS Group Annuity       GGY       65541       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+AXIS Hedge   Decision
+GGY       65542       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Projection       Solutions    
+AXIS Hosting User   Decision   AXIS   AXIS &
+GGY       65571       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Access       Solutions       Consumption       Consumption    
+AXIS Hosting Visual   Decision   AXIS   AXIS &
+GGY       65570       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Studio       Solutions       Consumption       Consumption    
+AXIS IFRS 17 Link   Decision
+GGY       65550       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Annuity       Solutions    
+AXIS IFRS 17 Link   Decision
+GGY       65551       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Disability       Solutions    
+AXIS IFRS 17 Link   Decision
+GGY       65748       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+for Consultants       Solutions    
+AXIS IFRS 17 Link   Decision
+GGY       65552       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Participating       Solutions    
+AXIS IFRS 17 Link   Decision
+GGY       65553       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Regular       Solutions    
+AXIS IFRS 17 Link   Decision
+GGY       65554       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Universal       Solutions    
+Decision   AXIS   AXIS &
+AXIS IT Services       GGY       65578       Insurance       AXIS       AXIS       Hosting       3/4/2020
+Solutions       Consumption       Consumption    
+Decision
+AXIS MultiState       GGY       65543       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+AXIS Participating   Decision
+GGY       65544       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Life       Solutions    
+Decision
+AXIS Regular Life       GGY       65545       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Decision
+AXIS SAM       GGY       65527       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Decision
+AXIS ScenarioTools       GGY       65546       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       14/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+AXIS   Decision
+GGY       65547       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+StochasticProcessing       Solutions    
+Decision
+AXIS StochasticTools       GGY       65548       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Decision
+AXIS Universal Life       GGY       65549       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+AXIS US GAAP Link   Decision
+GGY       65556       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Annuity       Solutions    
+AXIS US GAAP Link   Decision
+GGY       65557       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Disability       Solutions    
+AXIS US GAAP Link   Decision
+GGY       65749       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/5/2020
+for Consultants       Solutions    
+AXIS US GAAP Link   Decision
+GGY       69979       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       8/23/2021
+Imported Projections       Solutions    
+AXIS US GAAP Link   Decision
+GGY       65558       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Participating       Solutions    
+AXIS US GAAP Link   Decision
+GGY       65559       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Regular       Solutions    
+AXIS US GAAP Link   Decision
+GGY       65555       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Universal       Solutions    
+Decision
+AXIS User Keys       GGY       65568       Insurance       AXIS       AXIS Products       AXIS       AXIS       AXIS Products       3/4/2020
+Solutions    
+Balance Sheet Risk   Decision
+71627       Banking       Finance       ZM ALM       ZM ALM       4/5/2024
+Management       Solutions    
+Balance Sheet Risk
+Decision
+Management -   71629       Banking       Finance       ZM ALM       ZM ALM       4/5/2024
+Solutions    
+Liquidity
+Data and   Data
+BankFocus       BVD       65031       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Information   Solutions    
+BankFocus &
+Data and   Data
+Insurance Focus   BVD       65388       Orbis       Orbis Specialty       Bundle       Direct CPP       Orbis Specialty       10/28/2019
+Information   Solutions    
+Bundle
+BankFocus Addl US   Data and   Data
+BVD       64860       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Coverage       Information   Solutions    
+Data and   Data
+BankFocus Bundle       BVD       65386       Orbis       Orbis Specialty       Bundle       Direct CPP       Orbis Specialty       10/28/2019
+Information   Solutions    
+BankFocus Capital   Data and   Data
+BVD       64859       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Intelligence       Information   Solutions    
+BankFocus CD Swap   Data and   Data
+BVD       64861       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+& MIR       Information   Solutions    
+BankFocus Data   Data and   Data
+BVD       64904       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Feed       Information   Solutions    
+BankFocus Dirs &   Data and   Data
+BVD       64862       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Mgrs       Information   Solutions    
+Data and   Data
+BankFocus Images       BVD       64910       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Information   Solutions    
+Data and   Data
+BankFocus Interims       BVD       64906       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Information   Solutions    
+Data and   Data
+BankFocus News       BVD       64908       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Information   Solutions    
+BankFocus   Data and   Data
+BVD       64907       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Ownership       Information   Solutions    
+BankFocus   Data and   Data
+BVD       64909       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Presenter       Information   Solutions    
+BankFocus Private   Data and   Data
+BVD       70079       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       11/18/2021
+Financials       Information   Solutions    
+Data and   Data
+BankFocus Ratings       BVD       64911       Orbis       Orbis Specialty       Bank Focus       Direct CPP       Orbis Specialty       2/27/2019
+Information   Solutions    
+Banking Cloud -
+Decision
+Regulatory Report -   71510       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/10/2023
+Solutions    
+Pillar 1 - BA CVA
+Banking Cloud -
+Decision
+Regulatory Report -   71511       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/10/2023
+Solutions    
+Pillar 3 - BA CVA
+Banking Cloud -
+Regulatory Reports -
+Decision
+Pillar 1 -   MKMV       68734       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/20/2020
+Solutions    
+Remuneration
+Reports
+Banking Cloud -
+Regulatory Reports -   Decision
+70172       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/14/2022
+Pillar 1 - TLAC &   Solutions    
+MREL Reports
+Banking Cloud -
+Decision   Banking Cloud
+Regulatory Reports -   MKMV       70107       Banking       Regulatory       Banking Cloud       Banking Cloud       Banking Cloud       12/22/2021
+Solutions       Reporting    
+Pillar 1 G-SIB
+Banking Cloud -   73254       Decision   Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       6/4/2025
+Regulatory Reports -   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       15/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+SSM Liquidity
+Exercise
+Banking Cloud -
+Decision
+Regulatory Reports -   70174       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/14/2022
+Solutions    
+STE SREP NPE
+Banking Cloud -
+Regulatory Reports -   Decision
+73255       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       6/4/2025
+Pillar 3 Disclosure -   Solutions    
+contact person
+Banking Cloud (SA
+and IRB, CCR, BA
+CVA, Leverage,
+Decision
+Large Exposure)   73484       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/10/2025
+Solutions    
+simplified
+configuration
+package
+Banking Cloud Basel   Decision
+71623       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       3/29/2024
+3 BA-CVA       Solutions    
+Banking Cloud Basel
+3 Configuration   Decision
+71845       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/19/2024
+Package (CR-IRB   Solutions    
+and BA-CVA)
+Banking Cloud Basel
+3 Configuration   Decision
+71796       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Package (CR-IRB   Solutions    
+and LVR)
+Banking Cloud Basel
+3 Configuration   Decision
+71797       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Package (CR-IRB,   Solutions    
+LVR and LE)
+Banking Cloud Basel
+3 Configuration
+Decision
+Package (CR-IRB,   71798       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+LVR, LE and BA-
+CVA)
+Banking Cloud Basel
+3 Configuration
+Decision
+Package (CR-IRB,   71799       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+LVR, LE, MR-SSA,
+OPR and BA-CVA)
+Banking Cloud Basel
+Decision
+3 Configuration   71786       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (CR-IRB)
+Banking Cloud Basel
+3 Configuration   Decision
+71844       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/19/2024
+Package (CR-SA and   Solutions    
+BA-CVA)
+Banking Cloud Basel
+3 Configuration   Decision
+71792       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Package (CR-SA and   Solutions    
+LVR)
+Banking Cloud Basel
+3 Configuration   Decision
+71793       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Package (CR-SA,   Solutions    
+LVR and LE)
+Banking Cloud Basel
+3 Configuration
+Decision
+Package (CR-SA,   71794       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+LVR, LE and BA-
+CVA)
+Banking Cloud Basel
+3 Configuration
+Decision
+Package (CR-SA,   71795       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+LVR, LE, MR-SSA,
+OPR and BA-CVA)
+Banking Cloud Basel
+Decision
+3 Configuration   71785       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (CR-SA)
+Banking Cloud Basel
+Decision
+3 Configuration   71788       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (LE)
+Banking Cloud Basel
+Decision
+3 Configuration   71787       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (LVR)
+Banking Cloud Basel
+Decision
+3 Configuration   71791       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (MR-FRTB)
+Banking Cloud Basel
+Decision
+3 Configuration   71789       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (MR-SSA)
+Banking Cloud Basel
+Decision
+3 Configuration   71790       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       8/9/2024
+Solutions    
+Package (OPR)
+Banking Cloud Basel   MKMV       68189       Decision   Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+3 Counterparty Credit   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       16/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Risk (SA-CCR EAD,
+CEM EAD)
+Banking Cloud Basel
+Decision
+3 Credit Risk RWA   MKMV       68190       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+(SA and IRB)
+Banking Cloud Basel
+Decision
+3 Credit Risk RWA   MKMV       68191       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+(SA Only)
+Banking Cloud Basel   Decision
+MKMV       68192       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+3 Large Exposures       Solutions    
+Banking Cloud Basel   Decision
+MKMV       70003       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/20/2021
+3 Leverage Ratio       Solutions    
+Banking Cloud Basel   Decision
+71022       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       7/13/2023
+3 MR FRTB-SA       Solutions    
+Banking Cloud Basel   Decision
+71140       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/6/2023
+3 MR SSA       Solutions    
+Banking Cloud Basel   Decision
+71624       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       3/29/2024
+3 Operational Risk       Solutions    
+Banking Cloud Credit
+Risk and Reporting   Decision
+MKMV       68322       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Onboarding Package   Solutions    
+(Priority Portfolio)
+Banking Cloud
+Financial Limit   Decision
+72617       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/5/2024
+Monitoring   Solutions    
+Application
+Banking Cloud
+Decision
+Liquidity Risk -   MKMV       68193       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Stocks
+Banking Cloud
+Decision
+Liquidity Risk Basel 3   MKMV       68194       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+(LCR, NSFR)
+Banking Cloud loan   Decision
+71476       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/25/2023
+tape data reports       Solutions    
+Banking Cloud Non-   Decision
+71802       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       8/9/2024
+Production Site       Solutions    
+Banking Cloud Non-
+Decision
+Production Site - Add   73012       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       2/4/2025
+Solutions    
+Storage
+Banking Cloud Non-
+Decision
+Production Site - Add   73011       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       2/4/2025
+Solutions    
+Users
+Banking Cloud
+notification of   Decision
+70698       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/15/2022
+impracticability   Solutions    
+reports
+Banking Cloud   Decision
+71801       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       8/9/2024
+Production Site       Solutions    
+Banking Cloud
+Decision
+Production Site - Add   73010       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       2/4/2025
+Solutions    
+Storage
+Banking Cloud
+Decision
+Production Site - Add   73009       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       2/4/2025
+Solutions    
+Users
+Banking Cloud
+Decision
+Regulatory Capital   71800       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       8/9/2024
+Solutions    
+Application
+Banking Cloud
+Regulatory Report -   Decision
+73487       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/10/2025
+Pillar 1 - Liquidity   Solutions    
+Cashflow Reports
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68195       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+AnaCredit Phase 1
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68198       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+BoE All Statistical   Solutions    
+Reports (OSCA)
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68200       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+BoE Form AS
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68201       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+BoE Form Buy to Let   Solutions    
+(BTL)
+Banking Cloud
+Regulatory Report -
+BoG ACT 175.1   Decision
+72613       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/4/2024
+(Residential &   Solutions    
+Commercial Real
+Estate)
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       17/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Banking Cloud
+Regulatory Report -   Decision
+72614       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/4/2024
+BoG ACT 175.2   Solutions    
+(COR25)
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68206       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Commercial Real   Solutions    
+Estate Mortgages
+Banking Cloud
+Decision
+Regulatory Report -   70982       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       6/2/2023
+Solutions    
+EBA ESG P1 reports
+Banking Cloud
+Regulatory Report -   Decision
+70813       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       2/13/2023
+EBA ESG P3   Solutions    
+disclosures
+Banking Cloud
+Regulatory Report -   Decision
+71437       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/3/2023
+EBA EU Taxonomy   Solutions    
+Investment_Firms
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68214       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+EBA FINREP IFRS
+Banking Cloud
+Regulatory Report -
+Decision
+EBA Supervisory   MKMV       68216       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Benchmark Portfolio
+Credit Risk
+Banking Cloud
+Regulatory Report -   Decision
+70981       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       6/2/2023
+EU Taxonomy   Solutions    
+reports
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68217       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+FCA Consumer   Solutions    
+Credit Data
+Banking Cloud
+Regulatory Report -
+FCA MLAR -   Decision
+MKMV       68218       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Mortgage Lending   Solutions    
+and Administration
+Returns
+Banking Cloud
+Regulatory Report -   Decision   Banking Cloud
+MKMV       68219       Banking       Regulatory       Banking Cloud       Banking Cloud       Banking Cloud       10/5/2020
+FCA REP - FCA   Solutions       Reporting    
+Close Links Returns
+Banking Cloud
+Regulatory Report -
+Decision   Banking Cloud
+FCA RMA Return -   MKMV       68957       Banking       Regulatory       Banking Cloud       Banking Cloud       Banking Cloud       1/8/2021
+Solutions       Reporting    
+Retail Mediation
+Activities
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68220       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+FSA017
+Banking Cloud
+Decision
+Regulatory Report -   72615       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/4/2024
+Solutions    
+IFRS Disclosures
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68221       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+IRRBB reports
+Banking Cloud
+Regulatory Report -   Decision
+72616       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/4/2024
+OSIs Credit Risk   Solutions    
+Loan Tape
+Banking Cloud
+Regulatory Report -   Decision
+71472       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/19/2023
+Pillar 1 - IRRBB   Solutions    
+reports
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68222       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 1 ALMM   Solutions    
+Reports
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68223       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 1 Asset   Solutions    
+Encumbrance
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68224       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 1 Basel 3 EBA   Solutions    
+COREP
+Banking Cloud
+Regulatory Report -
+Decision
+Pillar 1 Basel 3   MKMV       68225       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Regulatory Capital
+(non-EU)
+Banking Cloud   MKMV       68226       Decision   Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Regulatory Report -   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       18/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Pillar 1 Large
+Exposures
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68227       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Pillar 1 LCR Reports
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68228       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 1 Leverage   Solutions    
+Ratio
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68229       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 1 NSFR   Solutions    
+Reports
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68230       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 3 Capital   Solutions    
+Reports
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68231       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Pillar 3 Liquidity   Solutions    
+Reports
+Banking Cloud
+Regulatory Report -
+Decision
+Pillar 3 Non   MKMV       68232       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Performance &
+Forborne Exposures
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68234       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+PRA MREL 001-003
+Banking Cloud
+Regulatory Report -
+Decision
+PRA Stress Testing /   MKMV       68235       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+ICAAP Returns (PRA
+101-109 & 111)
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68237       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Residential Real   Solutions    
+Estate Mortgages
+Banking Cloud
+Decision
+Regulatory Report -   MKMV       68238       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Resolution Reports
+Banking Cloud
+Decision
+Regulatory Report -   70980       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       6/2/2023
+Solutions    
+RUBA
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68239       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Security Holding   Solutions    
+Statistics
+Banking Cloud
+Regulatory Report -   Decision
+MKMV       68240       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Single Resolution   Solutions    
+Fund (SRF)
+Banking Cloud
+Regulatory Report -   Decision   Banking Cloud
+MKMV       69809       Banking       Regulatory       Banking Cloud       Banking Cloud       Banking Cloud       5/6/2021
+UK FSA 082 Pillar 2   Solutions       Reporting    
+Credit Risk Retail
+Banking Cloud
+Regulatory Report -   Decision   Banking Cloud
+MKMV       69807       Banking       Regulatory       Banking Cloud       Banking Cloud       Banking Cloud       5/6/2021
+UK FSA045 IRB   Solutions       Reporting    
+Portfolio Risk Data
+Banking Cloud
+Regulatory Report –
+Decision
+EBA EU Taxonomy   71803       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       8/9/2024
+Solutions    
+Nuclear & Fossil
+disclosures
+Banking Cloud
+Decision
+Regulatory Report –   70697       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/15/2022
+Solutions    
+EBA Stress Testing
+Banking Cloud
+Regulatory Report –   Decision
+73486       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/10/2025
+EBA Stress Testing   Solutions    
+CR
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68252       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Central Credit   Solutions    
+Register
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68253       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Commercial Real   Solutions    
+Estate
+Banking Cloud
+Decision
+Regulatory Reports -   71752       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       6/20/2024
+Solutions    
+Cyprus Local reports
+Banking Cloud   MKMV       68258       Decision   Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Regulatory Reports -   Solutions
+EBA Supervisory
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       19/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Benchmark Portfolio
+- Credit Risk
+Banking Cloud
+Regulatory Reports -
+Decision
+EBA Supervisory   70938       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       3/28/2023
+Solutions    
+Benchmark Portfolio
+- IFRS9
+Banking Cloud
+Regulatory Reports -
+Decision
+EBA Supervisory   MKMV       68259       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Benchmark Portfolio
+- Market Risk
+Banking Cloud
+Regulatory Reports -
+Decision
+ECB Security   MKMV       68260       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Holding Statistics
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+71639       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - climate   Solutions    
+risk report
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68363       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/13/2020
+ECB SREP -   Solutions    
+Concentration Risk
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68261       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+ECB SREP - Credit   Solutions    
+Risk Reports
+Banking Cloud
+Regulatory Reports -   Decision
+71640       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP -   Solutions    
+digitalization report
+Banking Cloud
+Regulatory Reports -
+Decision
+ECB SREP -   71632       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+Solutions    
+financial projections
+report
+Banking Cloud
+Regulatory Reports -   Decision
+71634       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - ICAAP   Solutions    
+report
+Banking Cloud
+Regulatory Reports -   Decision
+71633       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - ILAAP   Solutions    
+report
+Banking Cloud
+Regulatory Reports -   Decision
+71638       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - IPC   Solutions    
+report
+Banking Cloud
+Regulatory Reports -   Decision
+71631       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - IRRBB   Solutions    
+report
+Banking Cloud
+Regulatory Reports -   Decision
+71637       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP -   Solutions    
+leverage reports
+Banking Cloud
+Regulatory Reports -
+Decision
+ECB SREP -   MKMV       68262       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Liquidity Risk
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+71635       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - loan to   Solutions    
+income report
+Banking Cloud
+Regulatory Reports -   Decision
+71630       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - market   Solutions    
+risk report
+Banking Cloud
+Regulatory Reports -   Decision
+71636       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/8/2024
+ECB SREP - pension   Solutions    
+risk report
+Banking Cloud
+Regulatory Reports -   Decision
+71626       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/1/2024
+ECB SREP -   Solutions    
+Profitability reports
+Banking Cloud
+Regulatory Reports -
+Decision
+ECB Supervisory   MKMV       68263       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Benchmark Portfolio
+- Credit Risk
+Banking Cloud
+Decision
+Regulatory Reports -   73495       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/18/2025
+Solutions    
+FFIEC101
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       20/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Banking Cloud
+Decision
+Regulatory Reports -   73492       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/18/2025
+Solutions    
+FRY-14A
+Banking Cloud
+Decision
+Regulatory Reports -   73494       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/18/2025
+Solutions    
+FRY-14M
+Banking Cloud
+Decision
+Regulatory Reports -   73493       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/18/2025
+Solutions    
+FRY-14Q
+Banking Cloud
+Decision
+Regulatory Reports -   73490       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/18/2025
+Solutions    
+FRY-15
+Banking Cloud
+Decision
+Regulatory Reports -   73491       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       9/18/2025
+Solutions    
+FRY-9C
+Banking Cloud
+Decision
+Regulatory reports -   MKMV       68298       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+NII reports
+Banking Cloud
+Decision
+Regulatory Reports -   MKMV       68272       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Phase 1 AnaCredit
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68273       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - ALMM   Solutions    
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68274       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - ALMM   Solutions    
+Reports - FR2052A
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68275       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - Asset   Solutions    
+Encumbrance
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 1 - Basel 1 -   MKMV       68276       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Regulatory Capital
+Reports
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 1 - Basel 3 -   MKMV       68277       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Regulatory Capital
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68280       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - EBA   Solutions    
+Resolution Reports
+Banking Cloud
+Regulatory Reports -   Decision
+73309       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       7/2/2025
+Pillar 1 - ELAR and   Solutions    
+ASRR Reports
+Banking Cloud
+Regulatory Reports -   Decision   Regulatory
+MKMV       68964       Banking       Regulatory       Banking Cloud       Banking Cloud       RiskAuthority       1/11/2021
+Pillar 1 - FRTB   Solutions       Report    
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68281       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - Funding   Solutions    
+Plan
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68283       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - LCR   Solutions    
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68285       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Pillar 1 - NSFR   Solutions    
+Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68733       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/20/2020
+Pillar 1 - Payment   Solutions    
+Reports
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 1 - Regulatory   MKMV       68286       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Capital Reports
+Credit Risk
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 1 - Regulatory   MKMV       68290       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Capital Reports
+Operational Risk
+Banking Cloud
+Regulatory Reports -   Decision
+73222       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Pillar 1 - SRB CIR   Solutions    
+Resolution reports
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       21/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Banking Cloud
+Regulatory Reports -   Decision
+73223       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Pillar 1 - SRB Critical   Solutions    
+functions Report
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 1 - SRB   73224       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Solutions    
+Financial Market
+Infrastructure Report
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 1 Leverage   MKMV       68366       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/13/2020
+Solutions    
+Ratio Reports (FSA
+083,FSA 084)
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68361       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/13/2020
+Pillar 2 Disclosure -   Solutions    
+IRRBB Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68293       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 3 Disclosure -   Solutions    
+Asset Encumbrance
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 3 Disclosure -   MKMV       68294       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Countercyclical
+buffer
+Banking Cloud
+Regulatory Reports -   Decision
+73250       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/14/2025
+Pillar 3 Disclosure -   Solutions    
+GSII
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68295       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Pillar 3 Disclosure -   Solutions    
+IRRBB Reports
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68296       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 3 Disclosure -   Solutions    
+Leverage Ratio
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 3 Disclosure -   MKMV       68297       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Liquidity Risk (LCR &
+NSFR)
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 3 Disclosure -   73233       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Solutions    
+Liquidity Risk (LCR &
+NSFR) – Cryptoasset
+Banking Cloud
+Regulatory Reports -   Decision
+73252       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/14/2025
+Pillar 3 Disclosure -   Solutions    
+MREL/TLAC
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68299       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Pillar 3 Disclosure -   Solutions    
+Regulatory Capital
+Banking Cloud
+Regulatory Reports -
+Decision
+Pillar 3 Disclosure -   73232       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Solutions    
+Regulatory Capital –
+Cryptoasset
+Banking Cloud
+Regulatory Reports -   Decision
+73251       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/14/2025
+Pillar 3 Disclosure -   Solutions    
+Remuneration
+Banking Cloud
+Regulatory Reports -   Decision
+73237       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Pillar 3 Disclosure -   Solutions    
+Revised CVA
+Banking Cloud
+Regulatory Reports -   Decision
+73219       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Pillar 3 Disclosure of   Solutions    
+remuneration policy
+Banking Cloud
+Regulatory Reports -
+Pillar 3 Non-   Decision
+MKMV       68300       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Performing   Solutions    
+Exposures
+Disclosures
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68301       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Residential Real   Solutions    
+Estate Mortgages
+Banking Cloud   73236       Decision   Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Regulatory Reports -   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       22/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+SRB CIR Resolution
+reports
+Banking Cloud
+Regulatory Reports -   Decision
+73234       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+SRB Critical   Solutions    
+functions Report
+Banking Cloud
+Regulatory Reports -
+Decision
+SRB Financial   73235       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       5/5/2025
+Solutions    
+Market Infrastructure
+Report
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68303       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+SRB Liability Data   Solutions    
+Report
+Banking Cloud
+Regulatory Reports -
+Support of National
+Decision
+Discretions for   MKMV       68304       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Submission of the
+Phase 1 AnaCredit
+Reports
+Banking Cloud
+Decision
+Regulatory Reports -   MKMV       68307       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+UK PRA Capital
+Banking Cloud
+Regulatory Reports -
+Decision
+US Call Reports -   MKMV       68309       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+Regulatory Capital -
+FRY9C HC -R
+Banking Cloud
+Regulatory Reports -
+Decision
+US CCAR Reports -   MKMV       68312       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+FR Y-14A Regulatory
+Capital - Annual
+Banking Cloud
+Regulatory Reports -   Decision
+MKMV       68313       Banking       Regulatory       RiskAuthority       RiskAuthority       Regulatory       RiskAuthority       10/5/2020
+US CCAR Reports -   Solutions    
+FR Y-14A Scenario
+Banking Cloud
+Regulatory Reports -
+Decision
+US CCAR Reports -   MKMV       68314       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       RiskAuthority       10/5/2020
+Solutions    
+FR Y-14A Schedule
+C
+Banking Cloud
+Reporting   Decision
+MKMV       68321       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Onboarding Package   Solutions    
+(Priority Portfolio)
+Banking Cloud
+Decision
+Reporting Studio   MKMV       68242       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Designer
+Banking Cloud SaaS
+Decision
+Platform for Credit   MKMV       68243       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Risk and Reporting
+Banking Cloud SaaS
+Decision
+Platform for   MKMV       68244       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       10/5/2020
+Solutions    
+Reporting
+Banking Cloud
+Decision
+SCRA data   71660       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/22/2024
+Solutions    
+processing
+Banking Cloud
+Decision
+SCRA grades   71658       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       4/22/2024
+Solutions    
+package
+Banking Cloud
+SCRA grades   Data and   Data   BankFocus
+71723       Orbis       Orbis Specialty       Bank Focus       5/28/2024
+package-BankFocus   Information   Solutions       Data    
+Data Allocated
+Banking Cloud
+SCRA grades   Decision
+71726       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       5/28/2024
+package-Banking   Solutions    
+Cloud Allocated
+Banking Cloud   Decision
+70804       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       1/31/2023
+Services       Solutions    
+Banking Cloud
+Decision
+Transactional   72619       Banking       Regulatory       Banking Cloud       Banking Cloud       Regulatory       Banking Cloud       11/5/2024
+Solutions    
+Reporting Application
+Decision   Banking   Banking   Banking
+Banking Connector       70215       Banking       6/6/2022
+Solutions       Platform   Connector   Connector    
+Banking Data   Decision
+73521       Banking       Lending       CreditLens       CreditLens       9/30/2025
+Management       Solutions    
+Banking Decision
+Intelligence_Agentic   Decision
+73870       Banking       Finance       ZM ALM       11/3/2025
+Development   Solutions    
+(BDI_AD)
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       23/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Banking Decision
+Decision
+Intelligence_Agentic   73869       Banking       Finance       ZM ALM       11/3/2025
+Solutions    
+Insights (BDI_AI)
+Banking Premium   Decision
+71643       Banking       Lending       CreditLens       Premium SLA       4/10/2024
+Incident - Lending       Solutions    
+Data and   Data   Cortera Data   Cortera Data
+Bankruptcy Report       70760       Orbis       12/21/2022
+Information   Solutions       Products   Sales    
+Research   Digital   MIS Credit   CV - Banking -
+Banks-Global       ISG       66086       CreditView       Core - Banking       5/28/2020
+and Insights   Insights   Research       Global    
+BANKSCOPE EIU   Data and   Data   Economic   Economic
+BVD       65033       Orbis       Orbis Specialty       Direct CPP       2/27/2019
+CF Reports       Information   Solutions       Products       Products    
+BANKSCOPE EIU   Data and   Data   Economic   Economic
+BVD       65034       Orbis       Orbis Specialty       Direct CPP       2/27/2019
+CR Reports       Information   Solutions       Products       Products    
+CREDIT
+Bankscore Credit   Data and   Data
+BVD       65045       Orbis       Catalysts   CATALYST FOR   Direct CPP       Catalysts       2/27/2019
+Catalyst       Information   Solutions    
+BANKS
+Bankscore for Client
+Decision
+Portfolios < 80   BVD       67383       Banking       Lending       FACT       FACT       Lending       FACT       9/12/2020
+Solutions    
+Counterparties
+Bankscore for Client
+Decision
+Portfolios > 80   BVD       67384       Banking       Lending       FACT       FACT       Lending       FACT       9/12/2020
+Solutions    
+Counterparties
+Basic Funding
+Basic Funding &   Research   Structured   Structured -
+LEW       73057       ABS Suite Plus       Moody's ABS   & Reporting   3/27/2025
+Reporting Package       and Insights   Finance   Issuer    
+Pkg
+Basic Funding with   Research   Structured   Structured -   Basic Funding
+LEW       73054       ABS Suite Plus       Moody's ABS       3/27/2025
+Borrowing Base       and Insights   Finance   Issuer       with BB    
+Basic Funding
+Research   Structured   Structured -   Basic Funding
+without Borrowing   LEW       73053       ABS Suite Plus       Moody's ABS       3/27/2025
+and Insights   Finance   Issuer       without BB    
+Base
+BAW Trustee - Per   Research   Structured   Structured -   Per Deal
+MWSA       67680       BAW       BAW       BAW       9/21/2020
+Deal Annual License       and Insights   Finance   Investor       Annual License    
+BAW Trustee - Base   Research   Structured   Structured -   Base Annual
+MWSA       67679       BAW       BAW       BAW       9/21/2020
+Annual License       and Insights   Finance   Investor       License    
+BayStreet Premium   Data and   Data   Acquire   Acquire Media
+BVD       69407       Content Feed       AM       3/22/2021
+Equities Feed       Information   Solutions   Media   Products    
+BayStreet Standard   Data and   Data   Acquire   Acquire Media
+BVD       69408       Content Feed       AM       3/22/2021
+Equities Feed       Information   Solutions   Media   Products    
+Data and   Data
+BEL-FIRST Analyse       BVD       64986       Orbis       Orbis National       BEL-FIRST       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Data and   Data
+BEL-FIRST Carto       BVD       64987       Orbis       Orbis National       BEL-FIRST       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+BEL-FIRST   Data and   Data
+BVD       65028       Orbis       Orbis National       BEL-FIRST       Direct CPP       Orbis National       2/27/2019
+Marketing       Information   Solutions    
+BEL-FIRST   Data and   Data
+BVD       64988       Orbis       Orbis National       BEL-FIRST       Direct CPP       Orbis National       2/27/2019
+Premiums       Information   Solutions    
+Data and   Data
+BEL-FIRST Standard       BVD       65027       Orbis       Orbis National       BEL-FIRST       Direct CPP       Orbis National       2/27/2019
+Information   Solutions    
+Belgium -
+Risk
+Whereonearth   Decision   Model &   RMS Model &
+72070       Management   10/14/2024
+(Geozip) Street-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Risk
+Belgium EQ MMI   Decision   Model &   RMS Model &
+73390       Management   7/23/2025
+Maps-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Belgium EQ MMI   Decision   Model &   RMS Model &
+73432       Management   7/23/2025
+Maps-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Belgium Flood Maps-   Decision   Model &   RMS Model &
+73383       Management   7/23/2025
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Belgium Flood Maps-   Decision   Model &   RMS Model &
+73429       Management   7/23/2025
+Allocated       Solutions   Data   Data Product    
+Solutions
+Data and   Data   Sustainable   Issuer ESG   ESG Benchmark
+Benchmark Analysis       MKMV       69706       MESG       4/13/2021
+Information   Solutions   Finance   Solutions   Analysis    
+Data and   Data   Orbis   Beneficial
+Beneficial Ownership       BVD       65433       Orbis       Direct CPP       12/4/2019
+Information   Solutions       International   Ownership    
+Data and   Data   Acquire   Acquire Media
+Benzinga       BVD       69335       AM       AM       3/22/2021
+Information   Solutions   Media   Products    
+Benzinga Lightning   Data and   Data   Acquire   Acquire Media
+BVD       69409       Content Feed       AM       3/22/2021
+Feed       Information   Solutions   Media   Products    
+Benzinga Lightning
+Data and   Data   Acquire   Acquire Media
+Feed Large Fund -   BVD       69360       Signal       AM       3/22/2021
+Information   Solutions   Media   Products    
+Signal
+Benzinga Lightning
+Data and   Data   Acquire   Acquire Media
+Feed Small Fund -   BVD       69359       Signal       AM       3/22/2021
+Information   Solutions   Media   Products    
+Signal
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       24/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Benzinga Lightning   Data and   Data   Acquire   Acquire Media
+BVD       69832       Content Feed       AM       5/21/2021
+Feed w/Archive       Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media   Bitcoin
+Bitcoin Magazine       70210       Bitcoin Magazine       5/17/2022
+Information   Solutions   Media   Products       Magazine    
+Blackdot Videris   Decision   Know Your   Passfort   Maxsight
+71005       PassFort       6/15/2023
+Platform       Solutions   Customer       Products   Products    
+Bogard Fin   Decision   Know Your   GRID
+BVD       70080       Bogard PEP       11/19/2021
+Submission       Solutions   Customer   Services    
+Bogard Nordic PEP   Decision   Know Your   GRID
+70221       Bogard PEP       6/15/2022
+Data       Solutions   Customer   Services    
+Data and   Data   Acquire   Acquire Media
+Bond Buyer       BVD       69862       Content Feed       AM       5/26/2021
+Information   Solutions   Media   Products    
+Research   Digital   MIS Credit
+Bond Report-Corp       ISG       66207       Bond Report       Bond Report       Bond Report       6/3/2020
+and Insights   Insights   Research    
+Bond Report-   Research   Digital   MIS Credit
+ISG       66208       Bond Report       Bond Report       Bond Report       6/3/2020
+CorpMuni       and Insights   Insights   Research    
+Research   Digital   MIS Credit
+Bond Report-Muni       ISG       66209       Bond Report       Bond Report       Bond Report       6/3/2020
+and Insights   Insights   Research    
+Research   Predictive   Credit
+BondScore China       MKMV       67204       EDF-X       EDF X Private       EDF X Private       8/11/2020
+and Insights   Analytics   Analytics    
+Data and   Data   Cortera Data   Cortera Data
+Boost+       70383       Orbis       8/16/2022
+Information   Solutions       Products   Sales    
+Boost+ - Committed   Data and   Data   Cortera Data   Cortera Data
+70720       Orbis       12/14/2022
+Data       Information   Solutions       Products   Sales    
+Borrowing Base -   Research   Structured   Structured -
+70811       Lender       Moody's ABS       2/13/2023
+Hosted       and Insights   Finance   Issuer    
+Borrowing Base Add   Research   Structured   Structured -   Borrowing
+LEW       73051       ABS Suite Plus       Moody's ABS       3/27/2025
+On       and Insights   Finance   Issuer       Base Add On    
+Data and   Data   Acquire   Acquire Media
+Briefing Trader Wire       BVD       69337       Alert       AM       3/22/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+Briefing Trader Wire       BVD       69411       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Briefing.com -   Data and   Data   Acquire   Acquire Media
+BVD       70053       Alert       AM       11/15/2021
+Platinum - Alert       Information   Solutions   Media   Products    
+Briefing.com -   Data and   Data   Acquire   Acquire Media
+BVD       69833       Content Feed       AM       5/21/2021
+Platinum w/Archive       Information   Solutions   Media   Products    
+Briefing.com   Data and   Data   Acquire   Acquire Media
+BVD       69412       Signal       AM       3/22/2021
+Platinum - Signal       Information   Solutions   Media   Products    
+Bronze Alert News   Data and   Data   Acquire   Acquire Media
+BVD       69323       Alert       AM       3/22/2021
+Package       Information   Solutions   Media   Products    
+Risk
+Decision   Moody's   Climate
+Brown Share Data       MKMV       70123       Management   427       MESG       2/16/2022
+Solutions   Climate   Research    
+Solutions
+Economic
+Research   Predictive   Research
+Buffet Security Pak       MEDC       66577       Economic Data       Economics Data       Data: Custom       7/2/2020
+and Insights   Analytics   and
+Forecasts
+Build America Bond   Research   Digital   MIS Credit
+ISG       66092       CreditView       Core - Municipal       CV - Municipal       5/28/2020
+Service       and Insights   Insights   Research    
+Building Customer   Decision
+ISG       68464       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Connections       Solutions    
+Building Member   Decision
+ISG       68465       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Connections       Solutions    
+Building
+Relationships with   Decision
+ISG       70082       Banking       Learning       e-Learning       E-Learning       11/22/2021
+Small Business   Solutions    
+Clients
+Decision
+Business Credit Pulls       WES       65949       Banking       Lending       Lending Cloud       Lending Cloud       Lending       5/18/2020
+Solutions    
+Business   Data and   Data   Cortera Data   Cortera Data
+70406       Orbis       8/16/2022
+Demographics       Information   Solutions       Products   Sales    
+Business
+Data and   Data   Cortera Data   Cortera Data
+Demographics -   70742       Orbis       12/14/2022
+Information   Solutions       Products   Sales    
+Committed Data
+Business   Decision
+ISG       68468       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Development Skills       Solutions    
+Decision
+Business Lending       ISG       68469       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Business Lending   Decision
+ISG       68471       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Fundamentals       Solutions    
+Data and   Data   Cortera Data   Cortera Data
+Business Risk       70409       Orbis       8/16/2022
+Information   Solutions       Products   Sales    
+Data and   Data   Acquire   Acquire Media
+Business Wire - Alert       BVD       70055       Alert       AM       11/15/2021
+Information   Solutions   Media   Products    
+Business Wire -   Data and   Data   Acquire   Acquire Media
+BVD       69889       Content Feed       AM       5/26/2021
+Archive       Information   Solutions   Media   Products    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       25/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Business Wire - N.
+Data and   Data   Acquire   Acquire Media
+America Press   BVD       69415       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Releases
+Business Wire -
+Data and   Data   Acquire   Acquire Media
+North America Press   BVD       69834       Content Feed       AM       5/21/2021
+Information   Solutions   Media   Products    
+Releases w/Archive
+Business Wire -   Data and   Data   Acquire   Acquire Media
+BVD       69352       Signal       AM       3/22/2021
+Signal       Information   Solutions   Media   Products    
+Business Wire - UK   Data and   Data   Acquire   Acquire Media
+BVD       69416       Content Feed       AM       3/22/2021
+Regulatory Releases       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69417       Content Feed       AM       3/22/2021
+(Czech)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69418       Content Feed       AM       3/22/2021
+(Dutch)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69419       Content Feed       AM       3/22/2021
+(Estonian)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69420       Content Feed       AM       3/22/2021
+(Finnish)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69421       Content Feed       AM       3/22/2021
+(French)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69422       Content Feed       AM       3/22/2021
+(German)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69423       Content Feed       AM       3/22/2021
+(Hungarian)       Information   Solutions   Media   Products    
+Business Wire
+Data and   Data   Acquire   Acquire Media
+(Includes TSX and   BVD       69424       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+European releases)
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69425       Content Feed       AM       3/22/2021
+(Italian)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69426       Content Feed       AM       3/22/2021
+(Japanese)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69427       Content Feed       AM       3/22/2021
+(Latvian)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69428       Content Feed       AM       3/22/2021
+(Lithuanian)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69429       Content Feed       AM       3/22/2021
+(Polish)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69430       Content Feed       AM       3/22/2021
+(Portuguese)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69431       Content Feed       AM       3/22/2021
+(Simplified Chinese)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69432       Content Feed       AM       3/22/2021
+(Spanish)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69433       Content Feed       AM       3/22/2021
+(Swedish)       Information   Solutions   Media   Products    
+Business Wire   Data and   Data   Acquire   Acquire Media
+BVD       69434       Content Feed       AM       3/22/2021
+(Traditional Chinese)       Information   Solutions   Media   Products    
+Data and   Data
+BvD - CC Sales       BVD       69956       Orbis       Catalysts       7/2/2021
+Information   Solutions    
+BvD Connector (MS   Data and   Data   Bureau van Dijk
+BVD       70078       Orbis       Catalysts       Direct CPP       11/18/2021
+Dynamics)       Information   Solutions       Connectors    
+BvD Connector (SAP   Data and   Data   Bureau van Dijk
+BVD       65759       Orbis       Catalysts       Direct CPP       3/23/2020
+Ariba Risk)       Information   Solutions       Connectors    
+BvD Connector (SAP   Data and   Data   Bureau van Dijk
+BVD       70077       Orbis       Catalysts       Direct CPP       11/18/2021
+Ariba)       Information   Solutions       Connectors    
+BvD Connector (SAP   Data and   Data   Bureau van Dijk
+BVD       70170       Orbis       Catalysts       Direct CPP       4/11/2022
+Cloud for Credit)       Information   Solutions       Connectors    
+BvD Connector (SAP   Data and   Data   Bureau van Dijk
+BVD       70169       Orbis       Catalysts       Direct CPP       4/7/2022
+S/4 Hana)       Information   Solutions       Connectors    
+BvD Connector (SF   Data and   Data   Bureau van Dijk
+BVD       65297       Orbis       Catalysts       Direct CPP       10/4/2019
+Lightning+)       Information   Solutions       Connectors    
+Data and   Data   Orbis
+BvD credits       BVD       64877       Orbis       BvD credits       Direct CPP       2/27/2019
+Information   Solutions       International    
+Decision
+C&I Loss Rate Model       MKMV       66304       Banking       Finance       ImpairmentStudio       ImpairmentStudio       Finance       ImpairmentStudio       6/17/2020
+Solutions    
+C&I Proxy PD/LGD   Research   Predictive   Credit   Corporate Credit   Capital Risk
+MKMV       66300       RiskBench       Single Obligor       6/17/2020
+Data       and Insights   Analytics   Analytics   Other       Analyzer    
+C&I Proxy PD/LGD   Research   Predictive   Credit   Corporate Credit
+MKMV       66301       RiskBench       RiskBench       6/17/2020
+Data       and Insights   Analytics   Analytics   Other    
+C&I/CRE Loss Rate   Decision
+MKMV       66347       Banking       Finance       ImpairmentStudio       ImpairmentStudio       Finance       ImpairmentStudio       6/17/2020
+Models Onboarding       Solutions    
+Calculated Data   Data and   Data
+ISG       66210       Data Feeds       MIS Data Feeds       MIS Data Feeds       Internal       6/3/2020
+Corporate       Information   Solutions    
+Calculated Data   Data and   Data
+MKMV       70040       Data Feeds       MIS Data Feeds       10/25/2021
+Public Finance       Information   Solutions    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       26/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Canada -
+Risk
+WhereonEarth   Decision   Model &   RMS Model &
+72115       Management   10/14/2024
+(GeoZip) Street-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Canada -
+Risk
+WhereonEarth   Decision   Model &   RMS Model &
+72414       Management   10/14/2024
+(GeoZip) Street-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Canada Convective   Risk
+Decision   Model &   RMS Model &
+Storm Risk Score-   73363       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Canada CRE
+Decision
+Correlation Data   MKMV       69966       Banking       Risk       RiskFrontier       RiskFrontier       7/15/2021
+Solutions    
+Module Hosted
+Canada CRE
+Decision   Portfolio and
+Correlation Data   MKMV       69308       Banking       Risk       RiskFrontier       RiskFrontier       RiskFrontier       3/18/2021
+Solutions       Capital Strategy    
+Module Installed
+Risk
+Canada Earthquake   Decision   Model &   RMS Model &
+73391       Management   7/23/2025
+MMI-Allocated       Solutions   Data   Data Product    
+Solutions
+Canada Earthquake   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73333       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+Canada Excess   Decision   Model &   RMS Model &
+70433       Management   Software       8/22/2022
+Mortality Model       Solutions   Data   Data Product    
+Solutions
+Risk
+Canada Hurricane   Decision   Model &   RMS Model &
+71247       Management   9/24/2023
+Model DLM-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Canada Hurricane   Decision   Model &   RMS Model &
+72111       Management   10/14/2024
+Model DLM-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Canada Hurricane   Decision   Model &   RMS Model &
+72401       Management   10/14/2024
+Model DLM-Allocated       Solutions   Data   Data Product    
+Solutions
+Canada Hurricane   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73351       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+Canada Longevity   Decision   Model &   RMS Model &
+70426       Management   Software       8/22/2022
+Model       Solutions   Data   Data Product    
+Solutions
+Data and   Data   Acquire   Acquire Media
+Canada Newswire       BVD       69435       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Canada Newswire -   Data and   Data   Acquire   Acquire Media
+BVD       70061       Alert       AM       11/15/2021
+Alert       Information   Solutions   Media   Products    
+Canada Retail
+Decision   Portfolio and
+Correlation Data   MKMV       66410       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+Solutions       Capital Strategy    
+Module Hosted
+Canada Retail
+Decision   Portfolio and
+Correlation Data   MKMV       66377       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+Solutions       Capital Strategy    
+Module Installed
+Canada SME
+Correlation Data   Decision   Portfolio and
+MKMV       66407       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+Module for   Solutions       Capital Strategy    
+RiskFrontier Hosted
+Canada SME
+Correlation Data   Decision   Portfolio and
+MKMV       66374       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+Module for   Solutions       Capital Strategy    
+RiskFrontier Installed
+Data and   Data   Acquire   Acquire Media
+Canada StockWatch       BVD       69436       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Economic
+Canada Subnational   Research   Predictive   Research   Economic   Models: Sub-
+71028       Economic Models       7/13/2023
+Model       and Insights   Analytics   and   Models       national    
+Forecasts
+Canada Subnational
+Economic
+NGFS-Based
+Research   Predictive   Research
+Climate Risk   72647       Economic Data       11/20/2024
+and Insights   Analytics   and
+Scenarios in Data
+Forecasts
+Buffet - Add-on
+Risk
+Canada Wildfire HD   Decision   Model &   RMS Model &
+71312       Management   9/24/2023
+Model-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Canada Wildfire HD   Decision   Model &   RMS Model &
+72102       Management   10/14/2024
+Model-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Canada Wildfire HD   Decision   Model &   RMS Model &
+72378       Management   10/14/2024
+Model-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Canada Wildfire Risk   Decision   Model &   RMS Model &
+73367       Management   7/23/2025
+Score-Allocated       Solutions   Data   Data Product    
+Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       27/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Canada Wildfire:   Risk
+Decision   Model &   RMS Model &
+Supplemental   73369       Management   7/23/2025
+Solutions   Data   Data Product    
+Hazard-Allocated   Solutions
+Canada Winterstorm   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73373       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Canadian Press   Data and   Data   Acquire   Acquire Media
+BVD       69437       Content Feed       AM       3/22/2021
+Release Package       Information   Solutions   Media   Products    
+Decision
+CAP - Additional Site       71706       Banking       Risk       CAP       CAP       5/15/2024
+Solutions    
+CAP - Analytics
+Decision
+Development &   MKMV       66337       Banking       Risk       CAP       CAP       Risk       CAP       6/17/2020
+Solutions    
+Integration Module
+CAP Model Lifecycle   Decision
+MKMV       66336       Banking       Risk       CAP       CAP       Risk       CAP       6/17/2020
+Management       Solutions    
+CAP Standard   Decision
+MKMV       66352       Banking       Risk       CAP       CAP       Risk       CAP       6/17/2020
+Onboarding       Solutions    
+CAP
+Decision
+Standard/Advisory   MKMV       66334       Banking       Risk       CAP       CAP       Risk       CAP       6/17/2020
+Solutions    
+Package
+Risk
+Decision
+CAPE Expense       LEW       73329       Management   CAPE       CAPE Products       CAPE Analytics       7/22/2025
+Solutions
+Solutions
+Risk
+Decision
+Cape General Usage       LEW       73326       Management   CAPE       CAPE Products       CAPE Analytics       7/22/2025
+Solutions
+Solutions
+Risk
+Decision
+CAPE Hosted       LEW       73023       Management   CAPE       CAPE Products       CAPE Analytics       2/14/2025
+Solutions
+Solutions
+Risk
+Decision
+Cape Imagery Usage       LEW       73303       Management   CAPE       CAPE Products       CAPE Analytics       6/26/2025
+Solutions
+Solutions
+Risk
+Cape New Business   Decision
+LEW       73304       Management   CAPE       CAPE Products       CAPE Analytics       6/26/2025
+Usage       Solutions
+Solutions
+Risk
+Decision
+CAPE PayGo       LEW       73066       Management   CAPE       CAPE Products       CAPE Analytics       4/2/2025
+Solutions
+Solutions
+Risk
+Cape Real Estate   Decision
+LEW       73327       Management   CAPE       CAPE Products       CAPE Analytics       7/22/2025
+Usage       Solutions
+Solutions
+Risk
+CAPE Regulatory   Decision
+LEW       73213       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Support       Solutions
+Solutions
+Risk
+Cape Renewal   Decision
+LEW       73328       Management   CAPE       CAPE Products       CAPE Analytics       7/22/2025
+Usage       Solutions
+Solutions
+Risk
+Decision
+CAPE Services       LEW       73024       Management   CAPE       CAPE Products       CAPE Analytics       2/14/2025
+Solutions
+Solutions
+Risk
+Decision
+CAPE Services       LEW       73325       Management   CAPE       CAPE Products       CAPE Analytics       7/21/2025
+Solutions
+Solutions
+Risk
+CAPE Support Fee   Decision
+LEW       73212       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+(Support)       Solutions
+Solutions
+Capital Market   Data and   Data
+ISG       66190       Data Feeds       MIS Data Feeds       MIS Data Feeds       Research       6/3/2020
+Research Group       Information   Solutions    
+Decision   Capital Risk   Portfolio and   Capital Risk
+Capital Risk Analyzer       MKMV       66354       Banking       Finance       Risk       6/23/2020
+Solutions       Analyzer   Capital Strategy       Analyzer    
+Decision   Capital Risk   Portfolio and   Capital Risk
+Capital Risk Analyzer       MKMV       66355       Banking       Finance       Risk       6/23/2020
+Solutions       Analyzer   Capital Strategy       Analyzer    
+Capital Risk Analyzer   Decision   Capital Risk   Portfolio and   Capital Risk
+MKMV       70017       Banking       Finance       Risk       9/30/2021
+Base       Solutions       Analyzer   Capital Strategy       Analyzer    
+Capital Risk Analyzer   Decision   Capital Risk   Portfolio and   Capital Risk
+MKMV       70018       Banking       Finance       Risk       9/30/2021
+Base On-Boarding       Solutions       Analyzer   Capital Strategy       Analyzer    
+Capital Risk Analyzer   Decision   Capital Risk   Portfolio and   Capital Risk
+MKMV       66357       Banking       Finance       Risk       6/23/2020
+On-Boarding       Solutions       Analyzer   Capital Strategy       Analyzer    
+Capital Stress   Decision   Capital Stress
+71728       Banking       Finance       ZM ALM       ZM ALM       5/29/2024
+Testing       Solutions       Testing    
+Risk
+Carbon Footprint   Decision   Moody's   Climate
+MKMV       69661       Management   427       MESG       4/13/2021
+Data       Solutions   Climate   Research    
+Solutions
+Carbon Footprint   Risk
+Decision   Moody's   Climate
+Data - Climate   72999       Management   427       MESG       1/27/2025
+Solutions   Climate   Research    
+Research Allocated   Solutions
+Carbon Footprint
+Data and   Data   Orbis
+Data - Orbis Data   72997       Orbis       Orbis Global       Orbis Data       1/27/2025
+Information   Solutions       International    
+allocated
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       28/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Cards and Payments   Decision
+ISG       68761       Banking       Learning       e-Learning       E-Learning       11/13/2020
+I (CP I)       Solutions    
+Cards and Payments   Decision
+ISG       68481       Banking       Learning       e-Learning       E-Learning       10/15/2020
+II (CP II)       Solutions    
+Cards and Payments   Decision
+ISG       68762       Banking       Learning       e-Learning       E-Learning       11/13/2020
+III (CP III)       Solutions    
+Caribbean -
+Risk
+WhereonEarth   Decision   Model &   RMS Model &
+72129       Management   10/14/2024
+(GeoZip) Base-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Caribbean -
+Risk
+WhereonEarth   Decision   Model &   RMS Model &
+72310       Management   10/14/2024
+(GeoZip) Base-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Caribbean   Risk
+Decision   Model &   RMS Model &
+Earthquake Risk   73334       Management   7/23/2025
+Solutions   Data   Data Product    
+Scores-Allocated   Solutions
+Risk
+Caribbean Hurricane   Decision   Model &   RMS Model &
+71248       Management   9/24/2023
+Model DLM-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Caribbean Hurricane   Decision   Model &   RMS Model &
+72126       Management   10/14/2024
+Model DLM-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Caribbean Hurricane   Decision   Model &   RMS Model &
+72301       Management   10/14/2024
+Model DLM-Allocated       Solutions   Data   Data Product    
+Solutions
+Caribbean Hurricane   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73352       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Data and   Data   Acquire   Acquire Media
+Carteret Site Visit       BVD       69366       Signal       AM       3/22/2021
+Information   Solutions   Media   Products    
+Decision
+Case Study       ISG       68472       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Economic
+Case-Shiller Indexes   Data:
+Research   Predictive   Research
+- All Metros, History   MEDC       66666       Economic Data       Economics Data   Specialized   7/2/2020
+and Insights   Analytics   and
+& Forecast   (Housing)
+Forecasts
+Economic
+Case-Shiller Indexes   Data:
+Research   Predictive   Research
+- CSI County   MEDC       66646       Economic Data       Economics Data   Specialized   7/2/2020
+and Insights   Analytics   and
+Forecast Add-on   (Housing)
+Forecasts
+Economic
+Data:
+Case-Shiller Indexes   Research   Predictive   Research
+MEDC       66663       Economic Data       Economics Data   Specialized   7/2/2020
+- Full Service       and Insights   Analytics   and
+(Housing)
+Forecasts
+Economic
+Data:
+Case-Shiller Indexes   Research   Predictive   Research
+MEDC       66664       Economic Data       Economics Data   Specialized   7/2/2020
+- Metro Plus       and Insights   Analytics   and
+(Housing)
+Forecasts
+Economic
+Case-Shiller Indexes   Data:
+Research   Predictive   Research
+- Per Area, History &   MEDC       66662       Economic Data       Economics Data   Specialized   7/2/2020
+and Insights   Analytics   and
+Forecast   (Housing)
+Forecasts
+Risk
+Casualty Earthquake   Decision   Model &   RMS Model &
+71426       Management   9/24/2023
+Taiwan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Casualty Earthquake   Decision   Model &   RMS Model &
+71932       Management   10/14/2024
+Taiwan-Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+Decision   Praedicat
+Casualty Expense       72626       Management   Casualty       11/12/2024
+Solutions   Products    
+Solutions
+Risk
+Decision   Praedicat
+Casualty Other       73496       Management   Casualty       9/18/2025
+Solutions   Products    
+Solutions
+Risk
+Decision   Praedicat
+Casualty Services       72609       Management   Casualty       10/31/2024
+Solutions   Products    
+Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &
+Enhance Risk Data   73244       Management   5/14/2025
+Solutions   Data   Data Product    
+Suite - Europe   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &
+Enhance Risk Data   73243       Management   5/14/2025
+Solutions   Data   Data Product    
+Suite - Global   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &
+Enhance Risk Data   73245       Management   5/14/2025
+Solutions   Data   Data Product    
+Suite - US   Solutions
+Risk
+Catastrophe   Decision   Model &   RMS Model &   Intelligent Risk
+72578       Management   10/14/2024
+Modeling Suite - Asia       Solutions   Data   Data Product   Platform    
+Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72580       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Australia   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       29/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Catastrophe
+Risk
+Modeling Suite -   Decision   Model &   RMS Model &   Intelligent Risk
+72579       Management   10/14/2024
+Australia   Solutions   Data   Data Product   Platform    
+Solutions
+NewZealand
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72583       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Canada   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72584       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Caribbean   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72587       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Europe   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   71428       Management   9/24/2023
+Solutions   Data   Data Product   Platform    
+Global   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72592       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Japan   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72593       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Latin America   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72594       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+Mexico   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72595       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+NewZealand   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72596       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+North America   Solutions
+Catastrophe   Risk
+Decision   Model &   RMS Model &   Intelligent Risk
+Modeling Suite -   72602       Management   10/14/2024
+Solutions   Data   Data Product   Platform    
+United States   Solutions
+Decision   Commercial   CRE
+Catylist CDR       MAA       68967       Marketplace       Catylist       1/12/2021
+Solutions   Real Estate   Content    
+Catylist CLS -   Decision   Commercial   CRE
+70689       Marketplace       Catylist       11/2/2022
+Additional Users       Solutions   Real Estate   Content    
+Catylist CLS -   Decision   Commercial   CRE
+ISG       70089       Marketplace       Catylist       12/13/2021
+Committed Users       Solutions   Real Estate   Content    
+Catylist Research -   Decision   Commercial   CRE
+70688       Marketplace       Catylist       11/2/2022
+Additional Users       Solutions   Real Estate   Content    
+Catylist Research -   Decision   Commercial   CRE
+ISG       70088       Marketplace       Catylist       12/13/2021
+Committed Users       Solutions   Real Estate   Content    
+Data and   Data   Acquire   Acquire Media
+CCS - News Feed       BVD       69379       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+Data and   Data   Acquire   Acquire Media
+CCS - NewsEdge       BVD       70127       NewsEdge       AM       2/17/2022
+Information   Solutions   Media   Products    
+CCS Financial News   Data and   Data   Acquire   Acquire Media
+70183       Content Feed       AM       4/22/2022
+Bundle       Information   Solutions   Media   Products    
+CCS News Gen Ai   Data and   Data   Acquire   Acquire Media
+73458       Content Feed       8/21/2025
+Ready       Information   Solutions   Media   Products    
+Research   Structured   Structured -
+CDO Data Basic       MWSA       67964       SF Data       SF Data       CDO       SF Data       10/1/2020
+and Insights   Finance   Investor    
+CDO EMS Report   Research   Structured   Structured -
+MWSA       67621       SF Data       SF Data       EMS       SF Data       9/21/2020
+Add-on       and Insights   Finance   Investor    
+CDO EMS Reports   Research   Structured   Structured -
+MWSA       67969       SF Data       SF Data       EMS       SF Data       10/1/2020
+(Unlimited)       and Insights   Finance   Investor    
+Decision   Portfolio and
+CDO Module Hosted       MKMV       66392       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+Solutions       Capital Strategy    
+CDO Module   Decision   Portfolio and
+MKMV       66360       Banking       Risk       RiskFrontier       Risk       RiskFrontier       6/23/2020
+Installed       Solutions       Capital Strategy    
+CDO Research_V2 -   Research   Digital   MIS Credit   Core - Structured   CV - SF -
+71058       CreditView       7/21/2023
+CV Allocated       and Insights   Insights   Research       Finance   Global    
+CDO Research_V2 -   Research   Digital   MIS Credit   Core - Structured   CV - SF -
+71114       CreditView       7/21/2023
+CV Allocated       and Insights   Insights   Research       Finance   Global    
+CDO Research_V2 -   Research   Structured   Structured -
+71059       SF Data       Web       Web       SF Data       7/21/2023
+SAV Allocated       and Insights   Finance   Investor    
+CDO Research_V2 -   Research   Structured   Structured -
+71115       SF Data       Web       Web       SF Data       7/21/2023
+SAV Allocated       and Insights   Finance   Investor    
+CDOEdge Deal   Research   Structured   Structured -
+MWSA       70209       CDO-Edge       Deal Creator       CDO       CDO-Edge       5/10/2022
+Creator       and Insights   Finance   Investor    
+Research   Structured   Structured -
+CDOEdge Desktop       MWSA       67614       CDO-Edge       CDO-Edge       Desktop       CDO-Edge       9/21/2020
+and Insights   Finance   Investor    
+CDOEdge Desktop +   Research   Structured   Structured -
+MWSA       67615       CDO-Edge       CDO-Edge       Desktop + API       CDO-Edge       9/21/2020
+API Local Interface       and Insights   Finance   Investor    
+CDOEdge Enhanced   Research   Structured   Structured -
+MWSA       73214       CDO-Edge       CDO-Edge       4/28/2025
+API       and Insights   Finance   Investor    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       30/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+CDOEdge Optimizer   Research   Structured   Structured -
+MWSA       67616       CDO-Edge       CDO-Edge       Optimizer       CDO-Edge       9/21/2020
+Add on       and Insights   Finance   Investor    
+CDONet - Base   Research   Structured   Structured -   CDONet
+MWSA       67681       CDONet       CDONet       CDONet       9/21/2020
+Annual License       and Insights   Finance   Investor       Structuring    
+CDONet - Per Deal   Research   Structured   Structured -   CDONet
+MWSA       67682       CDONet       CDONet       CDONet       9/21/2020
+Annual License       and Insights   Finance   Investor       Structuring    
+CDONet - Per Deal
+Research   Structured   Structured -   CDONet
+Modeling Fee - One   MWSA       67683       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Modeling    
+time
+CDONet Asset   CDONet
+Research   Structured   Structured -
+Management -   MWSA       67929       CDONet       CDONet   Management   CDONet       10/1/2020
+and Insights   Finance   Investor    
+Annual Per Deal Fee   Module
+CDONet Asset   CDONet
+Research   Structured   Structured -
+Management -   MWSA       67930       CDONet       CDONet   Management   CDONet       10/1/2020
+and Insights   Finance   Investor    
+Annual Software Fee   Module
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67760       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+European CDO
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67761       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+European CLO
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67762       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+Global ABS CDO
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67763       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+Global CDO
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67764       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+Global CLO
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67765       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+Global CRE CDO
+CDONet Investor
+Research   Structured   Structured -   CDONet
+Cashflow Module -   MWSA       67766       CDONet       CDONet       CDONet       9/21/2020
+and Insights   Finance   Investor       Investor    
+US TruPS CDO
+CDONet
+CDONet--Periodic   Research   Structured   Structured -
+MWSA       67972       CDONet       CDONet   Management   CDONet       10/1/2020
+Payment All       and Insights   Finance   Investor    
+Module
+CDOROM API   Research   Structured   Structured -
+MWSA       67952       CDO-ROM       CDO-ROM       API       CDO-ROM       10/1/2020
+Sellside Int 1dept       and Insights   Finance   Investor    
+Research   Structured   Structured -
+CDOROM Data Feed       MWSA       67946       CDO-ROM       CDO-ROM       Data       10/1/2020
+and Insights   Finance   Investor    
+Research   Predictive   Credit
+CDS-I EDF       MKMV       67191       EDF-X       EDF X Public       CDS-I EDF       EDF-X       8/11/2020
+and Insights   Analytics   Analytics    
+Center Standard App
+Decision
+- Stress Testing -   71693       Banking       Risk       Modeling       5/9/2024
+Solutions    
+Modeling Allocated
+Central & South
+Risk
+America Earthquake   Decision   Model &   RMS Model &
+73340       Management   7/23/2025
+Risk Scores-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Central America
+Bundle -   Risk
+Decision   Model &   RMS Model &
+Whereonearth   72135       Management   10/14/2024
+Solutions   Data   Data Product    
+(Geozip) Base-   Solutions
+Allocated
+Central America
+Bundle -   Risk
+Decision   Model &   RMS Model &
+Whereonearth   72309       Management   10/14/2024
+Solutions   Data   Data Product    
+(Geozip) Base-   Solutions
+Allocated
+Central America
+Risk
+Hurricane Model   Decision   Model &   RMS Model &
+71246       Management   9/24/2023
+Bundle DLM-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Central America
+Risk
+Hurricane Model   Decision   Model &   RMS Model &
+72133       Management   10/14/2024
+Bundle DLM-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Central America
+Risk
+Hurricane Model   Decision   Model &   RMS Model &
+72300       Management   10/14/2024
+Bundle DLM-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Certificate in
+Decision
+Commercial Credit -   ISG       68474       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Bangladesh
+Certificate in
+Decision
+Commercial Credit -   ISG       69920       Banking       Learning       e-Learning       E-Learning       6/15/2021
+Solutions    
+Fast Track
+Certificate in
+Decision
+Commercial Credit   ISG       68473       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+05
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       31/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Certificate in
+Decision
+Commercial Credit   70655       Banking       Learning       e-Learning       E-Learning       9/21/2022
+Solutions    
+06
+Certificate in
+Decision
+Commercial Credit   70656       Banking       Learning       e-Learning       E-Learning       9/21/2022
+Solutions    
+07
+Certificate in
+Decision
+Commercial Credit   70685       Banking       Learning       e-Learning       E-Learning       10/12/2022
+Solutions    
+Accelerated Pathway
+Certificate in
+Decision
+Commercial Credit   ISG       68475       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Certification Exam
+Certificate in
+Decision
+Commercial Credit   ISG       68476       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Fast-Track - India
+Certificate in
+Decision
+Commercial Credit-   ISG       68477       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+India
+Certificate in
+Decision
+Derivatives Market   ISG       68478       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Strategies
+Certificate in Fixed
+Decision
+Income Trading and   ISG       68479       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Sales
+Certificate in Small   Decision
+ISG       68480       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Business Banking       Solutions    
+Certificate in Small
+Decision
+Business Banking -   ISG       69910       Banking       Learning       e-Learning       E-Learning       6/1/2021
+Solutions    
+Fast Track
+Certificate in Small
+Decision
+Business Banking   ISG       70168       Banking       Learning       e-Learning       4/6/2022
+Solutions    
+Certification Exam
+Certificate in SME   Decision
+ISG       69776       Banking       Learning       e-Learning       E-Learning       4/23/2021
+Banking       Solutions    
+Certificate in SME   Decision
+70611       Banking       Learning       e-Learning       E-Learning       9/6/2022
+Credit Bangladesh       Solutions    
+Certified Branch   Decision
+ISG       69975       Banking       Learning       e-Learning       8/6/2021
+Manager       Solutions    
+Certified Retail   Decision
+ISG       68482       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Banker (CRB) - RB1       Solutions    
+Certified Retail   Decision
+ISG       68483       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Banker (CRB) - RB2       Solutions    
+Certified Retail   Decision
+ISG       68484       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Banker (CRB) - RB3       Solutions    
+Certified Wealth   Decision
+ISG       68485       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Practitioner (CWP)       Solutions    
+CF Services - Annual   Research   Structured   Structured -
+73443       SF API       7/30/2025
+Task Fee       and Insights   Finance   Investor    
+CF Services -
+Research   Structured   Structured -
+Hosting and   73442       SF API       7/30/2025
+and Insights   Finance   Investor    
+Maintenance Fee
+Research   Structured   Structured -
+CF Services - Usage       73444       SF API       7/30/2025
+and Insights   Finance   Investor    
+Economic
+CHELEM Database:
+Research   Predictive   Research
+Balance of Payments   MEDC       68831       Economic Data       Economics Data       Data: Historical       12/11/2020
+and Insights   Analytics   and
++ GDP
+Forecasts
+CHELEM Database:   Economic
+International Trade +   Research   Predictive   Research
+MEDC       68832       Economic Data       Economics Data       Data: Historical       12/11/2020
+Balance of Payments   and Insights   Analytics   and
++ GDP   Forecasts
+Risk
+Decision   Praedicat
+ChemMeta       72608       Management   Casualty       Software       10/31/2024
+Solutions   Products    
+Solutions
+China Earthquake   Risk
+Decision   Model &   RMS Model &
+Risk Scores-   73335       Management   7/23/2025
+Solutions   Data   Data Product    
+Allocated   Solutions
+Risk
+China EQ MMI-   Decision   Model &   RMS Model &
+73398       Management   7/23/2025
+Allocated       Solutions   Data   Data Product    
+Solutions
+Risk
+China Typhoon Risk   Decision   Model &   RMS Model &
+73353       Management   7/23/2025
+Scores-Allocated       Solutions   Data   Data Product    
+Solutions
+China-
+Risk
+WhereonEarth   Decision   Model &   RMS Model &
+72002       Management   10/14/2024
+(GeoZip) Base-   Solutions   Data   Data Product    
+Solutions
+Allocated
+Data and   Data   Acquire   Acquire Media
+Cision       BVD       69438       Content Feed       AM       3/22/2021
+Information   Solutions   Media   Products    
+CL Automation   71494       Decision   Banking       Lending       CreditLens       Automation       CreditLens       11/3/2023
+Dynamic Doc   Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       32/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Collection
+CL Automation   Decision
+71493       Banking       Lending       CreditLens       Automation       CreditLens       11/3/2023
+Scored Lending       Solutions    
+CL Automation Third
+Decision
+Party Data   71495       Banking       Lending       CreditLens       Automation       CreditLens       11/3/2023
+Solutions    
+Integrations
+CL Back Office Core   Decision   Back Office -
+71500       Banking       Lending       CreditLens       CreditLens       11/3/2023
+Boarding       Solutions       Loan Ops    
+CL Back Office   Decision   Back Office -
+71496       Banking       Lending       CreditLens       CreditLens       11/3/2023
+Digital Loan Docs       Solutions       Loan Ops    
+CL Back Office Laser   Decision   Back Office -
+71497       Banking       Lending       CreditLens       CreditLens       11/3/2023
+Pro       Solutions       Loan Ops    
+CL CRE Advanced
+Underwriting   Decision   Commercial   CRE   CRE Commercial
+71714       CL CRE       CreditLens       5/20/2024
+Package - CRE   Solutions   Real Estate   Workflow       Intelligence    
+Platform Allocated
+CL CRE Advanced
+Underwriting
+Decision
+Package -   71715       Banking       Lending       CreditLens       CreditLens       Lending       CreditLens       5/20/2024
+Solutions    
+CreditLens Platform
+Allocated
+CL CRE Underwriting
+Decision   Commercial   CRE   CRE Commercial
+- CRE Platform   71713       CL CRE       CreditLens       5/20/2024
+Solutions   Real Estate   Workflow       Intelligence    
+Allocated
+CL CRE Underwriting
+Decision
+- CreditLens   71712       Banking       Lending       CreditLens       CreditLens       Lending       CreditLens       5/20/2024
+Solutions    
+Allocated
+CL Front Office   Decision
+71488       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+Agriculture       Solutions    
+Decision
+CL Front Office C&I       71485       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+Solutions    
+Decision
+CL Front Office CRE       71486       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+Solutions    
+CL Front Office   Decision
+71489       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+Credit Card       Solutions    
+CL Front Office   Decision
+71490       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+Deposit Accounts       Solutions    
+CL Front Office SBA   Decision
+71482       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+(7A Express)       Solutions    
+CL Front Office SBA   Decision
+71483       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+(7A Small)       Solutions    
+CL Front Office SBA   Decision
+71484       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+(7A)       Solutions    
+CL Front Office Small   Decision
+71481       Banking       Lending       CreditLens       Front-Office       CreditLens       11/3/2023
+Business - Non SBA       Solutions    
+Classification   Data and   Data   CLASSIFICATION
+BVD       64881       Orbis       Catalysts       Direct CPP       Catalysts       2/27/2019
+Catalyst       Information   Solutions       CATALYST    
+Data and   Data
+Clearing       ISG       66211       Data Feeds       MIS Data Feeds       MIS Data Feeds       Clearing       6/3/2020
+Information   Solutions    
+Decision   Know Your   GRID
+Client Review       BVD       69276       GRID Review       RDC       RDC       GRID Review       3/11/2021
+Solutions   Customer   Services    
+Climate and ESG   Decision   Portfolio Risk
+70967       Banking       Risk       PortfolioStudio       Risk       PortfolioStudio       5/19/2023
+Module       Solutions       Analytics    
+Economic
+Climate and ESG
+Research   Predictive   Research
+Module - Economic   70999       Economic Data       6/13/2023
+and Insights   Analytics   and
+Data Allocated
+Forecasts
+Climate and ESG
+Data and   Data   Sustainable   Issuer ESG
+Module - Issuer ESG   71001       6/13/2023
+Information   Solutions   Finance   Solutions    
+Allocated
+Climate and ESG
+Module -   Decision   Portfolio Risk
+70997       Banking       Risk       PortfolioStudio       Risk       6/13/2023
+PortfolioStudio   Solutions       Analytics    
+Allocated
+Climate and ESG
+Research   Predictive   Credit   Retail Credit
+Module - Retail   71000       6/13/2023
+and Insights   Analytics   Analytics   Data    
+Credit Data Allocated
+Climate and ESG
+Risk
+Module - RMS   Decision   Risk Mgmt
+71003       Management   RMS Products       6/13/2023
+Climate Data   Solutions   Sol    
+Solutions
+Allocated
+Climate Change and   Decision
+70207       Banking       Learning       e-Learning       5/10/2022
+Sustainable Finance       Solutions    
+Climate Change   Decision
+70214       Banking       Learning       e-Learning       6/3/2022
+Fundamentals       Solutions    
+Climate   Risk
+Decision   Moody's   Climate
+Controversies   MKMV       69669       Management   427       MESG       4/13/2021
+Solutions   Climate   Research    
+Assessment   Solutions
+Climate EDF   Research   Predictive   Credit
+MKMV       70008       EDF-X       EDF X Public       MESG       9/23/2021
+(Predictive Analytics)       and Insights   Analytics   Analytics    
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       33/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Climate Governance
+Risk
+and Strategy Data   Decision   Moody's   Climate
+MKMV       68930       Management   427       MESG       12/23/2020
+Package -   Solutions   Climate   Research    
+Solutions
+Companies
+Risk
+Climate on Demand:   Decision   Moody's
+70977       Management   Climate Analytics       427       MESG       5/31/2023
+Application       Solutions   Climate    
+Solutions
+Risk
+Climate on Demand:   Decision   Moody's
+73030       Management   Climate Analytics       427       MESG       3/4/2025
+Banking Base       Solutions   Climate    
+Solutions
+Risk
+Climate on Demand:   Decision   Moody's
+73031       Management   Climate Analytics       427       MESG       3/4/2025
+Banking Premium       Solutions   Climate    
+Solutions
+Climate on Demand:   Risk
+Decision   Moody's
+Corporates -   71649       Management   Climate Analytics       427       MESG       4/15/2024
+Solutions   Climate    
+Company Level   Solutions
+Climate on Demand:   Risk
+Decision   Moody's
+Corporates - Facility   71650       Management   Climate Analytics       427       MESG       4/15/2024
+Solutions   Climate    
+Level   Solutions
+Climate on Demand:   Risk
+Decision   Moody's
+Real Assets -   70978       Management   Climate Analytics       427       MESG       5/31/2023
+Solutions   Climate    
+Professional   Solutions
+Climate on Demand:   Risk
+Decision   Moody's
+Real Assets -   MKMV       68910       Management   Climate Analytics       427       MESG       12/23/2020
+Solutions   Climate    
+Standard   Solutions
+Climate on Demand:   Risk
+Decision   Moody's
+Spatial Areas -   73032       Management   Climate Analytics       427       MESG       3/4/2025
+Solutions   Climate    
+Sovereign   Solutions
+Climate on Demand:   Risk
+Decision   Moody's
+Spatial Areas - Sub-   73033       Management   Climate Analytics       427       MESG       3/4/2025
+Solutions   Climate    
+sovereign   Solutions
+Climate PD - Public   Research   Predictive   Credit
+MKMV       68906       EDF-X       EDF X Public       MESG       12/21/2020
+Firms       and Insights   Analytics   Analytics    
+Climate PD
+Research   Predictive   Credit
+Convertor   70262       EDF-X       EDF X Private       MESG       7/7/2022
+and Insights   Analytics   Analytics    
+Standalone
+Climate Risk
+Assessment Add-on   Decision
+70247       Banking       Lending       CreditLens       ESG Installed       MESG       CreditLens       6/28/2022
+Installed - CL   Solutions    
+Allocated
+Climate Risk
+Assessment Add-on   Research   Predictive   Credit
+70248       ESG Models       ESG Benchmarks       MESG       CreditLens       6/28/2022
+Installed - ESG   and Insights   Analytics   Analytics    
+Models Allocated
+Climate Risk
+Decision
+Assessment Add-on   70245       Banking       Lending       CreditLens       ESG SaaS       MESG       CreditLens       6/28/2022
+Solutions    
+SaaS - CL Allocated
+Climate Risk
+Assessment Add-on   Research   Predictive   Credit
+70246       ESG Models       ESG Benchmarks       MESG       CreditLens       6/28/2022
+SaaS - ESG Models   and Insights   Analytics   Analytics    
+Allocated
+Climate Risk   Risk
+Decision   Moody's
+Package -   MKMV       69229       Management   Climate Data       427       MESG       2/1/2021
+Solutions   Climate    
+Companies   Solutions
+Economic
+Climate Risk
+Research   Predictive   Research
+Scenarios In   71807       Economic Data       Economics Data       AutoCycle       8/21/2024
+and Insights   Analytics   and
+AutoCycle - Add On
+Forecasts
+Climate Risk   Economic
+Scenarios In   Research   Predictive   Research
+71808       Economic Data       Economics Data       AutoCycle       8/21/2024
+AutoCycle Australia -   and Insights   Analytics   and
+Add On   Forecasts
+Decision   Commercial   CRE   Moody's CRE -
+Climate Risk Scores       MAA       70021       MCRE       Climate       10/1/2021
+Solutions   Real Estate   Content       Analysis    
+Commercial
+Decision   Commercial
+Climate Services       MKMV       69209       Real Estate   CRE Climate       427       MESG       1/29/2021
+Solutions   Real Estate
+Other
+Climate Sovereign -   Risk
+Decision   Moody's
+Sub Sovereign   MEDC       69987       Management   Climate Data       427       MESG       9/1/2021
+Solutions   Climate    
+Package   Solutions
+Climate-Adjusted   Research   Predictive   Credit
+MKMV       68904       EDF-X       EDF X Public       MESG       12/21/2020
+EDFs - Companies       and Insights   Analytics   Analytics    
+Climate-Adjusted   Research   Predictive   Credit
+MKMV       69248       EDF-X       EDF X Public       MESG       2/24/2021
+EDFs - Sovereigns       and Insights   Analytics   Analytics    
+CMBS Research_V2   Research   Digital   MIS Credit   Core - Structured   CV - SF -
+71062       CreditView       7/21/2023
+- CV Allocated       and Insights   Insights   Research       Finance   Global    
+CMBS Research_V2   Research   Structured   Structured -
+71063       SF Data       Web       Web       SF Data       7/21/2023
+- SAV Allocated       and Insights   Finance   Investor    
+CME Term SOFR
+Economic
+Forecast +
+Research   Predictive   Research
+Alternative &   70671       Economic Data       Economics Data       Data: Forecast       10/10/2022
+and Insights   Analytics   and
+Regulatory Scenarios
+Forecasts
+Add-On
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       34/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+CME Term SOFR   Economic
+Forecast +   Research   Predictive   Research
+70660       Economic Data       Economics Data       Data: Forecast       9/27/2022
+Alternative Scenarios   and Insights   Analytics   and
+Add-On   Forecasts
+Commercial
+Decision   Commercial
+CMM Canada       MKMV       66737       Mortgage   CMM       CMM       Single Obligor       CMM       7/23/2020
+Solutions   Real Estate
+Metrics
+Commercial
+CMM Canada   Decision   Commercial
+70958       Mortgage   CMM       CMM Climate       Climate       5/1/2023
+Climate Module       Solutions   Real Estate
+Metrics
+Commercial
+Decision   Commercial
+CMM Europe       MKMV       66735       Mortgage   CMM       CMM       Single Obligor       CMM       7/23/2020
+Solutions   Real Estate
+Metrics
+CMM Europe   Commercial
+Decision   Commercial
+Solution Climate   70960       Mortgage   CMM       CMM Climate       Climate       5/1/2023
+Solutions   Real Estate
+Module   Metrics
+Commercial
+CMM Europe Stress   Decision   Commercial
+71141       Mortgage   CMM       CMM       Single Obligor       CMM       9/19/2023
+Testing       Solutions   Real Estate
+Metrics
+Commercial
+Decision   Commercial   CMM Loan
+CMM Loan Valuation       70213       Mortgage   CMM       6/2/2022
+Solutions   Real Estate   Valuation    
+Metrics
+Commercial   CMM Market Data
+CMM Market Data &   Decision   Commercial
+71530       Mortgage   CMM   & Forecast -   CMM       1/5/2024
+Forecast - Baseline       Solutions   Real Estate
+Metrics   Baseline
+Commercial
+Decision   Commercial
+CMM Stress Testing       MKMV       66734       Mortgage   CMM       CMM       Single Obligor       CMM       7/23/2020
+Solutions   Real Estate
+Metrics
+Commercial
+Decision   Commercial
+CMM US       MKMV       66736       Mortgage   CMM       CMM       Single Obligor       CMM       7/23/2020
+Solutions   Real Estate
+Metrics
+Commercial
+CMM US Climate   Decision   Commercial
+MKMV       69659       Mortgage   CMM       CMM Climate       Climate       4/12/2021
+Module       Solutions   Real Estate
+Metrics
+CMM US Climate   Commercial
+Decision   Commercial
+Module - CMM US   71542       Mortgage   CMM       CMM Climate       Climate       1/16/2024
+Solutions   Real Estate
+Allocated   Metrics
+Economic
+CMM US Climate
+Research   Predictive   Research
+Module - Economic   70750       Economic Data       Data: Forecast       MESG       12/15/2022
+and Insights   Analytics   and
+Data Allocated
+Forecasts
+CMM US Climate
+Risk
+Module - RMS   Decision   Moody's
+71124       Management   Climate Data       8/8/2023
+Climate Data   Solutions   Climate    
+Solutions
+Allocated
+CMM US Market
+Commercial   CMM Market
+Data & Forecast –   Decision   Commercial
+71531       Mortgage   CMM   Forecast – MEDC   CMM       1/5/2024
+MEDC & Stress   Solutions   Real Estate
+Metrics   & Stress Test
+Testing Scenarios
+CMM US Market   Commercial
+Decision   Commercial
+Data & Forecast -   71532       Mortgage   CMM       CMM Climate       Climate       CMM       1/5/2024
+Solutions   Real Estate
+Climate Scenarios   Metrics
+Decision
+Coach - with Course       ISG       68487       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Coach Me   Decision
+MKMV       66339       Banking       Finance       RiskConfidence       RiskConfidence       Finance       6/17/2020
+Comprehensive       Solutions    
+Decision
+Coach Me Core       MKMV       66340       Banking       Finance       RiskConfidence       RiskConfidence       Finance       6/17/2020
+Solutions    
+Coach the Coach -   Decision
+ISG       69770       Banking       Learning       e-Learning       E-Learning       4/21/2021
+Online       Solutions    
+Coaching   Decision
+ISG       68488       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Conversations       Solutions    
+Data and   Data   Acquire   Acquire Media
+CoinDesk       71018       CoinDesk       6/27/2023
+Information   Solutions   Media   Products    
+Collaborative
+Decision
+Analytics Platform   MKMV       66977       Banking       Risk       CAP       CAP       Risk       7/31/2020
+Solutions    
+Services
+Collaborative
+Decision
+Business   ISG       68489       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Conversations
+Collaborative Small
+Decision
+Business   ISG       68490       Banking       Learning       e-Learning       E-Learning       10/15/2020
+Solutions    
+Conversations
+Risk
+Decision   Praedicat
+CoMeta       72607       Management   Casualty       Software       10/31/2024
+Solutions   Products    
+Solutions
+Risk
+Commercial - Gray   Decision
+LEW       73081       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Sky Imagery       Solutions
+Solutions
+Risk
+Commercial - Loss   Decision
+LEW       73140       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Impact Study       Solutions
+Solutions
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       35/36
+
+1/12/26, 10:55 AM       All Products ~ Salesforce - Unlimited Edition
+Commercial Change   Risk
+Decision
+Detection   LEW       73078       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Solutions
+(Habitational)   Solutions
+Commercial Change
+Risk
+Detection (SMB -   Decision
+LEW       73079       Management   CAPE       CAPE Products       CAPE Analytics       4/22/2025
+Small Medium   Solutions
+Solutions
+Business)
+Copyright © 2000-2026 salesforce.com, inc. All rights reserved.
+https://moodysanalytics.my.salesforce.com/01t/x?fcf=00B4y000007eWZ8&rpp_sticky=0&rowsperpage=1000       36/36
+

@@ -16,6 +16,7 @@ import {
     triggerSync,
     triggerQuickSync,
     updateComments,
+    publishToConfluence,
     exportAccounts
 } from '../services/currentAccountsService';
 
@@ -43,6 +44,8 @@ const CurrentAccounts = () => {
     const [error, setError] = useState(null);
     const [syncLoading, setSyncLoading] = useState(false);
     const [quickSyncLoading, setQuickSyncLoading] = useState(false);
+    const [publishLoading, setPublishLoading] = useState(false);
+    const [publishSuccess, setPublishSuccess] = useState(null);
     const [syncStatus, setSyncStatus] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [includeRemoved, setIncludeRemoved] = useState(false);
@@ -198,6 +201,35 @@ const CurrentAccounts = () => {
             window.URL.revokeObjectURL(url);
         } catch (err) {
             alert(`Export failed: ${err.message}`);
+        }
+    };
+
+    // Handle publish to Confluence
+    const handlePublishToConfluence = async () => {
+        if (!window.confirm('This will publish all current accounts data to a Confluence page called "Current Accounts".\n\nContinue?')) {
+            return;
+        }
+
+        setPublishLoading(true);
+        setPublishSuccess(null);
+        
+        try {
+            const result = await publishToConfluence(null, 'Current Accounts');
+            if (result.success) {
+                setPublishSuccess({
+                    message: `Successfully published ${result.recordCount} accounts to Confluence!`,
+                    url: result.pageUrl,
+                    created: result.created
+                });
+                // Clear success message after 15 seconds
+                setTimeout(() => setPublishSuccess(null), 15000);
+            } else {
+                alert(`Publish failed: ${result.error}`);
+            }
+        } catch (err) {
+            alert(`Publish failed: ${err.message}`);
+        } finally {
+            setPublishLoading(false);
         }
     };
 
@@ -402,8 +434,49 @@ const CurrentAccounts = () => {
                         <ArrowDownTrayIcon className="h-4 w-4" />
                         Export CSV
                     </button>
+
+                    <button
+                        onClick={handlePublishToConfluence}
+                        disabled={publishLoading || accounts.length === 0}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                        title="Publish data to Confluence page"
+                    >
+                        <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className={`h-4 w-4 ${publishLoading ? 'animate-pulse' : ''}`}
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        {publishLoading ? 'Publishing...' : 'Publish to Confluence'}
+                    </button>
                 </div>
             </div>
+
+            {/* Publish Success Banner */}
+            {publishSuccess && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <svg className="h-5 w-5 text-green-600 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-green-800 dark:text-green-200">{publishSuccess.message}</span>
+                    </div>
+                    {publishSuccess.url && (
+                        <a 
+                            href={publishSuccess.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                        >
+                            View Page
+                            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                        </a>
+                    )}
+                </div>
+            )}
 
             {/* Error State */}
             {error && (
