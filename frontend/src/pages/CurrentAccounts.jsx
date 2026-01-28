@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowPathIcon,
-    ArrowDownTrayIcon,
+    DocumentArrowUpIcon,
     ChevronUpIcon,
     ChevronDownIcon,
     MagnifyingGlassIcon,
@@ -12,14 +12,14 @@ import {
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import PSRecordProductsModal from '../components/features/PSRecordProductsModal';
 import RawDataModal from '../components/features/RawDataModal';
+import ExcelConfigModal from '../components/features/ExcelConfigModal';
 import {
     getCurrentAccounts,
     getSyncStatus,
     triggerSync,
     triggerQuickSync,
     updateComments,
-    publishToConfluence,
-    exportAccounts
+    publishToConfluence
 } from '../services/currentAccountsService';
 import { getStagingRecordById } from '../services/stagingService';
 
@@ -108,6 +108,9 @@ const CurrentAccounts = () => {
         title: ''
     });
     const [loadingPayload, setLoadingPayload] = useState(null); // Track which record is loading
+
+    // Excel Config Modal state
+    const [excelModalOpen, setExcelModalOpen] = useState(false);
 
     // Fetch accounts
     const fetchAccounts = useCallback(async () => {
@@ -229,21 +232,14 @@ const CurrentAccounts = () => {
         }
     };
 
-    // Handle export
-    const handleExport = async () => {
-        try {
-            const blob = await exportAccounts(includeRemoved);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `current-accounts-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch (err) {
-            alert(`Export failed: ${err.message}`);
-        }
+    // Handle Update Excel
+    const handleUpdateExcel = () => {
+        setExcelModalOpen(true);
+    };
+
+    const handleExcelSuccess = (result) => {
+        // Optional: Show a toast notification or refresh data
+        console.log('Excel update successful:', result);
     };
 
     // Handle publish to Confluence
@@ -553,12 +549,13 @@ const CurrentAccounts = () => {
                     </button>
 
                     <button
-                        onClick={handleExport}
+                        onClick={handleUpdateExcel}
                         disabled={accounts.length === 0}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        title="Update an Excel file with current accounts data"
                     >
-                        <ArrowDownTrayIcon className="h-4 w-4" />
-                        Export CSV
+                        <DocumentArrowUpIcon className="h-4 w-4" />
+                        Update Excel
                     </button>
 
                     <button
@@ -814,6 +811,13 @@ const CurrentAccounts = () => {
                 onClose={() => setRawDataModal({ isOpen: false, data: null, title: '' })}
                 data={rawDataModal.data}
                 title={rawDataModal.title}
+            />
+
+            {/* Excel Config Modal */}
+            <ExcelConfigModal
+                isOpen={excelModalOpen}
+                onClose={() => setExcelModalOpen(false)}
+                onSuccess={handleExcelSuccess}
             />
         </div>
     );

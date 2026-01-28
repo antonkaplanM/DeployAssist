@@ -38,6 +38,8 @@
     "sml:check": "npx ts-node scripts/sml-token-refresh.ts check"
   },
   "dependencies": {
+    "@azure/msal-node": "^2.6.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

@@ -33,6 +33,7 @@ const jiraRoutes = require('./routes/jira.routes');
 const testingRoutes = require('./routes/testing.routes');
 const stagingRoutes = require('./routes/staging.routes');
 const currentAccountsRoutes = require('./routes/current-accounts.routes');
+const microsoftAuthRoutes = require('./routes/microsoft-auth.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
@@ -197,6 +198,9 @@ app.use('/api/staging', authenticate, stagingRoutes);
 
 // Current Accounts endpoints (Analytics section)
 app.use('/api/current-accounts', authenticate, currentAccountsRoutes);
+
+// Microsoft Graph Auth endpoints (for OneDrive Excel integration)
+app.use('/api/auth/microsoft', microsoftAuthRoutes);
 
 console.log('✅ All extracted route modules mounted successfully');
 

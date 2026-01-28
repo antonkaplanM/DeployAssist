@@ -8,6 +8,7 @@ const router = express.Router();
 const currentAccountsService = require('../services/current-accounts.service');
 const SMLGhostAccountsService = require('../services/sml-ghost-accounts.service');
 const confluenceService = require('../services/confluence.service');
+const excelService = require('../services/excel.service');
 
 // SML service instance for token status checks
 const smlGhostService = new SMLGhostAccountsService();
@@ -408,6 +409,292 @@ router.get('/export', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error in GET /api/current-accounts/export:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// ============================================
+// Excel Export/Update Endpoints
+// ============================================
+
+/**
+ * GET /api/current-accounts/excel-config
+ * Get the current Excel configuration
+ */
+router.get('/excel-config', async (req, res) => {
+    try {
+        console.log('📡 GET /api/current-accounts/excel-config');
+        const config = excelService.getConfig();
+        res.json({
+            success: true,
+            config,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in GET /api/current-accounts/excel-config:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/excel-config
+ * Save Excel configuration
+ */
+router.post('/excel-config', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/excel-config');
+        const { filePath, sheetName } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({
+                success: false,
+                error: 'File path is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const result = excelService.saveConfig({ filePath, sheetName });
+        res.json({
+            ...result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/excel-config:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/excel-validate-path
+ * Validate an Excel file path
+ */
+router.post('/excel-validate-path', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/excel-validate-path');
+        const { filePath } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({
+                success: false,
+                error: 'File path is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const result = await excelService.validateFilePath(filePath);
+        res.json({
+            success: true,
+            ...result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/excel-validate-path:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/excel-sheets
+ * Get list of sheets from an Excel file
+ */
+router.post('/excel-sheets', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/excel-sheets');
+        const { filePath } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({
+                success: false,
+                error: 'File path is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const result = await excelService.getSheets(filePath);
+        res.json({
+            ...result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/excel-sheets:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/excel-create
+ * Create a new Excel file with current accounts data
+ */
+router.post('/excel-create', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/excel-create');
+        const { filePath, sheetName = 'Current Accounts' } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({
+                success: false,
+                error: 'File path is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Get all active accounts
+        const accountsResult = await currentAccountsService.getAccounts({
+            page: 1,
+            pageSize: 10000,
+            sortBy: 'completion_date',
+            sortOrder: 'DESC',
+            includeRemoved: false
+        });
+
+        if (!accountsResult.success) {
+            return res.status(500).json({
+                success: false,
+                error: accountsResult.error || 'Failed to fetch accounts',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const accounts = accountsResult.accounts || [];
+
+        if (accounts.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No accounts to export. Please sync data first.',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const result = await excelService.createExcelFile(filePath, sheetName, accounts);
+        res.json({
+            ...result,
+            recordCount: accounts.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/excel-create:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/excel-update
+ * Update an existing Excel file's sheet with current accounts data
+ */
+router.post('/excel-update', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/excel-update');
+        const { filePath, sheetName } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({
+                success: false,
+                error: 'File path is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        if (!sheetName) {
+            return res.status(400).json({
+                success: false,
+                error: 'Sheet name is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Get all active accounts
+        const accountsResult = await currentAccountsService.getAccounts({
+            page: 1,
+            pageSize: 10000,
+            sortBy: 'completion_date',
+            sortOrder: 'DESC',
+            includeRemoved: false
+        });
+
+        if (!accountsResult.success) {
+            return res.status(500).json({
+                success: false,
+                error: accountsResult.error || 'Failed to fetch accounts',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const accounts = accountsResult.accounts || [];
+
+        if (accounts.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No accounts to export. Please sync data first.',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const result = await excelService.updateExcelFile(filePath, sheetName, accounts);
+        res.json({
+            ...result,
+            recordCount: accounts.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/excel-update:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
+ * POST /api/current-accounts/onedrive/test-shared-access
+ * Test access to a shared file without making changes
+ */
+router.post('/onedrive/test-shared-access', async (req, res) => {
+    try {
+        console.log('📡 POST /api/current-accounts/onedrive/test-shared-access');
+        const { shareUrl } = req.body;
+
+        if (!shareUrl) {
+            return res.status(400).json({
+                success: false,
+                error: 'Share URL is required',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const graphExcelService = require('../services/microsoft-graph-excel.service');
+        const result = await graphExcelService.testSharedFileAccess(shareUrl);
+        
+        res.json({
+            ...result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error in POST /api/current-accounts/onedrive/test-shared-access:', error);
         res.status(500).json({
             success: false,
             error: error.message,

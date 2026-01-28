@@ -44,3 +44,11 @@ tmp/
 # Salesforce authentication tokens (generated at runtime)
 .salesforce_auth.json
 *.salesforce_auth.json
+
+# Microsoft authentication tokens (generated at runtime)
+config/microsoft-token-cache.json
+config/onedrive-linked-files.json
+
+# SML authentication state (generated at runtime)
+.sml_auth_state.json
+.sml_config.json
