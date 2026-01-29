@@ -20,6 +20,14 @@ class SMLGhostAccountsService {
     }
 
     /**
+     * Get the SML configuration
+     * @returns {Object} SML configuration including environment and authCookie
+     */
+    getConfig() {
+        return this.smlService.getConfig();
+    }
+
+    /**
      * Validate SML authentication and check token expiration
      * Returns error object if token is missing or expired
      */

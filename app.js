@@ -34,6 +34,7 @@ const testingRoutes = require('./routes/testing.routes');
 const stagingRoutes = require('./routes/staging.routes');
 const currentAccountsRoutes = require('./routes/current-accounts.routes');
 const microsoftAuthRoutes = require('./routes/microsoft-auth.routes');
+const excelLookupRoutes = require('./routes/excel-lookup.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
@@ -201,6 +202,11 @@ app.use('/api/current-accounts', authenticate, currentAccountsRoutes);
 
 // Microsoft Graph Auth endpoints (for OneDrive Excel integration)
 app.use('/api/auth/microsoft', microsoftAuthRoutes);
+
+// Excel Lookup endpoints (for VBA macro integration)
+// Note: No authentication for now to allow VBA testing
+// TODO: Add API key or IP-based auth for production
+app.use('/api/excel-lookup', excelLookupRoutes);
 
 console.log('✅ All extracted route modules mounted successfully');
 
