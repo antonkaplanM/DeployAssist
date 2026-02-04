@@ -48,9 +48,34 @@ Results are written back to the Excel spreadsheet with color-coded comparison st
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Option 2: Polling (Fallback)
+### Option 2: Polling (For Remote Users)
 
-If VBA HTTP requests are blocked, the app polls the Excel file via Microsoft Graph API.
+For remote users who cannot directly access the Deploy Assist API (e.g., network restrictions, VPN issues):
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Remote User's Computer                                          │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ 1. Enter inputs in Excel                                 │    │
+│  │ 2. Click "Submit" → sets FLAG = "PENDING"                │    │
+│  │ 3. Wait for results...                                   │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ OneDrive Sync
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Shared Excel File (OneDrive)                                    │
+│  B8 cell: "Pull Data" → "Processing..." → "Completed"             │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ Microsoft Graph API
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Host Machine (Deploy Assist)                                    │
+│  Polls Excel → Processes request → Writes results                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+See [Excel-Polling-VBA-Code.md](Excel-Polling-VBA-Code.md) for setup instructions.
 
 ## API Endpoints
 
@@ -124,34 +149,55 @@ Returns data formatted specifically for VBA with flat arrays for easy Excel outp
 node scripts/test-excel-lookup-file.js "https://moodys-my.sharepoint.com/..."
 ```
 
+## Polling API Endpoints
+
+For controlling the polling service (remote user support):
+
+```
+GET  /api/excel-polling/status     - Get polling status
+POST /api/excel-polling/configure  - Configure Excel file to poll
+POST /api/excel-polling/start      - Start polling
+POST /api/excel-polling/stop       - Stop polling
+POST /api/excel-polling/interval   - Set polling interval
+POST /api/excel-polling/test       - Test single poll
+```
+
 ## Files
 
 ### Backend
 - `services/excel-lookup.service.js` - Business logic for tenant lookup and comparison
-- `routes/excel-lookup.routes.js` - API endpoints
+- `services/excel-polling.service.js` - Polling service for remote user support
+- `services/debug-config.service.js` - Debug output configuration (mute/unmute categories)
+- `routes/excel-lookup.routes.js` - Direct API endpoints
+- `routes/excel-polling.routes.js` - Polling control endpoints
+- `routes/debug-config.routes.js` - Debug configuration endpoints
 - `scripts/test-excel-lookup-file.js` - Graph API test script
 
 ### Documentation
-- `docs/technical/Technical Documentation/03-Features/Excel-Lookup-VBA-Code.md` - Complete VBA code
+- `docs/technical/Technical Documentation/03-Features/Excel-Lookup-VBA-Code.md` - VBA code for direct API access
+- `docs/technical/Technical Documentation/03-Features/Excel-Polling-VBA-Code.md` - VBA code for remote users (polling)
 
 ### Configuration
 - `config/onedrive-excel-config.json` - Saved Excel file configuration
 
 ## Excel Workbook Structure
 
-### Sheet: Lookup (Input)
+### Sheet: Lookup (Input/Output)
 
-| Cell | Purpose |
-|------|---------|
+| Cell/Range | Purpose |
+|------------|---------|
 | B2 | Tenant Name/ID input |
 | B3 | PS Record input (optional) |
 | B4 | Force Fresh ("YES" to bypass database cache and fetch live SML data) |
+| B8 | Action flag - "Pull Data" to trigger, "Completed" when done |
 | D2 | Status (auto-filled) |
 | D3 | Error message (auto-filled) |
 | D4 | Timestamp (auto-filled) |
 | F2-G6 | Summary statistics |
+| A16:G16 | SML Entitlements header (auto-filled) |
+| A17+ | SML Entitlements data (auto-filled) |
 
-### Sheet: SML Entitlements (Output)
+#### SML Entitlements Output (Row 16+)
 
 | Column | Content |
 |--------|---------|
@@ -180,7 +226,22 @@ node scripts/test-excel-lookup-file.js "https://moodys-my.sharepoint.com/..."
 - [Current-Accounts.md](Current-Accounts.md) - Related Current Accounts feature
 - [SML-Ghost-Accounts-Implementation.md](SML-Ghost-Accounts-Implementation.md) - SML service details
 
+## Configuration
+
+### Session Timeout
+The app is configured with extended session timeouts (1 year) to allow leaving the app running for remote user polling:
+- Access token lifetime: 1 year
+- Refresh token lifetime: 1 year
+- Inactivity timeout: 1 year (effectively disabled)
+
+### Debug Configuration
+Debug output can be controlled via Settings > Debug Configuration:
+- Toggle individual categories to mute/unmute console output
+- Categories: excel-polling, excel-lookup, sml, salesforce, database, auth, graph-api
+- API: `/api/debug-config/status`, `/api/debug-config/toggle/:categoryId`, etc.
+
 ## Implementation Date
 
 - January 28, 2026 - Initial setup and VBA testing
 - January 28, 2026 - Full implementation complete
+- January 28, 2026 - Added debug configuration, session timeout removal, SML output moved to Lookup sheet

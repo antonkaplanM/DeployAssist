@@ -10,6 +10,10 @@ import {
   XCircleIcon,
   ExclamationCircleIcon,
   GlobeAltIcon,
+  TableCellsIcon,
+  PlayIcon,
+  StopIcon,
+  BugAntIcon,
 } from '@heroicons/react/24/outline';
 import settingsService from '../services/settingsService';
 import validationService from '../services/validationService';
@@ -48,11 +52,22 @@ const Settings = () => {
   // Notification Settings
   const [notificationSettings, setNotificationSettings] = useState({});
   const [notificationPermission, setNotificationPermission] = useState('default');
+  
+  // Excel Polling Settings
+  const [excelPollingStatus, setExcelPollingStatus] = useState(null);
+  const [excelShareUrl, setExcelShareUrl] = useState('');
+  const [excelPollingInterval, setExcelPollingInterval] = useState(5000);
+
+  // Debug Configuration
+  const [debugCategories, setDebugCategories] = useState([]);
+  const [debugStatus, setDebugStatus] = useState(null);
 
   const sections = [
     { id: 'web-connectivity', name: 'Web Connectivity', icon: GlobeAltIcon },
     { id: 'salesforce', name: 'Salesforce', icon: CloudIcon },
     { id: 'sml', name: 'SML Configuration', icon: Cog6ToothIcon },
+    { id: 'excel-polling', name: 'Excel Polling', icon: TableCellsIcon },
+    { id: 'debug', name: 'Debug Configuration', icon: BugAntIcon },
     { id: 'application', name: 'Application Settings', icon: ShieldCheckIcon },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
     { id: 'validation', name: 'Validation Rules', icon: DocumentTextIcon },
@@ -80,6 +95,20 @@ const Settings = () => {
   useEffect(() => {
     if (activeSection === 'sml') {
       reloadSMLTokenStatus();
+    }
+  }, [activeSection]);
+
+  // Load Excel polling status when that section is opened
+  useEffect(() => {
+    if (activeSection === 'excel-polling') {
+      loadExcelPollingStatus();
+    }
+  }, [activeSection]);
+
+  // Load debug config when that section is opened
+  useEffect(() => {
+    if (activeSection === 'debug') {
+      loadDebugStatus();
     }
   }, [activeSection]);
 
@@ -131,6 +160,265 @@ const Settings = () => {
       setSmlTokenStatus(tokenStatus);
     } catch (e) {
       console.log('Could not get SML token status:', e);
+    }
+  };
+
+  // Excel Polling Functions
+  const loadExcelPollingStatus = async () => {
+    try {
+      const response = await fetch('/api/excel-polling/status');
+      const data = await response.json();
+      setExcelPollingStatus(data);
+      if (data.config?.shareUrl) {
+        setExcelShareUrl(data.config.shareUrl);
+      }
+      if (data.pollIntervalMs) {
+        setExcelPollingInterval(data.pollIntervalMs);
+      }
+    } catch (e) {
+      console.log('Could not get Excel polling status:', e);
+    }
+  };
+
+  const handleConfigureExcelPolling = async () => {
+    setLoading('excelConfigure', true);
+    setTestResult('excelConfigure', null);
+    
+    try {
+      const response = await fetch('/api/excel-polling/configure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareUrl: excelShareUrl })
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setTestResult('excelConfigure', {
+          success: true,
+          message: data.message || 'Excel file configured successfully'
+        });
+        await loadExcelPollingStatus();
+      } else {
+        setTestResult('excelConfigure', {
+          success: false,
+          message: data.error || 'Failed to configure Excel file'
+        });
+      }
+    } catch (error) {
+      setTestResult('excelConfigure', {
+        success: false,
+        message: 'Failed to configure Excel polling',
+        error: error.message
+      });
+    } finally {
+      setLoading('excelConfigure', false);
+    }
+  };
+
+  const handleStartExcelPolling = async () => {
+    setLoading('excelStart', true);
+    setTestResult('excelPolling', null);
+    
+    try {
+      const response = await fetch('/api/excel-polling/start', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setTestResult('excelPolling', {
+          success: true,
+          message: data.message || 'Polling started successfully'
+        });
+        await loadExcelPollingStatus();
+      } else {
+        setTestResult('excelPolling', {
+          success: false,
+          message: data.error || 'Failed to start polling'
+        });
+      }
+    } catch (error) {
+      setTestResult('excelPolling', {
+        success: false,
+        message: 'Failed to start polling',
+        error: error.message
+      });
+    } finally {
+      setLoading('excelStart', false);
+    }
+  };
+
+  const handleStopExcelPolling = async () => {
+    setLoading('excelStop', true);
+    setTestResult('excelPolling', null);
+    
+    try {
+      const response = await fetch('/api/excel-polling/stop', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setTestResult('excelPolling', {
+          success: true,
+          message: data.message || 'Polling stopped'
+        });
+        await loadExcelPollingStatus();
+      } else {
+        setTestResult('excelPolling', {
+          success: false,
+          message: data.error || 'Failed to stop polling'
+        });
+      }
+    } catch (error) {
+      setTestResult('excelPolling', {
+        success: false,
+        message: 'Failed to stop polling',
+        error: error.message
+      });
+    } finally {
+      setLoading('excelStop', false);
+    }
+  };
+
+  const handleSetExcelPollingInterval = async () => {
+    setLoading('excelInterval', true);
+    setTestResult('excelInterval', null);
+    
+    try {
+      const response = await fetch('/api/excel-polling/interval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMs: excelPollingInterval })
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setTestResult('excelInterval', {
+          success: true,
+          message: data.message || 'Polling interval updated'
+        });
+        await loadExcelPollingStatus();
+      } else {
+        setTestResult('excelInterval', {
+          success: false,
+          message: data.error || 'Failed to update interval'
+        });
+      }
+    } catch (error) {
+      setTestResult('excelInterval', {
+        success: false,
+        message: 'Failed to update polling interval',
+        error: error.message
+      });
+    } finally {
+      setLoading('excelInterval', false);
+    }
+  };
+
+  const handleTestExcelPoll = async () => {
+    setLoading('excelTest', true);
+    setTestResult('excelTest', null);
+    
+    try {
+      const response = await fetch('/api/excel-polling/test', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setTestResult('excelTest', {
+          success: true,
+          message: 'Test poll completed',
+          details: data.stats
+        });
+        await loadExcelPollingStatus();
+      } else {
+        setTestResult('excelTest', {
+          success: false,
+          message: data.error || 'Test poll failed'
+        });
+      }
+    } catch (error) {
+      setTestResult('excelTest', {
+        success: false,
+        message: 'Test poll failed',
+        error: error.message
+      });
+    } finally {
+      setLoading('excelTest', false);
+    }
+  };
+
+  // Debug Configuration Functions
+  const loadDebugStatus = async () => {
+    try {
+      const response = await fetch('/api/debug-config/status');
+      const data = await response.json();
+      setDebugStatus(data);
+      setDebugCategories(data.categories || []);
+    } catch (e) {
+      console.log('Could not get debug config status:', e);
+    }
+  };
+
+  const handleToggleDebugCategory = async (categoryId) => {
+    setLoading(`debug-${categoryId}`, true);
+    try {
+      const response = await fetch(`/api/debug-config/toggle/${categoryId}`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update local state
+        setDebugCategories(prev => prev.map(cat => 
+          cat.id === categoryId ? { ...cat, enabled: data.enabled } : cat
+        ));
+        showToast(data.message, 'success');
+      }
+    } catch (error) {
+      showToast('Failed to toggle debug category', 'error');
+    } finally {
+      setLoading(`debug-${categoryId}`, false);
+    }
+  };
+
+  const handleEnableAllDebug = async () => {
+    setLoading('debugEnableAll', true);
+    try {
+      const response = await fetch('/api/debug-config/enable-all', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setDebugCategories(data.categories);
+        showToast('All debug output enabled', 'success');
+      }
+    } catch (error) {
+      showToast('Failed to enable all debug categories', 'error');
+    } finally {
+      setLoading('debugEnableAll', false);
+    }
+  };
+
+  const handleDisableAllDebug = async () => {
+    setLoading('debugDisableAll', true);
+    try {
+      const response = await fetch('/api/debug-config/disable-all', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setDebugCategories(data.categories);
+        showToast('All debug output muted', 'success');
+      }
+    } catch (error) {
+      showToast('Failed to disable all debug categories', 'error');
+    } finally {
+      setLoading('debugDisableAll', false);
     }
   };
 
@@ -778,6 +1066,281 @@ const Settings = () => {
                   
                   {renderTestResult('smlSave')}
                   {renderTestResult('smlTest')}
+                </div>
+              </div>
+            )}
+
+            {/* Excel Polling */}
+            {activeSection === 'excel-polling' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Excel Polling Configuration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configure polling for shared Excel files to enable remote users to trigger lookups
+                </p>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-colors">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                    <strong>How it works:</strong>
+                  </p>
+                  <ol className="text-xs text-blue-800 dark:text-blue-300 list-decimal list-inside space-y-1 ml-2">
+                    <li>Configure a shared OneDrive Excel file below</li>
+                    <li>Remote users enter tenant/PS record in the Excel file and set FLAG to "PENDING"</li>
+                    <li>This service polls the file and processes requests automatically</li>
+                    <li>Results are written back to the Excel file</li>
+                  </ol>
+                </div>
+
+                {/* Polling Status Card */}
+                {excelPollingStatus && (
+                  <div className={`rounded-lg border p-4 ${
+                    excelPollingStatus.isPolling 
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                      : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                  } transition-colors`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        {excelPollingStatus.isPolling ? (
+                          <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <StopIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <p className={`text-sm font-medium ${
+                            excelPollingStatus.isPolling ? 'text-green-800 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'
+                          }`}>
+                            {excelPollingStatus.isPolling ? 'Polling Active' : 'Polling Stopped'}
+                          </p>
+                          {excelPollingStatus.config?.fileName && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              File: {excelPollingStatus.config.fileName}
+                            </p>
+                          )}
+                          {excelPollingStatus.isPolling && excelPollingStatus.stats && (
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+                              <p>Poll count: {excelPollingStatus.stats.pollCount}</p>
+                              <p>Requests processed: {excelPollingStatus.stats.requestsProcessed}</p>
+                              {excelPollingStatus.stats.lastPollAt && (
+                                <p>Last poll: {new Date(excelPollingStatus.stats.lastPollAt).toLocaleString()}</p>
+                              )}
+                              {excelPollingStatus.stats.lastError && (
+                                <p className="text-red-600 dark:text-red-400">
+                                  Last error: {excelPollingStatus.stats.lastError.message}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {excelPollingStatus.isPolling ? (
+                          <button
+                            onClick={handleStopExcelPolling}
+                            disabled={loadingStates.excelStop}
+                            className="px-3 py-1.5 bg-red-600 dark:bg-red-700 text-white text-sm rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          >
+                            <StopIcon className="h-4 w-4" />
+                            {loadingStates.excelStop ? 'Stopping...' : 'Stop'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleStartExcelPolling}
+                            disabled={loadingStates.excelStart || !excelPollingStatus.config}
+                            className="px-3 py-1.5 bg-green-600 dark:bg-green-700 text-white text-sm rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                            {loadingStates.excelStart ? 'Starting...' : 'Start'}
+                          </button>
+                        )}
+                        <button
+                          onClick={loadExcelPollingStatus}
+                          className="px-3 py-1.5 bg-gray-600 dark:bg-gray-700 text-white text-sm rounded-lg hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          Refresh
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {renderTestResult('excelPolling')}
+
+                <div className="pt-4 space-y-4">
+                  {/* Configure Excel File */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Excel Share URL
+                    </label>
+                    <input
+                      type="text"
+                      value={excelShareUrl}
+                      onChange={(e) => setExcelShareUrl(e.target.value)}
+                      placeholder="https://moodys-my.sharepoint.com/:x:/p/..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Paste the OneDrive sharing link for the Excel file to monitor
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleConfigureExcelPolling}
+                    disabled={loadingStates.excelConfigure || !excelShareUrl}
+                    className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
+                  >
+                    {loadingStates.excelConfigure ? 'Configuring...' : 'Configure File'}
+                  </button>
+
+                  {renderTestResult('excelConfigure')}
+
+                  {/* Polling Interval */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Polling Interval
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={excelPollingInterval}
+                        onChange={(e) => setExcelPollingInterval(parseInt(e.target.value))}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                      >
+                        <option value="2000">2 seconds</option>
+                        <option value="5000">5 seconds</option>
+                        <option value="10000">10 seconds</option>
+                        <option value="15000">15 seconds</option>
+                        <option value="30000">30 seconds</option>
+                        <option value="60000">60 seconds</option>
+                      </select>
+                      <button
+                        onClick={handleSetExcelPollingInterval}
+                        disabled={loadingStates.excelInterval}
+                        className="px-3 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      >
+                        {loadingStates.excelInterval ? 'Saving...' : 'Apply'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      How often to check the Excel file for pending requests
+                    </p>
+                  </div>
+
+                  {renderTestResult('excelInterval')}
+
+                  {/* Test Poll */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <button
+                      onClick={handleTestExcelPoll}
+                      disabled={loadingStates.excelTest || !excelPollingStatus?.config}
+                      className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    >
+                      {loadingStates.excelTest ? 'Testing...' : 'Run Test Poll'}
+                    </button>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Manually trigger a single poll to check if the file is accessible and process any pending requests
+                    </p>
+                  </div>
+
+                  {renderTestResult('excelTest')}
+                </div>
+              </div>
+            )}
+
+            {/* Debug Configuration */}
+            {activeSection === 'debug' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Debug Configuration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Control which debug output categories are shown in the server console
+                </p>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-colors">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                    <strong>How it works:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-800 dark:text-blue-300 list-disc list-inside space-y-1 ml-2">
+                    <li>Toggle individual categories to mute/unmute their console output</li>
+                    <li>Muted categories will not print debug messages to the server console</li>
+                    <li>Error messages are always shown regardless of settings</li>
+                    <li>Changes take effect immediately - no restart required</li>
+                  </ul>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleEnableAllDebug}
+                    disabled={loadingStates.debugEnableAll}
+                    className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors disabled:opacity-50"
+                  >
+                    {loadingStates.debugEnableAll ? 'Enabling...' : 'Enable All'}
+                  </button>
+                  <button
+                    onClick={handleDisableAllDebug}
+                    disabled={loadingStates.debugDisableAll}
+                    className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50"
+                  >
+                    {loadingStates.debugDisableAll ? 'Muting...' : 'Mute All'}
+                  </button>
+                  <button
+                    onClick={loadDebugStatus}
+                    className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Status Summary */}
+                {debugStatus && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Categories</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{debugStatus.totalCount}</div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Enabled</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{debugStatus.enabledCount}</div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Muted</div>
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">{debugStatus.totalCount - debugStatus.enabledCount}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Category List */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-gray-100">Debug Categories</h3>
+                  <div className="space-y-3">
+                    {debugCategories.map((category) => (
+                      <div key={category.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{category.name}</h4>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                category.enabled 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                              }`}>
+                                {category.enabled ? 'Enabled' : 'Muted'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{category.description}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 font-mono">Category ID: {category.id}</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer ml-4">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={category.enabled}
+                              disabled={loadingStates[`debug-${category.id}`]}
+                              onChange={() => handleToggleDebugCategory(category.id)}
+                            />
+                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50"></div>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

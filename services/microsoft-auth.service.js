@@ -6,6 +6,7 @@
 const msal = require('@azure/msal-node');
 const fs = require('fs');
 const path = require('path');
+const debugConfig = require('./debug-config.service');
 
 // Token cache file path
 const TOKEN_CACHE_FILE = path.join(__dirname, '..', 'config', 'microsoft-token-cache.json');
@@ -150,7 +151,7 @@ class MicrosoftAuthService {
                 account.homeAccountId?.includes(tenantId)
             );
             
-            console.log(`📋 Found ${allAccounts.length} accounts, ${filteredAccounts.length} for tenant ${tenantId}`);
+            debugConfig.log('graph-api', `📋 Found ${allAccounts.length} accounts, ${filteredAccounts.length} for tenant ${tenantId}`);
             
             return filteredAccounts;
         } catch (error) {

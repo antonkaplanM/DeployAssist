@@ -17,9 +17,9 @@ const DEFAULT_PASSWORD_POLICY = {
 };
 
 const DEFAULT_SESSION_CONFIG = {
-    accessTokenLifetime: 24 * 60 * 60, // 24 hours
-    refreshTokenLifetime: 30 * 24 * 60 * 60, // 30 days
-    inactivityTimeout: 60 * 60, // 60 minutes
+    accessTokenLifetime: 365 * 24 * 60 * 60, // 1 year (effectively no expiry)
+    refreshTokenLifetime: 365 * 24 * 60 * 60, // 1 year
+    inactivityTimeout: 365 * 24 * 60 * 60, // 1 year (effectively no timeout)
     maxFailedAttempts: 5,
     lockoutDuration: 15 * 60 // 15 minutes
 };

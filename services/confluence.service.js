@@ -350,6 +350,7 @@ class ConfluenceService {
                 <th>SF Account ID</th>
                 <th>Tenant URL</th>
                 <th>Admin</th>
+                <th>Status</th>
                 <th>Comments</th>
             </tr>
         `;
@@ -372,6 +373,12 @@ class ConfluenceService {
                 ? `<a href="${this.escapeHtml(account.tenant_url)}">Open</a>`
                 : '—';
 
+            // Status with Confluence status macro for visual distinction
+            const tenantStatus = account.tenant_status || 'Active';
+            const statusHtml = tenantStatus === 'Active'
+                ? '<ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">Active</ac:parameter></ac:structured-macro>'
+                : '<ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">Deprovisioned</ac:parameter></ac:structured-macro>';
+
             return `
                 <tr>
                     <td>${this.escapeHtml(account.client || '—')}</td>
@@ -387,6 +394,7 @@ class ConfluenceService {
                     <td>${this.escapeHtml(account.salesforce_account_id || '—')}</td>
                     <td>${tenantUrlHtml}</td>
                     <td>${this.escapeHtml(account.initial_tenant_admin || '—')}</td>
+                    <td>${statusHtml}</td>
                     <td>${this.escapeHtml(account.comments || '')}</td>
                 </tr>
             `;

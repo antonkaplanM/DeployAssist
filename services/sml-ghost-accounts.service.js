@@ -96,7 +96,7 @@ class SMLGhostAccountsService {
                 : 'https://api-use1.rms.com';
 
             // Fetch all tenants using Playwright (just the list, no details)
-            const tenantsResult = await this._fetchAllTenantsWithPlaywright(config, BASE_URL);
+            const tenantsResult = await this._fetchTenantsWithPlaywright(config, BASE_URL, false);
             
             if (!tenantsResult.success) {
                 return {
@@ -114,6 +114,57 @@ class SMLGhostAccountsService {
 
         } catch (error) {
             console.error('❌ Error fetching tenant list:', error.message);
+            return {
+                success: false,
+                error: error.message,
+                tokenExpired: error.message?.includes('401') || error.message?.includes('expired')
+            };
+        }
+    }
+
+    /**
+     * Fetch deprovisioned tenants from SML (isDeleted=true)
+     * These are tenants that have been deprovisioned in SML
+     * @returns {Promise<Object>} Result with tenants array
+     */
+    async fetchDeprovisionedTenantsFromSML() {
+        try {
+            console.log('🔄 Fetching deprovisioned tenants from SML (isDeleted=true)...');
+            
+            // Validate authentication first
+            const authValidation = await this.validateAuthentication();
+            if (!authValidation.valid) {
+                return {
+                    success: false,
+                    error: authValidation.error,
+                    tokenExpired: authValidation.tokenExpired || false
+                };
+            }
+
+            const config = this.smlService.getConfig();
+            const BASE_URL = config.environment === 'euw1' 
+                ? 'https://api-euw1.rms.com' 
+                : 'https://api-use1.rms.com';
+
+            // Fetch all deprovisioned tenants using Playwright
+            const tenantsResult = await this._fetchTenantsWithPlaywright(config, BASE_URL, true);
+            
+            if (!tenantsResult.success) {
+                return {
+                    success: false,
+                    error: tenantsResult.error,
+                    tokenExpired: tenantsResult.error?.includes('401') || tenantsResult.error?.includes('expired')
+                };
+            }
+
+            console.log(`✅ Fetched ${tenantsResult.tenants.length} deprovisioned tenants from SML`);
+            return {
+                success: true,
+                tenants: tenantsResult.tenants
+            };
+
+        } catch (error) {
+            console.error('❌ Error fetching deprovisioned tenants:', error.message);
             return {
                 success: false,
                 error: error.message,
@@ -244,7 +295,7 @@ class SMLGhostAccountsService {
 
             // Fetch all tenants using Playwright (handles pagination automatically)
             console.log('📥 Fetching all tenants from SML...');
-            const tenantsResult = await this._fetchAllTenantsWithPlaywright(config, BASE_URL);
+            const tenantsResult = await this._fetchTenantsWithPlaywright(config, BASE_URL, false);
             
             if (!tenantsResult.success) {
                 return {
@@ -334,10 +385,13 @@ class SMLGhostAccountsService {
     }
 
     /**
-     * Fetch all tenants from SML using Playwright
+     * Fetch tenants from SML using Playwright
      * Uses the same header configuration as the working SML Compare feature
+     * @param {Object} config - SML configuration
+     * @param {string} baseUrl - Base URL for SML API
+     * @param {boolean} isDeleted - If true, fetch deprovisioned tenants; if false, fetch active tenants
      */
-    async _fetchAllTenantsWithPlaywright(config, baseUrl) {
+    async _fetchTenantsWithPlaywright(config, baseUrl, isDeleted = false) {
         const { chromium } = require('@playwright/test');
         let browser;
         
@@ -368,7 +422,7 @@ class SMLGhostAccountsService {
             let hasMore = true;
 
             while (hasMore) {
-                let url = `${baseUrl}/sml/tenant-provisioning/v1/tenants/?includingTaskDetail=false&isDeleted=false&pageSize=${pageSize}`;
+                let url = `${baseUrl}/sml/tenant-provisioning/v1/tenants/?includingTaskDetail=false&isDeleted=${isDeleted}&pageSize=${pageSize}`;
                 
                 if (pageNum > 1) {
                     const nextLink = await page.evaluate(() => window.__nextLink);
@@ -423,7 +477,8 @@ class SMLGhostAccountsService {
                 }
             }
             
-            console.log(`✅ Fetched all ${allTenants.length} tenants across ${pageNum} pages`);
+            const tenantType = isDeleted ? 'deprovisioned' : 'active';
+            console.log(`✅ Fetched all ${allTenants.length} ${tenantType} tenants across ${pageNum} pages`);
             
             return {
                 success: true,

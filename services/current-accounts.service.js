@@ -135,6 +135,7 @@ class CurrentAccountsService {
 
     /**
      * Sync current accounts data from SML (directly) and Salesforce
+     * Now includes both active AND deprovisioned tenants from SML
      * @param {string} initiatedBy - Username who initiated the sync
      * @returns {Promise<Object>} Sync result
      */
@@ -152,11 +153,11 @@ class CurrentAccountsService {
             `, [syncStarted, initiatedBy]);
             syncLogId = logResult.rows[0].id;
 
-            console.log('🔄 Starting Current Accounts sync...');
+            console.log('🔄 Starting Current Accounts sync (including deprovisioned tenants)...');
 
-            // Step 1: Refresh SML tenant data directly from SML API
-            // This fetches all tenants and their entitlements fresh from SML
-            console.log('📥 Step 1: Fetching fresh tenant data from SML...');
+            // Step 1: Refresh SML tenant data directly from SML API (active tenants)
+            // This fetches all active tenants and their entitlements fresh from SML
+            console.log('📥 Step 1a: Fetching fresh ACTIVE tenant data from SML...');
             const smlSyncResult = await this.smlGhostService.syncAllTenantsFromSML();
             
             if (!smlSyncResult.success) {
@@ -166,37 +167,76 @@ class CurrentAccountsService {
                 throw error;
             }
             
-            console.log(`✅ SML sync complete: ${smlSyncResult.totalTenants} tenants, ${smlSyncResult.mappedTenants} mapped`);
+            console.log(`✅ Active SML sync complete: ${smlSyncResult.totalTenants} tenants, ${smlSyncResult.mappedTenants} mapped`);
 
-            // Step 2: Get all tenants from refreshed SML data
+            // Step 1b: Fetch deprovisioned tenants from SML
+            console.log('📥 Step 1b: Fetching DEPROVISIONED tenant data from SML...');
+            const deprovisionedResult = await this.smlGhostService.fetchDeprovisionedTenantsFromSML();
+            
+            let deprovisionedTenants = [];
+            if (deprovisionedResult.success) {
+                deprovisionedTenants = deprovisionedResult.tenants;
+                console.log(`✅ Fetched ${deprovisionedTenants.length} deprovisioned tenants from SML`);
+            } else {
+                console.warn(`⚠️ Could not fetch deprovisioned tenants: ${deprovisionedResult.error}`);
+                // Continue with active tenants only
+            }
+
+            // Step 2: Get all active tenants from refreshed SML data
             console.log('📊 Step 2: Processing refreshed SML tenant data...');
             const tenantsResult = await db.query(`
                 SELECT tenant_id, tenant_name, account_name, raw_data, product_entitlements
                 FROM sml_tenant_data
                 ORDER BY tenant_name
             `);
-            const tenants = tenantsResult.rows;
-            console.log(`📊 Found ${tenants.length} tenants in SML data`);
+            const activeTenants = tenantsResult.rows;
+            console.log(`📊 Found ${activeTenants.length} active tenants in SML data`);
 
             let recordsCreated = 0;
             let recordsUpdated = 0;
             let recordsMarkedRemoved = 0;
+            let deprovisionedRecordsCreated = 0;
             const processedKeys = new Set();
 
-            // Step 2: For each tenant, find corresponding PS records and extract data
-            for (const tenant of tenants) {
+            // Step 3a: Process active tenants (tenant_status = 'Active')
+            console.log('📊 Step 3a: Processing active tenants...');
+            for (const tenant of activeTenants) {
                 try {
-                    await this._processTenant(tenant, processedKeys, (created, updated) => {
+                    await this._processTenant(tenant, processedKeys, 'Active', (created, updated) => {
                         recordsCreated += created;
                         recordsUpdated += updated;
                     });
                 } catch (tenantError) {
-                    console.error(`⚠️ Error processing tenant ${tenant.tenant_name}:`, tenantError.message);
+                    console.error(`⚠️ Error processing active tenant ${tenant.tenant_name}:`, tenantError.message);
                     // Continue with other tenants
                 }
             }
 
-            // Step 3: Mark records as removed if they weren't processed
+            // Step 3b: Process deprovisioned tenants (tenant_status = 'Deprovisioned')
+            if (deprovisionedTenants.length > 0) {
+                console.log(`📊 Step 3b: Processing ${deprovisionedTenants.length} deprovisioned tenants...`);
+                for (const tenant of deprovisionedTenants) {
+                    try {
+                        // Convert SML tenant format to our format
+                        const tenantData = {
+                            tenant_id: tenant.tenantId,
+                            tenant_name: tenant.tenantName,
+                            account_name: tenant.accountName || tenant.tenantName,
+                            raw_data: tenant,
+                            product_entitlements: null // Deprovisioned tenants may not have entitlements
+                        };
+                        await this._processTenant(tenantData, processedKeys, 'Deprovisioned', (created, updated) => {
+                            deprovisionedRecordsCreated += created;
+                            recordsUpdated += updated;
+                        });
+                    } catch (tenantError) {
+                        console.error(`⚠️ Error processing deprovisioned tenant ${tenant.tenantName}:`, tenantError.message);
+                        // Continue with other tenants
+                    }
+                }
+            }
+
+            // Step 4: Mark records as removed if they weren't processed
             const removeResult = await db.query(`
                 UPDATE current_accounts
                 SET record_status = 'removed', updated_at = CURRENT_TIMESTAMP
@@ -205,6 +245,8 @@ class CurrentAccountsService {
                 RETURNING id
             `, [syncStarted]);
             recordsMarkedRemoved = removeResult.rowCount;
+
+            const totalTenantsProcessed = activeTenants.length + deprovisionedTenants.length;
 
             // Update sync log
             await db.query(`
@@ -216,12 +258,14 @@ class CurrentAccountsService {
                     records_marked_removed = $4,
                     status = 'completed'
                 WHERE id = $5
-            `, [tenants.length, recordsCreated, recordsUpdated, recordsMarkedRemoved, syncLogId]);
+            `, [totalTenantsProcessed, recordsCreated + deprovisionedRecordsCreated, recordsUpdated, recordsMarkedRemoved, syncLogId]);
 
             console.log('✅ Current Accounts sync completed:', {
-                smlTenantsRefreshed: smlSyncResult.totalTenants,
-                tenantsProcessed: tenants.length,
-                recordsCreated,
+                smlActiveTenantsRefreshed: smlSyncResult.totalTenants,
+                smlDeprovisionedTenants: deprovisionedTenants.length,
+                tenantsProcessed: totalTenantsProcessed,
+                recordsCreated: recordsCreated + deprovisionedRecordsCreated,
+                deprovisionedRecordsCreated,
                 recordsUpdated,
                 recordsMarkedRemoved
             });
@@ -229,10 +273,12 @@ class CurrentAccountsService {
             return {
                 success: true,
                 stats: {
-                    smlTenantsRefreshed: smlSyncResult.totalTenants,
+                    smlActiveTenantsRefreshed: smlSyncResult.totalTenants,
                     smlTenantsMapped: smlSyncResult.mappedTenants,
-                    tenantsProcessed: tenants.length,
-                    recordsCreated,
+                    smlDeprovisionedTenants: deprovisionedTenants.length,
+                    tenantsProcessed: totalTenantsProcessed,
+                    recordsCreated: recordsCreated + deprovisionedRecordsCreated,
+                    deprovisionedRecordsCreated,
                     recordsUpdated,
                     recordsMarkedRemoved,
                     syncDuration: Date.now() - syncStarted.getTime()
@@ -269,9 +315,13 @@ class CurrentAccountsService {
      * 2. Every app per tenant → separate line
      * 3. Each line is enriched with data from PS records, Salesforce, etc.
      * 
+     * @param {Object} tenant - Tenant data from SML
+     * @param {Set} processedKeys - Set of already processed keys to avoid duplicates
+     * @param {string} tenantStatus - 'Active' or 'Deprovisioned'
+     * @param {Function} onProgress - Callback for progress updates
      * @private
      */
-    async _processTenant(tenant, processedKeys, onProgress) {
+    async _processTenant(tenant, processedKeys, tenantStatus, onProgress) {
         let created = 0;
         let updated = 0;
         const now = new Date();
@@ -299,7 +349,7 @@ class CurrentAccountsService {
                 services: 'No apps',
                 account_type: accountType,
                 csm_owner: enrichmentData.csmOwner,
-                provisioning_status: enrichmentData.status || 'Provisioned',
+                provisioning_status: enrichmentData.status || (tenantStatus === 'Deprovisioned' ? 'Deprovisioned' : 'Provisioned'),
                 completion_date: enrichmentData.completionDate,
                 size: null,
                 region: enrichmentData.region,
@@ -312,6 +362,7 @@ class CurrentAccountsService {
                 ps_record_name: enrichmentData.psRecordName,
                 app_start_date: null,
                 app_end_date: null,
+                tenant_status: tenantStatus,
                 record_status: 'active',
                 last_synced: now
             };
@@ -322,7 +373,7 @@ class CurrentAccountsService {
         } else {
             // Create one record per app
             for (const app of apps) {
-                const record = this._buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now, accountType);
+                const record = this._buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now, accountType, tenantStatus);
                 const result = await this._upsertRecord(record, processedKeys);
                 if (result.created) created++;
                 if (result.updated) updated++;
@@ -552,9 +603,10 @@ class CurrentAccountsService {
      * @param {string} tenantUrl - Constructed tenant URL
      * @param {Date} now - Current timestamp
      * @param {string} accountType - Pre-calculated account type based on longest entitlement
+     * @param {string} tenantStatus - 'Active' or 'Deprovisioned'
      * @private
      */
-    _buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now, accountType) {
+    _buildRecordForApp(tenant, app, enrichmentData, tenantUrl, now, accountType, tenantStatus = 'Active') {
         // Parse dates - don't skip if missing
         let startDate = app.startDate ? new Date(app.startDate) : null;
         let endDate = app.endDate ? new Date(app.endDate) : null;
@@ -564,7 +616,7 @@ class CurrentAccountsService {
             services: app.productCode || app.productName || 'Unknown',
             account_type: accountType,
             csm_owner: enrichmentData.csmOwner,
-            provisioning_status: enrichmentData.status || 'Unknown',
+            provisioning_status: enrichmentData.status || (tenantStatus === 'Deprovisioned' ? 'Deprovisioned' : 'Unknown'),
             completion_date: enrichmentData.completionDate,
             size: app.packageName || null,
             region: enrichmentData.region,
@@ -577,6 +629,7 @@ class CurrentAccountsService {
             ps_record_name: enrichmentData.psRecordName,
             app_start_date: startDate,
             app_end_date: endDate,
+            tenant_status: tenantStatus,
             record_status: 'active',
             last_synced: now
         };
@@ -604,10 +657,10 @@ class CurrentAccountsService {
                     completion_date, size, region, tenant_name, tenant_url,
                     tenant_id, salesforce_account_id, initial_tenant_admin,
                     ps_record_id, ps_record_name, app_start_date, app_end_date,
-                    record_status, last_synced, updated_at
+                    tenant_status, record_status, last_synced, updated_at
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                    $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP
+                    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP
                 )
                 ON CONFLICT (tenant_name, services) 
                 DO UPDATE SET
@@ -624,6 +677,7 @@ class CurrentAccountsService {
                     ps_record_name = EXCLUDED.ps_record_name,
                     app_start_date = EXCLUDED.app_start_date,
                     app_end_date = EXCLUDED.app_end_date,
+                    tenant_status = EXCLUDED.tenant_status,
                     record_status = EXCLUDED.record_status,
                     last_synced = EXCLUDED.last_synced,
                     updated_at = CURRENT_TIMESTAMP
@@ -649,6 +703,7 @@ class CurrentAccountsService {
                 record.ps_record_name,
                 record.app_start_date,
                 record.app_end_date,
+                record.tenant_status || 'Active',
                 record.record_status,
                 record.last_synced
             ]);
@@ -767,7 +822,8 @@ class CurrentAccountsService {
             console.log(`📦 Step 4: Processing ${newTenantsData.rows.length} new tenants into current_accounts...`);
             for (const tenant of newTenantsData.rows) {
                 try {
-                    await this._processTenant(tenant, processedKeys, (created, updated) => {
+                    // Quick sync only processes active tenants (new ones from SML with isDeleted=false)
+                    await this._processTenant(tenant, processedKeys, 'Active', (created, updated) => {
                         recordsCreated += created;
                     });
                 } catch (tenantError) {

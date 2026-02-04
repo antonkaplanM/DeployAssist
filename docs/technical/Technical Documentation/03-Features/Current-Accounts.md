@@ -39,6 +39,7 @@ The Current Accounts page is a sub-page under the Analytics section that provide
 | `salesforce_account_id` | VARCHAR(100) | Salesforce Account ID |
 | `initial_tenant_admin` | VARCHAR(255) | From PS payload "adminUsername" field |
 | `comments` | TEXT | User-editable, preserved on sync |
+| `tenant_status` | VARCHAR(50) | 'Active' (isDeleted=false) or 'Deprovisioned' (isDeleted=true) from SML |
 | `record_status` | VARCHAR(50) | 'active' or 'removed' |
 
 ### Table: `current_accounts_sync_log`
@@ -158,16 +159,18 @@ Export all records as CSV.
 There are two sync options available:
 
 ### Full Sync
-The full sync process fetches **fresh data directly from SML** and updates all records:
+The full sync process fetches **fresh data directly from SML** and updates all records, including both **active and deprovisioned tenants**:
 
-1. **Refresh SML Data**: Fetch all tenants and their entitlements directly from the SML API using Playwright
-2. **Cache Updated Data**: Store refreshed tenant data in `sml_tenant_data` table
-3. **Correlate PS Records**: Find associated PS records for metadata (CSM/Owner, status, dates)
-4. **Extract Apps**: Parse entitlements from SML data to get individual apps
-5. **Calculate Type**: Find longest entitlement across all products (Apps, Models, Data). POC if longest term < 90 days, else Subscription
-6. **Upsert Records**: Insert new or update existing records
-7. **Mark Removed**: Records not updated are marked as 'removed'
-8. **Preserve Comments**: User comments are never overwritten
+1. **Refresh Active SML Data**: Fetch all active tenants (isDeleted=false) and their entitlements directly from the SML API using Playwright
+2. **Fetch Deprovisioned Tenants**: Fetch all deprovisioned tenants (isDeleted=true) from SML
+3. **Cache Updated Data**: Store refreshed tenant data in `sml_tenant_data` table
+4. **Correlate PS Records**: Find associated PS records for metadata (CSM/Owner, status, dates)
+5. **Extract Apps**: Parse entitlements from SML data to get individual apps
+6. **Calculate Type**: Find longest entitlement across all products (Apps, Models, Data). POC if longest term < 90 days, else Subscription
+7. **Set Tenant Status**: Set `tenant_status` to 'Active' or 'Deprovisioned' based on SML isDeleted flag
+8. **Upsert Records**: Insert new or update existing records
+9. **Mark Removed**: Records not updated are marked as 'removed'
+10. **Preserve Comments**: User comments are never overwritten
 
 ### Quick Sync (New Tenants Only)
 The quick sync is optimized and only fetches data for NEW tenants:
@@ -220,6 +223,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 | Tenant ID | SML (direct) | tenant.tenantId |
 | SF Account ID | Salesforce PS Payload | payload.accountId |
 | Initial Tenant Admin | Salesforce PS Payload | payload.adminUsername |
+| Tenant Status | SML (direct) | 'Active' if isDeleted=false, 'Deprovisioned' if isDeleted=true |
 | Comments | Database | User input (preserved) |
 
 **Data freshness**: SML data is fetched fresh from the SML API during each sync. PS record metadata is retrieved from the cached `ps_audit_trail` table.

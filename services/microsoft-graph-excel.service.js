@@ -19,6 +19,15 @@ class MicrosoftGraphExcelService {
     }
 
     /**
+     * Check if a filename is an Excel file (.xlsx or .xlsm)
+     */
+    isExcelFile(fileName) {
+        if (!fileName) return false;
+        const lower = fileName.toLowerCase();
+        return lower.endsWith('.xlsx') || lower.endsWith('.xlsm');
+    }
+
+    /**
      * Ensure the config directory exists
      */
     ensureConfigDir() {
@@ -145,9 +154,9 @@ class MicrosoftGraphExcelService {
                 .top(100)
                 .get();
 
-            // Filter to only .xlsx files
+            // Filter to only Excel files (.xlsx, .xlsm)
             const excelFiles = response.value.filter(item => 
-                item.name && item.name.toLowerCase().endsWith('.xlsx')
+                this.isExcelFile(item.name)
             );
 
             return {
@@ -173,14 +182,15 @@ class MicrosoftGraphExcelService {
         try {
             const client = await this.getGraphClient();
             
-            // Use search with wildcard to find all xlsx files
-            const response = await client.api('/me/drive/root/search(q=\'.xlsx\')')
+            // Use search with wildcard to find all Excel files
+            // Note: Search for .xls to match both .xlsx and .xlsm
+            const response = await client.api('/me/drive/root/search(q=\'.xls\')')
                 .select('id,name,file,parentReference,webUrl,lastModifiedDateTime')
                 .top(200)
                 .get();
 
             const excelFiles = (response.value || [])
-                .filter(item => item.name && item.name.toLowerCase().endsWith('.xlsx'))
+                .filter(item => this.isExcelFile(item.name))
                 .map(file => ({
                     id: file.id,
                     name: file.name,
@@ -242,7 +252,7 @@ class MicrosoftGraphExcelService {
                 const sharedFiles = (response.value || [])
                     .filter(item => {
                         const name = item.remoteItem?.name || item.name;
-                        return name && name.toLowerCase().endsWith('.xlsx');
+                        return this.isExcelFile(name);
                     })
                     .map(file => {
                         const remoteItem = file.remoteItem || file;
@@ -375,7 +385,7 @@ class MicrosoftGraphExcelService {
                 let addedFromSearch = 0;
                 for (const hit of hits) {
                     const resource = hit.resource;
-                    if (!resource || !resource.name?.toLowerCase().endsWith('.xlsx')) continue;
+                    if (!resource || !this.isExcelFile(resource.name)) continue;
                     
                     // Extract drive ID from the resource
                     const driveId = resource.parentReference?.driveId;
@@ -477,12 +487,12 @@ class MicrosoftGraphExcelService {
                 return { success: false, error: 'Could not resolve the sharing link' };
             }
             
-            // Check if it's an Excel file
+            // Check if it's an Excel file (.xlsx or .xlsm)
             const fileName = sharedItem.name || '';
-            if (!fileName.toLowerCase().endsWith('.xlsx')) {
+            if (!this.isExcelFile(fileName)) {
                 return { 
                     success: false, 
-                    error: 'The shared item is not an Excel file (.xlsx)' 
+                    error: 'The shared item is not an Excel file (.xlsx or .xlsm)' 
                 };
             }
             
@@ -545,7 +555,7 @@ class MicrosoftGraphExcelService {
                     .get();
                 
                 const personalFiles = (personalResponse.value || [])
-                    .filter(item => item.name && item.name.toLowerCase().endsWith('.xlsx'))
+                    .filter(item => this.isExcelFile(item.name))
                     .map(file => ({
                         id: file.id,
                         name: file.name,
@@ -572,8 +582,7 @@ class MicrosoftGraphExcelService {
                 const sharedFiles = (sharedResponse.value || [])
                     .filter(item => {
                         const name = item.remoteItem?.name || item.name;
-                        return name && 
-                               name.toLowerCase().endsWith('.xlsx') && 
+                        return this.isExcelFile(name) && 
                                name.toLowerCase().includes(query.toLowerCase());
                     })
                     .map(file => {
@@ -611,7 +620,7 @@ class MicrosoftGraphExcelService {
                             .get();
                         
                         const siteFiles = (siteSearchResponse.value || [])
-                            .filter(item => item.name && item.name.toLowerCase().endsWith('.xlsx'))
+                            .filter(item => this.isExcelFile(item.name))
                             .map(file => ({
                                 id: file.id,
                                 name: file.name,
@@ -706,7 +715,7 @@ class MicrosoftGraphExcelService {
             const headers = [
                 'Client', 'Services', 'Type', 'CSM/Owner', 'PS Record', 'Completed',
                 'Size', 'Region', 'Tenant', 'Tenant ID', 'SF Account ID', 
-                'Tenant URL', 'Admin', 'Comments'
+                'Tenant URL', 'Admin', 'Status', 'Comments'
             ];
 
             const rows = accounts.map(account => [
@@ -725,6 +734,7 @@ class MicrosoftGraphExcelService {
                 account.salesforce_account_id || '—',
                 account.tenant_url || '—',
                 account.initial_tenant_admin || '—',
+                account.tenant_status || 'Active',
                 account.comments || ''
             ]);
 
@@ -849,7 +859,7 @@ class MicrosoftGraphExcelService {
             const headers = [
                 'Client', 'Services', 'Type', 'CSM/Owner', 'PS Record', 'Completed',
                 'Size', 'Region', 'Tenant', 'Tenant ID', 'SF Account ID', 
-                'Tenant URL', 'Admin', 'Comments'
+                'Tenant URL', 'Admin', 'Status', 'Comments'
             ];
             worksheet.addRow(headers);
 
@@ -871,6 +881,7 @@ class MicrosoftGraphExcelService {
                     account.salesforce_account_id || '—',
                     account.tenant_url || '—',
                     account.initial_tenant_admin || '—',
+                    account.tenant_status || 'Active',
                     account.comments || ''
                 ]);
             });

@@ -8,10 +8,12 @@
 const database = require('../database');
 const SMLGhostAccountsService = require('./sml-ghost-accounts.service');
 const salesforce = require('../salesforce');
+const debugConfig = require('./debug-config.service');
 
 class ExcelLookupService {
     constructor() {
         this.smlService = new SMLGhostAccountsService();
+        this.log = debugConfig.logger('excel-lookup');
     }
 
     /**
@@ -23,7 +25,7 @@ class ExcelLookupService {
      */
     async lookupTenant(tenantNameOrId, forceFresh = false) {
         try {
-            console.log(`🔍 Looking up tenant: ${tenantNameOrId}${forceFresh ? ' (forcing fresh SML data)' : ''}`);
+            this.log(`🔍 Looking up tenant: ${tenantNameOrId}${forceFresh ? ' (forcing fresh SML data)' : ''}`);
 
             let tenant = null;
             
@@ -34,7 +36,7 @@ class ExcelLookupService {
             
             // Step 2: If not found in DB, no entitlements, or forceFresh, fetch from SML directly
             if (!tenant || !tenant.product_entitlements || forceFresh) {
-                console.log(forceFresh ? '   Fetching fresh data from SML...' : '   Not found in DB cache, fetching from SML...');
+                this.log(forceFresh ? '   Fetching fresh data from SML...' : '   Not found in DB cache, fetching from SML...');
                 tenant = await this._fetchTenantFromSML(tenantNameOrId);
             }
 
@@ -54,7 +56,7 @@ class ExcelLookupService {
             let entitlementData = tenant.product_entitlements || tenant.extensionData || tenant;
             
             // Debug logging to help troubleshoot
-            console.log('   Entitlement data source:', {
+            this.log('   Entitlement data source:', {
                 hasProductEntitlements: !!tenant.product_entitlements,
                 hasExtensionData: !!tenant.extensionData,
                 topLevelKeys: Object.keys(tenant || {}).slice(0, 10),
@@ -63,7 +65,7 @@ class ExcelLookupService {
             
             const entitlements = this._parseEntitlements(entitlementData);
             
-            console.log('   Parsed entitlements:', {
+            this.log('   Parsed entitlements:', {
                 models: entitlements.models.length,
                 data: entitlements.data.length,
                 apps: entitlements.apps.length
@@ -108,7 +110,7 @@ class ExcelLookupService {
      */
     async compareWithPSRecord(tenantNameOrId, psRecordName, forceFresh = false) {
         try {
-            console.log(`🔍 Comparing tenant '${tenantNameOrId}' with PS record '${psRecordName}'${forceFresh ? ' (fresh SML data)' : ''}`);
+            this.log(`🔍 Comparing tenant '${tenantNameOrId}' with PS record '${psRecordName}'${forceFresh ? ' (fresh SML data)' : ''}`);
 
             // Step 1: Look up tenant SML data
             const tenantResult = await this.lookupTenant(tenantNameOrId, forceFresh);
@@ -156,13 +158,13 @@ class ExcelLookupService {
             const psEntitlements = this._parsePSRecordEntitlements(psRecord);
 
             // Step 4: Compare entitlements
-            console.log('   Comparing entitlements:');
-            console.log('     SML:', {
+            this.log('   Comparing entitlements:');
+            this.log('     SML:', {
                 models: tenantResult.entitlements.models.length,
                 data: tenantResult.entitlements.data.length,
                 apps: tenantResult.entitlements.apps.length
             });
-            console.log('     PS:', {
+            this.log('     PS:', {
                 models: psEntitlements.models.length,
                 data: psEntitlements.data.length,
                 apps: psEntitlements.apps.length
@@ -170,7 +172,7 @@ class ExcelLookupService {
             
             const comparison = this._compareEntitlements(tenantResult.entitlements, psEntitlements);
             
-            console.log('   Comparison results:', {
+            this.log('   Comparison results:', {
                 models: {
                     inSFOnly: comparison.models.inSFOnly.length,
                     inSMLOnly: comparison.models.inSMLOnly.length,
@@ -247,7 +249,7 @@ class ExcelLookupService {
     }
 
     /**
-     * Find tenant in database by name or ID
+     * Find tenant in database by name or ID (exact match only)
      */
     async _findTenantInDatabase(tenantNameOrId) {
         try {
@@ -255,19 +257,15 @@ class ExcelLookupService {
                 SELECT tenant_id, tenant_name, account_name, tenant_display_name, 
                        product_entitlements, raw_data, last_synced
                 FROM sml_tenant_data
-                WHERE tenant_name ILIKE $1 
+                WHERE LOWER(tenant_name) = LOWER($1) 
                    OR tenant_id = $1
-                   OR tenant_name ILIKE $2
                 LIMIT 1
             `;
             
-            const result = await database.query(query, [
-                tenantNameOrId,
-                `%${tenantNameOrId}%`
-            ]);
+            const result = await database.query(query, [tenantNameOrId]);
 
             if (result.rows.length > 0) {
-                console.log(`   Found in database: ${result.rows[0].tenant_name}`);
+                this.log(`   Found in database: ${result.rows[0].tenant_name}`);
                 return result.rows[0];
             }
 
@@ -300,16 +298,15 @@ class ExcelLookupService {
             
             // If it doesn't look like a UUID, try to find the tenant ID
             if (!tenantNameOrId.match(/^[0-9a-f-]{36}$/i) && !tenantNameOrId.match(/^\d+$/)) {
-                // Search for tenant by name
+                // Search for tenant by name (exact match only)
                 const tenantList = await this.smlService.fetchTenantListOnly();
                 if (tenantList.success && tenantList.tenants) {
                     const found = tenantList.tenants.find(t => 
-                        t.tenantName?.toLowerCase() === tenantNameOrId.toLowerCase() ||
-                        t.tenantName?.toLowerCase().includes(tenantNameOrId.toLowerCase())
+                        t.tenantName?.toLowerCase() === tenantNameOrId.toLowerCase()
                     );
                     if (found) {
                         tenantId = found.tenantId;
-                        console.log(`   Resolved tenant name '${tenantNameOrId}' to ID '${tenantId}'`);
+                        this.log(`   Resolved tenant name '${tenantNameOrId}' to ID '${tenantId}'`);
                     }
                 }
             }
@@ -338,7 +335,7 @@ class ExcelLookupService {
      */
     async _findPSRecord(psRecordName) {
         try {
-            console.log(`   Looking for PS record: ${psRecordName}`);
+            this.log(`   Looking for PS record: ${psRecordName}`);
             
             // Step 1: Try database first (cached data)
             const query = `
@@ -358,23 +355,23 @@ class ExcelLookupService {
                 `%${psRecordName}%`
             ]);
             
-            console.log(`   PS record database query returned ${result.rows.length} rows`);
+            this.log(`   PS record database query returned ${result.rows.length} rows`);
 
             if (result.rows.length > 0) {
-                console.log(`   Found PS record in database: ${result.rows[0].ps_record_name}`);
+                this.log(`   Found PS record in database: ${result.rows[0].ps_record_name}`);
                 return result.rows[0];
             }
 
             // Step 2: Not in database, try Salesforce API directly
-            console.log(`   PS record not in database, querying Salesforce API...`);
+            this.log(`   PS record not in database, querying Salesforce API...`);
             
             const sfResult = await this._fetchPSRecordFromSalesforce(psRecordName);
             if (sfResult) {
-                console.log(`   Found PS record in Salesforce: ${sfResult.ps_record_name}`);
+                this.log(`   Found PS record in Salesforce: ${sfResult.ps_record_name}`);
                 return sfResult;
             }
 
-            console.log(`   PS record not found in database or Salesforce`);
+            this.log(`   PS record not found in database or Salesforce`);
             return null;
         } catch (error) {
             console.error('   PS record lookup error:', error.message);
@@ -390,7 +387,7 @@ class ExcelLookupService {
             // Check Salesforce authentication
             const hasValidAuth = await salesforce.hasValidAuthentication();
             if (!hasValidAuth) {
-                console.log('   Salesforce not authenticated, cannot fetch PS record');
+                this.log('   Salesforce not authenticated, cannot fetch PS record');
                 return null;
             }
 
@@ -418,7 +415,7 @@ class ExcelLookupService {
                 LIMIT 1
             `;
             
-            console.log(`   Salesforce SOQL: ${soql.substring(0, 100)}...`);
+            this.log(`   Salesforce SOQL: ${soql.substring(0, 100)}...`);
             
             const sfResult = await conn.query(soql);
             
@@ -458,7 +455,7 @@ class ExcelLookupService {
      */
     _parseEntitlements(data) {
         if (!data) {
-            console.log('   _parseEntitlements: No data provided');
+            this.log('   _parseEntitlements: No data provided');
             return { models: [], data: [], apps: [] };
         }
 
@@ -481,8 +478,8 @@ class ExcelLookupService {
         }
         
         // Debug logging
-        console.log('   _parseEntitlements extensionData keys:', Object.keys(extensionData || {}).slice(0, 15));
-        console.log('   _parseEntitlements raw counts:', {
+        this.log('   _parseEntitlements extensionData keys:', Object.keys(extensionData || {}).slice(0, 15));
+        this.log('   _parseEntitlements raw counts:', {
             modelEntitlements: Array.isArray(extensionData.modelEntitlements) ? extensionData.modelEntitlements.length : 'not array',
             dataEntitlements: Array.isArray(extensionData.dataEntitlements) ? extensionData.dataEntitlements.length : 'not array',
             appEntitlements: Array.isArray(extensionData.appEntitlements) ? extensionData.appEntitlements.length : 'not array'
@@ -502,13 +499,13 @@ class ExcelLookupService {
      * Checks if tenant name in PS record matches the user's input
      */
     _validateTenantPSRecordMatch(tenant, psRecord, userInputTenant) {
-        console.log('   Validating tenant/PS record match...');
+        this.log('   Validating tenant/PS record match...');
         
         const smlTenantName = (tenant.tenantName || '').toLowerCase().trim();
         const psTenantName = (psRecord.tenant_name || '').toLowerCase().trim();
         const userInput = (userInputTenant || '').toLowerCase().trim();
         
-        console.log('   Validation data:', {
+        this.log('   Validation data:', {
             smlTenantName,
             psTenantName,
             userInput
@@ -516,7 +513,7 @@ class ExcelLookupService {
         
         // If PS record has no tenant name, we can't validate - allow it but warn
         if (!psTenantName) {
-            console.log('   PS record has no tenant name, skipping validation');
+            this.log('   PS record has no tenant name, skipping validation');
             return { matches: true, warning: 'PS record has no tenant name for validation' };
         }
         
@@ -532,14 +529,14 @@ class ExcelLookupService {
                               psTenantName.includes(userInput);
         
         if (exactMatch || smlContainsPs || userMatchesPs) {
-            console.log('   Tenant/PS record match validated');
+            this.log('   Tenant/PS record match validated');
             return { matches: true };
         }
         
         // Mismatch - return detailed error
         const errorMsg = `Tenant mismatch: The PS record '${psRecord.ps_record_name}' is for tenant '${psRecord.tenant_name}', but you entered tenant '${userInputTenant}' (SML tenant: '${tenant.tenantName}'). Please verify you're using the correct PS record for this tenant.`;
         
-        console.log('   Tenant/PS record mismatch detected:', errorMsg);
+        this.log('   Tenant/PS record mismatch detected:', errorMsg);
         
         return {
             matches: false,
@@ -552,11 +549,11 @@ class ExcelLookupService {
      */
     _parsePSRecordEntitlements(psRecord) {
         try {
-            console.log('   Parsing PS record entitlements...');
-            console.log('   PS record has payload_data:', !!psRecord.payload_data);
+            this.log('   Parsing PS record entitlements...');
+            this.log('   PS record has payload_data:', !!psRecord.payload_data);
             
             if (!psRecord.payload_data) {
-                console.log('   No payload_data found in PS record');
+                this.log('   No payload_data found in PS record');
                 return { models: [], data: [], apps: [] };
             }
 
@@ -564,11 +561,11 @@ class ExcelLookupService {
                 ? JSON.parse(psRecord.payload_data) 
                 : psRecord.payload_data;
 
-            console.log('   Payload parsed, looking for entitlements at: properties.provisioningDetail.entitlements');
+            this.log('   Payload parsed, looking for entitlements at: properties.provisioningDetail.entitlements');
             
             const entitlements = payload?.properties?.provisioningDetail?.entitlements || {};
             
-            console.log('   PS entitlements found:', {
+            this.log('   PS entitlements found:', {
                 modelEntitlements: Array.isArray(entitlements.modelEntitlements) ? entitlements.modelEntitlements.length : 'not array',
                 dataEntitlements: Array.isArray(entitlements.dataEntitlements) ? entitlements.dataEntitlements.length : 'not array',
                 appEntitlements: Array.isArray(entitlements.appEntitlements) ? entitlements.appEntitlements.length : 'not array'
@@ -739,7 +736,7 @@ class ExcelLookupService {
             const entitlementSource = comparisonResult.smlEntitlements || comparisonResult.entitlements;
             
             if (entitlementSource) {
-                console.log('   formatForExcel: Comparison failed but have SML entitlements, returning them');
+                this.log('   formatForExcel: Comparison failed but have SML entitlements, returning them');
                 const smlRows = [];
                 const addEntitlements = (entitlements, type) => {
                     if (!entitlements || !Array.isArray(entitlements)) return;
@@ -760,7 +757,7 @@ class ExcelLookupService {
                 addEntitlements(entitlementSource.data, 'Data');
                 addEntitlements(entitlementSource.apps, 'App');
                 
-                console.log('   formatForExcel: Generated', smlRows.length, 'SML rows despite error');
+                this.log('   formatForExcel: Generated', smlRows.length, 'SML rows despite error');
                 
                 return {
                     success: false,
@@ -807,7 +804,7 @@ class ExcelLookupService {
             addEntitlements(entitlementSource.apps, 'App');
         }
         
-        console.log('   formatForExcel: Generated', smlRows.length, 'SML rows');
+        this.log('   formatForExcel: Generated', smlRows.length, 'SML rows');
 
         // Format comparison results
         const comparisonRows = [];

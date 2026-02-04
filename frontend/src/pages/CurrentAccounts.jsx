@@ -38,6 +38,7 @@ const COLUMNS = [
     { key: 'tenant_id', label: 'Tenant ID', sortable: true },
     { key: 'salesforce_account_id', label: 'SF Account ID', sortable: true },
     { key: 'initial_tenant_admin', label: 'Initial Tenant Admin', sortable: true },
+    { key: 'tenant_status', label: 'Status', sortable: true },
     { key: 'comments', label: 'Comments', sortable: false, editable: true }
 ];
 
@@ -374,6 +375,19 @@ const CurrentAccounts = () => {
                     {value}
                 </span>
             ) : '—';
+        }
+
+        if (column.key === 'tenant_status') {
+            const statusColors = {
+                'Active': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                'Deprovisioned': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+            };
+            const displayValue = value || 'Active';
+            return (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[displayValue] || 'bg-gray-100 text-gray-800'}`}>
+                    {displayValue}
+                </span>
+            );
         }
 
         if (column.key === 'ps_record_name') {

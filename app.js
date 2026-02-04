@@ -35,6 +35,8 @@ const stagingRoutes = require('./routes/staging.routes');
 const currentAccountsRoutes = require('./routes/current-accounts.routes');
 const microsoftAuthRoutes = require('./routes/microsoft-auth.routes');
 const excelLookupRoutes = require('./routes/excel-lookup.routes');
+const excelPollingRoutes = require('./routes/excel-polling.routes');
+const debugConfigRoutes = require('./routes/debug-config.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
@@ -207,6 +209,8 @@ app.use('/api/auth/microsoft', microsoftAuthRoutes);
 // Note: No authentication for now to allow VBA testing
 // TODO: Add API key or IP-based auth for production
 app.use('/api/excel-lookup', excelLookupRoutes);
+app.use('/api/excel-polling', excelPollingRoutes);
+app.use('/api/debug-config', debugConfigRoutes);
 
 console.log('✅ All extracted route modules mounted successfully');
 

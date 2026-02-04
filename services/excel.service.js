@@ -238,6 +238,7 @@ class ExcelService {
             { header: 'SF Account ID', key: 'salesforce_account_id', width: 20 },
             { header: 'Tenant URL', key: 'tenant_url', width: 40 },
             { header: 'Admin', key: 'initial_tenant_admin', width: 30 },
+            { header: 'Status', key: 'tenant_status', width: 15 },
             { header: 'Comments', key: 'comments', width: 40 }
         ];
 
