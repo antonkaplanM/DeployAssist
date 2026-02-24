@@ -583,12 +583,16 @@ class ExcelLookupService {
     }
 
     /**
-     * Normalize entitlement array for comparison
+     * Normalize entitlement array for comparison.
+     * Also flattens nested expansionPacks arrays so expansion pack
+     * entitlements appear as top-level items in the result.
      */
     _normalizeEntitlements(entitlements) {
         if (!Array.isArray(entitlements)) return [];
 
-        return entitlements.map(e => ({
+        const flattened = this._flattenExpansionPacks(entitlements);
+
+        return flattened.map(e => ({
             productCode: e.productCode || e.name || '',
             productModifier: e.productModifier || '',
             packageName: e.packageName || '',
@@ -596,6 +600,30 @@ class ExcelLookupService {
             startDate: this._normalizeDate(e.startDate),
             endDate: this._normalizeDate(e.endDate)
         }));
+    }
+
+    /**
+     * Flatten nested expansionPacks into the top-level entitlement list.
+     * SML may nest expansion packs inside parent entitlements, e.g.:
+     *   { productCode: "RI-RISKMODELER", expansionPacks: [{ productCode: "RI-RISKMODELER-EXPANSION", ... }] }
+     * This method extracts those nested items so they are processed alongside
+     * their parent entitlements.
+     */
+    _flattenExpansionPacks(entitlements) {
+        if (!Array.isArray(entitlements)) return [];
+
+        const result = [];
+        for (const entitlement of entitlements) {
+            result.push(entitlement);
+
+            if (Array.isArray(entitlement.expansionPacks) && entitlement.expansionPacks.length > 0) {
+                this.log(`   _flattenExpansionPacks: Found ${entitlement.expansionPacks.length} expansion pack(s) inside ${entitlement.productCode || 'unknown'}`);
+                for (const expansion of entitlement.expansionPacks) {
+                    result.push(expansion);
+                }
+            }
+        }
+        return result;
     }
 
     /**

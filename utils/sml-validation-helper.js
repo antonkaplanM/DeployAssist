@@ -59,13 +59,13 @@ class SMLValidationHelper {
                 return result;
             }
 
-            // Extract entitlements from tenant details
+            // Extract entitlements from tenant details (including nested expansion packs)
             const tenantDetails = smlResult.tenantDetails;
             const extensionData = tenantDetails?.extensionData || {};
             
-            const apps = extensionData.appEntitlements || [];
-            const models = extensionData.modelEntitlements || [];
-            const data = extensionData.dataEntitlements || [];
+            const apps = this._flattenExpansionPacks(extensionData.appEntitlements || []);
+            const models = this._flattenExpansionPacks(extensionData.modelEntitlements || []);
+            const data = this._flattenExpansionPacks(extensionData.dataEntitlements || []);
             
             const allProducts = [...apps, ...models, ...data];
             result.details.totalEntitlements = allProducts.length;
@@ -130,6 +130,28 @@ class SMLValidationHelper {
             result.details.stack = error.stack;
             return result;
         }
+    }
+
+    /**
+     * Flatten nested expansionPacks into the top-level entitlement array.
+     * SML may nest expansion packs inside parent entitlements, e.g.:
+     *   { productCode: "RI-RISKMODELER", expansionPacks: [{ productCode: "RI-RISKMODELER-EXPANSION", ... }] }
+     * This extracts those nested items so they appear alongside their parent.
+     * @param {Array} entitlements - Array of entitlement objects
+     * @returns {Array} Flattened array including expansion pack entries
+     */
+    _flattenExpansionPacks(entitlements) {
+        if (!Array.isArray(entitlements)) return [];
+        const result = [];
+        for (const entitlement of entitlements) {
+            result.push(entitlement);
+            if (Array.isArray(entitlement.expansionPacks) && entitlement.expansionPacks.length > 0) {
+                for (const expansion of entitlement.expansionPacks) {
+                    result.push(expansion);
+                }
+            }
+        }
+        return result;
     }
 
     /**

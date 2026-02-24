@@ -151,6 +151,40 @@ To test the feature:
 5. Wait for modal to load
 6. Review comparison results
 
+## Expansion Pack Handling
+
+SML may nest expansion pack entitlements inside their parent entitlement objects rather than listing them as separate top-level entries. For example:
+
+```json
+{
+  "productCode": "RI-RISKMODELER",
+  "expansionPacks": [
+    {
+      "productCode": "RI-RISKMODELER-EXPANSION",
+      "packageName": "P6 Expansion Pack",
+      "quantity": 1,
+      "startDate": "2025-10-22",
+      "endDate": "2025-12-22"
+    }
+  ],
+  "startDate": "2025-09-30",
+  "endDate": "2027-05-31"
+}
+```
+
+All parsing functions automatically **flatten** nested `expansionPacks` arrays into the top-level entitlement list. This means expansion packs are:
+- Included in entitlement counts
+- Visible in the SML comparison modal
+- Compared against Salesforce payload data
+- Considered in ghost account analysis and deprovision validation
+
+The flattening is applied consistently across all parsing locations:
+- `excel-lookup.service.js` (`_normalizeEntitlements` / `_flattenExpansionPacks`)
+- `SMLComparisonModal.jsx` (`flattenExpansionPacks` helper)
+- `current-accounts.service.js` (`_flattenExpansionPacks`)
+- `sml-validation-helper.js` (`_flattenExpansionPacks`)
+- `sml-ghost-accounts.service.js` (`_flattenExpansionPacks`)
+
 ## Known Limitations
 
 1. Bearer tokens expire (typically 1 hour) - users must refresh in Settings

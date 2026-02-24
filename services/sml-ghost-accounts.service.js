@@ -12,6 +12,28 @@ class SMLGhostAccountsService {
     }
 
     /**
+     * Flatten nested expansionPacks into the top-level entitlement array.
+     * SML may nest expansion packs inside parent entitlements, e.g.:
+     *   { productCode: "RI-RISKMODELER", expansionPacks: [{ productCode: "RI-RISKMODELER-EXPANSION", ... }] }
+     * This extracts those nested items so they appear alongside their parent.
+     * @param {Array} entitlements - Array of entitlement objects
+     * @returns {Array} Flattened array including expansion pack entries
+     */
+    _flattenExpansionPacks(entitlements) {
+        if (!Array.isArray(entitlements)) return [];
+        const result = [];
+        for (const entitlement of entitlements) {
+            result.push(entitlement);
+            if (Array.isArray(entitlement.expansionPacks) && entitlement.expansionPacks.length > 0) {
+                for (const expansion of entitlement.expansionPacks) {
+                    result.push(expansion);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * Check if SML token is valid and not expired
      * @returns {Object} Token status with hasToken, expired, remainingMinutes
      */
@@ -608,10 +630,10 @@ class SMLGhostAccountsService {
      */
     async _analyzeTenantFromCachedData(tenantId, tenantName, accountName, productEntitlements) {
         try {
-            // Extract and normalize products from cached product entitlements
-            const appsRaw = productEntitlements.appEntitlements || [];
-            const modelsRaw = productEntitlements.modelEntitlements || [];
-            const dataRaw = productEntitlements.dataEntitlements || [];
+            // Extract and normalize products from cached product entitlements (including nested expansion packs)
+            const appsRaw = this._flattenExpansionPacks(productEntitlements.appEntitlements || []);
+            const modelsRaw = this._flattenExpansionPacks(productEntitlements.modelEntitlements || []);
+            const dataRaw = this._flattenExpansionPacks(productEntitlements.dataEntitlements || []);
 
             console.log(`  [${tenantName}] Found ${appsRaw.length} apps, ${modelsRaw.length} models, ${dataRaw.length} data products in cache`);
 
@@ -688,11 +710,11 @@ class SMLGhostAccountsService {
                 };
             }
 
-            // Extract and normalize products from extensionData using SML service normalization
+            // Extract and normalize products from extensionData (including nested expansion packs)
             const extensionData = tenantDetails.extensionData || {};
-            const appsRaw = extensionData.appEntitlements || [];
-            const modelsRaw = extensionData.modelEntitlements || [];
-            const dataRaw = extensionData.dataEntitlements || [];
+            const appsRaw = this._flattenExpansionPacks(extensionData.appEntitlements || []);
+            const modelsRaw = this._flattenExpansionPacks(extensionData.modelEntitlements || []);
+            const dataRaw = this._flattenExpansionPacks(extensionData.dataEntitlements || []);
 
             // Normalize products using SML service methods (properly extracts dates and calculates status)
             const apps = this.smlService.normalizeApps({ apps: appsRaw });
@@ -945,11 +967,11 @@ class SMLGhostAccountsService {
                 };
             }
 
-            // Extract and normalize products from extensionData using SML service normalization
+            // Extract and normalize products from extensionData (including nested expansion packs)
             const extensionData = tenantDetails.extensionData || {};
-            const appsRaw = extensionData.appEntitlements || [];
-            const modelsRaw = extensionData.modelEntitlements || [];
-            const dataRaw = extensionData.dataEntitlements || [];
+            const appsRaw = this._flattenExpansionPacks(extensionData.appEntitlements || []);
+            const modelsRaw = this._flattenExpansionPacks(extensionData.modelEntitlements || []);
+            const dataRaw = this._flattenExpansionPacks(extensionData.dataEntitlements || []);
 
             // Normalize products using SML service methods (properly extracts dates and calculates status)
             const apps = this.smlService.normalizeApps({ apps: appsRaw });

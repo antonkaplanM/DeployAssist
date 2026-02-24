@@ -213,15 +213,23 @@ class CurrentAccountsService {
             }
 
             // Step 3b: Process deprovisioned tenants (tenant_status = 'Deprovisioned')
+            // Priority for account name: Salesforce (in _fetchEnrichmentData) → SML → ps_audit_trail → tenant name
             if (deprovisionedTenants.length > 0) {
                 console.log(`📊 Step 3b: Processing ${deprovisionedTenants.length} deprovisioned tenants...`);
                 for (const tenant of deprovisionedTenants) {
                     try {
+                        // Look up account name from ps_audit_trail as a FALLBACK after SML
+                        // Salesforce enrichment (in _processTenant) will be checked first
+                        const accountNameResult = await db.findAccountNameForTenant(tenant.tenantName);
+                        const auditTrailAccountName = accountNameResult?.accountName || null;
+
                         // Convert SML tenant format to our format
+                        // Priority: SML accountName first, then ps_audit_trail as fallback
+                        // Salesforce enrichment is checked first in _processTenant via enrichmentData.accountName
                         const tenantData = {
                             tenant_id: tenant.tenantId,
                             tenant_name: tenant.tenantName,
-                            account_name: tenant.accountName || tenant.tenantName,
+                            account_name: tenant.accountName || auditTrailAccountName || null,
                             raw_data: tenant,
                             product_entitlements: null // Deprovisioned tenants may not have entitlements
                         };
@@ -342,10 +350,11 @@ class CurrentAccountsService {
         const accountType = this._calculateAccountType(tenant);
 
         // Step 5: Create records - one per app, or one placeholder if no apps
+        // Priority for client/account name: Salesforce → SML → tenant name
         if (apps.length === 0) {
             // No apps - create one placeholder record so tenant still appears
             const record = {
-                client: tenant.account_name || enrichmentData.accountName || 'Unknown',
+                client: enrichmentData.accountName || tenant.account_name || tenant.tenant_name || 'Unknown',
                 services: 'No apps',
                 account_type: accountType,
                 csm_owner: enrichmentData.csmOwner,
@@ -384,6 +393,27 @@ class CurrentAccountsService {
     }
 
     /**
+     * Flatten nested expansionPacks into the top-level entitlement array.
+     * SML may nest expansion packs inside parent entitlements, e.g.:
+     *   { productCode: "RI-RISKMODELER", expansionPacks: [{ productCode: "RI-RISKMODELER-EXPANSION", ... }] }
+     * This extracts those nested items so they appear alongside their parent.
+     * @private
+     */
+    _flattenExpansionPacks(entitlements) {
+        if (!Array.isArray(entitlements)) return [];
+        const result = [];
+        for (const entitlement of entitlements) {
+            result.push(entitlement);
+            if (Array.isArray(entitlement.expansionPacks) && entitlement.expansionPacks.length > 0) {
+                for (const expansion of entitlement.expansionPacks) {
+                    result.push(expansion);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * Extract apps from tenant's product entitlements
      * @private
      */
@@ -396,7 +426,7 @@ class CurrentAccountsService {
                 : tenant.product_entitlements;
         }
 
-        return entitlements?.appEntitlements || [];
+        return this._flattenExpansionPacks(entitlements?.appEntitlements || []);
     }
 
     /**
@@ -417,11 +447,11 @@ class CurrentAccountsService {
             return 'Unknown';
         }
 
-        // Collect ALL products from all categories
+        // Collect ALL products from all categories (including nested expansion packs)
         const allProducts = [
-            ...(entitlements.appEntitlements || []),
-            ...(entitlements.modelEntitlements || []),
-            ...(entitlements.dataEntitlements || [])
+            ...this._flattenExpansionPacks(entitlements.appEntitlements || []),
+            ...this._flattenExpansionPacks(entitlements.modelEntitlements || []),
+            ...this._flattenExpansionPacks(entitlements.dataEntitlements || [])
         ];
 
         if (allProducts.length === 0) {
@@ -611,8 +641,9 @@ class CurrentAccountsService {
         let startDate = app.startDate ? new Date(app.startDate) : null;
         let endDate = app.endDate ? new Date(app.endDate) : null;
 
+        // Priority for client/account name: Salesforce → SML → tenant name
         return {
-            client: tenant.account_name || enrichmentData.accountName || 'Unknown',
+            client: enrichmentData.accountName || tenant.account_name || tenant.tenant_name || 'Unknown',
             services: app.productCode || app.productName || 'Unknown',
             account_type: accountType,
             csm_owner: enrichmentData.csmOwner,

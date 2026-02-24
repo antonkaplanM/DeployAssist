@@ -2,6 +2,24 @@ import React, { useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const SMLComparisonModal = ({ isOpen, onClose, salesforceData, smlData, tenantName }) => {
+  // Flatten nested expansionPacks into the top-level entitlement array.
+  // SML may nest expansion packs inside parent entitlements, e.g.:
+  //   { productCode: "RI-RISKMODELER", expansionPacks: [{ productCode: "RI-RISKMODELER-EXPANSION", ... }] }
+  // This extracts those nested items so they appear alongside their parent entitlements.
+  const flattenExpansionPacks = (entitlements) => {
+    if (!Array.isArray(entitlements)) return [];
+    const result = [];
+    for (const entitlement of entitlements) {
+      result.push(entitlement);
+      if (Array.isArray(entitlement.expansionPacks) && entitlement.expansionPacks.length > 0) {
+        for (const expansion of entitlement.expansionPacks) {
+          result.push(expansion);
+        }
+      }
+    }
+    return result;
+  };
+
   // Parse Salesforce payload data
   const parseSalesforcePayload = (request) => {
     if (!request?.Payload_Data__c) {
@@ -13,9 +31,9 @@ const SMLComparisonModal = ({ isOpen, onClose, salesforceData, smlData, tenantNa
       const entitlements = payload?.properties?.provisioningDetail?.entitlements || {};
       
       return {
-        modelEntitlements: entitlements.modelEntitlements || [],
-        dataEntitlements: entitlements.dataEntitlements || [],
-        appEntitlements: entitlements.appEntitlements || []
+        modelEntitlements: flattenExpansionPacks(entitlements.modelEntitlements || []),
+        dataEntitlements: flattenExpansionPacks(entitlements.dataEntitlements || []),
+        appEntitlements: flattenExpansionPacks(entitlements.appEntitlements || [])
       };
     } catch (err) {
       console.error('Error parsing Salesforce payload:', err);
@@ -30,9 +48,9 @@ const SMLComparisonModal = ({ isOpen, onClose, salesforceData, smlData, tenantNa
     }
     
     return {
-      modelEntitlements: data.extensionData.modelEntitlements || [],
-      dataEntitlements: data.extensionData.dataEntitlements || [],
-      appEntitlements: data.extensionData.appEntitlements || []
+      modelEntitlements: flattenExpansionPacks(data.extensionData.modelEntitlements || []),
+      dataEntitlements: flattenExpansionPacks(data.extensionData.dataEntitlements || []),
+      appEntitlements: flattenExpansionPacks(data.extensionData.appEntitlements || [])
     };
   };
 
