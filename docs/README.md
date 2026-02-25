@@ -23,6 +23,9 @@ Quick-reference implementation summaries and status updates.
 - **[Regional Bundles Release Notes](technical/Regional-Bundles-Release-Notes.md)** - Latest release information
 - **[Regional Bundles Troubleshooting](technical/Regional-Bundles-Troubleshooting.md)** - Troubleshooting guide
 
+### Custom Reports
+- **[Custom Reports Feature](technical/Custom-Reports-Feature.md)** - AI-driven custom report builder (Phases 1-4)
+
 ### Catalogue & Bundles
 - **[Product Bundles Feature](technical/Product-Bundles-Feature.md)** - Deployment bundles (different from regional bundles)
 
@@ -32,6 +35,16 @@ Quick-reference implementation summaries and status updates.
 ---
 
 ## 📋 Recent Updates
+
+### February 24, 2026
+- ✅ **Custom Reports Feature** - All phases (1-4) implemented
+  - Phase 1: Database migration, repository, service, CRUD routes, agent chat stub
+  - Phase 1: Allowlisted data catalog (24 sources, 8 categories), Zod schema validation
+  - Phase 2: Chat UI with live preview, ReportRenderer, widget components (KPI, charts, tables)
+  - Phase 2: Sidebar integration, route registration, frontend API services
+  - Phase 3: OpenAI LLM integration with system prompt, conversation orchestration, graceful fallback to sample-only mode when no API key is configured
+  - Phase 3+: Per-user AI API key management in Settings (encrypted storage, AES-256-GCM)
+  - Phase 4: Rate limiting, report editing/versioning, JSON export/import, config validation hardening
 
 ### November 11, 2025
 - ✅ **Regional Bundles Feature** - Deployed and verified
@@ -144,10 +157,11 @@ Quick-reference implementation summaries and status updates.
 | Product Catalogue | ✅ | ✅ | ✅ | ✅ |
 | Regional Bundles | ✅ | ✅ | ✅ | ✅ |
 | Product Bundles | ✅ | - | - | - |
+| Custom Reports | ✅ | ✅ Phase 1-4 | - | - |
 
 ---
 
-**Last Updated:** November 11, 2025  
+**Last Updated:** February 24, 2026  
 **Status:** ✅ All documentation current and verified
 
 

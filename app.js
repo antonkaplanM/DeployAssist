@@ -37,6 +37,9 @@ const microsoftAuthRoutes = require('./routes/microsoft-auth.routes');
 const excelLookupRoutes = require('./routes/excel-lookup.routes');
 const excelPollingRoutes = require('./routes/excel-polling.routes');
 const debugConfigRoutes = require('./routes/debug-config.routes');
+const customReportsRoutes = require('./routes/custom-reports.routes');
+const reportAgentRoutes = require('./routes/report-agent.routes');
+const userSettingsRoutes = require('./routes/user-settings.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
@@ -211,6 +214,11 @@ app.use('/api/auth/microsoft', microsoftAuthRoutes);
 app.use('/api/excel-lookup', excelLookupRoutes);
 app.use('/api/excel-polling', excelPollingRoutes);
 app.use('/api/debug-config', debugConfigRoutes);
+
+// Custom Reports endpoints (requires authentication)
+app.use('/api/custom-reports', authenticate, customReportsRoutes);
+app.use('/api/report-agent', authenticate, reportAgentRoutes);
+app.use('/api/user-settings', authenticate, userSettingsRoutes);
 
 console.log('✅ All extracted route modules mounted successfully');
 

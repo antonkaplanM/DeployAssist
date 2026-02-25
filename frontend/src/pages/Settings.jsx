@@ -14,6 +14,9 @@ import {
   PlayIcon,
   StopIcon,
   BugAntIcon,
+  SparklesIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import settingsService from '../services/settingsService';
 import validationService from '../services/validationService';
@@ -62,12 +65,20 @@ const Settings = () => {
   const [debugCategories, setDebugCategories] = useState([]);
   const [debugStatus, setDebugStatus] = useState(null);
 
+  // AI / LLM Configuration
+  const [llmApiKey, setLlmApiKey] = useState('');
+  const [llmModel, setLlmModel] = useState('gpt-4o');
+  const [llmKeyIsSet, setLlmKeyIsSet] = useState(false);
+  const [llmMaskedKey, setLlmMaskedKey] = useState('');
+  const [showLlmKey, setShowLlmKey] = useState(false);
+
   const sections = [
     { id: 'web-connectivity', name: 'Web Connectivity', icon: GlobeAltIcon },
     { id: 'salesforce', name: 'Salesforce', icon: CloudIcon },
     { id: 'sml', name: 'SML Configuration', icon: Cog6ToothIcon },
     { id: 'excel-polling', name: 'Excel Polling', icon: TableCellsIcon },
     { id: 'debug', name: 'Debug Configuration', icon: BugAntIcon },
+    { id: 'ai-config', name: 'AI Configuration', icon: SparklesIcon },
     { id: 'application', name: 'Application Settings', icon: ShieldCheckIcon },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
     { id: 'validation', name: 'Validation Rules', icon: DocumentTextIcon },
@@ -109,6 +120,13 @@ const Settings = () => {
   useEffect(() => {
     if (activeSection === 'debug') {
       loadDebugStatus();
+    }
+  }, [activeSection]);
+
+  // Load AI settings when that section is opened
+  useEffect(() => {
+    if (activeSection === 'ai-config') {
+      loadLLMSettings();
     }
   }, [activeSection]);
 
@@ -419,6 +437,94 @@ const Settings = () => {
       showToast('Failed to disable all debug categories', 'error');
     } finally {
       setLoading('debugDisableAll', false);
+    }
+  };
+
+  // AI / LLM Settings Functions
+  const loadLLMSettings = async () => {
+    try {
+      const data = await settingsService.getLLMSettings();
+      if (data.settings) {
+        setLlmKeyIsSet(data.settings.apiKey?.isSet || false);
+        setLlmMaskedKey(data.settings.apiKey?.value || '');
+        setLlmModel(data.settings.model || 'gpt-4o');
+      }
+    } catch (e) {
+      console.log('Could not load LLM settings:', e);
+    }
+  };
+
+  const handleSaveLLMSettings = async () => {
+    setLoading('llmSave', true);
+    setTestResult('llmSave', null);
+
+    try {
+      const payload = { model: llmModel };
+      if (llmApiKey) payload.apiKey = llmApiKey;
+
+      await settingsService.saveLLMSettings(payload);
+      setTestResult('llmSave', {
+        success: true,
+        message: 'AI settings saved successfully'
+      });
+      setLlmApiKey('');
+      setShowLlmKey(false);
+      await loadLLMSettings();
+    } catch (error) {
+      setTestResult('llmSave', {
+        success: false,
+        message: 'Failed to save AI settings',
+        error: error.message
+      });
+    } finally {
+      setLoading('llmSave', false);
+    }
+  };
+
+  const handleTestLLMKey = async () => {
+    setLoading('llmTest', true);
+    setTestResult('llmTest', null);
+
+    try {
+      const result = await settingsService.testLLMKey();
+      setTestResult('llmTest', {
+        success: result.success,
+        message: result.message,
+        details: result.details
+      });
+    } catch (error) {
+      setTestResult('llmTest', {
+        success: false,
+        message: 'Test failed',
+        error: error.message
+      });
+    } finally {
+      setLoading('llmTest', false);
+    }
+  };
+
+  const handleRemoveLLMKey = async () => {
+    setLoading('llmRemove', true);
+    setTestResult('llmSave', null);
+
+    try {
+      await settingsService.deleteLLMSettings();
+      setLlmApiKey('');
+      setLlmKeyIsSet(false);
+      setLlmMaskedKey('');
+      setShowLlmKey(false);
+      setTestResult('llmSave', {
+        success: true,
+        message: 'API key removed'
+      });
+    } catch (error) {
+      setTestResult('llmSave', {
+        success: false,
+        message: 'Failed to remove API key',
+        error: error.message
+      });
+    } finally {
+      setLoading('llmRemove', false);
     }
   };
 
@@ -1341,6 +1447,140 @@ const Settings = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* AI Configuration */}
+            {activeSection === 'ai-config' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">AI Configuration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configure your OpenAI API key for the AI-driven report builder in Custom Reports
+                </p>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-colors">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                    <strong>How it works:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-800 dark:text-blue-300 list-disc list-inside space-y-1 ml-2">
+                    <li>Enter your personal OpenAI API key below</li>
+                    <li>The key is encrypted and stored securely on the server</li>
+                    <li>Once configured, the AI chat in Custom Reports will use your key</li>
+                    <li>Without a key, you can still use the "Load Sample" feature</li>
+                  </ul>
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
+                    Get an API key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-medium">platform.openai.com/api-keys</a>
+                  </p>
+                </div>
+
+                {/* Current Key Status */}
+                <div className={`rounded-lg border p-4 ${
+                  llmKeyIsSet
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                } transition-colors`}>
+                  <div className="flex items-start gap-3">
+                    {llmKeyIsSet ? (
+                      <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <ExclamationCircleIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${
+                        llmKeyIsSet ? 'text-green-800 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {llmKeyIsSet ? 'API Key Configured' : 'No API Key Set'}
+                      </p>
+                      {llmKeyIsSet && llmMaskedKey && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-mono">{llmMaskedKey}</p>
+                      )}
+                    </div>
+                    {llmKeyIsSet && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleTestLLMKey}
+                          disabled={loadingStates.llmTest}
+                          className="px-3 py-1.5 bg-blue-600 dark:bg-blue-700 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
+                        >
+                          {loadingStates.llmTest ? 'Testing...' : 'Test Key'}
+                        </button>
+                        <button
+                          onClick={handleRemoveLLMKey}
+                          disabled={loadingStates.llmRemove}
+                          className="px-3 py-1.5 bg-red-600 dark:bg-red-700 text-white text-sm rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50"
+                        >
+                          {loadingStates.llmRemove ? 'Removing...' : 'Remove'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {renderTestResult('llmTest')}
+
+                <div className="pt-4 space-y-4">
+                  {/* API Key Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {llmKeyIsSet ? 'Replace API Key' : 'OpenAI API Key'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showLlmKey ? 'text' : 'password'}
+                        value={llmApiKey}
+                        onChange={(e) => setLlmApiKey(e.target.value)}
+                        placeholder="sk-..."
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLlmKey(!showLlmKey)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        {showLlmKey
+                          ? <EyeSlashIcon className="h-5 w-5" />
+                          : <EyeIcon className="h-5 w-5" />
+                        }
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Your key is encrypted before storage and never exposed in API responses
+                    </p>
+                  </div>
+
+                  {/* Model Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Model
+                    </label>
+                    <select
+                      value={llmModel}
+                      onChange={(e) => setLlmModel(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                    >
+                      <option value="gpt-4o">GPT-4o (recommended)</option>
+                      <option value="gpt-4o-mini">GPT-4o Mini (faster, cheaper)</option>
+                      <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                      <option value="o3-mini">o3-mini (reasoning)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      GPT-4o is recommended for best report generation quality
+                    </p>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveLLMSettings}
+                      disabled={loadingStates.llmSave || (!llmApiKey && !llmKeyIsSet)}
+                      className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
+                    >
+                      {loadingStates.llmSave ? 'Saving...' : 'Save Configuration'}
+                    </button>
+                  </div>
+
+                  {renderTestResult('llmSave')}
                 </div>
               </div>
             )}

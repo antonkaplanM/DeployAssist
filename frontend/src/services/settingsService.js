@@ -123,6 +123,43 @@ const settingsService = {
     }
   },
 
+  // LLM / AI Configuration (stored encrypted on the server)
+  getLLMSettings: async () => {
+    try {
+      const response = await api.get('/user-settings/llm');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  saveLLMSettings: async ({ apiKey, model }) => {
+    try {
+      const response = await api.put('/user-settings/llm', { apiKey, model });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteLLMSettings: async () => {
+    try {
+      const response = await api.delete('/user-settings/llm');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  testLLMKey: async () => {
+    try {
+      const response = await api.post('/user-settings/llm/test');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Application Settings (stored in localStorage)
   getAppSettings: () => {
     const defaults = {

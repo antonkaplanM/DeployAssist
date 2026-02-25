@@ -27,6 +27,9 @@ import Roadmap from './pages/Roadmap';
 import Catalogue from './pages/Catalogue';
 import Staging from './pages/Staging';
 import CurrentAccounts from './pages/CurrentAccounts';
+import CreateReport from './pages/CreateReport';
+import CustomReportsList from './pages/CustomReportsList';
+import CustomReportView from './pages/CustomReportView';
 
 function App() {
   return (
@@ -174,6 +177,40 @@ function App() {
                 element={
                   <ProtectedRoute pageName="help">
                     <Help />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Custom Reports */}
+              <Route 
+                path="custom-reports" 
+                element={
+                  <ProtectedRoute pageName="custom_reports.view">
+                    <CustomReportsList />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="custom-reports/create" 
+                element={
+                  <ProtectedRoute pageName="custom_reports.create">
+                    <CreateReport />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="custom-reports/edit/:slug" 
+                element={
+                  <ProtectedRoute pageName="custom_reports.create">
+                    <CreateReport />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="custom-reports/:slug" 
+                element={
+                  <ProtectedRoute pageName="custom_reports.view">
+                    <CustomReportView />
                   </ProtectedRoute>
                 } 
               />

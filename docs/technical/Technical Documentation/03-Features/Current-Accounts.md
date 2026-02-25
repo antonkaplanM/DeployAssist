@@ -168,6 +168,7 @@ The full sync process fetches **fresh data directly from SML** and updates all r
 5. **Extract Apps**: Parse entitlements from SML data to get individual apps
 6. **Calculate Type**: Find longest entitlement across all products (Apps, Models, Data). POC if longest term < 90 days, else Subscription
 7. **Set Tenant Status**: Set `tenant_status` to 'Active' or 'Deprovisioned' based on SML isDeleted flag
+7a. **Capture Deprovisioned Date**: Only for tenants confirmed deprovisioned by SML (`isDeleted=true`), replace the `completion_date` with the Deprovision PS record's CreatedDate from Salesforce. The `tenant_status` column indicates whether the date represents provisioning or deprovisioning. SML is the source of truth; Salesforce deprovision records that were never processed in SML are ignored.
 8. **Upsert Records**: Insert new or update existing records
 9. **Mark Removed**: Records not updated are marked as 'removed'
 10. **Preserve Comments**: User comments are never overwritten
@@ -215,7 +216,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 | Type | Calculated | Based on app startDate/endDate term |
 | CSM/Owner | Salesforce PS | CreatedBy.Name |
 | Provisioning Status | Salesforce PS | Status__c |
-| Completion Date | Salesforce PS | CreatedDate |
+| Completion Date | Salesforce PS | CreatedDate from "New" PS record (Active tenants) or Deprovision PS record (Deprovisioned tenants) |
 | Size | SML (direct) | extensionData.appEntitlements.packageName |
 | Region | Salesforce PS Payload | payload.region |
 | Tenant Name | SML (direct) | tenant.tenantName |
@@ -232,6 +233,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 
 ### Backend
 - `database/init-scripts/16-current-accounts.sql` - Database schema
+- `database/init-scripts/17-current-accounts-tenant-status.sql` - tenant_status column migration
 - `services/current-accounts.service.js` - Business logic & sync
 - `services/confluence.service.js` - Confluence API integration for publishing
 - `routes/current-accounts.routes.js` - API endpoints

@@ -9,6 +9,7 @@ import {
   UsersIcon,
   CubeIcon,
   BeakerIcon,
+  DocumentChartBarIcon,
   Cog6ToothIcon,
   QuestionMarkCircleIcon,
   ChevronDownIcon,
@@ -23,6 +24,7 @@ const Sidebar = () => {
   const [provisioningOpen, setProvisioningOpen] = useState(false);
   const [customerProductsOpen, setCustomerProductsOpen] = useState(false);
   const [experimentalOpen, setExperimentalOpen] = useState(false);
+  const [customReportsOpen, setCustomReportsOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -42,11 +44,15 @@ const Sidebar = () => {
     // Check if current path belongs to Experimental section
     const isExperimentalPath = path.startsWith('/experimental');
     
+    // Check if current path belongs to Custom Reports section
+    const isCustomReportsPath = path.startsWith('/custom-reports');
+    
     // Update states accordingly
     setAnalyticsOpen(isAnalyticsPath);
     setProvisioningOpen(isProvisioningPath);
     setCustomerProductsOpen(isCustomerProductsPath);
     setExperimentalOpen(isExperimentalPath);
+    setCustomReportsOpen(isCustomReportsPath);
   }, [location.pathname]);
 
   // Define all navigation items with their page name mappings
@@ -139,6 +145,26 @@ const Sidebar = () => {
           path: '/pending-product-requests', 
           id: 'nav-pending-product-requests',
           pageName: 'customer_products'
+        }
+      ]
+    },
+    {
+      name: 'Custom Reports',
+      icon: DocumentChartBarIcon,
+      id: 'nav-custom-reports',
+      pageName: 'custom_reports',
+      submenu: [
+        {
+          name: 'Create Report',
+          path: '/custom-reports/create',
+          id: 'nav-custom-reports-create',
+          pageName: 'custom_reports.create'
+        },
+        {
+          name: 'View Reports',
+          path: '/custom-reports',
+          id: 'nav-custom-reports-view',
+          pageName: 'custom_reports.view'
         }
       ]
     },
@@ -236,15 +262,18 @@ const Sidebar = () => {
               const isOpen = item.name === 'Analytics' ? analyticsOpen : 
                            item.name === 'Provisioning Monitor' ? provisioningOpen :
                            item.name === 'Customer Products' ? customerProductsOpen :
+                           item.name === 'Custom Reports' ? customReportsOpen :
                            item.name === 'Experimental Pages' ? experimentalOpen : false;
               const setOpen = item.name === 'Analytics' ? setAnalyticsOpen : 
                             item.name === 'Provisioning Monitor' ? setProvisioningOpen :
                             item.name === 'Customer Products' ? setCustomerProductsOpen :
+                            item.name === 'Custom Reports' ? setCustomReportsOpen :
                             item.name === 'Experimental Pages' ? setExperimentalOpen : null;
 
               const subnavId = item.name === 'Analytics' ? 'analytics-subnav' :
                               item.name === 'Provisioning Monitor' ? 'provisioning-subnav' :
                               item.name === 'Customer Products' ? 'customer-products-subnav' :
+                              item.name === 'Custom Reports' ? 'custom-reports-subnav' :
                               item.name === 'Experimental Pages' ? 'experimental-subnav' : undefined;
 
               return (

@@ -74,12 +74,23 @@ const config = {
         }
     },
 
+    // LLM / AI Configuration
+    llm: {
+        provider: process.env.LLM_PROVIDER || 'openai',
+        apiKey: process.env.OPENAI_API_KEY || '',
+        model: process.env.LLM_MODEL || 'gpt-4o',
+        maxTokens: parseInt(process.env.LLM_MAX_TOKENS || '4096', 10),
+        temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.2'),
+        enabled: !!process.env.OPENAI_API_KEY
+    },
+
     // Feature Flags
     features: {
         enableSML: process.env.ENABLE_SML !== 'false',
         enableJira: process.env.ENABLE_JIRA !== 'false',
         enableAuditTrail: process.env.ENABLE_AUDIT_TRAIL !== 'false',
-        enableExpirationMonitor: process.env.ENABLE_EXPIRATION_MONITOR !== 'false'
+        enableExpirationMonitor: process.env.ENABLE_EXPIRATION_MONITOR !== 'false',
+        enableReportAI: process.env.ENABLE_REPORT_AI !== 'false'
     },
 
     // Logging Configuration

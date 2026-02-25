@@ -340,6 +340,16 @@ class CurrentAccountsService {
         // Step 2: Fetch enrichment data (PS records, etc.) for this tenant
         const enrichmentData = await this._fetchEnrichmentData(tenant);
 
+        // Step 2b: For deprovisioned tenants, replace the completion date with the actual
+        // deprovisioning date from the Deprovision PS record. SML is the source of truth for
+        // tenant status; we only look this up when SML confirms isDeleted=true.
+        if (tenantStatus === 'Deprovisioned') {
+            const deprovisionedDate = await this._fetchDeprovisionedDate(tenant.tenant_name);
+            if (deprovisionedDate) {
+                enrichmentData.completionDate = deprovisionedDate;
+            }
+        }
+
         // Step 3: Build tenant URL
         const tenantUrl = tenant.tenant_name 
             ? `https://${tenant.tenant_name}.rms.com`
@@ -623,6 +633,37 @@ class CurrentAccountsService {
         } catch (e) {
             console.warn('Failed to parse PS payload:', e.message);
         }
+    }
+
+    /**
+     * Fetch the deprovisioned date from the Salesforce Deprovision PS record.
+     * Only called when SML has confirmed the tenant is deprovisioned (isDeleted=true).
+     * @param {string} tenantName - The tenant name to look up
+     * @returns {Promise<Date|null>} The CreatedDate of the Deprovision PS record, or null
+     * @private
+     */
+    async _fetchDeprovisionedDate(tenantName) {
+        try {
+            const conn = await salesforce.getConnection();
+            const escapedTenantName = tenantName.replace(/'/g, "\\'");
+
+            const soql = `
+                SELECT Id, CreatedDate
+                FROM Prof_Services_Request__c 
+                WHERE Tenant_Name__c = '${escapedTenantName}'
+                  AND TenantRequestAction__c = 'Deprovision'
+                ORDER BY CreatedDate DESC
+                LIMIT 1
+            `;
+
+            const result = await conn.query(soql);
+            if (result.records.length > 0) {
+                return new Date(result.records[0].CreatedDate);
+            }
+        } catch (e) {
+            console.warn(`⚠️ Could not fetch Deprovision PS record for ${tenantName}: ${e.message}`);
+        }
+        return null;
     }
 
     /**
