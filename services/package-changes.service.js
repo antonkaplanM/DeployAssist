@@ -16,7 +16,7 @@ class PackageChangesService {
      * @returns {Promise<Object>} Summary data
      */
     async getPackageChangeSummary(timeFrame = '1y') {
-        logger.info('Package change summary API called', { timeFrame });
+        logger.debug('Package change summary requested', { timeFrame });
         
         const result = await db.getPackageChangeSummary(timeFrame);
         
@@ -38,7 +38,7 @@ class PackageChangesService {
      * @returns {Promise<Object>} Package changes by product
      */
     async getPackageChangesByProduct(timeFrame = '1y') {
-        logger.info('Package changes by product API called', { timeFrame });
+        logger.debug('Package changes by product requested', { timeFrame });
         
         const result = await db.getPackageChangesByProduct(timeFrame);
         
@@ -60,7 +60,7 @@ class PackageChangesService {
      * @returns {Promise<Object>} Package changes by account
      */
     async getPackageChangesByAccount(timeFrame = '1y', limit = null) {
-        logger.info('Package changes by account API called', { timeFrame, limit });
+        logger.debug('Package changes by account requested', { timeFrame, limit });
         
         const result = await db.getPackageChangesByAccount(timeFrame, limit);
         
@@ -81,7 +81,7 @@ class PackageChangesService {
      * @returns {Promise<Object>} Recent package changes
      */
     async getRecentPackageChanges(limit = 20) {
-        logger.info('Recent package changes API called', { limit });
+        logger.debug('Recent package changes requested', { limit });
         
         const result = await db.getRecentPackageChanges(limit);
         

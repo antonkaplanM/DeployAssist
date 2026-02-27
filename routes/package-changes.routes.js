@@ -17,8 +17,6 @@ const logger = require('../utils/logger');
  *   - timeFrame: Time frame for analysis (default: '1y')
  */
 router.get('/summary', asyncHandler(async (req, res) => {
-    logger.info('Package change summary API called', req.query);
-    
     const timeFrame = req.query.timeFrame || '1y';
     
     const result = await packageChangesService.getPackageChangeSummary(timeFrame);
@@ -38,8 +36,6 @@ router.get('/summary', asyncHandler(async (req, res) => {
  *   - timeFrame: Time frame for analysis (default: '1y')
  */
 router.get('/by-product', asyncHandler(async (req, res) => {
-    logger.info('Package changes by product API called', req.query);
-    
     const timeFrame = req.query.timeFrame || '1y';
     
     const result = await packageChangesService.getPackageChangesByProduct(timeFrame);
@@ -60,8 +56,6 @@ router.get('/by-product', asyncHandler(async (req, res) => {
  *   - limit: Max results (optional)
  */
 router.get('/by-account', asyncHandler(async (req, res) => {
-    logger.info('Package changes by account API called', req.query);
-    
     const timeFrame = req.query.timeFrame || '1y';
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     
@@ -82,8 +76,6 @@ router.get('/by-account', asyncHandler(async (req, res) => {
  *   - limit: Max results (default: 20)
  */
 router.get('/recent', asyncHandler(async (req, res) => {
-    logger.info('Recent package changes API called', req.query);
-    
     const limit = parseInt(req.query.limit) || 20;
     
     const result = await packageChangesService.getRecentPackageChanges(limit);

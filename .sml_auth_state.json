@@ -25,7 +25,7 @@
       "value": "eyJ6aXAiOiJERUYiLCJwMnMiOiJWZ1B4VmwxU0NGNVdueVJuMmxPZGhnIiwicDJjIjoxMDAwLCJ2ZXIiOiIxIiwiZW5jIjoiQTI1NkdDTSIsImFsZyI6IlBCRVMyLUhTNTEyK0EyNTZLVyJ9.djrH24IUGar6JQ1vLdrRTzC2KQXgoORWWjkfVjneN21R7oQeczG7Xw.ZPVkf5f3Q3hwfSC7.OY9YXPIWLzw1JFLBk2lZw0Gfr-qpt1bvGDO3d0QqGkTrAXn2PkmbznUOCjLGUMdEs2vPIyju12mLvFx_wu7ra-jszBEJkabEpKE-UDPhIwmA7O75sQVGxikN49-ukyyA5tGJkab41n151Pvbwu9hsM-Fu-Ww80VwhAoa4NCs3bK_FQ.7CE8PEWEfaad5AJO9pHIRg",
       "domain": "rms.okta.com",
       "path": "/",
-      "expires": 1803568978.291589,
+      "expires": 1803748459.006663,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
@@ -57,7 +57,7 @@
       "value": "a8017207-2573-428c-6e51-2c0537fdf072",
       "domain": ".tenant-zero-eu.rms.com",
       "path": "/",
-      "expires": 1803514487,
+      "expires": 1803748465,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -67,7 +67,7 @@
       "value": "a8017207-2573-428c-6e51-2c0537fdf072",
       "domain": ".tenant-zero-eu.rms.com",
       "path": "/",
-      "expires": 1803514487,
+      "expires": 1803748465,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None",
@@ -79,34 +79,14 @@
       "value": "anton.kaplan@rms.com",
       "domain": "rms.okta.com",
       "path": "/",
-      "expires": 1803568950,
+      "expires": 1803742592,
       "httpOnly": false,
       "secure": true,
       "sameSite": "Lax"
-    },
-    {
-      "name": "__login_session",
-      "value": "eyJyZWRpcmVjdFVybCI6bnVsbCwiaW5jbHVkZVRva2Vuc0luUmVkaXJlY3QiOmZhbHNlLCJjb2RlVmVyaWZpZXIiOiJiNDFiNzA5OWE2ODE1ZTAyYTg5NWMxNWNlMDUxYzM0NWU0YzdjNGNjYzY4MGY4ODNjODI0NGE3MDZiM2M1ZTU4OTBjOWUyNTRiZTczMTY0NDc0ZmI2Y2QwYTFmYjliNzdiZTc0MWEwYjVmNWEwODNmYWNmZjAwYTQ1MmZhODhhNyIsInN0YXRlIjoiTjJZd05HRmtNVEJoTW1OaFpqbGpPRFZpWXpObE5UaGhaVEZtWldObE4yTTBabUl5WlRBek5UaGhNR1UzT1RFeU1EWTNZV0psWldVd016VXpOMlZsWlRsaU1qWTFPRGhrWWpjek0yTXhNRFUyT0dZeFlqWXpZV014T1dGa01XRmhaR1ZoTW1OaU5qY3pabVJrTnpWak1tWmlNalExTlRRNFl6azFaV1kwWXpRMk0yWmtaakUzTlRFNVpEZzBNR0U0TWpJM01UQTVabUZsWlRabU1EazRaalprT0dGa1pqSTNOell5TmpSa1pqVTVNelF4T1RJNVlqVTNOamRoTVdVM05qSmpNREpoWm1NeE5XTXhNR00zTm1JMVptTmlORFF6WXpkbE5XTmlNbVF5TTJNMk1qa3hOREpoWlRreFlqSXpPRFE0TmpSa1pETXlaREEwWTJFMU5BPT0ifQ%3D%3D.lROj5zM4Kk%2BESIUif2UMO9zA0jcrsLS3YB29O3D8oc8",
-      "domain": "tenant-zero-eu.rms.com",
-      "path": "/",
-      "expires": 1772036543.364617,
-      "httpOnly": true,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "oktaStateToken",
-      "value": "00mqI1Y1sQFhW4KFLmUTtyMcNXzrn4DkspSQxq7IRE",
-      "domain": "rms.okta.com",
-      "path": "/",
-      "expires": 1772033273,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "None"
     },
     {
       "name": "xids",
-      "value": "102VNsT-WwgQsujAL3H4E2n1w",
+      "value": "10227kaRRVlRYOqLvlKitvQgw",
       "domain": "rms.okta.com",
       "path": "/",
       "expires": -1,
@@ -116,7 +96,7 @@
     },
     {
       "name": "sid",
-      "value": "102RtTHhlrLQ12u0HhL26YP7Q",
+      "value": "1023x_jB2U6TSSvJQnbH24wBQ",
       "domain": "rms.okta.com",
       "path": "/",
       "expires": -1,
@@ -125,8 +105,18 @@
       "sameSite": "None"
     },
     {
+      "name": "__login_session",
+      "value": "eyJyZWRpcmVjdFVybCI6bnVsbCwiaW5jbHVkZVRva2Vuc0luUmVkaXJlY3QiOmZhbHNlLCJjb2RlVmVyaWZpZXIiOiIyNDFhN2FlY2VkMzAxZjlhMmQwNzg2MmUxMzBiYzI0NGU4Zjk3ZDNmYjY0NjUzMDlmZDg5NTQxNWE4NDUwMTk2ZmYxOWQxYTM2MmM2Zjc0NWRjZGUyYTAxYmMwNDE4Y2ZhNGMxYmVlZmZhMDI3M2FjZWRhNmM2ZWMyMjhmNjE4MyIsInN0YXRlIjoiTUdNd01HUTFZbU5oTmpjek5XVTNNVGRsT1RabU1qQTNPRFF4TkRjeE9XTTBOMkptWldFM056UTJaREk0TTJRMk5UZ3pZekEzTnpnM1lUWTBObVF6Wmprd00yWmhORGsxT0dFek1tVXhORE14WkdVMU5ESTVNak01WVdVMU5qWmlZMkV3TURFeVpHVmlZamxqTjJOak4yTmlOakJoT1RneVlqVXdZMk5qT0RBMk1ETTBNelU0TldJMk5qSmtOMlppTUdOaVkyUXlNVE5pTVRRd05UZ3dZVGsxTkdZd01HSXhPVEE0T1dNMk1HVXdaV0U0TkRRek5EZGtZakUyT1daalpqTmlaV0k1TTJJM1l6aGxaVEpsTXpBMlpETTBORFU1TmpBMk1qVXpNRGRoTmpRNE9ESXpNelEzTWpVMk56TTFOR0kwTkRFNVptRm1aR1F6T1dFMU5BPT0ifQ%3D%3D.L0T33cJAXaPGP70xAfNZeXZY5aiYnTulY2wQe%2F8kas8",
+      "domain": "tenant-zero-eu.rms.com",
+      "path": "/",
+      "expires": 1772216057.690542,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
       "name": "JSESSIONID",
-      "value": "B07D90D4A53C87563BCF6650387F70F1",
+      "value": "733903937764D7C9B0508D508F68E8C1",
       "domain": "rms.okta.com",
       "path": "/",
       "expires": -1,
@@ -136,7 +126,7 @@
     },
     {
       "name": "XSRF-TOKEN",
-      "value": "0e444a75-63c1-4dae-8865-82b6178e008b",
+      "value": "a951c7b9-a56a-49f0-a111-c83658d886e5",
       "domain": "rms-tenant-zero-eu.auth.eu-west-1.amazoncognito.com",
       "path": "/",
       "expires": -1,
@@ -146,20 +136,20 @@
     },
     {
       "name": "cognito",
-      "value": "\"H4sIAAAAAAAAAAEaAeX+G0V9bfjhBnbLX3fi4MzRku/dvTdsSHUk6CPlrWrXW9FWZ8H1wbr5oMsk3h2AocKN9dVGAwvisT0mmpB3RdSAspKB73hQNr6avn8ndDlyF46aUQr2VLEWQsDWJHDraHEVJoGXXNAy9CWc1jn0Cib4Pm95tyjp966HrIml10BaFsm54LZVn+8cQxCbRu7s24+0df9T6JRPHD3cdKnhyJymtCvk7yTs+9iLrvVXR0ROwHOxACUE7g9w+5CL/T3oOqslUawMFwjzijDl9WZivEOMEG4guoTzWgHSVQr8pbMNFONhx+7guj5V67932Ew4Pm/l1FBywJGvTLk1rrsU1G6Uk5QVZMH/lM3JM2X61t5+cGKxdIT53Smmz9dgqdZ8ZRoBAAA=.H4sIAAAAAAAAAAvh81sXcF2JT4Lv5UXWH6vWhvGyvHo838nYQlXo9r6uFEYA37gVvyAAAAA=.3\"",
+      "value": "\"H4sIAAAAAAAAAAEaAeX+HApFz7GiGGLi2IwL68z9JhfVx3oIUO0zSSO1ofm2NnYtnyuXhYGYZXQyhB6iLq5CJvIr1tVvp5WZ6i96Oiq42usCX1W+fZauMy7HTEPQ3dt5Az+A18kSypdJEy5ivSyfSmO9nJWtQO9QIzfWUBEYI1hwRhyn8zxfm6UsxWpE74634s3YAOMApnsnmTUtfkJB0LRvd85/CWtq4kPY6qQ+/EXPsbXXm7hQIQo+WDJuzEz3fBzyGELLOPKlcsiuz4X7IcF8KlcXLsY5Ek62TiUasToiNypE6YXZFtAu3d2fmDuwZjlmXllV4IzF5r8XSBng7ZZIH+VK3R66PAjhDSVEqimibYhYxKNX6ujJFKBjS++D4jfB6W/oAcYVya1nUhoBAAA=.H4sIAAAAAAAAAHt2cN5T7g8937kE2d7n7Zgg08fk1RMfnC91n09404VV7ZsAgoj9yyAAAAA=.3\"",
       "domain": ".rms-tenant-zero-eu.auth.eu-west-1.amazoncognito.com",
       "path": "/",
-      "expires": 1772036579.116694,
+      "expires": 1772216060.042539,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "cf_clearance",
-      "value": "Fl2_r9LxgacF3Ms.JRc92BKo8YfYFZKTC9ry8LrsnYg-1772032982-1.2.1.1-Wa2GHEYxLkFQY14g3LAP4bwHaN3Nc5lke7LtN8YMCQvkStHNIsPTo7OEum4W5OtbwgRLA3x_YPA00bVIPin.BjNDrfCx7EoAPItNrBN4yxsTu9820A5Bq3yOAoFizckBHdZzgZGzo_ybZ_OVFZpuS_RxcyKpnkn3TKWmD59e_87jg1tpLTntwRdbs88s2FAv0uNNEmE5JijIY4wTXF7qFmQgmysFdVnpca_uURC97dM",
+      "value": "HEV1827tKXzHQtTQKMXqekmEYWA1AM9cfukkl1p10Lg-1772212462-1.2.1.1-diUj.hiSZcXtYSx8B5FAfIKbLELk4LgJMEnNIdEV8AI_x.1KKC8roQcUXgdtv8KLeN70hWrcm3eWNLWawzl.4hmwuUA4IDEhiYo5akp5WTutSN00FUOPcmp5zEFHwiXP64dfCvUIgkBULtGrAniFPf.583op9oD17TuGnJdLtGtxT4bTSc0ceGnxdV6fNogZ1NyzKx7BlquQuuafi05JOGRt3Hk.fAHvuaeI5u.XUpQ",
       "domain": ".rms.com",
       "path": "/",
-      "expires": 1803568982.837967,
+      "expires": 1803748462.510393,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None",
@@ -167,24 +157,34 @@
       "_crHasCrossSiteAncestor": false
     },
     {
-      "name": "__cf_bm",
-      "value": "sfnaket0Usa7PLVQZJ.u2itX0PfSOMNlT5nI9OvQ.hU-1772032982.7770977-1.0.1.1-0YfAm9HY6xe3h.dA5Kj0P6YykpT0uzth3o.az1WvDgfJwOY335Ly84MW5ciu0RrYoE3M48jPX3McDzVP44w.mj_pLi3spAGMF5ARr2Q4DiDMg5v6NwyZzKXPyRdVzLOh",
-      "domain": ".rms.com",
-      "path": "/",
-      "expires": 1772034782.838154,
-      "httpOnly": true,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
       "name": "mp_15612e9fec04352381701ad16ac9cda5_mixpanel",
-      "value": "%7B%22distinct_id%22%3A%20%223aa14432d2f9f2851fb8596a0961e36d853c0edc%22%2C%22%24device_id%22%3A%20%2219b0f5c382777e-07b352fd07367d-26001951-e1000-19b0f5c38281539%22%2C%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%2C%22__mps%22%3A%20%7B%7D%2C%22__mpso%22%3A%20%7B%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%7D%2C%22__mpus%22%3A%20%7B%7D%2C%22__mpa%22%3A%20%7B%7D%2C%22__mpu%22%3A%20%7B%7D%2C%22__mpr%22%3A%20%5B%5D%2C%22__mpap%22%3A%20%5B%5D%2C%22Organization%22%3A%20%22tenant-zero-eu%22%2C%22User%20ID%22%3A%20%223aa14432d2f9f2851fb8596a0961e36d853c0edc%22%2C%22%24user_id%22%3A%20%223aa14432d2f9f2851fb8596a0961e36d853c0edc%22%7D",
+      "value": "%7B%22distinct_id%22%3A%20%223aa14432d2f9f2851fb8596a0961e36d853c0edc%22%2C%22%24device_id%22%3A%20%2219b0f5c382777e-07b352fd07367d-26001951-e1000-19b0f5c38281539%22%2C%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%2C%22__mps%22%3A%20%7B%7D%2C%22__mpso%22%3A%20%7B%7D%2C%22__mpus%22%3A%20%7B%7D%2C%22__mpa%22%3A%20%7B%7D%2C%22__mpu%22%3A%20%7B%7D%2C%22__mpr%22%3A%20%5B%5D%2C%22__mpap%22%3A%20%5B%5D%2C%22Organization%22%3A%20%22tenant-zero-eu%22%2C%22User%20ID%22%3A%20%223aa14432d2f9f2851fb8596a0961e36d853c0edc%22%2C%22%24user_id%22%3A%20%223aa14432d2f9f2851fb8596a0961e36d853c0edc%22%7D",
       "domain": ".rms.com",
       "path": "/",
-      "expires": 1803568983,
+      "expires": 1803748463,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
+    },
+    {
+      "name": "__cf_bm",
+      "value": "AvsZqnidj202Qk8Yrgms.A5TgjbfmFUwIAEoou_nQ98-1772212464-1.0.1.1-uerz_.VnMqxVv5lDtdJjYU0knk2KQQZ1qlgNkrvnjpQ5mlsnPu7xbq4yvARY7RqRLlY46AKSpOtG9lDiWH4dGrKNR7BZcqVRXgFdCkaf6Mg",
+      "domain": ".uservoice.com",
+      "path": "/",
+      "expires": 1772214265.013389,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__cf_bm",
+      "value": "mrtVWSRzbIRBKNkFBROWbVxnYTj5b6VaywORu5NEvZ4-1772212466-1.0.1.1-TCeV17EpCB42hFccBaewRdvZhnfV3S1aioHRX1TYNCcqRZwj2c673YK4424mLBnoeHN2Qde0skU8IFlTLmE8QTC9dwPlUQlYaOQ_NkdudkM",
+      "domain": ".rms.com",
+      "path": "/",
+      "expires": 1772214266.234116,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
     }
   ],
   "origins": [
@@ -193,19 +193,19 @@
       "localStorage": [
         {
           "name": "walkMe_wm-ueug",
-          "value": "{\"val\":\"\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\"\",\"exp\":1835050486922}"
+          "value": "{\"val\":\"\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\"\",\"exp\":1835284466578}"
         },
         {
           "name": "RMS:AUTH_SERVICE:TOKENS",
-          "value": "{\"username\":\"SSO_Anton.Kaplan@rms.com\",\"idToken\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IlNFUlZJQ0VfTUFOQUdFTUVOVF8yMDIwMDcwNzE5MTUwMyIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IlNTT19BbnRvbi5LYXBsYW5Acm1zLmNvbSIsInRlbmFudF9pZCI6IjYwMDAyMDAiLCJqdGkiOiI4YzRlYTlkMC1jOGJmLTQwOTEtYjcxOS0yMGIzZjBkOGQ2NzAiLCJldmVudF9pZCI6ImI0ZDhjMDc0LTc5NmItNDRlMy1hMTkzLTA4ZGU3MGRjYTkzMSIsImF1dGhfdGltZSI6MTc3MjAzMjk4MSwidG9rZW5fdXNlIjoiaWQiLCJnaXZlbl9uYW1lIjoiQW50b24iLCJmYW1pbHlfbmFtZSI6IkthcGxhbiIsImVtYWlsIjoiQW50b24uS2FwbGFuQHJtcy5jb20iLCJuYmYiOjE3NzIwMzI5ODEsImV4cCI6MTc3MjAzNjU4MSwiaWF0IjoxNzcyMDMyOTgxLCJpc3MiOiJSTVMifQ.10hTQa9hnw7NuVo-s4Xajo7ZQ5sB0QzjnJs9Zw5fL-AG6tY7-5uXpMSpB5KlCjgRkL7nV09ALnCmYedKTtm469Wp4bYy5cnjQA4dNwYTNGSHgd6yNtjM3l7W0jvH8mIIPH2HG5_sZbjpa5EtXaHARfZ4fWxtyDCnKLFI5EvjkRfEi13YYx3IeZMoKYVQH6zX0nyBBF8UFrUS7s_opTUDQGlCA9Csjf5_kIgxE1DhvhEGeXkqHlcssjJBLV8GPNvfTHmmSQq1cBR_t4oa7Tt6gmaN_m8gkl9D70q7CSUw-gEDXm1-UhlKHJqlA_xjIGfPP5rjAmO43G1t7PNU6CBxDA\",\"refreshToken\":\"kU35QP5pwBFH3MncBbLrZoNmjljIQYBPfp7yZJYGdWk\",\"accessToken\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IlNFUlZJQ0VfTUFOQUdFTUVOVF8yMDIwMDcwNzE5MTUwMyIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IlNTT19BbnRvbi5LYXBsYW5Acm1zLmNvbSIsInRlbmFudF9pZCI6IjYwMDAyMDAiLCJqdGkiOiJmYzBkYzQxZS0zZWNlLTQ0NzMtYjk5NC03NmZmNTJkZjRlM2YiLCJldmVudF9pZCI6ImI0ZDhjMDc0LTc5NmItNDRlMy1hMTkzLTA4ZGU3MGRjYTkzMSIsImF1dGhfdGltZSI6MTc3MjAzMjk4MSwidG9rZW5fdXNlIjoiYWNjZXNzIiwicm9sZXMiOlsiQWRtaW4gUG9ydGFsIFVzZXIiLCJGdWxmaWxsbWVudCBSZXZpZXdlciJdLCJhY3Rpb25zIjpbIkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQSIsIkFBQUFBQUFBIiwiQVNBQUlBQT0iLCJWUUE9IiwiQUFBPSIsIkFBQUFBUUFBIiwiQUE9PSIsIjFCQTFERjQ1MDYwQzE5NkU2RTIyOTAwNzE2MjUzNEFGIl0sInNjb3BlZF9hY3Rpb25zIjpbIjE2QzBCQkRBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIiwiNjg2NTZERThBQUFBQUFBQSIsIjgzRUJFRjgxQVNBQUlBQT0iLCI0NDhDMzRERFZRQT0iLCI1NURERDY2REFBQT0iLCI3N0I2MjUzN0FBQUFBUUFBIiwiN0VBQ0E3OUVBQT09Il0sImFwcHMiOiJSTVMtVEVOQU5ULUFETUlOIiwiZ3JvdXBzIjoiQWRtaW5Qb3J0YWxVc2Vyc1BFIiwibmJmIjoxNzcyMDMyOTgxLCJleHAiOjE3NzIwMzY1ODEsImlhdCI6MTc3MjAzMjk4MSwiaXNzIjoiUk1TIn0.m4e0KaJq4EpZoFPiThsulz_4PYh8pgtSU1ofyjTbrxU4SjyTtsfv6d0gvMorW9jrSeExKBpLQPL0zZZmg3SMz61dbzrmg_b0tqnSHRenddVDviZc5ImKDA0_RhdglLWd13vUamcBsMkUQ2mzPEisLy1MAL5OqFObO2XImfm6Bw4LYLkTF2UXkETeNkzSqxS6TyfZQnK_j1ju05zeOLmhaOgNraqTXRTDlHSut0rR8BX1ETDvLj5Ry3KyfihIXZvNNEHv0fZ16WWQ90SDivBxqh7rU1hbJqAryZrGmSVDXjGalZmC9y_DVdCK-IilDPZZGX6WJQaJFKpPRo90vkgBUQ\",\"tokenType\":\"Bearer\",\"expiresIn\":3600,\"createdAt\":1760043111013,\"expiresAt\":1772036402476,\"tenantName\":\"tenant-zero-eu\"}"
+          "value": "{\"username\":\"SSO_Anton.Kaplan@rms.com\",\"idToken\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IlNFUlZJQ0VfTUFOQUdFTUVOVF8yMDIwMDcwNzE5MTUwMyIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IlNTT19BbnRvbi5LYXBsYW5Acm1zLmNvbSIsInRlbmFudF9pZCI6IjYwMDAyMDAiLCJqdGkiOiJjNWQyMjhjZS0xMmY3LTQ5YjItYWJlYy0zMjk0ZGIwMWUzYzgiLCJldmVudF9pZCI6Ijc0YmU4NjUyLTM0ZjAtNDQzNC00ZWVhLTA4ZGU3NTZiMDllMyIsImF1dGhfdGltZSI6MTc3MjIxMjQ2MSwidG9rZW5fdXNlIjoiaWQiLCJnaXZlbl9uYW1lIjoiQW50b24iLCJmYW1pbHlfbmFtZSI6IkthcGxhbiIsImVtYWlsIjoiQW50b24uS2FwbGFuQHJtcy5jb20iLCJuYmYiOjE3NzIyMTI0NjEsImV4cCI6MTc3MjIxNjA2MSwiaWF0IjoxNzcyMjEyNDYxLCJpc3MiOiJSTVMifQ.YTudCctTeoSxGppWakQi92RCv6vxfh3r9ze76MLXo4hkhSdQSUQeihEQfmD6tcEa5AcTECpjYn6cFMAZamIDJA82gLYPKhOJ5ADw9kuZi92YzQPgkzTfmtStEnMOglx3OWDBMAhnc_oRFAsMvDb1dn3NIr0uCbdXx5RNe4kMbM-uHPVV-8-4Vybtz44jnv1Zaul9eqDztxNvcHEXH27Yqv73f72x3shq8MnaTCpnZR3zvBykLulDXhpinepOXWEIQhOmvQBlvCU9FpXvcw135QHLFG_pmyfHOprds6wVKs7AIH-AQsh01lNt-A3BSoHo1NuR0zY7f4bUTWpVFOCvWA\",\"refreshToken\":\"VSqjZBpXaU_KYQrlZQ62e4h-RvmVMvcdLUL0_W30NC4\",\"accessToken\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IlNFUlZJQ0VfTUFOQUdFTUVOVF8yMDIwMDcwNzE5MTUwMyIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IlNTT19BbnRvbi5LYXBsYW5Acm1zLmNvbSIsInRlbmFudF9pZCI6IjYwMDAyMDAiLCJqdGkiOiI5OGRlNTIxMS00NTkzLTQ1OWEtOWQ0ZC1iZDA3Mjk4ZTJlYzEiLCJldmVudF9pZCI6Ijc0YmU4NjUyLTM0ZjAtNDQzNC00ZWVhLTA4ZGU3NTZiMDllMyIsImF1dGhfdGltZSI6MTc3MjIxMjQ2MSwidG9rZW5fdXNlIjoiYWNjZXNzIiwicm9sZXMiOlsiQWRtaW4gUG9ydGFsIFVzZXIiLCJGdWxmaWxsbWVudCBSZXZpZXdlciJdLCJhY3Rpb25zIjpbIkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQSIsIkFBQUFBQUFBIiwiQVNBQUlBQT0iLCJWUUE9IiwiQUFBPSIsIkFBQUFBUUFBIiwiQUE9PSIsIjFCQTFERjQ1MDYwQzE5NkU2RTIyOTAwNzE2MjUzNEFGIl0sInNjb3BlZF9hY3Rpb25zIjpbIjE2QzBCQkRBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIiwiNjg2NTZERThBQUFBQUFBQSIsIjgzRUJFRjgxQVNBQUlBQT0iLCI0NDhDMzRERFZRQT0iLCI1NURERDY2REFBQT0iLCI3N0I2MjUzN0FBQUFBUUFBIiwiN0VBQ0E3OUVBQT09Il0sImFwcHMiOiJSTVMtVEVOQU5ULUFETUlOIiwiZ3JvdXBzIjoiQWRtaW5Qb3J0YWxVc2Vyc1BFIiwibmJmIjoxNzcyMjEyNDYxLCJleHAiOjE3NzIyMTYwNjEsImlhdCI6MTc3MjIxMjQ2MSwiaXNzIjoiUk1TIn0.UUZDUr7rh_8Blqmb6asgb1sDaltC-xHZpndOxq-dyiUWjd4u2GJJNJ_o5QFJ9fYHWbkXv6wtFa5V-nSPgcPQVz05_m-1gR6OfjIgaqHUpMhZ0i8k5rGM0o9XKAFwXwbqXF0lIxIWQWATu2CNV0EOD3kLJ2csKBBbTzUj7YstnwlCn8v8wztlateFQIJ16SRHlVvIjBWSPW0Ib8OyKbpt-kTC9CE1vdfdh3wZk80eiZOMsMZla3A1W7J3tVHdbAGoeARC_D7lXTjAWN8ncz7dAId0rL11qfgVQmF-tv0eOwWrEZvBbo1rsfks9IpuzOU_THrPjgENCnjAbVC5zA0O9Q\",\"tokenType\":\"Bearer\",\"expiresIn\":3600,\"createdAt\":1760043111013,\"expiresAt\":1772215882108,\"tenantName\":\"tenant-zero-eu\"}"
         },
         {
           "name": "walkMe_wm-session-per-user",
-          "value": "{\"val\":\"{\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\":{\\\"euId\\\":\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\",\\\"sId\\\":\\\"4fe257b4-8d57-4a51-9dfa-b74dd1b127c3\\\",\\\"startTime\\\":1771978486936,\\\"lastActivityTime\\\":1771978487389}}\",\"exp\":1772583287390}"
+          "value": "{\"val\":\"{\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\":{\\\"euId\\\":\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\",\\\"sId\\\":\\\"b1f9bc76-f722-47b7-987c-fee8e6279eb1\\\",\\\"startTime\\\":1772212466589,\\\"lastActivityTime\\\":1772212466997}}\",\"exp\":1772817266997}"
         },
         {
           "name": "walkMe_wm-hb",
-          "value": "{\"val\":\"{\\\"sendBaseTime\\\":1771978487405}\",\"exp\":1772583287405}"
+          "value": "{\"val\":\"{\\\"sendBaseTime\\\":1772212467012}\",\"exp\":1772817267013}"
         },
         {
           "name": "walkMe_wm-settings-cache-bust",
@@ -213,11 +213,11 @@
         },
         {
           "name": "walkMe_wm-ds-s",
-          "value": "{\"val\":\"\\\"[]\\\"\",\"exp\":1771979086972}"
+          "value": "{\"val\":\"\\\"[]\\\"\",\"exp\":1772213066612}"
         },
         {
           "name": "walkMe_wm-smtp-init",
-          "value": "{\"val\":\"{\\\"type\\\":6}\",\"exp\":1771979087422}"
+          "value": "{\"val\":\"{\\\"type\\\":6}\",\"exp\":1772213067027}"
         },
         {
           "name": "wm-deepui-master-mode",
@@ -233,11 +233,11 @@
         },
         {
           "name": "__mpq_15612e9fec04352381701ad16ac9cda5_ev",
-          "value": "[{\"id\":\"g288o3wuds3jdxry\",\"flushAfter\":1772032992718,\"payload\":{\"event\":\"Successful Login Redirect\",\"properties\":{\"$os\":\"Windows\",\"$browser\":\"Chrome\",\"$referrer\":\"https://tenant-zero-eu.rms.com/home/login/?code=0981138a-0301-4d6a-9c1b-6e3c534dc1a2&state=N2YwNGFkMTBhMmNhZjljODViYzNlNThhZTFmZWNlN2M0ZmIyZTAzNThhMGU3OTEyMDY3YWJlZWUwMzUzN2VlZTliMjY1ODhkYjczM2MxMDU2OGYxYjYzYWMxOWFkMWFhZGVhMmNiNjczZmRkNzVjMmZiMjQ1NTQ4Yzk1\",\"$referring_domain\":\"tenant-zero-eu.rms.com\",\"$current_url\":\"https://tenant-zero-eu.rms.com/login/callback/?code=0981138a-0301-4d6a-9c1b-6e3c534dc1a2&state=N2YwNGFkMTBhMmNhZjljODViYzNlNThhZTFmZWNlN2M0ZmIyZTAzNThhMGU3OTEyMDY3YWJlZWUwMzUzN2VlZTliMjY1ODhkYjczM2MxMDU2OGYxYjYzYWMxOWFkMWFhZGVhMmNiNjczZmRkNzVjMmZiMjQ1NTQ4\",\"$browser_version\":120,\"$screen_height\":720,\"$screen_width\":1280,\"mp_lib\":\"web\",\"$lib_version\":\"2.64.0\",\"$insert_id\":\"12xdit7a72gwux3p\",\"time\":1772032982.718,\"distinct_id\":\"3aa14432d2f9f2851fb8596a0961e36d853c0edc\",\"$device_id\":\"19b0f5c382777e-07b352fd07367d-26001951-e1000-19b0f5c38281539\",\"$initial_referrer\":\"$direct\",\"$initial_referring_domain\":\"$direct\",\"Organization\":\"tenant-zero-eu\",\"User ID\":\"3aa14432d2f9f2851fb8596a0961e36d853c0edc\",\"$user_id\":\"3aa14432d2f9f2851fb8596a0961e36d853c0edc\",\"token\":\"15612e9fec04352381701ad16ac9cda5\",\"mp_sent_by_lib_version\":\"2.64.0\"}}}]"
+          "value": "[{\"id\":\"7yoyhwu4s2bcmk9y\",\"flushAfter\":1772212472393,\"payload\":{\"event\":\"Successful Login Redirect\",\"properties\":{\"$os\":\"Windows\",\"$browser\":\"Chrome\",\"$referrer\":\"https://tenant-zero-eu.rms.com/home/login/?code=fed1e239-42ce-422f-929d-48b1be4bc248&state=MGMwMGQ1YmNhNjczNWU3MTdlOTZmMjA3ODQxNDcxOWM0N2JmZWE3NzQ2ZDI4M2Q2NTgzYzA3Nzg3YTY0NmQzZjkwM2ZhNDk1OGEzMmUxNDMxZGU1NDI5MjM5YWU1NjZiY2EwMDEyZGViYjljN2NjN2NiNjBhOTgyYjUw\",\"$referring_domain\":\"tenant-zero-eu.rms.com\",\"$current_url\":\"https://tenant-zero-eu.rms.com/login/callback/?code=fed1e239-42ce-422f-929d-48b1be4bc248&state=MGMwMGQ1YmNhNjczNWU3MTdlOTZmMjA3ODQxNDcxOWM0N2JmZWE3NzQ2ZDI4M2Q2NTgzYzA3Nzg3YTY0NmQzZjkwM2ZhNDk1OGEzMmUxNDMxZGU1NDI5MjM5YWU1NjZiY2EwMDEyZGViYjljN2NjN2NiNjBhOTgy\",\"$browser_version\":120,\"$screen_height\":720,\"$screen_width\":1280,\"mp_lib\":\"web\",\"$lib_version\":\"2.64.0\",\"$insert_id\":\"yxvuo9c5wh0j9kik\",\"time\":1772212462.392,\"distinct_id\":\"3aa14432d2f9f2851fb8596a0961e36d853c0edc\",\"$device_id\":\"19b0f5c382777e-07b352fd07367d-26001951-e1000-19b0f5c38281539\",\"$initial_referrer\":\"$direct\",\"$initial_referring_domain\":\"$direct\",\"Organization\":\"tenant-zero-eu\",\"User ID\":\"3aa14432d2f9f2851fb8596a0961e36d853c0edc\",\"$user_id\":\"3aa14432d2f9f2851fb8596a0961e36d853c0edc\",\"token\":\"15612e9fec04352381701ad16ac9cda5\",\"mp_sent_by_lib_version\":\"2.64.0\"}}}]"
         },
         {
           "name": "walkMe_wm-deepui-lexicon-enabled-for-data-file",
-          "value": "{\"val\":\"false\",\"exp\":1803514487322}"
+          "value": "{\"val\":\"false\",\"exp\":1803748466898}"
         },
         {
           "name": "walkMe_wm-wmv",
@@ -261,7 +261,7 @@
         },
         {
           "name": "walkMe_wm-ueuT",
-          "value": "{\"val\":\"\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\"\",\"exp\":1772006399232}"
+          "value": "{\"val\":\"\\\"2651a9694ecf12ce8e1ae2d7681901d289ff314b\\\"\",\"exp\":1772265599012}"
         },
         {
           "name": "wm-state",
@@ -273,7 +273,7 @@
         },
         {
           "name": "ld:680818a3f1c80e0a03d76f33:$diagnostics",
-          "value": "{\"dataSinceDate\":1772032983120,\"droppedEvents\":0,\"eventsInLastBatch\":0,\"streamInits\":[]}"
+          "value": "{\"dataSinceDate\":1772212462790,\"droppedEvents\":0,\"eventsInLastBatch\":0,\"streamInits\":[]}"
         }
       ]
     },
@@ -282,7 +282,7 @@
       "localStorage": [
         {
           "name": "okta_accounts",
-          "value": "[{\"id\":\"https://rms.okta.com::Anton.Kaplan@rms.com\",\"login\":\"Anton.Kaplan@rms.com\",\"displayName\":\"Anton Kaplan\",\"origin\":\"https://rms.okta.com\",\"lastUpdated\":\"2026-02-25T15:22:57.727Z\"}]"
+          "value": "[{\"id\":\"https://rms.okta.com::Anton.Kaplan@rms.com\",\"login\":\"Anton.Kaplan@rms.com\",\"displayName\":\"Anton Kaplan\",\"origin\":\"https://rms.okta.com\",\"lastUpdated\":\"2026-02-27T15:36:41.589Z\"}]"
         }
       ]
     }

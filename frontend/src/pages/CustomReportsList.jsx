@@ -31,7 +31,6 @@ const CustomReportsList = () => {
       setTotal(result.meta?.total || 0);
     } catch (err) {
       setError('Failed to load reports');
-      console.error('[CustomReportsList] Error:', err);
     } finally {
       setLoading(false);
     }
@@ -48,8 +47,8 @@ const CustomReportsList = () => {
       await deleteReport(id);
       setReports(prev => prev.filter(r => r.id !== id));
       setTotal(prev => prev - 1);
-    } catch (err) {
-      console.error('Failed to delete report:', err);
+    } catch {
+      // deletion failed; item stays in the list
     } finally {
       setDeletingId(null);
     }

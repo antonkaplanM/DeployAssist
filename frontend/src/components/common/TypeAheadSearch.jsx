@@ -191,6 +191,8 @@ const TypeAheadSearch = ({
                       {highlightMatch(account.name, searchTerm)}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {account.tenantName && <span className="text-blue-600 dark:text-blue-400">Tenant: {account.tenantName}</span>}
+                      {account.tenantName && (account.type || account.industry) && ' • '}
                       {account.type && `Type: ${account.type}`}
                       {account.type && account.industry && ' • '}
                       {account.industry && `Industry: ${account.industry}`}

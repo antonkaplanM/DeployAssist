@@ -117,23 +117,25 @@ Each product card displays:
 
 ### 6. Search and Discovery
 
-**Enhanced Search (Updated December 2024):**
+**Enhanced Search (Updated December 2024, Bug Fix February 2026):**
 - Type-ahead autocomplete for **both account names AND tenant names**
 - Minimum 2 characters to trigger search
 - 300ms debounce for performance
 - Shows accounts and tenants in separate sections in dropdown
 - Tenants section highlighted with 🏢 icon
+- Account dropdown items now display the associated tenant name
 
 **Search Methods:**
 - Type account name or tenant name directly
 - Select from autocomplete dropdown (accounts or tenants)
 - Press Enter or click Search button
-- Search term is passed to SML for tenant lookup
+- Search term is resolved to a tenant name before querying SML
 
 **Tenant vs Account Search:**
 - **Account Name**: Customer/organization name (e.g., "Bank of America")
 - **Tenant Name**: SML tenant identifier (e.g., "bofa-prod-tenant")
-- Both work interchangeably - SML searches by tenant name/display name
+- When an account is selected from the dropdown, the system automatically resolves the associated tenant name from Salesforce and uses it for the SML lookup
+- If a user types an account name manually and the SML lookup fails, the system falls back to resolving the tenant name via Salesforce before reporting an error
 
 ### 7. Summary Statistics
 
@@ -192,10 +194,12 @@ Each product card displays:
 
 **Frontend Flow:**
 1. User enters account name or tenant name in search box
-2. Frontend calls `fetchSMLTenantDetails(tenantName)` from `smlCompareService.js`
-3. Backend uses Playwright to fetch tenant details from SML API
-4. Response is transformed to UI format using `transformSMLDataForUI()`
-5. Products are displayed organized by category
+2. If an account is selected from the dropdown, the associated tenant name (fetched from Salesforce) is used instead of the account name
+3. Frontend calls `fetchSMLTenantDetails(tenantName)` from `smlCompareService.js`
+4. If SML lookup fails, the system attempts to resolve the tenant name via Salesforce `searchProvisioning` and retries
+5. Backend uses Playwright to fetch tenant details from SML API
+6. Response is transformed to UI format using `transformSMLDataForUI()`
+7. Products are displayed organized by category
 
 **API Endpoint (SML):**
 ```
@@ -514,10 +518,11 @@ npx playwright test tests/e2e/customer-products.spec.ts
 - **Solution**: Update token in Settings → SML Integration
 
 **Issue: "Could not find tenant" error**
+- **Solution**: Select the account from the dropdown (the system will automatically resolve the associated tenant name)
 - **Solution**: Verify tenant name spelling (try variations)
-- **Solution**: Search by account name instead
 - **Solution**: Check if tenant exists in SML portal
 - **Solution**: Try the exact tenant display name from SML
+- **Note**: As of February 2026 fix, selecting an account from the dropdown now correctly resolves the tenant name before querying SML
 
 **Issue: Search returns no results**
 - **Solution**: Verify account/tenant name is correct
@@ -617,7 +622,16 @@ console.log(currentCustomerProducts);
 
 ## Changelog
 
-### Version 2.0 (December 2024) - Current
+### Version 2.1 (February 2026) - Current
+
+**Bug Fix: Account Name Search Failing in SML:**
+- **FIX**: Selecting an account from the dropdown now resolves the associated tenant name before querying SML
+- **FIX**: Backend `searchAccounts` now includes `Tenant_Name__c` in results from Salesforce
+- **FIX**: Account dropdown items now display the associated tenant name for visibility
+- **FIX**: Added fallback: if SML lookup fails, the system attempts to resolve tenant name via Salesforce before reporting an error
+- **FIX**: Manual search (Enter/Search button) also benefits from the fallback tenant resolution
+
+### Version 2.0 (December 2024)
 
 **SML Integration Update:**
 - ✅ **NEW**: SML as primary data source (replaces Salesforce payload aggregation)
@@ -660,6 +674,12 @@ For issues, questions, or feature requests:
 3. Check browser console for errors
 4. Contact development team
 5. File an issue in the project repository
+
+## Tenant Entitlements API (for Custom Reports)
+
+A separate `/api/tenant-entitlements` endpoint is available for custom reports that need entitlement data. Unlike this page (which fetches from SML in real time) and `/api/customer-products` (which reads from PS records), the tenant entitlements endpoint reads from the `sml_tenant_data.product_entitlements` column that is populated during the Current Accounts full sync.
+
+This provides a flat, table-friendly response suitable for data-table widgets in the custom reports module. See [Custom Reports Feature](../../Custom-Reports-Feature.md) for details.
 
 ## Related Documentation
 

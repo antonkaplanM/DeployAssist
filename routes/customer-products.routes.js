@@ -18,7 +18,7 @@ const logger = require('../utils/logger');
  *   - includeExpired: Include expired products (default: false)
  */
 router.get('/', asyncHandler(async (req, res) => {
-    logger.info('Customer products API called', req.query);
+    logger.debug('Customer products API called', req.query);
     
     const accountName = req.query.account;
     const includeExpired = req.query.includeExpired === 'true';

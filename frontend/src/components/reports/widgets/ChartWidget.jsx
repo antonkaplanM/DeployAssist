@@ -24,6 +24,12 @@ const DEFAULT_COLORS = [
   '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
 ];
 
+const resolveField = (obj, path) => {
+  if (!obj || !path) return undefined;
+  if (!path.includes('.')) return obj[path];
+  return path.split('.').reduce((acc, key) => acc?.[key], obj);
+};
+
 const ChartWidget = ({ type, title, data, config, loading, error }) => {
   const chartData = useMemo(() => {
     if (!data || !Array.isArray(data) || data.length === 0) return null;
@@ -35,9 +41,9 @@ const ChartWidget = ({ type, title, data, config, loading, error }) => {
 
     if (type === 'pie-chart') {
       return {
-        labels: data.map(d => d[labelField]),
+        labels: data.map(d => resolveField(d, labelField)),
         datasets: [{
-          data: data.map(d => d[valueField]),
+          data: data.map(d => resolveField(d, valueField)),
           backgroundColor: colors.slice(0, data.length),
           borderWidth: 1,
         }],
@@ -45,15 +51,15 @@ const ChartWidget = ({ type, title, data, config, loading, error }) => {
     }
 
     if (multiSeries && seriesField) {
-      const series = [...new Set(data.map(d => d[seriesField]))];
-      const labels = [...new Set(data.map(d => d[xField]))];
+      const series = [...new Set(data.map(d => resolveField(d, seriesField)))];
+      const labels = [...new Set(data.map(d => resolveField(d, xField)))];
       return {
         labels,
         datasets: series.map((s, i) => ({
           label: s,
           data: labels.map(l => {
-            const row = data.find(d => d[xField] === l && d[seriesField] === s);
-            return row ? row[yField] : 0;
+            const row = data.find(d => resolveField(d, xField) === l && resolveField(d, seriesField) === s);
+            return row ? resolveField(row, yField) : 0;
           }),
           backgroundColor: colors[i % colors.length] + '99',
           borderColor: colors[i % colors.length],
@@ -64,10 +70,10 @@ const ChartWidget = ({ type, title, data, config, loading, error }) => {
     }
 
     return {
-      labels: data.map(d => d[xField]),
+      labels: data.map(d => resolveField(d, xField)),
       datasets: [{
         label: title,
-        data: data.map(d => d[yField]),
+        data: data.map(d => resolveField(d, yField)),
         backgroundColor: colors.map(c => c + '99'),
         borderColor: colors,
         borderWidth: 2,

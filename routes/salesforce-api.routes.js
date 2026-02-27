@@ -144,7 +144,7 @@ router.get('/api/analytics/completion-times', asyncHandler(async (req, res) => {
  *   - offset: Pagination offset (default: 0)
  */
 router.get('/api/provisioning/requests', asyncHandler(async (req, res) => {
-    logger.info('Provisioning requests API called', req.query);
+    logger.debug('Provisioning requests API called', req.query);
     
     const pageSize = parseInt(req.query.pageSize) || parseInt(req.query.limit) || 25;
     const offset = parseInt(req.query.offset) || 0;
@@ -177,7 +177,7 @@ router.get('/api/provisioning/requests', asyncHandler(async (req, res) => {
  *   - status: Status filter (optional)
  */
 router.get('/api/provisioning/search', asyncHandler(async (req, res) => {
-    logger.info('Provisioning search API called', req.query);
+    logger.debug('Provisioning search API called', req.query);
     
     const searchTerm = req.query.q || req.query.search || req.query.searchTerm || '';
     const limit = parseInt(req.query.limit) || 20;
@@ -199,7 +199,7 @@ router.get('/api/provisioning/search', asyncHandler(async (req, res) => {
  *   - id: Request ID
  */
 router.get('/api/provisioning/requests/:id', asyncHandler(async (req, res) => {
-    logger.info('Provisioning request details API called', req.params);
+    logger.debug('Provisioning request details API called', req.params);
     
     const { id } = req.params;
     
@@ -218,7 +218,7 @@ router.get('/api/provisioning/requests/:id', asyncHandler(async (req, res) => {
  * GET /api/provisioning/filter-options
  */
 router.get('/api/provisioning/filter-options', asyncHandler(async (req, res) => {
-    logger.info('Provisioning filter options API called');
+    logger.debug('Provisioning filter options API called');
     
     const result = await salesforceApiService.getProvisioningFilterOptions();
     

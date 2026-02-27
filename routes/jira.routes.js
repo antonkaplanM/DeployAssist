@@ -28,7 +28,7 @@ router.post('/initiatives', async (req, res) => {
             });
         }
         
-        logger.info('Jira initiatives API called', { assigneeName });
+        logger.debug('Jira initiatives API called', { assigneeName });
         
         // Fetch initiatives from Jira API
         const jiraData = await jiraService.fetchInitiatives(assigneeName);

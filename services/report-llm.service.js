@@ -107,7 +107,10 @@ Your job is to help users create data dashboard reports by producing a JSON conf
 6. Endpoint paths must start with /api/ and match an entry in the data catalog exactly.
 7. Choose appropriate chart types for the data (e.g. bar charts for categorical comparisons, line charts for time series, pie charts for proportional breakdowns).
 8. For KPI cards, set valueField to the dot-path into the API response where the single metric lives (e.g. "summary.total_changes").
-9. For tables, pick column fields that match the API response's array element keys.
+9. **CRITICAL**: For tables, column "field" values MUST exactly match the field names listed in the data catalog for that endpoint. For example, use "account_name" not "account", "product_name" not "product", "change_type" not "changeType". The API returns snake_case field names from the database.
+10. For charts, xField and yField MUST also exactly match the catalog field names.
+11. Pay attention to the "summary" field in the catalog responseShape – it tells you which key the data array lives under (e.g. "data", "ghostAccounts", "requests", "trendData").
+12. **NEVER include comments** (// or /* */) inside the JSON config block. JSON does not support comments and they will cause parsing errors.
 
 ## Available Data Sources
 ${JSON.stringify(catalog, null, 2)}
@@ -169,9 +172,18 @@ ${JSON.stringify(catalog, null, 2)}
     {
       "id": string, "type": "data-table", "title": string,
       "gridSpan": 1-3,
-      "dataSource": { "endpoint": string, "params": {} },
+      "dataSource": { "endpoint": string, "params": {}, "linkedParams": { "<paramName>": "<paramId>" } },
       "columns": [{ "field": string, "header": string, "format": ${JSON.stringify(VALID_FORMATS)} }],
-      "pageSize": 5-100, "searchable": boolean
+      "pageSize": 5-100, "searchable": boolean,
+      "onRowClick": { "paramId": string, "valueField": string },   // optional
+      "conditionalFormatting": [                                     // optional, max 10 rules
+        {
+          "field": string,                                           // dot-path to the cell value to evaluate
+          "operator": "equals"|"notEquals"|"contains"|"greaterThan"|"lessThan"|"greaterThanOrEqual"|"lessThanOrEqual",
+          "value": string|number|boolean,                            // value to compare against
+          "style": "danger"|"warning"|"success"|"info"|"muted"      // row highlight style
+        }
+      ]
     }
   ]
 }
@@ -179,6 +191,69 @@ ${JSON.stringify(catalog, null, 2)}
 
 ## Component types
 ${VALID_COMPONENT_TYPES.map(t => `- ${t}`).join('\n')}
+
+## Cross-Component Interactivity (Row-Click Linking)
+
+Data tables can publish a value when a row is clicked, and other components can consume that value as a query parameter. This is useful for master-detail patterns (e.g. click an account to view its entitlements).
+
+**How it works:**
+1. Add \`onRowClick\` to the source data-table. \`paramId\` is a unique name for the published value. \`valueField\` is the dot-path to extract from the clicked row.
+2. On the target component's \`dataSource\`, add \`linkedParams\`: an object mapping a query parameter name to the \`paramId\` from step 1. The target component will wait for a row selection before fetching data.
+
+**Example:**
+\`\`\`
+{
+  "components": [
+    {
+      "id": "accounts-table", "type": "data-table",
+      "dataSource": { "endpoint": "/api/expiration/monitor", "params": { "expirationWindow": 30 } },
+      "onRowClick": { "paramId": "selectedAccount", "valueField": "account.name" },
+      "columns": [...]
+    },
+    {
+      "id": "entitlements-table", "type": "data-table",
+      "dataSource": {
+        "endpoint": "/api/tenant-entitlements",
+        "params": { "account": "" },
+        "linkedParams": { "account": "selectedAccount" }
+      },
+      "columns": [...]
+    }
+  ]
+}
+\`\`\`
+
+**Important:** For entitlement data, prefer \`/api/tenant-entitlements\` over \`/api/customer-products\`. The tenant-entitlements endpoint returns a flat array of entitlement rows from SML tenant data, which is easier to display in data tables. The entitlements array contains fields: tenantName, tenantId, category, productCode, productName, packageName, quantity, startDate, endDate, status, daysRemaining.
+
+When the user asks to click a row to filter or query another component, use this pattern. The \`paramId\` must be a simple alphanumeric/underscore/hyphen string. The \`valueField\` must be a valid dot-path to a field in the source data.
+
+## Conditional Formatting (Row Highlighting)
+
+Data tables support \`conditionalFormatting\` – an array of rules that highlight entire rows based on cell values. Rules are evaluated in order; the first matching rule determines the row style.
+
+**Styles:** \`danger\` (red), \`warning\` (amber), \`success\` (green), \`info\` (blue), \`muted\` (gray)
+
+**Operators:** \`equals\`, \`notEquals\`, \`contains\`, \`greaterThan\`, \`lessThan\`, \`greaterThanOrEqual\`, \`lessThanOrEqual\`
+
+**Example:**
+\`\`\`
+{
+  "id": "entitlements-table", "type": "data-table",
+  "dataSource": { "endpoint": "/api/tenant-entitlements", "params": { "account": "Acme" } },
+  "columns": [
+    { "field": "productName", "header": "Product" },
+    { "field": "status", "header": "Status" },
+    { "field": "daysRemaining", "header": "Days Left", "format": "number" }
+  ],
+  "conditionalFormatting": [
+    { "field": "status", "operator": "equals", "value": "Expired", "style": "danger" },
+    { "field": "status", "operator": "equals", "value": "Expiring Soon", "style": "warning" },
+    { "field": "status", "operator": "equals", "value": "Active", "style": "success" }
+  ]
+}
+\`\`\`
+
+Use conditional formatting when the user asks to highlight, color-code, or visually distinguish rows by status, severity, threshold, or any field value. For numeric thresholds use \`greaterThan\`/\`lessThan\`; for text matching use \`equals\` or \`contains\`. Place the most urgent/important rules first since only the first match applies.
 
 ## Tips for the user
 - Ask clarifying questions if the user's request is vague.
@@ -214,11 +289,9 @@ async function chat(conversationHistory, userMessage, options = {}) {
         { role: 'user', content: userMessage }
     ];
 
-    logger.info('Sending report-agent request to LLM', {
+    logger.debug('Sending report-agent request to LLM', {
         model,
-        keySource: source,
-        historyLength: conversationHistory?.length || 0,
-        userMessageLength: userMessage.length
+        keySource: source
     });
 
     const completion = await client.chat.completions.create({
@@ -230,15 +303,22 @@ async function chat(conversationHistory, userMessage, options = {}) {
 
     const reply = completion.choices?.[0]?.message?.content || '';
 
-    logger.info('LLM response received', {
+    logger.debug('LLM response received', {
         replyLength: reply.length,
-        finishReason: completion.choices?.[0]?.finish_reason,
-        usage: completion.usage
+        finishReason: completion.choices?.[0]?.finish_reason
     });
 
     const reportConfig = extractReportConfig(reply);
 
     return { message: reply, reportConfig };
+}
+
+/**
+ * Strip single-line JS/C-style comments from a JSON string so that
+ * LLM-generated JSON with inline comments can still be parsed.
+ */
+function stripJsonComments(jsonStr) {
+    return jsonStr.replace(/\/\/.*$/gm, '');
 }
 
 /**
@@ -251,7 +331,8 @@ function extractReportConfig(text) {
     if (!match) return null;
 
     try {
-        return JSON.parse(match[1].trim());
+        const cleaned = stripJsonComments(match[1]).trim();
+        return JSON.parse(cleaned);
     } catch (err) {
         logger.warn('Failed to parse report-config JSON from LLM reply', { error: err.message });
         return null;

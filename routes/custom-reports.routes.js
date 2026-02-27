@@ -7,7 +7,6 @@ const express = require('express');
 const router = express.Router();
 const customReportService = require('../services/custom-report.service');
 const { asyncHandler } = require('../middleware/error-handler');
-const logger = require('../utils/logger');
 
 /**
  * List all active custom reports
@@ -116,12 +115,6 @@ router.post('/', asyncHandler(async (req, res) => {
             timestamp: new Date().toISOString()
         });
     }
-
-    logger.info('Custom report created via API', {
-        reportId: result.report.id,
-        slug: result.report.slug,
-        userId: req.user.id
-    });
 
     res.status(201).json({
         success: true,

@@ -17,7 +17,7 @@ const logger = require('../utils/logger');
  * Query params: isReviewed, accountSearch, expiryBefore, expiryAfter
  */
 router.get('/', asyncHandler(async (req, res) => {
-    logger.info('Ghost accounts API called', req.query);
+    logger.debug('Ghost accounts API called', req.query);
     
     // Check if we have a valid Salesforce connection
     const hasValidAuth = await salesforce.hasValidAuthentication();
@@ -253,7 +253,7 @@ router.delete('/:accountId', asyncHandler(async (req, res) => {
  * Query params: daysBack (default: 30)
  */
 router.get('/deprovisioned', asyncHandler(async (req, res) => {
-    logger.info('Recently deprovisioned accounts API called', req.query);
+    logger.debug('Recently deprovisioned accounts API called', req.query);
     
     // Check if we have a valid Salesforce connection
     const hasValidAuth = await salesforce.hasValidAuthentication();

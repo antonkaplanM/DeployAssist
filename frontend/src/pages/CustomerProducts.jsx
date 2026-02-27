@@ -159,13 +159,31 @@ const CustomerProducts = () => {
 
       // Fetch tenant details from SML
       console.log(`🔍 Fetching SML data for: ${term} (type: ${type})`);
-      const result = await fetchSMLTenantDetails(term.trim());
+      let result = await fetchSMLTenantDetails(term.trim());
       
+      // If direct lookup failed, try resolving tenant name via Salesforce account search
+      if (!result.success || !result.tenantDetails) {
+        console.log(`⚠️ SML lookup failed for "${term}", attempting to resolve tenant name via Salesforce...`);
+        try {
+          const searchResult = await searchProvisioning(term.trim(), 5);
+          if (searchResult.success) {
+            // Find the first account with a tenant name (results are already filtered by search term)
+            const matchingAccount = searchResult.results.accounts?.find(a => a.tenantName);
+            if (matchingAccount?.tenantName) {
+              console.log(`✅ Resolved account "${term}" to tenant "${matchingAccount.tenantName}"`);
+              result = await fetchSMLTenantDetails(matchingAccount.tenantName);
+            }
+          }
+        } catch (resolveErr) {
+          console.warn('Could not resolve tenant name from account:', resolveErr.message);
+        }
+      }
+
       if (result.success && result.tenantDetails) {
         const transformedData = transformSMLDataForUI(result.tenantDetails, term.trim());
         setData(transformedData);
       } else {
-        setError(result.error || `Could not find tenant "${term}" in SML. Try searching with a different name.`);
+        setError(result.error || `Could not find tenant "${term}" in SML. Try searching with a different name or select from the dropdown.`);
         setData(null);
       }
     } catch (err) {
@@ -179,8 +197,8 @@ const CustomerProducts = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    // Default to tenant search when manually typing
-    await handleSearchWithTenant(searchTerm, 'tenant');
+    // Try as tenant first; if SML lookup fails, fallback will attempt account-to-tenant resolution
+    await handleSearchWithTenant(searchTerm, 'search');
   };
 
   const handleViewAccountHistory = () => {
@@ -217,8 +235,12 @@ const CustomerProducts = () => {
     if (item.type === 'account') {
       setSearchTerm(item.name);
       setSearchType('account');
-      // Automatically trigger search when account is selected
-      handleSearchWithTenant(item.name, 'account');
+      // Use the tenant name associated with this account for SML lookup
+      const smlSearchTerm = item.tenantName || item.name;
+      if (item.tenantName) {
+        console.log(`🔍 Account "${item.name}" resolved to tenant "${item.tenantName}" for SML lookup`);
+      }
+      handleSearchWithTenant(smlSearchTerm, 'tenant');
     } else if (item.type === 'tenant') {
       setSearchTerm(item.name);
       setSearchType('tenant');

@@ -1519,6 +1519,35 @@ async function clearSMLTenants() {
 }
 
 /**
+ * Get SML tenant entitlements by account name
+ * Returns all tenants for an account with their product_entitlements data
+ * @param {string} accountName - Account name to look up
+ * @param {Object} options - Query options
+ * @param {boolean} options.includeDeleted - Include deleted tenants (default: false)
+ * @returns {Promise<Object>} Tenants with entitlements
+ */
+async function getSMLTenantEntitlementsByAccount(accountName) {
+    try {
+        const query = `
+            SELECT 
+                tenant_id, tenant_name, account_name, tenant_display_name,
+                is_deleted, product_entitlements, last_synced
+            FROM sml_tenant_data
+            WHERE account_name ILIKE $1
+            AND is_deleted = false
+            AND product_entitlements IS NOT NULL
+            ORDER BY tenant_name ASC
+        `;
+
+        const result = await pool.query(query, [accountName]);
+        return { success: true, tenants: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting SML tenant entitlements by account:', error.message);
+        return { success: false, error: error.message, tenants: [], count: 0 };
+    }
+}
+
+/**
  * Try to find account name for a tenant name by searching in existing tables
  * @param {string} tenantName - Tenant name to search for
  * @returns {Promise<Object>} Account name if found
@@ -1951,6 +1980,7 @@ module.exports = {
     upsertSMLTenant,
     getSMLTenants,
     getSMLTenantById,
+    getSMLTenantEntitlementsByAccount,
     clearSMLTenants,
     findAccountNameForTenant,
     // SML ghost accounts functions

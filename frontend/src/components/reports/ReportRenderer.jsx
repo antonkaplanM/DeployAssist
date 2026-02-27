@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api from '../../services/api';
 import KpiCard from './widgets/KpiCard';
 import ChartWidget from './widgets/ChartWidget';
@@ -11,30 +11,25 @@ const GRID_SPAN_CLASSES = {
   3: 'col-span-3',
 };
 
-/**
- * Resolve a nested field path (e.g. "meta.total") from an object
- */
 const resolveField = (obj, path) => {
   if (!obj || !path) return undefined;
   return path.split('.').reduce((acc, key) => acc?.[key], obj);
 };
 
-/**
- * Extract an array from an API response, trying common response shapes.
- * Handles: raw arrays, { data: [...] }, { reports: [...] }, { summary: {...} }, etc.
- */
 const extractArray = (responseData) => {
   if (!responseData) return [];
   if (Array.isArray(responseData)) return responseData;
 
-  // Try well-known array keys in priority order
-  const arrayKeys = ['data', 'reports', 'ghostAccounts', 'packages', 'deprovisionedAccounts',
-    'changes', 'errors', 'products', 'entitlements', 'records', 'results', 'items'];
+  const arrayKeys = [
+    'data', 'reports', 'ghostAccounts', 'packages', 'deprovisionedAccounts',
+    'changes', 'errors', 'products', 'entitlements', 'records', 'results', 'items',
+    'trendData', 'requests', 'expirations', 'accounts', 'weeklyData',
+    'technicalRequests',
+  ];
   for (const key of arrayKeys) {
     if (Array.isArray(responseData[key])) return responseData[key];
   }
 
-  // If nothing matched, scan all top-level values for the first array
   for (const val of Object.values(responseData)) {
     if (Array.isArray(val)) return val;
   }
@@ -42,9 +37,6 @@ const extractArray = (responseData) => {
   return [];
 };
 
-/**
- * Apply a transform to raw API response data
- */
 const applyTransform = (rawData, transform, valueField) => {
   if (!rawData) return undefined;
 
@@ -67,37 +59,102 @@ const applyTransform = (rawData, transform, valueField) => {
   }
 };
 
-const ComponentRenderer = ({ component, filterValues }) => {
+/**
+ * In-flight request cache shared across all ComponentRenderers within
+ * a single React tree. Multiple components referencing the same
+ * endpoint + params will share a single network request.
+ */
+const inflightCache = new Map();
+
+function fetchWithDedup(endpoint, params) {
+  const cacheKey = endpoint + '|' + JSON.stringify(params);
+
+  if (inflightCache.has(cacheKey)) {
+    return inflightCache.get(cacheKey);
+  }
+
+  const promise = api.get(endpoint, { params })
+    .then(res => {
+      inflightCache.delete(cacheKey);
+      return res;
+    })
+    .catch(err => {
+      inflightCache.delete(cacheKey);
+      throw err;
+    });
+
+  inflightCache.set(cacheKey, promise);
+  return promise;
+}
+
+const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedRowClick }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const fetchIdRef = useRef(0);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = { ...component.dataSource.params };
-      if (filterValues) {
-        Object.entries(filterValues).forEach(([, filter]) => {
-          if (filter.value && filter.mapsToParam) {
-            params[filter.mapsToParam] = filter.value;
-          }
-        });
-      }
-      const endpoint = component.dataSource.endpoint.replace(/^\/api\//, '/');
-      const response = await api.get(endpoint, { params });
-      setData(response.data);
-    } catch (err) {
-      console.error(`[ReportRenderer] Failed to fetch data for ${component.id}:`, err);
-      setError(err);
-    } finally {
-      setLoading(false);
+  const { linkedParams } = component.dataSource;
+  const hasLinkedParams = linkedParams && Object.keys(linkedParams).length > 0;
+  const linkedReady = !hasLinkedParams || Object.values(linkedParams).every(
+    paramId => componentParams?.[paramId]
+  );
+
+  const fetchKey = useMemo(() => {
+    const params = { ...component.dataSource.params };
+    if (filterValues) {
+      Object.entries(filterValues).forEach(([, filter]) => {
+        if (filter.value && filter.mapsToParam) {
+          params[filter.mapsToParam] = filter.value;
+        }
+      });
     }
-  }, [component.dataSource, component.id, filterValues]);
+    if (linkedParams && componentParams) {
+      Object.entries(linkedParams).forEach(([paramName, paramId]) => {
+        if (componentParams[paramId]) {
+          params[paramName] = componentParams[paramId];
+        }
+      });
+    }
+    return JSON.stringify({ endpoint: component.dataSource.endpoint, params });
+  }, [component.dataSource.endpoint, component.dataSource.params, filterValues, linkedParams, componentParams]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!linkedReady) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
+    const id = ++fetchIdRef.current;
+    setLoading(true);
+    setError(null);
+
+    const parsed = JSON.parse(fetchKey);
+    const endpoint = parsed.endpoint.replace(/^\/api\//, '/');
+
+    fetchWithDedup(endpoint, parsed.params)
+      .then(response => {
+        if (fetchIdRef.current === id) {
+          setData(response.data);
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        if (fetchIdRef.current === id) {
+          setError(err);
+          setLoading(false);
+        }
+      });
+  }, [fetchKey, linkedReady]);
+
+  if (hasLinkedParams && !linkedReady) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">{component.title}</h3>
+        <p className="text-sm text-gray-400 dark:text-gray-500 italic">Click a row in the table above to view data here.</p>
+      </div>
+    );
+  }
 
   const rawArray = extractArray(data);
 
@@ -136,7 +193,9 @@ const ComponentRenderer = ({ component, filterValues }) => {
         />
       );
 
-    case 'data-table':
+    case 'data-table': {
+      const rowClickConfig = component.onRowClick;
+      const selectedValue = rowClickConfig ? componentParams?.[rowClickConfig.paramId] : undefined;
       return (
         <DataTable
           title={component.title}
@@ -146,8 +205,13 @@ const ComponentRenderer = ({ component, filterValues }) => {
           searchable={component.searchable}
           loading={loading}
           error={error}
+          onRowClickConfig={rowClickConfig}
+          onRowClick={rowClickConfig ? onLinkedRowClick : undefined}
+          selectedRowValue={selectedValue}
+          conditionalFormatting={component.conditionalFormatting}
         />
       );
+    }
 
     default:
       return (
@@ -158,18 +222,24 @@ const ComponentRenderer = ({ component, filterValues }) => {
   }
 };
 
+function initFilterValues(config) {
+  const initial = {};
+  if (config?.filters) {
+    config.filters.forEach(f => {
+      initial[f.id] = { value: f.default || '', mapsToParam: f.mapsToParam };
+    });
+  }
+  return initial;
+}
+
 const ReportRenderer = ({ config, showTitle = true }) => {
-  const [filterValues, setFilterValues] = useState({});
+  const [filterValues, setFilterValues] = useState(() => initFilterValues(config));
   const [refreshKey, setRefreshKey] = useState(0);
+  const [componentParams, setComponentParams] = useState({});
 
   useEffect(() => {
-    if (config?.filters) {
-      const initial = {};
-      config.filters.forEach(f => {
-        initial[f.id] = { value: f.default || '', mapsToParam: f.mapsToParam };
-      });
-      setFilterValues(initial);
-    }
+    setFilterValues(initFilterValues(config));
+    setComponentParams({});
   }, [config]);
 
   useEffect(() => {
@@ -192,6 +262,10 @@ const ReportRenderer = ({ config, showTitle = true }) => {
       ...prev,
       [filterId]: { ...prev[filterId], value }
     }));
+  };
+
+  const handleLinkedRowClick = (paramId, value) => {
+    setComponentParams(prev => ({ ...prev, [paramId]: value }));
   };
 
   return (
@@ -251,7 +325,12 @@ const ReportRenderer = ({ config, showTitle = true }) => {
             key={`${component.id}-${refreshKey}`}
             className={GRID_SPAN_CLASSES[component.gridSpan] || 'col-span-1'}
           >
-            <ComponentRenderer component={component} filterValues={filterValues} />
+            <ComponentRenderer
+              component={component}
+              filterValues={filterValues}
+              componentParams={componentParams}
+              onLinkedRowClick={handleLinkedRowClick}
+            />
           </div>
         ))}
       </div>

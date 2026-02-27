@@ -463,15 +463,45 @@ async function searchAccounts(searchTerm, limit = 10) {
             console.log('🔍 Searching Accounts:', soql);
             const result = await conn.query(soql);
             
+            const accountRecords = result.records.map(record => ({
+                id: record.Id,
+                name: record.Name,
+                type: 'account',
+                industry: record.Industry,
+                tenantName: null
+            }));
+
+            // Look up tenant names for matched accounts via Prof_Services_Request__c
+            if (accountRecords.length > 0) {
+                try {
+                    const accountNames = accountRecords.map(a => a.name.replace(/'/g, "\\'"));
+                    const inClause = accountNames.map(n => `'${n}'`).join(',');
+                    const tenantSoql = `
+                        SELECT Account__c, Tenant_Name__c
+                        FROM Prof_Services_Request__c
+                        WHERE Account__c IN (${inClause})
+                        AND Tenant_Name__c != null
+                        ORDER BY LastModifiedDate DESC
+                        LIMIT ${limit * 5}
+                    `;
+                    const tenantResult = await conn.query(tenantSoql);
+                    const accountTenantMap = new Map();
+                    tenantResult.records.forEach(r => {
+                        if (!accountTenantMap.has(r.Account__c)) {
+                            accountTenantMap.set(r.Account__c, r.Tenant_Name__c);
+                        }
+                    });
+                    accountRecords.forEach(account => {
+                        account.tenantName = accountTenantMap.get(account.name) || null;
+                    });
+                } catch (tenantLookupErr) {
+                    console.log('⚠️ Could not look up tenant names for accounts:', tenantLookupErr.message);
+                }
+            }
+
             return {
                 success: true,
-                records: result.records.map(record => ({
-                    id: record.Id,
-                    name: record.Name,
-                    type: record.Type,
-                    industry: record.Industry,
-                    type: 'account'
-                }))
+                records: accountRecords
             };
             
         } catch (accountError) {
@@ -479,25 +509,26 @@ async function searchAccounts(searchTerm, limit = 10) {
             
             // Fallback: search account names from Prof_Services_Request__c and deduplicate
             soql = `
-                SELECT Account__c, Id
+                SELECT Account__c, Tenant_Name__c, Id
                 FROM Prof_Services_Request__c 
                 WHERE Account__c LIKE '%${searchTerm.replace(/'/g, "\\'")}%'
                 AND Account__c != null
-                ORDER BY Account__c ASC 
+                ORDER BY LastModifiedDate DESC 
                 LIMIT ${limit * 5}
             `;
             
             console.log('🔍 Searching Accounts via Prof_Services_Request__c:', soql);
             const result = await conn.query(soql);
             
-            // Deduplicate account names
+            // Deduplicate account names, keeping the most recent tenant name
             const uniqueAccounts = new Map();
             result.records.forEach(record => {
                 if (!uniqueAccounts.has(record.Account__c)) {
                     uniqueAccounts.set(record.Account__c, {
                         id: record.Account__c,
                         name: record.Account__c,
-                        type: 'account'
+                        type: 'account',
+                        tenantName: record.Tenant_Name__c || null
                     });
                 }
             });

@@ -18,7 +18,7 @@ const logger = require('../utils/logger');
  *   - showExtended: Include extended licenses (default: false)
  */
 router.get('/monitor', asyncHandler(async (req, res) => {
-    logger.info('Expiration monitor API called', req.query);
+    logger.debug('Expiration monitor API called', req.query);
     
     const expirationWindow = parseInt(req.query.expirationWindow) || 30;
     const showExtended = req.query.showExtended === 'true' || req.query.showExtended === true;

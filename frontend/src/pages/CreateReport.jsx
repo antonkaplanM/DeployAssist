@@ -48,8 +48,8 @@ const CreateReport = () => {
       try {
         const data = await getCapabilities();
         setCapabilities(data.capabilities);
-      } catch (err) {
-        console.error('Failed to load capabilities:', err);
+      } catch {
+        // capabilities will remain null; UI handles this gracefully
       } finally {
         setCapabilitiesLoading(false);
       }
@@ -83,8 +83,7 @@ const CreateReport = () => {
             }]);
           }
         }
-      } catch (err) {
-        console.error('Failed to load report for editing:', err);
+      } catch {
         setMessages([{
           role: 'assistant',
           content: 'Failed to load the report for editing. Please go back and try again.',
@@ -251,7 +250,8 @@ const CreateReport = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const config = JSON.parse(event.target.result);
+        const cleaned = event.target.result.replace(/\/\/.*$/gm, '');
+        const config = JSON.parse(cleaned);
 
         if (!config.title || !Array.isArray(config.components) || config.components.length === 0) {
           setMessages(prev => [...prev, {

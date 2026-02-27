@@ -42,7 +42,8 @@ const dataSourceSchema = z.object({
         { message: 'Endpoint is not in the allowlisted data catalog' }
     ),
     params: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
-    transform: z.enum(['count', 'sum', 'average', 'first', 'last', 'raw']).optional()
+    transform: z.enum(['count', 'sum', 'average', 'first', 'last', 'raw']).optional(),
+    linkedParams: z.record(safeId).optional()
 });
 
 const filterOptionSchema = z.object({
@@ -117,11 +118,28 @@ const pieChartSchema = baseComponentSchema.extend({
     doughnut: z.boolean().optional().default(false)
 });
 
+const onRowClickSchema = z.object({
+    paramId: safeId,
+    valueField: safeFieldPath
+});
+
+const VALID_CF_OPERATORS = ['equals', 'notEquals', 'contains', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual'];
+const VALID_CF_STYLES = ['danger', 'warning', 'success', 'info', 'muted'];
+
+const conditionalFormatRuleSchema = z.object({
+    field: safeFieldPath,
+    operator: z.enum(VALID_CF_OPERATORS),
+    value: z.union([z.string(), z.number(), z.boolean()]),
+    style: z.enum(VALID_CF_STYLES)
+});
+
 const dataTableSchema = baseComponentSchema.extend({
     type: z.literal('data-table'),
     columns: z.array(columnSchema).min(1).max(20),
     pageSize: z.number().int().min(5).max(100).optional().default(10),
-    searchable: z.boolean().optional().default(true)
+    searchable: z.boolean().optional().default(true),
+    onRowClick: onRowClickSchema.optional(),
+    conditionalFormatting: z.array(conditionalFormatRuleSchema).max(10).optional()
 });
 
 const componentSchema = z.discriminatedUnion('type', [
@@ -168,5 +186,7 @@ module.exports = {
     VALID_COMPONENT_TYPES,
     VALID_FORMATS,
     VALID_LAYOUTS,
+    VALID_CF_OPERATORS,
+    VALID_CF_STYLES,
     MAX_COMPONENTS
 };

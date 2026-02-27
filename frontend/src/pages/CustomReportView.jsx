@@ -6,6 +6,7 @@ import {
   TrashIcon,
   ClockIcon,
   UserIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ReportRenderer from '../components/reports/ReportRenderer';
@@ -41,14 +42,25 @@ const CustomReportView = () => {
     loadReport();
   }, [slug]);
 
+  const handleExportConfig = () => {
+    if (!config) return;
+    const configStr = JSON.stringify(config, null, 2);
+    const blob = new Blob([configStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${report.slug || report.name}-config.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDelete = async () => {
     if (!report) return;
     setDeleting(true);
     try {
       await deleteReport(report.id);
       navigate('/custom-reports');
-    } catch (err) {
-      console.error('Failed to delete report:', err);
+    } catch {
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
@@ -113,6 +125,13 @@ const CustomReportView = () => {
               v{report.version}
             </span>
           </div>
+          <button
+            onClick={handleExportConfig}
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title="Export report config"
+          >
+            <ArrowDownTrayIcon className="h-4 w-4" />
+          </button>
           <Link
             to={`/custom-reports/edit/${report.slug}`}
             className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

@@ -41,12 +41,9 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
         });
     }
 
-    logger.info('Report agent chat request', {
+    logger.debug('Report agent chat request', {
         userId: req.user.id,
-        messageLength: message.length,
-        hasProposedConfig: !!proposedConfig,
-        historyLength: conversationHistory?.length || 0,
-        llmAvailable: reportLlm.isAvailable()
+        historyLength: conversationHistory?.length || 0
     });
 
     // If a proposed config was submitted directly, validate it (bypass LLM).

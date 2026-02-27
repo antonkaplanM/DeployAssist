@@ -1,6 +1,43 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronUpIcon, ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
+const resolveField = (obj, path) => {
+  if (!obj || !path) return undefined;
+  if (!path.includes('.')) return obj[path];
+  return path.split('.').reduce((acc, key) => acc?.[key], obj);
+};
+
+const CF_STYLES = {
+  danger:  { row: 'bg-red-50 dark:bg-red-900/20',    cell: 'text-red-700 dark:text-red-300' },
+  warning: { row: 'bg-amber-50 dark:bg-amber-900/20', cell: 'text-amber-700 dark:text-amber-300' },
+  success: { row: 'bg-green-50 dark:bg-green-900/20', cell: 'text-green-700 dark:text-green-300' },
+  info:    { row: 'bg-blue-50 dark:bg-blue-900/20',   cell: 'text-blue-700 dark:text-blue-300' },
+  muted:   { row: 'bg-gray-100 dark:bg-gray-700/40',  cell: 'text-gray-500 dark:text-gray-400' },
+};
+
+const evaluateRule = (row, rule) => {
+  const val = resolveField(row, rule.field);
+  if (val === null || val === undefined) return false;
+  switch (rule.operator) {
+    case 'equals':              return String(val) === String(rule.value);
+    case 'notEquals':           return String(val) !== String(rule.value);
+    case 'contains':            return String(val).toLowerCase().includes(String(rule.value).toLowerCase());
+    case 'greaterThan':         return Number(val) > Number(rule.value);
+    case 'lessThan':            return Number(val) < Number(rule.value);
+    case 'greaterThanOrEqual':  return Number(val) >= Number(rule.value);
+    case 'lessThanOrEqual':     return Number(val) <= Number(rule.value);
+    default:                    return false;
+  }
+};
+
+const getRowStyle = (row, rules) => {
+  if (!rules || rules.length === 0) return null;
+  for (const rule of rules) {
+    if (evaluateRule(row, rule)) return CF_STYLES[rule.style] || null;
+  }
+  return null;
+};
+
 const formatCellValue = (value, format) => {
   if (value === null || value === undefined) return '—';
   switch (format) {
@@ -17,7 +54,8 @@ const formatCellValue = (value, format) => {
   }
 };
 
-const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loading, error }) => {
+const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loading, error, onRowClickConfig, onRowClick, selectedRowValue, conditionalFormatting }) => {
+  const isClickable = !!(onRowClickConfig && onRowClick);
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
@@ -41,7 +79,7 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
       const q = search.toLowerCase();
       rows = rows.filter(row =>
         columns.some(col => {
-          const val = row[col.field];
+          const val = resolveField(row, col.field);
           return val !== null && val !== undefined && String(val).toLowerCase().includes(q);
         })
       );
@@ -49,8 +87,8 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
 
     if (sortField) {
       rows.sort((a, b) => {
-        const aVal = a[sortField] ?? '';
-        const bVal = b[sortField] ?? '';
+        const aVal = resolveField(a, sortField) ?? '';
+        const bVal = resolveField(b, sortField) ?? '';
         const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
         return sortDir === 'asc' ? cmp : -cmp;
       });
@@ -128,18 +166,31 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
                 </tr>
               </thead>
               <tbody>
-                {paged.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
-                  >
-                    {columns.map(col => (
-                      <td key={col.field} className="py-2 px-3 text-gray-900 dark:text-gray-100">
-                        {formatCellValue(row[col.field], col.format)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {paged.map((row, i) => {
+                  const isSelected = isClickable && resolveField(row, onRowClickConfig.valueField) === selectedRowValue;
+                  const cfStyle = !isSelected ? getRowStyle(row, conditionalFormatting) : null;
+                  return (
+                    <tr
+                      key={i}
+                      onClick={isClickable ? () => onRowClick(onRowClickConfig.paramId, resolveField(row, onRowClickConfig.valueField)) : undefined}
+                      className={[
+                        'border-b border-gray-100 dark:border-gray-700',
+                        isClickable ? 'cursor-pointer' : '',
+                        isSelected
+                          ? 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                          : cfStyle
+                            ? cfStyle.row
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-750',
+                      ].join(' ')}
+                    >
+                      {columns.map(col => (
+                        <td key={col.field} className={`py-2 px-3 ${cfStyle ? cfStyle.cell : 'text-gray-900 dark:text-gray-100'}`}>
+                          {formatCellValue(resolveField(row, col.field), col.format)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

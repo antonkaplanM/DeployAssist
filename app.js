@@ -37,6 +37,7 @@ const microsoftAuthRoutes = require('./routes/microsoft-auth.routes');
 const excelLookupRoutes = require('./routes/excel-lookup.routes');
 const excelPollingRoutes = require('./routes/excel-polling.routes');
 const debugConfigRoutes = require('./routes/debug-config.routes');
+const tenantEntitlementsRoutes = require('./routes/tenant-entitlements.routes');
 const customReportsRoutes = require('./routes/custom-reports.routes');
 const reportAgentRoutes = require('./routes/report-agent.routes');
 const userSettingsRoutes = require('./routes/user-settings.routes');
@@ -171,6 +172,9 @@ app.use('/api/ghost-accounts', ghostAccountsRoutes);
 
 // Customer Products endpoints
 app.use('/api/customer-products', customerProductsRoutes);
+
+// Tenant Entitlements endpoints (SML-based, from sml_tenant_data)
+app.use('/api/tenant-entitlements', tenantEntitlementsRoutes);
 
 // Product Update Workflow endpoints
 app.use('/api/product-update', productUpdatesRoutes);
