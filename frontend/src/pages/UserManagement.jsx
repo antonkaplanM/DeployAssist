@@ -21,6 +21,9 @@ import {
   createRole,
   getRolePages,
   updateRolePages,
+  getPermissions,
+  getRolePermissions,
+  updateRolePermissions,
   getPages,
   deleteRole,
 } from '../services/userService';
@@ -30,6 +33,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [pages, setPages] = useState([]);
+  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -49,6 +53,7 @@ const UserManagement = () => {
     name: '',
     description: '',
     pageIds: [],
+    permissionIds: [],
   });
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState(null);
@@ -62,10 +67,11 @@ const UserManagement = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersData, rolesData, pagesData] = await Promise.all([
+      const [usersData, rolesData, pagesData, permsData] = await Promise.all([
         getUsers(),
         getRoles(),
         getPages(),
+        getPermissions(),
       ]);
 
       if (usersData.success) {
@@ -78,6 +84,10 @@ const UserManagement = () => {
 
       if (pagesData.success) {
         setPages(pagesData.pages);
+      }
+
+      if (permsData.success) {
+        setPermissions(permsData.permissions);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -223,14 +233,20 @@ const UserManagement = () => {
       }
 
       if (editingRole) {
-        await updateRolePages(editingRole.id, roleFormData.pageIds);
-        showSuccess('Role pages updated successfully');
+        await Promise.all([
+          updateRolePages(editingRole.id, roleFormData.pageIds),
+          updateRolePermissions(editingRole.id, roleFormData.permissionIds),
+        ]);
+        showSuccess('Role updated successfully');
       } else {
         const result = await createRole({
           name: roleFormData.name,
           description: roleFormData.description,
         });
-        await updateRolePages(result.role.id, roleFormData.pageIds);
+        await Promise.all([
+          updateRolePages(result.role.id, roleFormData.pageIds),
+          updateRolePermissions(result.role.id, roleFormData.permissionIds),
+        ]);
         showSuccess('Role created successfully');
       }
 
@@ -250,17 +266,22 @@ const UserManagement = () => {
       name: '',
       description: '',
       pageIds: [],
+      permissionIds: [],
     });
   };
 
   const handleEditRole = async (role) => {
     try {
-      const pagesData = await getRolePages(role.id);
+      const [pagesData, permsData] = await Promise.all([
+        getRolePages(role.id),
+        getRolePermissions(role.id),
+      ]);
       setEditingRole(role);
       setRoleFormData({
         name: role.name,
         description: role.description || '',
         pageIds: pagesData.pages?.map((p) => p.id) || [],
+        permissionIds: permsData.permissions?.map((p) => p.id) || [],
       });
       setShowRoleModal(true);
     } catch (err) {
@@ -293,6 +314,15 @@ const UserManagement = () => {
       pageIds: prev.pageIds.includes(pageId)
         ? prev.pageIds.filter((id) => id !== pageId)
         : [...prev.pageIds, pageId],
+    }));
+  };
+
+  const handlePermissionToggle = (permId) => {
+    setRoleFormData((prev) => ({
+      ...prev,
+      permissionIds: prev.permissionIds.includes(permId)
+        ? prev.permissionIds.filter((id) => id !== permId)
+        : [...prev.permissionIds, permId],
     }));
   };
 
@@ -332,6 +362,39 @@ const UserManagement = () => {
         </div>
       );
     });
+  };
+
+  const renderPermissionCheckboxes = () => {
+    const grouped = permissions.reduce((acc, perm) => {
+      const group = perm.resource;
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(perm);
+      return acc;
+    }, {});
+
+    return Object.entries(grouped).map(([resource, perms]) => (
+      <div key={resource} className="mb-3">
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+          {resource}
+        </p>
+        <div className="ml-2 space-y-1">
+          {perms.map((perm) => (
+            <label key={perm.id} className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={roleFormData.permissionIds.includes(perm.id)}
+                onChange={() => handlePermissionToggle(perm.id)}
+                className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
+              />
+              <div>
+                <span className="text-sm text-gray-900 dark:text-gray-100">{perm.description}</span>
+                <span className="block text-xs text-gray-400 dark:text-gray-500">{perm.name}</span>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+    ));
   };
 
   if (loading) {
@@ -779,7 +842,7 @@ const UserManagement = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingRole ? 'Edit Role Pages' : 'Create Role'}
+                {editingRole ? 'Edit Role' : 'Create Role'}
               </h2>
               <button
                 onClick={() => {
@@ -843,6 +906,20 @@ const UserManagement = () => {
                   {renderPageCheckboxes()}
                 </div>
               </div>
+
+              {permissions.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Resource Permissions
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Grant additional capabilities to this role
+                  </p>
+                  <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto">
+                    {renderPermissionCheckboxes()}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button

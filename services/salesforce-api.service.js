@@ -10,6 +10,19 @@ const { BadRequestError, UnauthorizedError, InternalServerError } = require('../
 
 class SalesforceApiService {
     /**
+     * Check if a Salesforce connection is available in the current context
+     * (per-user via AsyncLocalStorage or service-account fallback).
+     */
+    async _hasConnection() {
+        try {
+            await salesforce.getConnection();
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Get Salesforce OAuth authorization URL
      * @returns {String} Authorization URL
      */
@@ -199,15 +212,21 @@ class SalesforceApiService {
      * @returns {Promise<Object>} Provisioning requests
      */
     async getProvisioningRequests(pageSize = 25, offset = 0, additionalFilters = {}) {
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
+        // Verify a connection is available (per-user or service account via AsyncLocalStorage)
+        let hasValidAuth;
+        try {
+            await salesforce.getConnection();
+            hasValidAuth = true;
+        } catch {
+            hasValidAuth = false;
+        }
         if (!hasValidAuth) {
             logger.warn('No valid Salesforce authentication');
             return {
                 records: [],
                 totalCount: 0,
                 hasMore: false,
-                note: 'No Salesforce authentication - please configure in Settings'
+                note: 'No Salesforce authentication - please connect in Settings > Data Sources > Salesforce'
             };
         }
 
@@ -254,8 +273,7 @@ class SalesforceApiService {
             throw new BadRequestError('Search term is required');
         }
 
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
+        const hasValidAuth = await this._hasConnection();
         if (!hasValidAuth) {
             logger.warn('No valid Salesforce authentication');
             return {
@@ -284,10 +302,9 @@ class SalesforceApiService {
      * @returns {Promise<Object>} Request details
      */
     async getProvisioningRequestById(id) {
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
+        const hasValidAuth = await this._hasConnection();
         if (!hasValidAuth) {
-            throw new UnauthorizedError('No Salesforce authentication available');
+            throw new UnauthorizedError('No Salesforce authentication available. Connect in Settings > Data Sources > Salesforce.');
         }
 
         logger.info(`Fetching PS request details: ${id}`);
@@ -308,8 +325,7 @@ class SalesforceApiService {
      * @returns {Promise<Object>} Filter options
      */
     async getProvisioningFilterOptions() {
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
+        const hasValidAuth = await this._hasConnection();
         if (!hasValidAuth) {
             logger.warn('No valid Salesforce authentication');
             return {
@@ -341,8 +357,7 @@ class SalesforceApiService {
             throw new BadRequestError('Missing "since" timestamp parameter');
         }
 
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
+        const hasValidAuth = await this._hasConnection();
         if (!hasValidAuth) {
             logger.warn('No Salesforce authentication - returning empty results');
             return {
@@ -356,7 +371,6 @@ class SalesforceApiService {
         try {
             logger.info(`🔍 Checking for new PS records since ${sinceTimestamp}`);
 
-            // Query for new records created after the provided timestamp
             const conn = await salesforce.getConnection();
 
             // Convert ISO timestamp to SOQL datetime literal format
@@ -428,8 +442,7 @@ class SalesforceApiService {
      * @returns {Promise<Object>} Removal requests
      */
     async getProvisioningRemovals(timeFrame = '1w') {
-        // Check if we have a valid Salesforce connection
-        const hasValidAuth = await salesforce.hasValidAuthentication();
+        const hasValidAuth = await this._hasConnection();
         if (!hasValidAuth) {
             logger.warn('No valid Salesforce authentication');
             return {
@@ -437,7 +450,7 @@ class SalesforceApiService {
                 totalCount: 0,
                 timeFrame: timeFrame,
                 startDate: new Date().toISOString().split('T')[0],
-                note: 'No Salesforce authentication - please configure in Settings'
+                note: 'No Salesforce authentication - please connect in Settings > Data Sources > Salesforce'
             };
         }
 

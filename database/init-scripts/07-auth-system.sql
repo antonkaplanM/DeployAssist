@@ -213,6 +213,7 @@ VALUES
     ('ghost_accounts.read', 'View ghost accounts', 'ghost_accounts', 'read'),
     ('ghost_accounts.write', 'Modify ghost accounts', 'ghost_accounts', 'write'),
     ('salesforce.access', 'Access Salesforce integration', 'salesforce', 'access'),
+    ('salesforce.service_account', 'Use shared Salesforce service account instead of personal credentials', 'salesforce', 'service_account'),
     ('sml.access', 'Access SML integration', 'sml', 'access')
 ON CONFLICT (name) DO NOTHING;
 

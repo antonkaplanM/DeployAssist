@@ -123,6 +123,27 @@ const settingsService = {
     }
   },
 
+  // Salesforce Per-User Settings
+  getSalesforceStatus: async () => {
+    const response = await api.get('/user-settings/salesforce');
+    return response.data;
+  },
+
+  setSalesforcePreference: async (preference) => {
+    const response = await api.put('/user-settings/salesforce/preference', { preference });
+    return response.data;
+  },
+
+  disconnectSalesforce: async () => {
+    const response = await api.delete('/user-settings/salesforce');
+    return response.data;
+  },
+
+  testSalesforceUserConnection: async () => {
+    const response = await api.post('/user-settings/salesforce/test');
+    return response.data;
+  },
+
   // LLM / AI Configuration (stored encrypted on the server)
   getLLMSettings: async () => {
     try {

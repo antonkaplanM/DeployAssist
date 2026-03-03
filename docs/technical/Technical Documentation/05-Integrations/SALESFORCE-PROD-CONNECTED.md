@@ -1,8 +1,10 @@
-# ✅ Salesforce Production Environment - Successfully Connected
+# Salesforce Production Environment - Service Account
+
+> **Note:** The application now supports per-user OAuth as the default authentication mode. This document describes the shared service account (Client Credentials Flow) which is available only to users with the `salesforce.service_account` permission. See [Salesforce-Per-User-OAuth.md](Salesforce-Per-User-OAuth.md) for the full auth model.
 
 ## Summary
 
-The Salesforce integration has been successfully configured and tested with the **production environment**.
+The Salesforce service account has been successfully configured and tested with the **production environment**.
 
 ---
 

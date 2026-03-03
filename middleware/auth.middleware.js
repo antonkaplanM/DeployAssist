@@ -2,6 +2,10 @@
  * Authentication Middleware (JavaScript)
  */
 
+const salesforce = require('../salesforce');
+const db = require('../database');
+const { encrypt, decrypt } = require('../utils/encryption');
+
 /**
  * Create authentication middleware
  */
@@ -131,6 +135,69 @@ function requireRole(...roleNames) {
 }
 
 /**
+ * Middleware to require a specific permission (resource + action).
+ * Checks req.user.permissions which must be loaded by loadPermissions().
+ * Also accepts the wildcard 'resource.manage' permission.
+ */
+function requirePermission(resource, action) {
+    return function (req, res, next) {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Not authenticated',
+                code: 'AUTH_MISSING'
+            });
+        }
+
+        const permissions = req.user.permissions || [];
+        const permissionName = `${resource}.${action}`;
+        const managePermission = `${resource}.manage`;
+
+        const hasIt = permissions.some(
+            p => p.name === permissionName || p.name === managePermission
+        );
+
+        if (!hasIt) {
+            return res.status(403).json({
+                success: false,
+                error: `Access denied. Required permission: ${permissionName}`,
+                code: 'FORBIDDEN'
+            });
+        }
+
+        next();
+    };
+}
+
+/**
+ * Middleware to load the user's granular permissions onto req.user.permissions.
+ * Should be applied after authenticate middleware.
+ */
+function loadPermissions(pool) {
+    return async function (req, res, next) {
+        try {
+            if (!req.user || !req.user.id) return next();
+
+            const result = await pool.query(
+                `SELECT DISTINCT p.id, p.name, p.resource, p.action
+                 FROM permissions p
+                 INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                 INNER JOIN user_roles ur ON rp.role_id = ur.role_id
+                 WHERE ur.user_id = $1`,
+                [req.user.id]
+            );
+
+            req.user.permissions = result.rows;
+            next();
+        } catch (error) {
+            console.error('Failed to load permissions:', error);
+            req.user.permissions = [];
+            next();
+        }
+    };
+}
+
+/**
  * Check if user has access to a specific page
  * @param {string} pageName - Name of the page to check access for
  * @returns {Function} Middleware function
@@ -177,10 +244,56 @@ function requirePageAccess(pageName, pool) {
     };
 }
 
+/**
+ * Middleware that resolves the correct Salesforce connection for the
+ * authenticated user (per-user OAuth or service account based on preference
+ * and permissions) and binds it into the AsyncLocalStorage context.
+ * All downstream salesforce.js calls automatically use the resolved connection.
+ *
+ * Must be applied AFTER authenticate and loadPermissions.
+ * If the user has no Salesforce credentials and no service-account permission,
+ * the request proceeds without a connection (individual functions will throw
+ * their own errors).
+ */
+function withSalesforceConnection(pool) {
+    return async function (req, res, next) {
+        if (!req.user || !req.user.id) return next();
+
+        try {
+            const conn = await salesforce.getConnectionForRequest(
+                req.user.id,
+                req.user.permissions || [],
+                db,
+                decrypt,
+                encrypt
+            );
+
+            salesforce.runWithConnection(conn, () => {
+                next();
+            });
+        } catch (err) {
+            req.salesforceError = {
+                code: err.code || 'SF_ERROR',
+                message: err.message
+            };
+
+            // Run in a context with an error marker so downstream calls to
+            // salesforce.getConnection() rethrow the user-specific error
+            // instead of silently falling back to the service account.
+            salesforce.runWithConnectionError(err, () => {
+                next();
+            });
+        }
+    };
+}
+
 module.exports = {
     createAuthMiddleware,
     requireAdmin,
     requireRole,
-    requirePageAccess
+    requirePermission,
+    loadPermissions,
+    requirePageAccess,
+    withSalesforceConnection
 };
 

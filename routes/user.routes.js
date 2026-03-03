@@ -277,6 +277,130 @@ function createUserRoutes(pool, authService, authenticate, requireAdmin) {
     });
 
     // ==========================================
+    // PERMISSION ROUTES (Must come before /api/users/:id)
+    // ==========================================
+
+    /**
+     * GET /api/users/permissions/all - Get all resource permissions
+     */
+    router.get('/permissions/all', authenticate, requireAdmin(), async (req, res) => {
+        try {
+            const result = await pool.query(`
+                SELECT id, name, description, resource, action
+                FROM permissions
+                ORDER BY resource, action
+            `);
+
+            res.json({
+                success: true,
+                permissions: result.rows,
+                count: result.rows.length
+            });
+        } catch (error) {
+            console.error('Get all permissions error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve permissions'
+            });
+        }
+    });
+
+    /**
+     * GET /api/users/roles/:id/permissions - Get permissions assigned to a role
+     */
+    router.get('/roles/:id/permissions', authenticate, requireAdmin(), async (req, res) => {
+        try {
+            const roleId = parseInt(req.params.id);
+
+            const result = await pool.query(`
+                SELECT p.id, p.name, p.description, p.resource, p.action
+                FROM permissions p
+                INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                WHERE rp.role_id = $1
+                ORDER BY p.resource, p.action
+            `, [roleId]);
+
+            res.json({
+                success: true,
+                permissions: result.rows,
+                count: result.rows.length
+            });
+        } catch (error) {
+            console.error('Get role permissions error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve role permissions'
+            });
+        }
+    });
+
+    /**
+     * PUT /api/users/roles/:id/permissions - Assign permissions to a role
+     */
+    router.put('/roles/:id/permissions', authenticate, requireAdmin(), async (req, res) => {
+        try {
+            const roleId = parseInt(req.params.id);
+            const { permissionIds } = req.body;
+
+            if (!permissionIds || !Array.isArray(permissionIds)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'permissionIds array is required'
+                });
+            }
+
+            const roleCheck = await pool.query(
+                'SELECT name, is_system_role FROM roles WHERE id = $1',
+                [roleId]
+            );
+
+            if (roleCheck.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Role not found'
+                });
+            }
+
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                await client.query('DELETE FROM role_permissions WHERE role_id = $1', [roleId]);
+
+                for (const permId of permissionIds) {
+                    await client.query(
+                        'INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2)',
+                        [roleId, permId]
+                    );
+                }
+
+                await client.query('COMMIT');
+
+                await pool.query(`
+                    INSERT INTO auth_audit_log (user_id, action, entity_type, entity_id, new_value, performed_by)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [req.user.id, 'permissions_assigned', 'role_permissions', roleId, JSON.stringify(permissionIds), req.user.id]);
+
+                res.json({
+                    success: true,
+                    message: 'Permissions assigned to role successfully'
+                });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
+        } catch (error) {
+            console.error('Assign role permissions error:', error);
+            res.status(400).json({
+                success: false,
+                error: error.message || 'Failed to assign permissions to role'
+            });
+        }
+    });
+
+    // ==========================================
     // PAGE ROUTES (Must come before /api/users/:id)
     // ==========================================
 

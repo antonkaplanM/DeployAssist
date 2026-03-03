@@ -14,7 +14,7 @@ const formatValue = (value, format) => {
   }
 };
 
-const KpiCard = ({ title, value, format = 'number', prefix, suffix, comparison, comparisonLabel, loading, error }) => {
+const KpiCard = ({ title, value, format = 'number', prefix, suffix, comparison, comparisonLabel, loading, error, errorDetail }) => {
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
@@ -29,6 +29,7 @@ const KpiCard = ({ title, value, format = 'number', prefix, suffix, comparison, 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
         <p className="text-sm text-red-500 mt-2">Failed to load data</p>
+        {errorDetail && <p className="text-xs text-red-400 mt-1 font-mono truncate">{errorDetail}</p>}
       </div>
     );
   }

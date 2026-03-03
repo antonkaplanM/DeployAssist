@@ -108,7 +108,11 @@ Your job is to help users create data dashboard reports by producing a JSON conf
    - Add as many components as needed to cover the question thoroughly — each component should contribute new information or a different perspective. Stop when adding another component would be redundant or only marginally useful.
    - Maximum ${MAX_COMPONENTS} components.
 5. Always include a "title" and "description" in the config.
-6. Endpoint paths must start with /api/ and match an entry in the data catalog exactly.
+6. **CRITICAL – Endpoint paths**: Use the \`endpoint\` value from the catalog (e.g. \`"/api/analytics/package-changes/by-account"\`), NOT the catalog \`id\` (e.g. \`"package-changes.by-account"\`). The endpoint path is always a full URL path with forward slashes. Common mistakes to avoid:
+   - WRONG: \`"/api/package-changes/by-account"\` — CORRECT: \`"/api/analytics/package-changes/by-account"\`
+   - WRONG: \`"/api/package-changes.by-account"\` — CORRECT: \`"/api/analytics/package-changes/by-account"\`
+   - WRONG: \`"/api/package-changes/summary"\` — CORRECT: \`"/api/analytics/package-changes/summary"\`
+   Copy the \`endpoint\` field exactly as shown in the catalog below.
 7. **PREFER \`echarts\` type** for all charts (bar, line, pie, scatter, radar, heatmap, funnel, gauge, treemap, etc.). Only use the legacy types (bar-chart, line-chart, pie-chart) if explicitly asked.
 8. **PREFER \`ag-grid\` type** for all tables. Only use the legacy \`data-table\` type if explicitly asked.
 9. For KPI cards, set valueField to the dot-path into the API response where the single metric lives (e.g. "summary.total_changes").
@@ -116,6 +120,15 @@ Your job is to help users create data dashboard reports by producing a JSON conf
 11. Pay attention to the "summary" field in the catalog responseShape – it tells you which key the data array lives under (e.g. "data", "ghostAccounts", "requests", "trendData").
 12. **NEVER include comments** (// or /* */) inside the JSON config block. JSON does not support comments and they will cause parsing errors.
 13. **NEVER include JavaScript functions** in the ECharts option object. Only use static JSON values (strings, numbers, booleans, arrays, objects).
+14. Always use \`\`\`report-config as the code fence tag, NOT \`\`\`json.
+15. **CRITICAL – Semantic correctness**: Every component must use an endpoint whose data ACTUALLY answers the question the component title implies. NEVER repurpose an unrelated endpoint to fill a component slot. For example:
+    - Do NOT use a "validation failure trend" endpoint to show "upgrade trends" — those are completely different metrics.
+    - Do NOT label a chart "Revenue Growth" if the endpoint returns provisioning request counts.
+    - The component title, the endpoint data, and the field names must all describe the SAME thing.
+16. **CRITICAL – Be transparent about gaps**: If part of the user's request cannot be fulfilled because no suitable endpoint exists in the catalog, you MUST:
+    - Tell the user explicitly which part of the request cannot be built and why (e.g. "There is no time-series endpoint for upgrade trends, so I cannot include a trend-over-time chart for upgrades").
+    - Build only the components that CAN be correctly supported by available data.
+    - NEVER silently substitute a different data source to make the report look complete. An incomplete but accurate report is far better than a complete but misleading one.
 
 ## Available Data Sources
 ${JSON.stringify(catalog, null, 2)}
@@ -437,6 +450,35 @@ Both \`ag-grid\` and \`data-table\` support \`conditionalFormatting\`. Rules are
 **Styles:** \`danger\` (red), \`warning\` (amber), \`success\` (green), \`info\` (blue), \`muted\` (gray)
 **Operators:** \`equals\`, \`notEquals\`, \`contains\`, \`greaterThan\`, \`lessThan\`, \`greaterThanOrEqual\`, \`lessThanOrEqual\`
 
+## Data Source Reliability & Dependencies
+
+Some endpoints require prior data loading before they return results. If an endpoint has no data, it may return an error (HTTP 500). Keep this in mind when choosing data sources:
+
+**Always available (no prior setup needed):**
+- \`/api/provisioning/requests\` – reads directly from Salesforce
+- \`/api/provisioning/search\` – reads directly from Salesforce
+- \`/api/validation/errors\` – reads directly from Salesforce
+- \`/api/tenant-entitlements\` – reads from sml_tenant_data (populated by Current Accounts sync)
+
+**Require prior analysis/sync to be run first:**
+- \`/api/analytics/package-changes/*\` – requires package change analysis to have been run (POST /api/analytics/package-changes/refresh)
+- \`/api/expiration/*\` – requires expiration analysis to have been run
+- \`/api/ghost-accounts\` – requires ghost account analysis
+- \`/api/analytics/*\` (request-types-week, validation-trend, completion-times) – require PS audit trail data
+
+**Time-series endpoints and what they ACTUALLY measure:**
+- \`/api/analytics/package-changes/recent\` – individual upgrade/downgrade records with \`ps_created_date\`. NOT aggregated by time period. Can be used for a detail table of recent changes sorted by date. Fields: account_name, product_name, change_type, previous_package, new_package, ps_created_date.
+- \`/api/analytics/request-types-week\` – weekly counts of provisioning REQUEST TYPES (New License, Product Update, Deprovision). This measures how many provisioning requests were submitted each week, NOT product upgrades/downgrades. Fields: requestType, count, validationFailures, validationFailureRate, percentage.
+- \`/api/analytics/completion-times\` – weekly provisioning COMPLETION TIME statistics (how long requests take to complete). Fields: weekStart, weekLabel, avgHours, completedCount, minHours, maxHours, medianHours.
+- \`/api/analytics/validation-trend\` – daily VALIDATION FAILURE rates (how many provisioning requests failed automated rule checks). This has NOTHING to do with product upgrades. Fields: date, displayDate, updateFailures, newFailures, deprovisionFailures, failurePercentage.
+
+**Gaps – data that does NOT exist in any endpoint:**
+- There is NO time-series "upgrade trend over time" endpoint. You cannot build a line chart showing upgrade counts by week/month.
+- There is NO "revenue" or "contract value" endpoint.
+- There is NO "customer growth over time" endpoint.
+
+If the user requests any of these, tell them the data is not available and suggest what IS available instead. Do NOT substitute a different endpoint to make the chart look like it answers the question.
+
 ## Building Comprehensive Dashboards
 
 When a user asks a broad analytical question, think about what data perspectives would fully answer it. A well-designed dashboard typically follows this structure:
@@ -462,7 +504,9 @@ When a user asks a broad analytical question, think about what data perspectives
 - After producing a config, tell the user they can preview it and then save it.
 - If the user wants changes, produce a new complete config block.
 - Suggest appropriate chart types: bar for comparisons, line for trends, pie for proportions, gauge for single metrics, radar for multi-dimension comparison, funnel for pipeline stages, heatmap for density/correlation.
-- For simple metrics, KPI cards are still the best choice.`;
+- For simple metrics, KPI cards are still the best choice.
+- **When you cannot fulfill part of a request**, clearly explain what is missing and why. For example: "I've built the components I can support with available data. However, I was unable to include an upgrade-trend-over-time chart because no endpoint provides time-series upgrade data. The closest available data is the recent changes list, which I've included as a table instead."
+- Never produce a component with misleading data. Accuracy and transparency are more important than completeness.`;
 }
 
 /**
@@ -525,29 +569,56 @@ function stripJsonComments(jsonStr) {
 }
 
 /**
- * Try to extract a JSON report config from a fenced ```report-config block.
+ * Try to extract a JSON report config from the LLM reply.
+ * Checks fenced blocks in priority order:
+ *   1. ```report-config  (preferred / instructed)
+ *   2. ```json            (common LLM fallback)
+ *   3. Any ``` block that parses as JSON with title+components
  * Returns null if no valid block found.
  */
 function extractReportConfig(text) {
-    const fencePattern = /```report-config\s*\n([\s\S]*?)```/;
-    const match = text.match(fencePattern);
-    if (!match) return null;
+    const patterns = [
+        /```report-config\s*\n([\s\S]*?)```/,
+        /```json\s*\n([\s\S]*?)```/,
+        /```\s*\n([\s\S]*?)```/
+    ];
 
-    try {
-        const cleaned = stripJsonComments(match[1]).trim();
-        return JSON.parse(cleaned);
-    } catch (err) {
-        logger.warn('Failed to parse report-config JSON from LLM reply', { error: err.message });
-        return null;
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (!match) continue;
+
+        try {
+            const cleaned = stripJsonComments(match[1]).trim();
+            const parsed = JSON.parse(cleaned);
+            if (parsed && parsed.title && Array.isArray(parsed.components)) {
+                return parsed;
+            }
+        } catch (err) {
+            logger.debug('Fenced block did not parse as report config', { error: err.message });
+        }
     }
+
+    return null;
 }
 
 /**
- * Strip the raw ```report-config fenced block from the assistant message
- * so the frontend can show clean conversational text alongside the parsed config.
+ * Strip fenced code blocks that contain a report config from the assistant
+ * message so the frontend can show clean conversational text alongside
+ * the parsed config. Removes ```report-config, ```json, and bare ``` blocks
+ * that look like report configs (contain "title" and "components").
  */
 function stripConfigBlock(text) {
-    return text.replace(/```report-config\s*\n[\s\S]*?```/g, '').trim();
+    let stripped = text.replace(/```report-config\s*\n[\s\S]*?```/g, '');
+
+    stripped = stripped.replace(/```json\s*\n([\s\S]*?)```/g, (match, inner) => {
+        try {
+            const parsed = JSON.parse(stripJsonComments(inner).trim());
+            if (parsed && parsed.title && Array.isArray(parsed.components)) return '';
+        } catch { /* not a report config, keep it */ }
+        return match;
+    });
+
+    return stripped.trim();
 }
 
 module.exports = {

@@ -8,6 +8,21 @@ import AgGridTable from './widgets/AgGridTable';
 import FilterTypeAhead from './widgets/FilterTypeAhead';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
+/**
+ * Build a human-readable error detail string from an Axios error.
+ */
+function describeError(err, endpoint) {
+  if (!err) return 'Unknown error';
+  const status = err.response?.status;
+  const serverMsg = err.response?.data?.error || err.response?.data?.message;
+  const parts = [];
+  if (endpoint) parts.push(endpoint);
+  if (status) parts.push(`HTTP ${status}`);
+  if (serverMsg) parts.push(serverMsg);
+  else if (err.message) parts.push(err.message);
+  return parts.join(' — ') || 'Unknown error';
+}
+
 const GRID_SPAN_CLASSES = {
   1: 'col-span-1',
   2: 'col-span-2',
@@ -146,7 +161,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
       })
       .catch(err => {
         if (fetchIdRef.current === id) {
-          setError(err);
+          setError({ raw: err, detail: describeError(err, parsed.endpoint) });
           setLoading(false);
         }
       });
@@ -162,6 +177,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
   }
 
   const rawArray = extractArray(data);
+  const errorDetail = error?.detail || null;
 
   switch (component.type) {
     case 'kpi-card': {
@@ -180,6 +196,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
           comparisonLabel={component.comparisonLabel}
           loading={loading}
           error={error}
+          errorDetail={errorDetail}
         />
       );
     }
@@ -195,6 +212,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
           config={component}
           loading={loading}
           error={error}
+          errorDetail={errorDetail}
         />
       );
 
@@ -210,6 +228,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
           searchable={component.searchable}
           loading={loading}
           error={error}
+          errorDetail={errorDetail}
           onRowClickConfig={rowClickConfig}
           onRowClick={rowClickConfig ? onLinkedRowClick : undefined}
           selectedRowValue={selectedValue}
@@ -226,6 +245,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
           option={component.option}
           loading={loading}
           error={error}
+          errorDetail={errorDetail}
         />
       );
 
@@ -239,6 +259,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
           config={component}
           loading={loading}
           error={error}
+          errorDetail={errorDetail}
           onRowClickConfig={agRowClickConfig}
           onRowClick={agRowClickConfig ? onLinkedRowClick : undefined}
           selectedRowValue={agSelectedValue}

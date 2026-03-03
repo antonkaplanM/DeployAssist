@@ -12,7 +12,7 @@ const dataCatalog = [
         id: 'analytics.request-types-week',
         endpoint: '/api/analytics/request-types-week',
         category: 'Analytics',
-        description: 'Breakdown of Technical Team Request types (New License, Product Update, Deprovision) with counts and validation failure rates',
+        description: 'Breakdown of provisioning REQUEST TYPES submitted to the Technical Team (New License, Product Update, Deprovision) with counts and validation failure rates. This measures request volume by type, NOT product upgrade/downgrade trends.',
         params: [
             { name: 'months', type: 'number', description: 'Number of months to look back (default: 6, max: 24)', default: 6 }
         ],
@@ -25,9 +25,9 @@ const dataCatalog = [
         id: 'analytics.validation-trend',
         endpoint: '/api/analytics/validation-trend',
         category: 'Analytics',
-        description: 'Validation failure trends over time broken down by request type (update, new, deprovision)',
+        description: 'VALIDATION FAILURE trends over time — measures how many provisioning requests failed automated rule checks, broken down by request type (update, new, deprovision). This is NOT about product upgrades or downgrades.',
         params: [
-            { name: 'days', type: 'number', description: 'Number of days to look back (default: 30, max: 90)', default: 30 }
+            { name: 'months', type: 'number', description: 'Number of months to look back (default: 3)', default: 3 }
         ],
         responseShape: {
             summary: 'Time series of validation failure percentages by date and request type. Response array is under the "trendData" key.',
@@ -38,7 +38,7 @@ const dataCatalog = [
         id: 'analytics.completion-times',
         endpoint: '/api/analytics/completion-times',
         category: 'Analytics',
-        description: 'Weekly average completion times for provisioning requests with min/max/median hours',
+        description: 'Weekly average COMPLETION TIMES for provisioning requests — measures how long requests take to process, with min/max/median hours. This is NOT about product changes or upgrades.',
         params: [
             { name: 'months', type: 'number', description: 'Number of months to look back', default: 6 }
         ],
@@ -384,12 +384,14 @@ function getCatalogEntry(id) {
 }
 
 /**
- * Get a compact version of the catalog suitable for LLM system prompts
+ * Get a compact version of the catalog suitable for LLM system prompts.
+ * Excludes the `id` field to prevent the LLM from confusing catalog IDs
+ * (dot-separated, e.g. "package-changes.by-account") with actual endpoint
+ * paths (slash-separated, e.g. "/api/analytics/package-changes/by-account").
  */
 function getCatalogForPrompt() {
     return dataCatalog.map(source => {
         const entry = {
-            id: source.id,
             endpoint: source.endpoint,
             description: source.description,
             params: source.params,

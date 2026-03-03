@@ -115,6 +115,39 @@ export const updateRolePages = async (roleId, pageIds) => {
   }
 };
 
+// Get all resource permissions
+export const getPermissions = async () => {
+  try {
+    const response = await api.get('/users/permissions/all');
+    return response.data;
+  } catch (error) {
+    console.error('[UserService] Error fetching permissions:', error);
+    throw error;
+  }
+};
+
+// Get permissions assigned to a role
+export const getRolePermissions = async (roleId) => {
+  try {
+    const response = await api.get(`/users/roles/${roleId}/permissions`);
+    return response.data;
+  } catch (error) {
+    console.error('[UserService] Error fetching role permissions:', error);
+    throw error;
+  }
+};
+
+// Update role permissions
+export const updateRolePermissions = async (roleId, permissionIds) => {
+  try {
+    const response = await api.put(`/users/roles/${roleId}/permissions`, { permissionIds });
+    return response.data;
+  } catch (error) {
+    console.error('[UserService] Error updating role permissions:', error);
+    throw error;
+  }
+};
+
 // Get all pages
 export const getPages = async () => {
   try {
@@ -159,6 +192,9 @@ export default {
   createRole,
   getRolePages,
   updateRolePages,
+  getPermissions,
+  getRolePermissions,
+  updateRolePermissions,
   getPages,
   deleteRole,
   deleteUser,

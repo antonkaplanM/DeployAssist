@@ -79,7 +79,7 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
 
     if (resolvedKey) {
         try {
-            const { message: llmReply, reportConfig } = await reportLlm.chat(
+            let { message: llmReply, reportConfig } = await reportLlm.chat(
                 conversationHistory, message, { userId: req.user.id }
             );
 
@@ -95,10 +95,48 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
                     responsePayload.proposedConfig = validation.data;
                     responsePayload.message += '\n\nI\'ve generated a report configuration for you. You can see the preview on the right. If it looks good, save it — or tell me what you\'d like to change.';
                 } else {
-                    logger.warn('LLM produced invalid config, forwarding errors to user', { errors: validation.errors });
-                    responsePayload.message += '\n\nI generated a configuration but it has validation issues. Let me revise it.';
-                    // Retry: ask the LLM to fix the config is out-of-scope for v1;
-                    // instead we just surface the conversational reply.
+                    logger.warn('LLM produced invalid config, attempting auto-retry', { errors: validation.errors });
+
+                    const errorSummary = validation.errors
+                        .map(e => `${e.path}: ${e.message}`)
+                        .join('\n');
+
+                    const retryHistory = [
+                        ...(conversationHistory || []).map(m => ({ role: m.role, content: m.content })),
+                        { role: 'user', content: message },
+                        { role: 'assistant', content: llmReply }
+                    ];
+                    const retryMessage =
+                        `The report config you just generated failed validation with these errors:\n${errorSummary}\n\n` +
+                        'Please fix the config and produce a corrected version inside a ```report-config block. ' +
+                        'Remember: endpoint paths must exactly match the "endpoint" field in the data catalog (e.g. "/api/analytics/package-changes/by-account", NOT "/api/package-changes/by-account"). ' +
+                        'Do NOT use the catalog "id" as the endpoint.';
+
+                    try {
+                        const retry = await reportLlm.chat(retryHistory, retryMessage, { userId: req.user.id });
+                        const retryConfig = retry.reportConfig;
+
+                        if (retryConfig) {
+                            const retryValidation = validateReportConfig(retryConfig);
+                            if (retryValidation.success) {
+                                responsePayload.type = 'config_proposed';
+                                responsePayload.proposedConfig = retryValidation.data;
+                                responsePayload.message = reportLlm.stripConfigBlock(retry.message);
+                                responsePayload.message += '\n\nI\'ve generated a report configuration for you. You can see the preview on the right. If it looks good, save it — or tell me what you\'d like to change.';
+                            } else {
+                                logger.warn('LLM retry also produced invalid config', { errors: retryValidation.errors });
+                                const retryErrors = retryValidation.errors
+                                    .map(e => `- ${e.path}: ${e.message}`)
+                                    .join('\n');
+                                responsePayload.message += `\n\nI tried to generate a configuration but it still has validation issues:\n${retryErrors}\n\nPlease try rephrasing your request or simplifying the report.`;
+                            }
+                        } else {
+                            responsePayload.message += '\n\nI generated a configuration but it had validation issues. I wasn\'t able to correct them automatically. Please try again with a simpler request.';
+                        }
+                    } catch (retryErr) {
+                        logger.warn('LLM retry failed', { error: retryErr.message });
+                        responsePayload.message += '\n\nI generated a configuration but it had validation issues and I couldn\'t correct them automatically. Please try again.';
+                    }
                 }
             }
 

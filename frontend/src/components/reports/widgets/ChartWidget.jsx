@@ -30,7 +30,7 @@ const resolveField = (obj, path) => {
   return path.split('.').reduce((acc, key) => acc?.[key], obj);
 };
 
-const ChartWidget = ({ type, title, data, config, loading, error }) => {
+const ChartWidget = ({ type, title, data, config, loading, error, errorDetail }) => {
   const chartData = useMemo(() => {
     if (!data || !Array.isArray(data) || data.length === 0) return null;
 
@@ -112,6 +112,7 @@ const ChartWidget = ({ type, title, data, config, loading, error }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
         <p className="text-sm text-red-500">Failed to load chart data</p>
+        {errorDetail && <p className="text-xs text-red-400 mt-1 font-mono">{errorDetail}</p>}
       </div>
     );
   }

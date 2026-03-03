@@ -1,6 +1,7 @@
 const jsforce = require('jsforce');
 const fs = require('fs').promises;
 const path = require('path');
+const { AsyncLocalStorage } = require('async_hooks');
 
 // Configure SSL settings for corporate environments (same as app.js)
 if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
@@ -16,6 +17,9 @@ const SALESFORCE_REDIRECT_URI = process.env.SF_REDIRECT_URI;
 const SALESFORCE_TOKEN_FILE = process.env.SF_TOKEN_FILE || '.salesforce_auth.json';
 
 let connectionInstance = null;
+
+// Per-request connection context (allows per-user connections without modifying every function)
+const connectionContext = new AsyncLocalStorage();
 
 // Check if all required Salesforce environment variables are set
 function checkSalesforceEnvVars() {
@@ -64,8 +68,23 @@ async function clearAuthFromDisk() {
     }
 }
 
-// Get or create a Salesforce connection using Client Credentials Flow
+// Resolve connection: per-user context first, then service account fallback.
+// When called within a withSalesforceConnection context that failed,
+// the store will contain an error marker and this function rethrows it
+// instead of silently falling back to the service account.
 async function getConnection() {
+    const store = connectionContext.getStore();
+    if (store?.connection) return store.connection;
+    if (store?.error) {
+        const err = new Error(store.error.message);
+        err.code = store.error.code;
+        throw err;
+    }
+    return await getServiceAccountConnection();
+}
+
+// Get or create the shared service account connection using Client Credentials Flow
+async function getServiceAccountConnection() {
     if (connectionInstance) {
         return connectionInstance;
     }
@@ -174,8 +193,9 @@ async function getConnection() {
     }
 }
 
-// Get OAuth authorization URL
-function getAuthUrl() {
+// Get OAuth authorization URL. When userId is provided, it is encoded in the
+// state parameter so the callback can associate tokens with the correct user.
+function getAuthUrl(userId = null) {
     checkSalesforceEnvVars();
     
     const conn = new jsforce.Connection({
@@ -185,15 +205,30 @@ function getAuthUrl() {
         redirectUri: SALESFORCE_REDIRECT_URI
     });
 
+    const statePayload = userId
+        ? Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64')
+        : 'salesforce-auth';
+
     const authUrl = conn.oauth2.getAuthorizationUrl({
-        scope: 'api refresh_token',
-        state: 'salesforce-auth'
+        scope: 'api refresh_token id',
+        state: statePayload
     });
 
     return authUrl;
 }
 
-// Handle OAuth callback
+// Decode the OAuth state parameter to extract the userId
+function decodeOAuthState(state) {
+    if (!state || state === 'salesforce-auth') return null;
+    try {
+        const payload = JSON.parse(Buffer.from(state, 'base64').toString('utf8'));
+        return payload.userId || null;
+    } catch {
+        return null;
+    }
+}
+
+// Handle OAuth callback -- legacy (service-account) mode
 async function handleOAuthCallback(code) {
     checkSalesforceEnvVars();
 
@@ -207,7 +242,6 @@ async function handleOAuthCallback(code) {
     try {
         const result = await conn.authorize(code);
         
-        // Save auth info to disk
         const authInfo = {
             accessToken: conn.accessToken,
             refreshToken: conn.refreshToken,
@@ -219,7 +253,6 @@ async function handleOAuthCallback(code) {
         
         await saveAuthToDisk(authInfo);
         
-        // Store the connection
         connectionInstance = conn;
         
         console.log('✅ Salesforce authentication successful');
@@ -239,6 +272,161 @@ async function handleOAuthCallback(code) {
             success: false,
             error: err.message
         };
+    }
+}
+
+// Handle OAuth callback for per-user flow -- stores tokens in the DB
+async function handlePerUserOAuthCallback(code, userId, db, encrypt) {
+    checkSalesforceEnvVars();
+
+    const conn = new jsforce.Connection({
+        loginUrl: SALESFORCE_LOGIN_URL,
+        clientId: SALESFORCE_CLIENT_ID,
+        clientSecret: SALESFORCE_CLIENT_SECRET,
+        redirectUri: SALESFORCE_REDIRECT_URI
+    });
+
+    try {
+        const result = await conn.authorize(code);
+        const identity = await conn.identity();
+
+        const settings = [
+            { key: 'sf_access_token',  value: encrypt(conn.accessToken), encrypted: true },
+            { key: 'sf_refresh_token', value: encrypt(conn.refreshToken), encrypted: true },
+            { key: 'sf_instance_url',  value: encrypt(conn.instanceUrl), encrypted: true },
+            { key: 'sf_user_id',       value: identity.username || result.id, encrypted: false },
+            { key: 'sf_connected_at',  value: new Date().toISOString(),      encrypted: false },
+        ];
+
+        for (const s of settings) {
+            await db.query(
+                `INSERT INTO user_settings (user_id, setting_key, setting_value, is_encrypted, updated_at)
+                 VALUES ($1, $2, $3, $4, NOW())
+                 ON CONFLICT (user_id, setting_key)
+                 DO UPDATE SET setting_value = $3, is_encrypted = $4, updated_at = NOW()`,
+                [userId, s.key, s.value, s.encrypted]
+            );
+        }
+
+        // Default preference to personal if not already set
+        await db.query(
+            `INSERT INTO user_settings (user_id, setting_key, setting_value, is_encrypted, updated_at)
+             VALUES ($1, 'sf_preference', 'personal', FALSE, NOW())
+             ON CONFLICT (user_id, setting_key) DO NOTHING`,
+            [userId]
+        );
+
+        console.log(`✅ Per-user Salesforce auth saved for userId=${userId} (${identity.username})`);
+
+        return {
+            success: true,
+            sfUsername: identity.username,
+            instanceUrl: conn.instanceUrl,
+            organizationId: result.organizationId
+        };
+    } catch (err) {
+        console.error('❌ Per-user Salesforce OAuth error:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+// Build a jsforce Connection from a user's stored tokens.
+// Automatically refreshes expired access tokens using the refresh token.
+async function getConnectionForUser(userId, db, decrypt, encrypt) {
+    const result = await db.query(
+        `SELECT setting_key, setting_value, is_encrypted
+         FROM user_settings
+         WHERE user_id = $1 AND setting_key IN ('sf_access_token', 'sf_refresh_token', 'sf_instance_url')`,
+        [userId]
+    );
+
+    const tokenMap = {};
+    for (const row of result.rows) {
+        tokenMap[row.setting_key] = row.is_encrypted ? decrypt(row.setting_value) : row.setting_value;
+    }
+
+    if (!tokenMap.sf_access_token || !tokenMap.sf_instance_url) {
+        const err = new Error('Salesforce is not connected. Please connect your Salesforce account in Settings > Data Sources > Salesforce.');
+        err.code = 'SF_NOT_CONNECTED';
+        throw err;
+    }
+
+    const conn = new jsforce.Connection({
+        loginUrl: SALESFORCE_LOGIN_URL,
+        clientId: SALESFORCE_CLIENT_ID,
+        clientSecret: SALESFORCE_CLIENT_SECRET,
+        redirectUri: SALESFORCE_REDIRECT_URI,
+        accessToken: tokenMap.sf_access_token,
+        instanceUrl: tokenMap.sf_instance_url,
+        refreshToken: tokenMap.sf_refresh_token || undefined
+    });
+
+    // When jsforce refreshes the token, persist the new access token
+    conn.on('refresh', async (newAccessToken) => {
+        try {
+            await db.query(
+                `UPDATE user_settings SET setting_value = $1, updated_at = NOW()
+                 WHERE user_id = $2 AND setting_key = 'sf_access_token'`,
+                [encrypt(newAccessToken), userId]
+            );
+            console.log(`🔄 Refreshed Salesforce token for userId=${userId}`);
+        } catch (e) {
+            console.error(`❌ Failed to persist refreshed token for userId=${userId}:`, e.message);
+        }
+    });
+
+    return conn;
+}
+
+// Resolve which connection to use for a request based on user preference & permissions.
+// Returns a jsforce Connection.
+async function getConnectionForRequest(userId, permissions, db, decrypt, encrypt) {
+    const prefResult = await db.query(
+        `SELECT setting_value FROM user_settings
+         WHERE user_id = $1 AND setting_key = 'sf_preference'`,
+        [userId]
+    );
+    const preference = prefResult.rows[0]?.setting_value || 'personal';
+
+    if (preference === 'service_account') {
+        const hasPermission = (permissions || []).some(
+            p => p.name === 'salesforce.service_account' || p.name === 'salesforce.manage'
+        );
+        if (!hasPermission) {
+            const err = new Error('You do not have permission to use the Salesforce service account. Connect your personal account or contact an admin.');
+            err.code = 'SF_SERVICE_ACCOUNT_FORBIDDEN';
+            throw err;
+        }
+        return await getServiceAccountConnection();
+    }
+
+    return await getConnectionForUser(userId, db, decrypt, encrypt);
+}
+
+// Run a function with a specific connection bound in async context.
+// All internal salesforce.js functions called within `fn` will use `conn`.
+function runWithConnection(conn, fn) {
+    return connectionContext.run({ connection: conn }, fn);
+}
+
+// Run a function with an error marker in the async context.
+// Downstream getConnection() calls will rethrow this error instead of
+// falling back to the service account.
+function runWithConnectionError(error, fn) {
+    return connectionContext.run({ error: { code: error.code, message: error.message } }, fn);
+}
+
+// Check whether a specific user has valid personal Salesforce tokens stored
+async function hasValidUserAuthentication(userId, db) {
+    try {
+        const result = await db.query(
+            `SELECT setting_value FROM user_settings
+             WHERE user_id = $1 AND setting_key = 'sf_access_token' AND is_encrypted = TRUE`,
+            [userId]
+        );
+        return result.rows.length > 0 && !!result.rows[0].setting_value;
+    } catch {
+        return false;
     }
 }
 
@@ -3484,7 +3672,14 @@ async function getAccountExpiredProducts(accountId, accountName, filters = {}) {
 module.exports = {
     getAuthUrl,
     handleOAuthCallback,
+    handlePerUserOAuthCallback,
+    decodeOAuthState,
     getConnection,
+    getServiceAccountConnection,
+    getConnectionForUser,
+    getConnectionForRequest,
+    runWithConnection,
+    runWithConnectionError,
     loadAuthFromDisk,
     saveAuthToDisk,
     clearAuthFromDisk,
@@ -3496,6 +3691,7 @@ module.exports = {
     searchAccounts,
     searchProvisioningData,
     hasValidAuthentication,
+    hasValidUserAuthentication,
     getIdentity,
     testConnection,
     getWeeklyRequestTypeAnalytics,

@@ -27,7 +27,7 @@ const ghostAccountsRoutes = require('./routes/ghost-accounts.routes');
 const expirationRoutes = require('./routes/expiration.routes');
 const productCatalogueRoutes = require('./routes/product-catalogue.routes');
 const packageChangesRoutes = require('./routes/package-changes.routes');
-const salesforceApiRoutes = require('./routes/salesforce-api.routes');
+const createSalesforceApiRoutes = require('./routes/salesforce-api.routes');
 const smlGhostAccountsRoutes = require('./routes/sml-ghost-accounts.routes');
 const jiraRoutes = require('./routes/jira.routes');
 const testingRoutes = require('./routes/testing.routes');
@@ -44,7 +44,7 @@ const userSettingsRoutes = require('./routes/user-settings.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
-const { createAuthMiddleware, requireAdmin } = require('./middleware/auth.middleware');
+const { createAuthMiddleware, requireAdmin, loadPermissions, withSalesforceConnection } = require('./middleware/auth.middleware');
 const createAuthRoutes = require('./routes/auth.routes');
 const createUserRoutes = require('./routes/user.routes');
 
@@ -84,6 +84,26 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 console.log('✅ Authentication system initialized');
+
+// Ensure critical permissions exist and are assigned to admin on startup
+(async () => {
+    try {
+        await db.pool.query(`
+            INSERT INTO permissions (name, description, resource, action)
+            VALUES ('salesforce.service_account', 'Use shared Salesforce service account instead of personal credentials', 'salesforce', 'service_account')
+            ON CONFLICT (name) DO NOTHING
+        `);
+        await db.pool.query(`
+            INSERT INTO role_permissions (role_id, permission_id)
+            SELECT r.id, p.id
+            FROM roles r, permissions p
+            WHERE r.name = 'admin' AND p.name = 'salesforce.service_account'
+            ON CONFLICT (role_id, permission_id) DO NOTHING
+        `);
+    } catch (err) {
+        console.error('Permission seed check failed (non-fatal):', err.message);
+    }
+})();
 
 // ===== AUTHENTICATION ROUTES (PUBLIC) =====
 // These routes don't require authentication
@@ -155,7 +175,8 @@ app.use('/api/sml', authenticate, smlRoutes);
 
 // ===== EXTRACTED ROUTE MODULES - MOUNTED HERE =====
 
-// Salesforce OAuth, Analytics, Provisioning (handles /auth/*, /api/analytics/*, /api/provisioning/*)
+// Salesforce OAuth, Analytics, Provisioning (handles /auth/*, /api/analytics/*, /api/provisioning/*, /api/user-settings/salesforce/*)
+const salesforceApiRoutes = createSalesforceApiRoutes(authenticate, loadPermissions(db.pool));
 app.use('/', salesforceApiRoutes);
 
 // Validation endpoints
@@ -204,10 +225,10 @@ app.use('/api/jira', jiraRoutes);
 app.use('/api/test', testingRoutes);
 
 // Staging endpoints (Experimental PoC for PS record staging)
-app.use('/api/staging', authenticate, stagingRoutes);
+app.use('/api/staging', authenticate, loadPermissions(db.pool), withSalesforceConnection(db.pool), stagingRoutes);
 
 // Current Accounts endpoints (Analytics section)
-app.use('/api/current-accounts', authenticate, currentAccountsRoutes);
+app.use('/api/current-accounts', authenticate, loadPermissions(db.pool), withSalesforceConnection(db.pool), currentAccountsRoutes);
 
 // Microsoft Graph Auth endpoints (for OneDrive Excel integration)
 app.use('/api/auth/microsoft', microsoftAuthRoutes);

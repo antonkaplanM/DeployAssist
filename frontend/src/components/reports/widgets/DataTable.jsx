@@ -54,7 +54,7 @@ const formatCellValue = (value, format) => {
   }
 };
 
-const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loading, error, onRowClickConfig, onRowClick, selectedRowValue, conditionalFormatting }) => {
+const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loading, error, errorDetail, onRowClickConfig, onRowClick, selectedRowValue, conditionalFormatting }) => {
   const isClickable = !!(onRowClickConfig && onRowClick);
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState(null);
@@ -116,6 +116,7 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
         <p className="text-sm text-red-500">Failed to load table data</p>
+        {errorDetail && <p className="text-xs text-red-400 mt-1 font-mono">{errorDetail}</p>}
       </div>
     );
   }

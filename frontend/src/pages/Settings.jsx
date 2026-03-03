@@ -17,6 +17,9 @@ import {
   SparklesIcon,
   EyeIcon,
   EyeSlashIcon,
+  CircleStackIcon,
+  LinkIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import settingsService from '../services/settingsService';
 import validationService from '../services/validationService';
@@ -72,13 +75,22 @@ const Settings = () => {
   const [llmMaskedKey, setLlmMaskedKey] = useState('');
   const [showLlmKey, setShowLlmKey] = useState(false);
 
+  // Salesforce Per-User Connection
+  const [sfConnected, setSfConnected] = useState(false);
+  const [sfUsername, setSfUsername] = useState('');
+  const [sfConnectedAt, setSfConnectedAt] = useState(null);
+  const [sfPreference, setSfPreference] = useState('personal');
+  const [sfServiceAccountPermitted, setSfServiceAccountPermitted] = useState(false);
+
   const sections = [
     { id: 'web-connectivity', name: 'Web Connectivity', icon: GlobeAltIcon },
-    { id: 'salesforce', name: 'Salesforce', icon: CloudIcon },
+    { id: 'data-sources', name: 'Data Sources', icon: CircleStackIcon, children: [
+      { id: 'salesforce', name: 'Salesforce', icon: CloudIcon },
+      { id: 'ai-config', name: 'AI Configuration', icon: SparklesIcon },
+    ]},
     { id: 'sml', name: 'SML Configuration', icon: Cog6ToothIcon },
     { id: 'excel-polling', name: 'Excel Polling', icon: TableCellsIcon },
     { id: 'debug', name: 'Debug Configuration', icon: BugAntIcon },
-    { id: 'ai-config', name: 'AI Configuration', icon: SparklesIcon },
     { id: 'application', name: 'Application Settings', icon: ShieldCheckIcon },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
     { id: 'validation', name: 'Validation Rules', icon: DocumentTextIcon },
@@ -129,6 +141,28 @@ const Settings = () => {
       loadLLMSettings();
     }
   }, [activeSection]);
+
+  // Load Salesforce per-user status when that section is opened
+  useEffect(() => {
+    if (activeSection === 'salesforce') {
+      loadSalesforceStatus();
+    }
+  }, [activeSection]);
+
+  // Handle OAuth callback redirect (sf_connected=1 or sf_error=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('sf_connected') === '1') {
+      setActiveSection('salesforce');
+      loadSalesforceStatus();
+      showToast('Salesforce connected successfully', 'success');
+      window.history.replaceState({}, '', '/settings');
+    } else if (params.get('sf_error')) {
+      setActiveSection('salesforce');
+      showToast(`Salesforce connection failed: ${params.get('sf_error')}`, 'error');
+      window.history.replaceState({}, '', '/settings');
+    }
+  }, []);
 
   const loadInitialData = async () => {
     const settings = settingsService.getAppSettings();
@@ -561,6 +595,74 @@ const Settings = () => {
   };
 
   // Salesforce Connection Test
+  // Salesforce Per-User Connection
+  const loadSalesforceStatus = async () => {
+    try {
+      const data = await settingsService.getSalesforceStatus();
+      setSfConnected(data.connected || false);
+      setSfUsername(data.sfUsername || '');
+      setSfConnectedAt(data.connectedAt || null);
+      setSfPreference(data.preference || 'personal');
+      setSfServiceAccountPermitted(data.serviceAccountPermitted || false);
+    } catch (e) {
+      console.error('Could not load Salesforce status:', e);
+    }
+  };
+
+  const handleConnectSalesforce = () => {
+    window.location.href = '/auth/salesforce';
+  };
+
+  const handleDisconnectSalesforce = async () => {
+    setLoading('sfDisconnect', true);
+    try {
+      await settingsService.disconnectSalesforce();
+      setSfConnected(false);
+      setSfUsername('');
+      setSfConnectedAt(null);
+      setSfPreference('personal');
+      showToast('Salesforce credentials removed', 'success');
+    } catch (error) {
+      showToast('Failed to disconnect Salesforce: ' + error.message, 'error');
+    } finally {
+      setLoading('sfDisconnect', false);
+    }
+  };
+
+  const handleTestSalesforceUser = async () => {
+    setLoading('sfTest', true);
+    setTestResult('sfTest', null);
+    try {
+      const result = await settingsService.testSalesforceUserConnection();
+      setTestResult('sfTest', {
+        success: result.success,
+        message: result.message,
+        details: result.details
+      });
+    } catch (error) {
+      setTestResult('sfTest', {
+        success: false,
+        message: 'Salesforce connection test failed',
+        error: error.message
+      });
+    } finally {
+      setLoading('sfTest', false);
+    }
+  };
+
+  const handleSfPreferenceChange = async (newPreference) => {
+    setLoading('sfPref', true);
+    try {
+      await settingsService.setSalesforcePreference(newPreference);
+      setSfPreference(newPreference);
+      showToast(`Salesforce preference set to "${newPreference === 'service_account' ? 'Service Account' : 'My Credentials'}"`, 'success');
+    } catch (error) {
+      showToast(error?.response?.data?.message || 'Failed to update preference', 'error');
+    } finally {
+      setLoading('sfPref', false);
+    }
+  };
+
   const handleTestSalesforce = async () => {
     setLoading('salesforce', true);
     setTestResult('salesforce', null);
@@ -937,6 +1039,42 @@ const Settings = () => {
           <nav className="space-y-1">
             {sections.map((section) => {
               const Icon = section.icon;
+
+              if (section.children) {
+                const isChildActive = section.children.some(c => c.id === activeSection);
+                return (
+                  <div key={section.id}>
+                    <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold ${
+                      isChildActive
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      <Icon className="h-5 w-5" />
+                      {section.name}
+                    </div>
+                    <div className="ml-4 space-y-1">
+                      {section.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={() => setActiveSection(child.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                              activeSection === child.id
+                                ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            <ChildIcon className="h-4 w-4" />
+                            {child.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <button
                   key={section.id}
@@ -988,38 +1126,133 @@ const Settings = () => {
               </div>
             )}
 
-            {/* Salesforce Integration */}
+            {/* Salesforce Integration (Data Sources) */}
             {activeSection === 'salesforce' && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Salesforce Integration</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Salesforce</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Validate Salesforce OAuth connection and API access
+                  Connect your Salesforce account to access provisioning, analytics, and account data. Your access is governed by your own Salesforce permissions.
                 </p>
-                
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-colors">
-                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
-                    <strong>This test validates:</strong>
-                  </p>
-                  <ul className="text-sm text-blue-800 dark:text-blue-300 list-disc list-inside space-y-1 ml-2">
-                    <li><strong>Environment Variables</strong> - Required OAuth configuration</li>
-                    <li><strong>Client Credentials Flow</strong> - Server-to-server authentication setup</li>
-                    <li><strong>Stored Authentication</strong> - Valid access tokens and org details</li>
-                    <li><strong>API Connectivity</strong> - Live connection to Salesforce instance</li>
-                  </ul>
-                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
-                    💡 This integration powers the Provisioning Monitor, Expiration Monitor, Customer Products, and other core features.
-                  </p>
+
+                {/* Connection Status Card */}
+                <div className={`rounded-lg border p-4 ${
+                  sfConnected
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                } transition-colors`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      {sfConnected ? (
+                        <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <ExclamationCircleIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          sfConnected ? 'text-green-800 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {sfConnected ? `Connected as ${sfUsername}` : 'Not Connected'}
+                        </p>
+                        {sfConnected && sfConnectedAt && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            Connected: {new Date(sfConnectedAt).toLocaleString()}
+                          </p>
+                        )}
+                        {!sfConnected && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Click "Connect to Salesforce" to authenticate with your own credentials.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {sfConnected && (
+                        <>
+                          <button
+                            onClick={handleTestSalesforceUser}
+                            disabled={loadingStates.sfTest}
+                            className="px-3 py-1.5 bg-blue-600 dark:bg-blue-700 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
+                          >
+                            {loadingStates.sfTest ? 'Testing...' : 'Test'}
+                          </button>
+                          <button
+                            onClick={handleDisconnectSalesforce}
+                            disabled={loadingStates.sfDisconnect}
+                            className="px-3 py-1.5 bg-red-600 dark:bg-red-700 text-white text-sm rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50"
+                          >
+                            {loadingStates.sfDisconnect ? 'Disconnecting...' : 'Disconnect'}
+                          </button>
+                        </>
+                      )}
+                      {!sfConnected && (
+                        <button
+                          onClick={handleConnectSalesforce}
+                          className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors flex items-center gap-2"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                          Connect to Salesforce
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-2">
-                  <button
-                    onClick={handleTestSalesforce}
-                    disabled={loadingStates.salesforce}
-                    className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
-                  >
-                    {loadingStates.salesforce ? 'Testing Salesforce...' : 'Run Salesforce Test'}
-                  </button>
-                  {renderTestResult('salesforce')}
+                {renderTestResult('sfTest')}
+
+                {/* Service Account Toggle (only for permissioned users) */}
+                {sfServiceAccountPermitted && (
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 transition-colors">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Connection Mode</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      You have permission to use the shared service account. Choose which credentials to use for Salesforce API calls.
+                    </p>
+                    <div className="space-y-2">
+                      <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        sfPreference === 'personal'
+                          ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="sf-preference"
+                          value="personal"
+                          checked={sfPreference === 'personal'}
+                          onChange={() => handleSfPreferenceChange('personal')}
+                          disabled={loadingStates.sfPref}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">My Credentials</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Access is limited to your Salesforce permissions</p>
+                        </div>
+                      </label>
+                      <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        sfPreference === 'service_account'
+                          ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="sf-preference"
+                          value="service_account"
+                          checked={sfPreference === 'service_account'}
+                          onChange={() => handleSfPreferenceChange('service_account')}
+                          disabled={loadingStates.sfPref}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Service Account</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Uses the shared service account with full access</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-colors">
+                  <p className="text-xs text-blue-800 dark:text-blue-300">
+                    <strong>How it works:</strong> When you connect, you log into Salesforce and grant this app access. Your tokens are encrypted and stored per-user. Salesforce enforces your profile permissions, field-level security, and sharing rules on all API calls.
+                  </p>
                 </div>
               </div>
             )}

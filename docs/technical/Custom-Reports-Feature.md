@@ -2,7 +2,7 @@
 
 **Date:** February 27, 2026  
 **Status:** ✅ Complete (All Phases)  
-**Version:** 2.0.1
+**Version:** 2.1
 
 ---
 
@@ -1121,6 +1121,122 @@ User types in typeahead
   → Database queries sml_tenant_data WHERE tenant_name ILIKE $1
   → Service flattens product_entitlements → returns flat entitlements array
 ```
+
+---
+
+### Version 1.9 – LLM Config Generation Reliability Fixes (February 27, 2026)
+
+**Version:** 1.9
+
+#### Problem
+
+The LLM report agent frequently generated invalid report configs that failed schema validation, leading to a broken user experience where:
+
+1. **Preview never appeared** -- The LLM sometimes used `` ```json `` instead of `` ```report-config `` as the code fence tag, so the config extraction regex never matched and the preview never updated.
+2. **Wrong endpoint paths** -- The LLM confused catalog `id` values (dot-separated, e.g., `package-changes.by-account`) with actual `endpoint` paths (slash-separated, e.g., `/api/analytics/package-changes/by-account`). It also shortened paths (e.g., `/api/package-changes/by-account` instead of `/api/analytics/package-changes/by-account`).
+3. **No error recovery** -- When the LLM generated an invalid config, the backend just told the user "it has validation issues" without feeding the errors back to the LLM for correction.
+
+#### Fixes
+
+**Config extraction (`report-llm.service.js`)**:
+- `extractReportConfig()` now tries three patterns in order: `` ```report-config ``, `` ```json ``, and bare `` ``` `` blocks
+- Each candidate is validated to have `title` and `components` before being accepted as a report config
+- `stripConfigBlock()` updated to also strip `` ```json `` blocks that contain report configs
+
+**Auto-retry (`report-agent.routes.js`)**:
+- When the LLM's first config attempt fails validation, the backend now automatically sends the validation errors back to the LLM with correction instructions
+- The retry message explicitly reminds the LLM to use the `endpoint` path from the catalog and the `` ```report-config `` fence tag
+- If the retry also fails, the validation errors are shown to the user with a suggestion to simplify the request
+
+**Prompt improvements (`report-llm.service.js`)**:
+- Rule 6 now includes explicit examples of wrong vs. correct endpoint paths
+- Added Rule 14: always use `` ```report-config `` fence tag, not `` ```json ``
+
+**Catalog prompt cleanup (`report-data-catalog.js`)**:
+- `getCatalogForPrompt()` no longer includes the `id` field in the catalog output sent to the LLM, removing the source of dot-path confusion
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `services/report-llm.service.js` | Multi-pattern config extraction, updated `stripConfigBlock`, strengthened prompt rules 6 and 14 |
+| `routes/report-agent.routes.js` | Auto-retry with validation error feedback (1 retry attempt) |
+| `config/report-data-catalog.js` | Removed `id` from `getCatalogForPrompt()` output |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 2.0 – Widget Error Details & Data Source Guidance (February 27, 2026)
+
+**Version:** 2.0
+
+#### Problem
+
+When report widgets failed to load data (e.g., an endpoint returned HTTP 500), the widgets showed only a generic "Failed to load data" message with no information about what went wrong. This made it impossible for users to tell the LLM what to fix, and for developers to diagnose which endpoint failed.
+
+Additionally, the LLM sometimes chose endpoints that require prior data loading (like running a package change analysis first) without warning the user, or picked endpoints that don't provide the data shape needed for the requested visualization (e.g., no time-series endpoint exists for upgrade trends).
+
+#### Fixes
+
+**Widget error details (all widget components)**:
+- All widgets (`KpiCard`, `ChartWidget`, `DataTable`, `EChartsWidget`, `AgGridTable`) now accept an `errorDetail` prop
+- The `ComponentRenderer` in `ReportRenderer.jsx` builds a descriptive error string from the Axios error via a new `describeError()` helper (shows endpoint, HTTP status, and server error message)
+- Error displays now show the detail in a monospaced font below the generic message
+
+**LLM data source guidance (`report-llm.service.js`)**:
+- Added "Data Source Reliability & Dependencies" section to the system prompt
+- Documents which endpoints are always available vs. which require prior analysis
+- Lists available time-series endpoints with their actual fields
+- Explicitly states there is no dedicated "upgrade trend over time" endpoint
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `frontend/src/components/reports/ReportRenderer.jsx` | Added `describeError()` helper; error state now stores `{ raw, detail }` object; passes `errorDetail` to all widgets |
+| `frontend/src/components/reports/widgets/KpiCard.jsx` | Accepts and displays `errorDetail` |
+| `frontend/src/components/reports/widgets/ChartWidget.jsx` | Accepts and displays `errorDetail` |
+| `frontend/src/components/reports/widgets/DataTable.jsx` | Accepts and displays `errorDetail` |
+| `frontend/src/components/reports/widgets/EChartsWidget.jsx` | Accepts and displays `errorDetail` |
+| `frontend/src/components/reports/widgets/AgGridTable.jsx` | Accepts and displays `errorDetail` |
+| `services/report-llm.service.js` | Added data source reliability section to LLM prompt |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 2.1 – LLM Semantic Accuracy & Transparency (February 27, 2026)
+
+**Version:** 2.1
+
+#### Problem
+
+The LLM sometimes produced reports where a component's title implied one metric (e.g., "Upgrade Trend Over Time") but the backing endpoint provided a completely different metric (e.g., validation failure trend). This resulted in misleading dashboards. The LLM also silently substituted unrelated endpoints rather than telling the user that the requested data isn't available.
+
+Additionally, the data catalog had a parameter mismatch for the `validation-trend` endpoint — the catalog listed a `days` parameter but the actual route handler uses `months`.
+
+#### Fixes
+
+**LLM prompt – semantic correctness (Rules 15 & 16)**:
+- **Rule 15**: Every component must use an endpoint whose data actually answers the question the component title implies. The LLM must never repurpose an unrelated endpoint to fill a slot.
+- **Rule 16**: If part of the user's request cannot be fulfilled because no suitable endpoint exists, the LLM must tell the user explicitly which part is missing and why, and build only what can be correctly supported. An incomplete but accurate report is better than a complete but misleading one.
+
+**LLM prompt – explicit data descriptions**:
+- The "Data Source Reliability" section now lists each time-series endpoint with a clear description of what it actually measures and which fields it returns.
+- Added a "Gaps" subsection listing data types that do NOT exist in any endpoint (upgrade trends over time, revenue, customer growth).
+- Added a closing tip reinforcing that the LLM should explain gaps rather than hide them.
+
+**Data catalog – description clarity & parameter fix**:
+- Updated `validation-trend` description to emphasize it measures VALIDATION FAILURES, not product upgrades.
+- Fixed `validation-trend` parameter from `days` to `months` to match the actual route handler.
+- Updated `request-types-week` and `completion-times` descriptions to explicitly state what they do NOT measure.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `services/report-llm.service.js` | Added Rules 15 & 16; rewrote time-series endpoint descriptions with explicit semantics; added "Gaps" list; added transparency tip |
+| `config/report-data-catalog.js` | Fixed `validation-trend` param `days` → `months`; clarified descriptions for `validation-trend`, `request-types-week`, `completion-times` |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
 
 ---
 
