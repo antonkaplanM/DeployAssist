@@ -9,7 +9,7 @@
 const { z } = require('zod');
 const { isEndpointAllowed } = require('./report-data-catalog');
 
-const VALID_COMPONENT_TYPES = ['kpi-card', 'bar-chart', 'line-chart', 'pie-chart', 'data-table'];
+const VALID_COMPONENT_TYPES = ['kpi-card', 'bar-chart', 'line-chart', 'pie-chart', 'data-table', 'echarts', 'ag-grid'];
 const VALID_FORMATS = ['number', 'currency', 'percentage', 'date', 'text'];
 const VALID_LAYOUTS = ['grid', 'stack', 'two-column'];
 const MAX_COMPONENTS = 12;
@@ -53,11 +53,16 @@ const filterOptionSchema = z.object({
 
 const filterSchema = z.object({
     id: safeId,
-    type: z.enum(['select', 'date-range', 'text']),
+    type: z.enum(['select', 'date-range', 'text', 'typeahead']),
     label: z.string().min(1).max(100).transform(sanitizeString),
     options: z.array(filterOptionSchema).optional(),
     default: z.string().optional(),
-    mapsToParam: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_]+$/)
+    mapsToParam: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_]+$/),
+    suggestEndpoint: z.string().max(200).optional(),
+    suggestParam: z.string().max(50).optional(),
+    suggestResultKey: z.string().max(100).optional(),
+    suggestDisplayField: z.string().max(100).optional(),
+    suggestSecondaryField: z.string().max(100).optional()
 });
 
 const columnSchema = z.object({
@@ -142,12 +147,68 @@ const dataTableSchema = baseComponentSchema.extend({
     conditionalFormatting: z.array(conditionalFormatRuleSchema).max(10).optional()
 });
 
+/**
+ * ECharts component – pass-through option object rendered by Apache ECharts.
+ * Uses the ECharts `dataset` component for data injection: the renderer sets
+ * `option.dataset.source` to the fetched API data array. Structural validation
+ * checks for the presence of `series`; the option itself is sanitized at render
+ * time (functions stripped, HTML removed) rather than deeply validated here.
+ */
+const echartsOptionSchema = z.object({}).passthrough().refine(
+    (obj) => {
+        const hasSeries = obj.series && (Array.isArray(obj.series) ? obj.series.length > 0 : typeof obj.series === 'object');
+        const hasGraphic = !!obj.graphic;
+        return hasSeries || hasGraphic;
+    },
+    { message: 'ECharts option must contain a "series" array or "graphic" element' }
+);
+
+const echartsSchema = baseComponentSchema.extend({
+    type: z.literal('echarts'),
+    option: echartsOptionSchema
+});
+
+/**
+ * AG Grid component – pass-through column definitions rendered by AG Grid Community.
+ * The `columnDefs` array defines columns; each entry needs at minimum a `field` or
+ * `headerName`. The `defaultColDef` object sets defaults for all columns.
+ */
+const agGridColumnDefSchema = z.object({
+    field: z.string().max(200).optional(),
+    headerName: z.string().max(200).optional(),
+    header: z.string().max(200).optional(),
+    sortable: z.boolean().optional(),
+    filter: z.boolean().optional(),
+    resizable: z.boolean().optional(),
+    flex: z.number().optional(),
+    width: z.union([z.string().max(20), z.number()]).optional(),
+    minWidth: z.number().optional(),
+    format: z.enum(VALID_FORMATS).optional(),
+    valueGetter: z.boolean().optional()
+}).refine(
+    (col) => col.field || col.headerName || col.header,
+    { message: 'Column must have at least a "field" or "headerName"' }
+);
+
+const agGridSchema = baseComponentSchema.extend({
+    type: z.literal('ag-grid'),
+    columnDefs: z.array(agGridColumnDefSchema).min(1).max(30),
+    defaultColDef: z.object({}).passthrough().optional(),
+    pageSize: z.number().int().min(5).max(100).optional().default(10),
+    pagination: z.boolean().optional().default(true),
+    searchable: z.boolean().optional().default(true),
+    onRowClick: onRowClickSchema.optional(),
+    conditionalFormatting: z.array(conditionalFormatRuleSchema).max(10).optional()
+});
+
 const componentSchema = z.discriminatedUnion('type', [
     kpiCardSchema,
     barChartSchema,
     lineChartSchema,
     pieChartSchema,
-    dataTableSchema
+    dataTableSchema,
+    echartsSchema,
+    agGridSchema
 ]);
 
 const reportConfigSchema = z.object({

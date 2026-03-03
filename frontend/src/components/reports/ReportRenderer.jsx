@@ -3,6 +3,9 @@ import api from '../../services/api';
 import KpiCard from './widgets/KpiCard';
 import ChartWidget from './widgets/ChartWidget';
 import DataTable from './widgets/DataTable';
+import EChartsWidget from './widgets/EChartsWidget';
+import AgGridTable from './widgets/AgGridTable';
+import FilterTypeAhead from './widgets/FilterTypeAhead';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 const GRID_SPAN_CLASSES = {
@@ -96,7 +99,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
   const { linkedParams } = component.dataSource;
   const hasLinkedParams = linkedParams && Object.keys(linkedParams).length > 0;
   const linkedReady = !hasLinkedParams || Object.values(linkedParams).every(
-    paramId => componentParams?.[paramId]
+    paramId => componentParams?.[paramId] || filterValues?.[paramId]?.value
   );
 
   const fetchKey = useMemo(() => {
@@ -108,10 +111,12 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
         }
       });
     }
-    if (linkedParams && componentParams) {
+    if (linkedParams) {
       Object.entries(linkedParams).forEach(([paramName, paramId]) => {
-        if (componentParams[paramId]) {
+        if (componentParams?.[paramId]) {
           params[paramName] = componentParams[paramId];
+        } else if (filterValues?.[paramId]?.value) {
+          params[paramName] = filterValues[paramId].value;
         }
       });
     }
@@ -208,6 +213,35 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
           onRowClickConfig={rowClickConfig}
           onRowClick={rowClickConfig ? onLinkedRowClick : undefined}
           selectedRowValue={selectedValue}
+          conditionalFormatting={component.conditionalFormatting}
+        />
+      );
+    }
+
+    case 'echarts':
+      return (
+        <EChartsWidget
+          title={component.title}
+          data={rawArray}
+          option={component.option}
+          loading={loading}
+          error={error}
+        />
+      );
+
+    case 'ag-grid': {
+      const agRowClickConfig = component.onRowClick;
+      const agSelectedValue = agRowClickConfig ? componentParams?.[agRowClickConfig.paramId] : undefined;
+      return (
+        <AgGridTable
+          title={component.title}
+          data={rawArray}
+          config={component}
+          loading={loading}
+          error={error}
+          onRowClickConfig={agRowClickConfig}
+          onRowClick={agRowClickConfig ? onLinkedRowClick : undefined}
+          selectedRowValue={agSelectedValue}
           conditionalFormatting={component.conditionalFormatting}
         />
       );
@@ -312,6 +346,18 @@ const ReportRenderer = ({ config, showTitle = true }) => {
                   value={filterValues[filter.id]?.value || ''}
                   onChange={e => handleFilterChange(filter.id, e.target.value)}
                   className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-48"
+                />
+              )}
+              {filter.type === 'typeahead' && (
+                <FilterTypeAhead
+                  value={filterValues[filter.id]?.value || ''}
+                  onChange={val => handleFilterChange(filter.id, val)}
+                  placeholder={filter.label}
+                  suggestEndpoint={filter.suggestEndpoint}
+                  suggestParam={filter.suggestParam}
+                  suggestResultKey={filter.suggestResultKey}
+                  suggestDisplayField={filter.suggestDisplayField}
+                  suggestSecondaryField={filter.suggestSecondaryField}
                 />
               )}
             </div>

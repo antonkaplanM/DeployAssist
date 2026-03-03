@@ -1412,10 +1412,14 @@ async function upsertSMLTenant(tenantData) {
             RETURNING id
         `;
         
+        const normalizedAccountName = tenantData.accountName
+            ? tenantData.accountName.normalize('NFC')
+            : null;
+
         const values = [
             tenantData.tenantId,
             tenantData.tenantName,
-            tenantData.accountName || null,
+            normalizedAccountName,
             tenantData.tenantDisplayName || null,
             tenantData.isDeleted || false,
             tenantData.rawData ? JSON.stringify(tenantData.rawData) : null,
@@ -1528,21 +1532,121 @@ async function clearSMLTenants() {
  */
 async function getSMLTenantEntitlementsByAccount(accountName) {
     try {
+        const selectFields = `
+            tenant_id, tenant_name, account_name, tenant_display_name,
+            is_deleted, product_entitlements, last_synced`;
+        const baseWhere = `is_deleted = false AND product_entitlements IS NOT NULL`;
+        const orderBy = `ORDER BY tenant_name ASC`;
+
+        // Normalize to NFC (precomposed) — the most common form in modern systems
+        const nfcName = accountName.normalize('NFC');
+
+        const directQuery = `
+            SELECT ${selectFields}
+            FROM sml_tenant_data
+            WHERE account_name ILIKE $1
+            AND ${baseWhere}
+            ${orderBy}
+        `;
+
+        let result = await pool.query(directQuery, [nfcName]);
+
+        // Fallback: try NFD (decomposed) form — covers data stored before
+        // normalization was added (e.g. ñ stored as n + combining tilde)
+        if (result.rowCount === 0) {
+            const nfdName = accountName.normalize('NFD');
+            if (nfdName !== nfcName) {
+                result = await pool.query(directQuery, [nfdName]);
+            }
+        }
+
+        // Fallback: accent-insensitive match via translate() — handles cases
+        // where the stored name dropped accents entirely (e.g. "Compania"
+        // vs "Compañía"). Common Latin diacritics are mapped to base chars.
+        if (result.rowCount === 0) {
+            const accentQuery = `
+                SELECT ${selectFields}
+                FROM sml_tenant_data
+                WHERE translate(
+                        lower(account_name),
+                        'áàâãäåéèêëíìîïóòôõöúùûüñçðýþ',
+                        'aaaaaaeeeeiiiioooooouuuuncdyp'
+                      )
+                    = translate(
+                        lower($1),
+                        'áàâãäåéèêëíìîïóòôõöúùûüñçðýþ',
+                        'aaaaaaeeeeiiiioooooouuuuncdyp'
+                      )
+                AND ${baseWhere}
+                ${orderBy}
+            `;
+            result = await pool.query(accentQuery, [nfcName]);
+        }
+
+        if (result.rowCount === 0) {
+            console.warn(`⚠️ No SML tenant data found for account "${accountName}" (tried NFC, NFD, accent-insensitive)`);
+        }
+
+        return { success: true, tenants: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting SML tenant entitlements by account:', error.message);
+        return { success: false, error: error.message, tenants: [], count: 0 };
+    }
+}
+
+/**
+ * Get SML tenant entitlements by tenant name (direct match on sml_tenant_data).
+ * More reliable than account-name lookup because tenant_name comes directly
+ * from SML and is always present.
+ */
+async function getSMLTenantEntitlementsByTenantName(tenantName) {
+    try {
         const query = `
-            SELECT 
+            SELECT
                 tenant_id, tenant_name, account_name, tenant_display_name,
                 is_deleted, product_entitlements, last_synced
             FROM sml_tenant_data
-            WHERE account_name ILIKE $1
+            WHERE tenant_name ILIKE $1
             AND is_deleted = false
             AND product_entitlements IS NOT NULL
             ORDER BY tenant_name ASC
         `;
 
-        const result = await pool.query(query, [accountName]);
+        const result = await pool.query(query, [tenantName]);
         return { success: true, tenants: result.rows, count: result.rowCount };
     } catch (error) {
-        console.error('❌ Error getting SML tenant entitlements by account:', error.message);
+        console.error('❌ Error getting SML tenant entitlements by tenant name:', error.message);
+        return { success: false, error: error.message, tenants: [], count: 0 };
+    }
+}
+
+/**
+ * Search sml_tenant_data for typeahead suggestions.
+ * Searches across tenant_name, account_name, and tenant_display_name.
+ * Returns distinct tenants with entitlements.
+ */
+async function searchSMLTenantsForSuggest(searchTerm, limit = 10) {
+    try {
+        const query = `
+            SELECT DISTINCT
+                tenant_id, tenant_name, account_name, tenant_display_name
+            FROM sml_tenant_data
+            WHERE is_deleted = false
+            AND product_entitlements IS NOT NULL
+            AND (
+                tenant_name ILIKE $1
+                OR account_name ILIKE $1
+                OR tenant_display_name ILIKE $1
+            )
+            ORDER BY tenant_name ASC
+            LIMIT $2
+        `;
+
+        const pattern = `%${searchTerm}%`;
+        const result = await pool.query(query, [pattern, limit]);
+        return { success: true, tenants: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error searching SML tenants for suggest:', error.message);
         return { success: false, error: error.message, tenants: [], count: 0 };
     }
 }
@@ -1981,6 +2085,8 @@ module.exports = {
     getSMLTenants,
     getSMLTenantById,
     getSMLTenantEntitlementsByAccount,
+    getSMLTenantEntitlementsByTenantName,
+    searchSMLTenantsForSuggest,
     clearSMLTenants,
     findAccountNameForTenant,
     // SML ghost accounts functions

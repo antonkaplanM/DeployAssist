@@ -217,18 +217,34 @@ const dataCatalog = [
 
     // ===== Tenant Entitlements =====
     {
+        id: 'tenant-entitlements.suggest',
+        endpoint: '/api/tenant-entitlements/suggest',
+        category: 'Tenant Entitlements',
+        description: 'Typeahead suggestions searching sml_tenant_data by tenant_name, account_name, and tenant_display_name. Use as a suggestEndpoint for typeahead filters targeting entitlement data.',
+        params: [
+            { name: 'search', type: 'string', description: 'Search term (min 2 chars)' },
+            { name: 'limit', type: 'number', description: 'Max results (default: 10)', optional: true }
+        ],
+        responseShape: {
+            summary: 'Array of matching tenants. Response array is under the "tenants" key.',
+            fields: ['tenant_name', 'account_name', 'tenant_display_name', 'tenant_id'],
+            note: 'Use as suggestEndpoint for typeahead filters with suggestResultKey "tenants", suggestDisplayField "tenant_name", and suggestSecondaryField "account_name" so users can search by account name and see both tenant and account in the dropdown.'
+        }
+    },
+    {
         id: 'tenant-entitlements.list',
         endpoint: '/api/tenant-entitlements',
         category: 'Tenant Entitlements',
-        description: 'Product entitlements for a specific account from SML tenant data. Returns a flat array of entitlement rows with status and expiry info. Preferred over customer-products.list for entitlement reports.',
+        description: 'Product entitlements from SML tenant data. Accepts either "tenant" (preferred — direct match on tenant_name from SML) or "account" (legacy — mapped account name). Returns a flat array of entitlement rows with status and expiry info.',
         params: [
-            { name: 'account', type: 'string', description: 'Account name to look up (required)' },
+            { name: 'tenant', type: 'string', description: 'Tenant name to look up (preferred — direct SML match)', optional: true },
+            { name: 'account', type: 'string', description: 'Account name to look up (legacy — may fail for names with special characters)', optional: true },
             { name: 'includeExpired', type: 'boolean', description: 'Include expired entitlements (default: false)', optional: true }
         ],
         responseShape: {
             summary: 'Flat array of entitlement rows. Response array is under the "entitlements" key. Also includes "summary" object with counts.',
             fields: ['tenantName', 'tenantId', 'category', 'productCode', 'productName', 'packageName', 'productModifier', 'quantity', 'startDate', 'endDate', 'status', 'daysRemaining'],
-            note: 'Each row is one entitlement product. "category" is apps/models/data. "status" is Active/Expiring Soon/Expired. Summary has totalEntitlements, activeCount, expiringCount, expiredCount, tenantCount.'
+            note: 'Each row is one entitlement product. "category" is apps/models/data. "status" is Active/Expiring Soon/Expired. Use "tenant" param (matched by tenant_name) instead of "account" for reliable lookups. One of "tenant" or "account" is required.'
         }
     },
     {

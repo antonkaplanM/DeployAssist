@@ -2,7 +2,7 @@
 
 **Date:** February 27, 2026  
 **Status:** ✅ Complete (All Phases)  
-**Version:** 1.6
+**Version:** 2.0.1
 
 ---
 
@@ -16,8 +16,18 @@ Reports are stored as **JSON configuration definitions** in a `custom_reports` d
 
 - No filesystem writes at runtime
 - Users cannot modify any other part of the codebase
-- Reports are sandboxed to a strict set of pre-built widget types
+- Reports are sandboxed to validated widget types
 - Easy to version, edit, and delete
+
+### Rendering Architecture (v2.0)
+
+As of v2.0, the report renderer supports two tiers of components:
+
+1. **ECharts + AG Grid (preferred)** – LLM generates native Apache ECharts option objects and AG Grid column definitions. These are pass-through configs rendered by industry-standard libraries, giving access to 40+ chart types and feature-rich tables without custom code for each feature.
+
+2. **Legacy components (still supported)** – The original `bar-chart`, `line-chart`, `pie-chart`, and `data-table` types continue to work for backward compatibility with existing saved reports.
+
+Security is maintained via an option sanitizer that recursively strips functions, HTML tags, and prototype-pollution keys from ECharts options before rendering.
 
 ---
 
@@ -201,13 +211,74 @@ Report definitions follow a strict JSON structure. The AI generates these config
 
 ### Supported Component Types
 
-| Type | Description | Required Fields |
-|------|-------------|-----------------|
-| `kpi-card` | Single metric display | `valueField`, `format` |
-| `bar-chart` | Bar chart (vertical) | `xField`, `yField` |
-| `line-chart` | Line chart (time series) | `xField`, `yField` |
-| `pie-chart` | Pie/doughnut chart | `labelField`, `valueField` |
-| `data-table` | Tabular data display | `columns` |
+| Type | Description | Required Fields | Status |
+|------|-------------|-----------------|--------|
+| `kpi-card` | Single metric display | `valueField`, `format` | Active |
+| `echarts` | Any ECharts chart (bar, line, pie, scatter, radar, funnel, gauge, heatmap, treemap, etc.) | `option` (ECharts option object) | **Preferred** (v2.0) |
+| `ag-grid` | Feature-rich data table (AG Grid Community) | `columnDefs` | **Preferred** (v2.0) |
+| `bar-chart` | Bar chart (Chart.js) | `xField`, `yField` | Legacy |
+| `line-chart` | Line chart (Chart.js) | `xField`, `yField` | Legacy |
+| `pie-chart` | Pie/doughnut chart (Chart.js) | `labelField`, `valueField` | Legacy |
+| `data-table` | Basic data table | `columns` | Legacy |
+
+### ECharts Component (v2.0)
+
+The `echarts` type renders any chart supported by Apache ECharts using a pass-through `option` object. Data is injected via the ECharts `dataset` component — the renderer sets `option.dataset.source` to the fetched API data array.
+
+**Key features available without custom code:**
+- 40+ chart types (bar, line, pie, scatter, radar, funnel, gauge, heatmap, treemap, sunburst, boxplot, candlestick, graph/network, etc.)
+- Rich tooltips, interactive legends, data zoom, toolbox (save as image, data view)
+- Animations, responsive resizing, dark mode support
+- Multi-series, stacked, and grouped charts
+- All configured via the standard ECharts JSON option format
+
+**Example:**
+```json
+{
+  "id": "changes-chart", "type": "echarts", "title": "Changes by Product",
+  "gridSpan": 2,
+  "dataSource": { "endpoint": "/api/package-changes/by-product", "params": {} },
+  "option": {
+    "dataset": { "source": [] },
+    "tooltip": { "trigger": "axis" },
+    "xAxis": { "type": "category" },
+    "yAxis": { "type": "value" },
+    "series": [{ "type": "bar", "encode": { "x": "product_name", "y": "change_count" } }]
+  }
+}
+```
+
+**Security:** ECharts options are sanitized before rendering — functions, HTML tags, and prototype-pollution keys are recursively stripped. See `frontend/src/utils/echartsSanitizer.js`.
+
+### AG Grid Component (v2.0)
+
+The `ag-grid` type renders a data table using AG Grid Community. Column definitions (`columnDefs`) are passed through to AG Grid, providing sorting, filtering, column resizing, pagination, and quick search out of the box.
+
+**Key features available without custom code:**
+- Column sorting, filtering (text/number/date), resizing, reordering
+- Pagination with configurable page size
+- Quick search (global filter)
+- Conditional formatting (row highlighting)
+- Row-click linking (cross-component interactivity)
+- Dark mode support via custom theme
+- Dot-path field resolution for nested data
+
+**Example:**
+```json
+{
+  "id": "entitlements", "type": "ag-grid", "title": "Entitlements",
+  "gridSpan": 3,
+  "dataSource": { "endpoint": "/api/tenant-entitlements", "params": { "account": "Acme" } },
+  "columnDefs": [
+    { "field": "productName", "headerName": "Product" },
+    { "field": "status", "headerName": "Status" },
+    { "field": "daysRemaining", "headerName": "Days Left", "format": "number" }
+  ],
+  "conditionalFormatting": [
+    { "field": "status", "operator": "equals", "value": "Expired", "style": "danger" }
+  ]
+}
+```
 
 ### Conditional Formatting (Data Tables)
 
@@ -342,7 +413,7 @@ CREATE TABLE user_settings (
 | `LLM_PROVIDER` | No | `openai` | LLM provider (currently only `openai` supported) |
 | `LLM_MODEL` | No | `gpt-4o` | Default model (users can override in Settings) |
 | `LLM_MAX_TOKENS` | No | `4096` | Max tokens for LLM response |
-| `LLM_TEMPERATURE` | No | `0.2` | Temperature for LLM response (lower = more deterministic) |
+| `LLM_TEMPERATURE` | No | `0.5` | Temperature for LLM response (lower = more deterministic, higher = richer output) |
 | `ENABLE_REPORT_AI` | No | `true` | Feature flag to disable AI reporting even if key is present |
 
 ---
@@ -367,6 +438,12 @@ CREATE TABLE user_settings (
 ### New (Phase 3 - AI Integration)
 - `openai` - OpenAI SDK for chat completions
 
+### New (v2.0 - ECharts + AG Grid)
+- `echarts` - Apache ECharts charting library
+- `echarts-for-react` - React wrapper for ECharts
+- `ag-grid-community` - AG Grid Community data grid
+- `ag-grid-react` - React wrapper for AG Grid
+
 ---
 
 ## File Locations
@@ -385,8 +462,11 @@ CREATE TABLE user_settings (
 - `frontend/src/pages/CustomReportView.jsx` - Report viewer with delete support
 - `frontend/src/components/reports/ReportRenderer.jsx` - JSON config → widget rendering engine
 - `frontend/src/components/reports/widgets/KpiCard.jsx` - KPI metric card widget
-- `frontend/src/components/reports/widgets/ChartWidget.jsx` - Bar/Line/Pie chart widget (Chart.js)
-- `frontend/src/components/reports/widgets/DataTable.jsx` - Sortable, searchable data table
+- `frontend/src/components/reports/widgets/ChartWidget.jsx` - Bar/Line/Pie chart widget (Chart.js, legacy)
+- `frontend/src/components/reports/widgets/DataTable.jsx` - Sortable, searchable data table (legacy)
+- `frontend/src/components/reports/widgets/EChartsWidget.jsx` - ECharts chart widget (v2.0, preferred)
+- `frontend/src/components/reports/widgets/AgGridTable.jsx` - AG Grid data table widget (v2.0, preferred)
+- `frontend/src/utils/echartsSanitizer.js` - ECharts option security sanitizer (v2.0)
 - `frontend/src/services/reportAgentService.js` - AI chat API service
 - `frontend/src/services/customReportService.js` - Reports CRUD API service
 
@@ -707,6 +787,340 @@ Rules are evaluated in order per row; the first matching rule wins. Selected row
 | `frontend/src/components/reports/ReportRenderer.jsx` | Passes `conditionalFormatting` prop from component config to `DataTable` |
 | `services/report-llm.service.js` | Added `conditionalFormatting` to data-table schema in LLM prompt; added dedicated "Conditional Formatting" guidance section |
 | `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 2.0 – ECharts + AG Grid Integration (February 27, 2026)
+
+**Version:** 2.0
+
+#### Overview
+
+Replaced the custom Chart.js-based charting and hand-built data table with Apache ECharts and AG Grid Community. This shifts the architecture from "custom schema per feature" to "pass-through rendering" — the LLM generates native ECharts option objects and AG Grid column definitions that are rendered directly by industry-standard libraries.
+
+#### Motivation
+
+The previous approach required every chart feature (colors, stacking, tooltips, axis labels, chart types) to be explicitly defined in the Zod schema, implemented in custom widget code, documented in the LLM prompt, and maintained. Adding a new chart type or table feature was a full development cycle. With ECharts and AG Grid, the LLM speaks directly to the rendering engine — any feature either library supports is immediately available without custom code.
+
+#### What Changed
+
+**New components (preferred for new reports):**
+- `echarts` – Renders any ECharts chart type. The `option` property is a standard ECharts option object using the `dataset` component for data injection. Supports 40+ chart types including bar, line, pie, scatter, radar, funnel, gauge, heatmap, treemap, sunburst, boxplot, candlestick, and graph/network.
+- `ag-grid` – Renders a feature-rich data table using AG Grid Community. The `columnDefs` array defines columns with built-in sorting, filtering, column resizing, and pagination.
+
+**Legacy components (still supported):**
+- `bar-chart`, `line-chart`, `pie-chart` (Chart.js) and `data-table` (hand-built) continue to work for backward compatibility with existing saved reports. The LLM is instructed to prefer the new types.
+
+#### Security Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| Functions in ECharts options (formatters, callbacks) | Recursive sanitizer strips all function-typed values before rendering |
+| HTML injection via string properties | Sanitizer strips all HTML tags from string values |
+| Prototype pollution | Sanitizer blocks `__proto__`, `constructor`, `prototype` keys |
+| Deep nesting DoS | Sanitizer enforces max depth of 15 levels |
+| Wider LLM output space | LLM prompt explicitly forbids functions; structural validation checks for `series` presence |
+
+#### Data Injection Pattern
+
+ECharts components use the **dataset** pattern. The renderer sets `option.dataset.source` to the API response data array. Series use `encode` to map field names:
+
+```json
+{
+  "dataset": { "source": [] },
+  "series": [{ "type": "bar", "encode": { "x": "field_name", "y": "value_field" } }]
+}
+```
+
+This separates data from presentation — the LLM defines the visualization structure, and the renderer injects live data at runtime.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `frontend/package.json` | Added `echarts`, `echarts-for-react`, `ag-grid-community`, `ag-grid-react` |
+| `frontend/src/utils/echartsSanitizer.js` | New – recursive option sanitizer (strips functions, HTML, prototype-pollution keys) |
+| `frontend/src/components/reports/widgets/EChartsWidget.jsx` | New – ECharts renderer with dataset injection, dark mode, resize handling |
+| `frontend/src/components/reports/widgets/AgGridTable.jsx` | New – AG Grid renderer with custom theme, dark mode, conditional formatting, row-click linking |
+| `config/report-config-schema.js` | Added `echarts` and `ag-grid` to valid component types; added `echartsSchema` with pass-through option validation and `agGridSchema` with column definition validation |
+| `frontend/src/components/reports/ReportRenderer.jsx` | Added import and switch cases for `EChartsWidget` and `AgGridTable` |
+| `services/report-llm.service.js` | Rewrote system prompt to prefer ECharts + AG Grid; added dataset pattern examples, chart type guidance, and security rules |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+#### Migration Notes
+
+- Existing saved reports using legacy types (`bar-chart`, `line-chart`, `pie-chart`, `data-table`) continue to render without changes.
+- New reports generated by the LLM will use `echarts` and `ag-grid` types by default.
+- To convert an existing report, edit it via the chat interface and ask the AI to regenerate it — the new config will use the preferred types.
+
+---
+
+### Version 2.0.1 – Filter-LinkedParam Interop Fix & Typeahead Filters (February 27, 2026)
+
+**Version:** 2.0.1
+
+#### Problem
+
+When the LLM generates a report with a text filter (e.g. account name) and a table that uses `linkedParams` referencing the filter's ID, the table never loads data. The `linkedReady` check only looked for values in `componentParams` (set by row-click `onRowClick` publishers), so a `linkedParam` pointing at a filter ID was never satisfied — the component remained stuck on the placeholder message.
+
+#### Root Cause
+
+The `linkedParams` mechanism was designed exclusively for row-click linking between components. The LLM sometimes conflates filters (global, apply to all components) with `linkedParams` (component-to-component via row clicks), generating configs where a table's `linkedParams` references a filter ID instead of a `paramId` from `onRowClick`.
+
+#### Fixes
+
+**ReportRenderer (`ReportRenderer.jsx`):**
+- `linkedReady` now also checks `filterValues` — if a `linkedParam`'s `paramId` matches a filter ID with a non-empty value, it is considered ready
+- `fetchKey` computation also resolves `linkedParam` values from `filterValues` when `componentParams` doesn't have the value
+
+**LLM System Prompt (`report-llm.service.js`):**
+- Added explicit "Filters vs. Linked Parameters" section explaining that filters apply globally to all components and `linkedParams` is only for row-click values
+- Added rule: "Do NOT use `linkedParams` to connect a filter to a component"
+
+#### Typeahead Filter Type
+
+Added a `typeahead` filter type that provides autocomplete suggestions as the user types, fetching matches from a configurable API endpoint. This is particularly useful for account name filters where the user may not know the exact registered name.
+
+**Schema:**
+```json
+{
+  "id": "accountFilter",
+  "type": "typeahead",
+  "label": "Account Name",
+  "mapsToParam": "account",
+  "suggestEndpoint": "/api/provisioning/search",
+  "suggestParam": "search",
+  "suggestResultKey": "accounts",
+  "suggestDisplayField": "name"
+}
+```
+
+**Properties:**
+| Property | Description |
+|----------|-------------|
+| `suggestEndpoint` | API endpoint to call for suggestions |
+| `suggestParam` | Query parameter name for the search term (default: `search`) |
+| `suggestResultKey` | Key in the response containing the results array (e.g. `accounts`) |
+| `suggestDisplayField` | Field on each result to display as the primary label (default: `name`) |
+| `suggestSecondaryField` | Optional field shown below the primary label for context (e.g. `account_name`) |
+
+**Features:**
+- Debounced input (300ms) with minimum 2 character threshold
+- Keyboard navigation (arrow keys, Enter to select, Escape to close)
+- Match highlighting in suggestions
+- Abort-on-type (cancels previous request when new input arrives)
+- Dark mode support
+- Click-outside-to-close
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `config/report-config-schema.js` | Added `typeahead` to filter types; added `suggestEndpoint`, `suggestParam`, `suggestResultKey`, `suggestDisplayField` optional properties to filter schema |
+| `frontend/src/components/reports/widgets/FilterTypeAhead.jsx` | New – generic typeahead filter component with debounced API suggestions, keyboard navigation, and match highlighting |
+| `frontend/src/components/reports/ReportRenderer.jsx` | `linkedReady` and `fetchKey` now check `filterValues` as fallback for `linkedParams` resolution; added import and rendering of `FilterTypeAhead` for `typeahead` filter type |
+| `services/report-llm.service.js` | Added "Typeahead Filters" section with available suggestion endpoints and examples; added "Filters vs. Linked Parameters" guidance section |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 2.0.2 – LLM Tuning for Richer Report Output (February 27, 2026)
+
+**Version:** 2.0.2
+
+#### Overview
+
+Tuned the LLM configuration and system prompt to produce more comprehensive, publication-quality dashboard reports on the first iteration. Previously, the LLM tended to generate minimal 2-3 component reports even for broad analytical questions, requiring multiple refinement rounds to reach a useful dashboard.
+
+#### Changes
+
+**Temperature increase (`config/environment.js`):**
+- Default `LLM_TEMPERATURE` changed from `0.2` to `0.5`. The previous value was overly conservative, producing safe but minimal outputs. The new value balances creativity with reliability — rich enough to compose multi-perspective dashboards, deterministic enough to produce valid JSON and correct field references.
+
+**System prompt – scope-aware component count (`services/report-llm.service.js`):**
+- Rule 4 rewritten from a flat "aim for 3-6 components" to scope-aware guidance:
+  - Narrow, specific questions → 2-4 components (focused)
+  - Broad, analytical questions → as many components as needed, each contributing new information or a different perspective, stopping when additional components would be redundant
+- This prevents the LLM from self-constraining on requests that clearly call for a full dashboard.
+
+**System prompt – comprehensive dashboard blueprint (`services/report-llm.service.js`):**
+- Added a new "Building Comprehensive Dashboards" section that teaches the LLM a structured dashboard layout pattern:
+  1. KPI row (top) – 2-3 headline metrics
+  2. Primary chart (full width) – main trend or comparison visualization
+  3. Secondary visuals + detail table – supporting chart paired with a summary table
+  4. Deep-dive tables (full width) – AG Grid with sorting, filtering, conditional formatting
+  5. Risk/attention section – items needing attention with severity color-coding
+- Added layout tips: grid span planning, flex column widths, ECharts color and axis styling, filter inclusion, conditional formatting usage.
+
+**System prompt – balanced clarification approach (`services/report-llm.service.js`):**
+- Updated the "Tips" section to encourage clarifying questions for refinement, while not holding back the first report draft — the LLM should produce a comprehensive report and then refine based on feedback.
+
+#### Impact
+
+Reports generated from broad analytical questions (e.g. "show me the product mix and traction across customers") should now include:
+- Multiple KPI cards for headline metrics
+- Charts with proper colors, legends, tooltips, and axis formatting
+- Multiple data perspectives (e.g. by-product, by-account, over-time)
+- Detail tables with conditional formatting
+- Time frame or date range filters when applicable
+- Risk/attention tables when relevant data sources exist
+
+Narrow, focused requests continue to produce appropriately scoped reports.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `config/environment.js` | Default `LLM_TEMPERATURE` changed from `0.2` to `0.5` |
+| `services/report-llm.service.js` | Rewrote Rule 4 for scope-aware component count; added "Building Comprehensive Dashboards" section with layout blueprint and tips; updated "Tips" to reduce unnecessary clarification questions |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 2.0.3 – Unicode Normalization Fix for Account Lookups (February 27, 2026)
+
+**Version:** 2.0.3
+
+#### Problem
+
+Custom reports using the `/api/tenant-entitlements` endpoint failed to return data for accounts with non-ASCII characters in their names (e.g. "Mapfre Re, Compañía de Reaseguros S.A."). Other accounts without special characters worked correctly.
+
+#### Root Cause
+
+The database query used `ILIKE` for account name matching, which is case-insensitive but **not** Unicode-normalization-aware. Characters like `ñ` (U+00F1, NFC precomposed) and `ñ` (U+006E + U+0303, NFD decomposed) look identical visually but have different byte representations. When the typeahead source (Salesforce Account) and the stored data (`sml_tenant_data.account_name`, mapped from `ps_audit_trail`) used different Unicode normalization forms, the `ILIKE` comparison failed silently, returning zero results.
+
+#### Fixes
+
+**Database query – multi-strategy matching (`database.js`):**
+- `getSMLTenantEntitlementsByAccount()` now uses a three-tier matching strategy:
+  1. **NFC match** – normalizes input to NFC (precomposed) and tries ILIKE
+  2. **NFD fallback** – if NFC didn't match, tries NFD (decomposed) form
+  3. **Accent-insensitive fallback** – uses `translate()` to strip common Latin diacritics from both sides and compare base characters
+- Logs a warning when no results are found after all strategies
+
+**Data storage normalization (`database.js`):**
+- `upsertSMLTenant()` now normalizes `accountName` to NFC before storing, ensuring consistent representation for future data
+
+**Service-layer normalization (`services/tenant-entitlements.service.js`):**
+- Input account name is normalized to NFC before querying
+- Added warning log when no entitlements are found for a given account
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `database.js` | `getSMLTenantEntitlementsByAccount()` – three-tier Unicode-aware matching (NFC, NFD, accent-stripped); `upsertSMLTenant()` – NFC normalization on store |
+| `services/tenant-entitlements.service.js` | NFC normalization of input; improved logging for no-result cases |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 2.0.4 – Tenant-Name-Based Entitlement Lookup & Suggest Endpoint (February 27, 2026)
+
+**Version:** 2.0.4
+
+#### Problem
+
+The v2.0.3 Unicode normalization fix was insufficient for all cases. The root issue is that entitlement lookups used `account_name` as the key, but `account_name` in `sml_tenant_data` is a secondary mapping from `ps_audit_trail` — it can be NULL (if no PS request exists for the tenant) or stored in a different form than what the Salesforce Account object returns. This cross-system name mismatch affected accounts with non-ASCII characters and any accounts without PS audit trail records.
+
+#### Solution
+
+Added a `tenant` query parameter to `/api/tenant-entitlements` that matches directly on `tenant_name` — a field that comes directly from SML and is always present. Also added a `/api/tenant-entitlements/suggest` endpoint that searches `sml_tenant_data` directly, eliminating the cross-system name mismatch entirely.
+
+#### New Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/tenant-entitlements/suggest?search=<term>` | Typeahead suggestions from `sml_tenant_data` |
+
+**Query Parameters:**
+- `search` (required) – Search term (min 2 characters)
+- `limit` (optional, default 10) – Max results
+
+**Response Shape:**
+```json
+{
+  "success": true,
+  "tenants": [
+    {
+      "tenant_name": "acme-prod",
+      "account_name": "Acme Corp",
+      "tenant_display_name": "Acme Production",
+      "tenant_id": "6000009"
+    }
+  ],
+  "count": 1
+}
+```
+
+The suggest endpoint searches across `tenant_name`, `account_name`, and `tenant_display_name` using `ILIKE` pattern matching, returning only tenants that have entitlements and are not deleted.
+
+#### Updated Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/tenant-entitlements?tenant=<name>` | Get entitlements by tenant name (**preferred**) |
+| `GET` | `/api/tenant-entitlements?account=<name>` | Get entitlements by account name (legacy) |
+
+The `tenant` parameter matches directly on `sml_tenant_data.tenant_name` via `ILIKE`, which is always populated from SML. The `account` parameter continues to work for backward compatibility.
+
+#### Recommended Report Config
+
+For entitlement reports, use the tenant-entitlements suggest endpoint with `mapsToParam: "tenant"`:
+
+```json
+{
+  "filters": [
+    {
+      "id": "tenantFilter",
+      "type": "typeahead",
+      "label": "Tenant Name",
+      "mapsToParam": "tenant",
+      "suggestEndpoint": "/api/tenant-entitlements/suggest",
+      "suggestParam": "search",
+      "suggestResultKey": "tenants",
+      "suggestDisplayField": "tenant_name",
+      "suggestSecondaryField": "account_name"
+    }
+  ],
+  "components": [
+    {
+      "dataSource": {
+        "endpoint": "/api/tenant-entitlements",
+        "params": {}
+      }
+    }
+  ]
+}
+```
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `database.js` | Added `getSMLTenantEntitlementsByTenantName()` – ILIKE match on `tenant_name`; added `searchSMLTenantsForSuggest()` – searches tenant_name, account_name, tenant_display_name |
+| `services/tenant-entitlements.service.js` | Added `getEntitlementsByTenant()` – lookup by tenant name; added `suggestTenants()` – typeahead search |
+| `routes/tenant-entitlements.routes.js` | Added `GET /suggest` route; updated `GET /` to accept `tenant` param (preferred) alongside `account` (legacy) |
+| `config/report-data-catalog.js` | Added `tenant-entitlements.suggest` entry; updated `tenant-entitlements.list` to document both `tenant` and `account` params |
+| `config/report-config-schema.js` | Added optional `suggestSecondaryField` to filter schema |
+| `frontend/src/components/reports/widgets/FilterTypeAhead.jsx` | Added `suggestSecondaryField` prop; secondary line uses configurable field with match highlighting; falls back to legacy hardcoded fields when not set |
+| `frontend/src/components/reports/ReportRenderer.jsx` | Passes `suggestSecondaryField` prop to `FilterTypeAhead` |
+| `services/report-llm.service.js` | Updated typeahead guidance to prefer `/api/tenant-entitlements/suggest` for entitlement reports; documented `suggestSecondaryField`; updated examples |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+#### Data Flow (Tenant-Based Lookup)
+
+```
+User types in typeahead
+  → FilterTypeAhead calls /api/tenant-entitlements/suggest?search=<term>
+  → Route calls suggestTenants() → searches sml_tenant_data directly
+  → User selects a tenant from dropdown
+  → Filter value set to tenant_name
+  → AG Grid component fetches /api/tenant-entitlements?tenant=<tenant_name>
+  → Route calls getEntitlementsByTenant()
+  → Database queries sml_tenant_data WHERE tenant_name ILIKE $1
+  → Service flattens product_entitlements → returns flat entitlements array
+```
 
 ---
 
