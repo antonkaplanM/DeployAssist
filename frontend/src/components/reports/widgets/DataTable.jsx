@@ -7,6 +7,36 @@ const resolveField = (obj, path) => {
   return path.split('.').reduce((acc, key) => acc?.[key], obj);
 };
 
+const extractDisplayValue = (item, displayKey) => {
+  if (item == null) return null;
+  if (typeof item !== 'object') return item;
+  if (displayKey) return item[displayKey] ?? null;
+  return item.name || item.code || item.productCode || item.label || item.id || JSON.stringify(item);
+};
+
+const resolveColumnValue = (row, col) => {
+  if (col.valueFields && col.valueFields.length > 0) {
+    const sep = col.separator || ', ';
+    const displayKey = col.displayField;
+    const values = [];
+    for (const path of col.valueFields) {
+      const val = resolveField(row, path);
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          const v = extractDisplayValue(item, displayKey);
+          if (v != null) values.push(v);
+        }
+      } else if (val != null && val !== '') {
+        values.push(typeof val === 'object' ? extractDisplayValue(val, displayKey) : val);
+      }
+    }
+    return values.length > 0 ? values.join(sep) : undefined;
+  }
+  const val = resolveField(row, col.field);
+  if (Array.isArray(val)) return val.map(v => extractDisplayValue(v)).filter(v => v != null).join(', ');
+  return val;
+};
+
 const CF_STYLES = {
   danger:  { row: 'bg-red-50 dark:bg-red-900/20',    cell: 'text-red-700 dark:text-red-300' },
   warning: { row: 'bg-amber-50 dark:bg-amber-900/20', cell: 'text-amber-700 dark:text-amber-300' },
@@ -79,17 +109,18 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
       const q = search.toLowerCase();
       rows = rows.filter(row =>
         columns.some(col => {
-          const val = resolveField(row, col.field);
+          const val = resolveColumnValue(row, col);
           return val !== null && val !== undefined && String(val).toLowerCase().includes(q);
         })
       );
     }
 
     if (sortField) {
+      const sortCol = columns.find(c => c.field === sortField);
       rows.sort((a, b) => {
-        const aVal = resolveField(a, sortField) ?? '';
-        const bVal = resolveField(b, sortField) ?? '';
-        const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
+        const aVal = sortCol ? resolveColumnValue(a, sortCol) : resolveField(a, sortField);
+        const bVal = sortCol ? resolveColumnValue(b, sortCol) : resolveField(b, sortField);
+        const cmp = String(aVal ?? '').localeCompare(String(bVal ?? ''), undefined, { numeric: true });
         return sortDir === 'asc' ? cmp : -cmp;
       });
     }
@@ -147,11 +178,11 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  {columns.map(col => (
+                  {columns.map((col, ci) => (
                     <th
-                      key={col.field}
-                      onClick={() => col.sortable !== false && handleSort(col.field)}
-                      className={`text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400 ${col.sortable !== false ? 'cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 select-none' : ''}`}
+                      key={col.field || `vf-${ci}`}
+                      onClick={() => col.sortable !== false && col.field && handleSort(col.field)}
+                      className={`text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400 ${col.sortable !== false && col.field ? 'cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 select-none' : ''}`}
                       style={col.width ? { width: col.width } : undefined}
                     >
                       <div className="flex items-center gap-1">
@@ -184,9 +215,9 @@ const DataTable = ({ title, data, columns, pageSize = 10, searchable = true, loa
                             : 'hover:bg-gray-50 dark:hover:bg-gray-750',
                       ].join(' ')}
                     >
-                      {columns.map(col => (
-                        <td key={col.field} className={`py-2 px-3 ${cfStyle ? cfStyle.cell : 'text-gray-900 dark:text-gray-100'}`}>
-                          {formatCellValue(resolveField(row, col.field), col.format)}
+                      {columns.map((col, ci) => (
+                        <td key={col.field || `vf-${ci}`} className={`py-2 px-3 ${cfStyle ? cfStyle.cell : 'text-gray-900 dark:text-gray-100'}`}>
+                          {formatCellValue(resolveColumnValue(row, col), col.format)}
                         </td>
                       ))}
                     </tr>

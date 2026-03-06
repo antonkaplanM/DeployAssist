@@ -1,3 +1,4 @@
+const { getToolSchema } = require('../../../config/report-data-sources');
 const ResponseFormatter = require('../../utils/response-formatter');
 const InputValidator = require('../../middleware/validation');
 
@@ -5,18 +6,13 @@ const InputValidator = require('../../middleware/validation');
  * List Packages Tool
  * Get list of packages from the package repository
  */
+const baseSchema = getToolSchema('primary.packages.list');
 module.exports = {
-  name: 'list_packages',
-  description: 'Get list of packages from the package repository. Shows available software packages with metadata, types, and relationships. Useful for understanding product catalog.',
-  
+  ...baseSchema,
   inputSchema: {
-    type: 'object',
+    ...baseSchema.inputSchema,
     properties: {
-      type: {
-        type: 'string',
-        description: 'Filter by package type (optional)',
-        maxLength: 100,
-      },
+      ...baseSchema.inputSchema.properties,
       includeDeleted: {
         type: 'boolean',
         description: 'Include deleted packages (default: false)',
@@ -31,42 +27,31 @@ module.exports = {
       },
     },
   },
-  
   async execute(args, context) {
     const formatter = new ResponseFormatter();
     const validator = new InputValidator();
-    
+
     try {
-      // Validate inputs
       validator.validate(args, this.inputSchema);
-      
       const sanitizedArgs = validator.sanitizeInputs(args);
-      
+
       const params = {
         type: sanitizedArgs.type,
         includeDeleted: sanitizedArgs.includeDeleted || false,
         limit: sanitizedArgs.limit || 100,
       };
-      
-      // Remove undefined values
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-      
-      // Call API
+
       const response = await context.apiClient.get('/api/packages', {
-        params: params,
+        params,
       });
-      
-      // Format response
+
       return formatter.success(response.data, {
         executionTime: response.duration,
         filters: params,
       });
-      
     } catch (error) {
       throw error;
     }
   },
 };
-
-
-

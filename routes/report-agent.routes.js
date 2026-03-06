@@ -2,20 +2,93 @@
  * Report Agent Routes
  * AI chat endpoint for conversational report building.
  *
- * When an LLM API key is configured the chat endpoint forwards the
- * conversation to OpenAI and parses any report-config JSON from the
- * reply.  When no key is present, the endpoint returns a structured
- * stub so the frontend still works (users can load samples instead).
+ * Uses OpenAI function calling — the LLM calls generate_report_config
+ * with a structured JSON config that has enum-constrained endpoints.
+ * No more fenced-code-block parsing needed.
  */
 
 const express = require('express');
+const axios = require('axios');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
-const customReportService = require('../services/custom-report.service');
 const reportLlm = require('../services/report-llm.service');
 const { validateReportConfig, VALID_COMPONENT_TYPES, VALID_LAYOUTS } = require('../config/report-config-schema');
+const { getDataCatalogByCategory, getByEndpoint } = require('../config/report-data-sources');
 const { asyncHandler } = require('../middleware/error-handler');
+const envConfig = require('../config/environment');
 const logger = require('../utils/logger');
+
+/**
+ * Build a data fetcher that calls the Express API using the current user's auth.
+ * Passed to reportLlm.chat() so the LLM's fetch_endpoint_data tool can query live data.
+ */
+function buildDataFetcher(req) {
+    const baseURL = `http://localhost:${envConfig.app.port}`;
+    const headers = {};
+    if (req.headers.authorization) {
+        headers['Authorization'] = req.headers.authorization;
+    }
+    if (req.headers.cookie) {
+        headers['Cookie'] = req.headers.cookie;
+    }
+
+    return async (endpoint, params) => {
+        const response = await axios.get(`${baseURL}${endpoint}`, {
+            params,
+            headers,
+            timeout: 15000
+        });
+        return response.data;
+    };
+}
+
+/**
+ * Auto-inject canonical arrayKey into each component's dataSource so the
+ * frontend knows exactly where to find the data array in API responses.
+ */
+function injectArrayKeys(config) {
+    if (!config?.components) return config;
+    for (const component of config.components) {
+        if (!component.dataSource?.endpoint) continue;
+        if (!component.dataSource.arrayKey) {
+            const source = getByEndpoint(component.dataSource.endpoint);
+            if (source?.responseShape?.arrayKey) {
+                component.dataSource.arrayKey = source.responseShape.arrayKey;
+            }
+        }
+        if (component.dataSource.enrich?.endpoint && !component.dataSource.enrich.arrayKey) {
+            const enrichSource = getByEndpoint(component.dataSource.enrich.endpoint);
+            if (enrichSource?.responseShape?.arrayKey) {
+                component.dataSource.enrich.arrayKey = enrichSource.responseShape.arrayKey;
+            }
+        }
+    }
+    return config;
+}
+
+/**
+ * Generate human-friendly hints from Zod validation errors to help the LLM
+ * understand what went wrong and how to fix common issues.
+ */
+function buildValidationHints(errors) {
+    const hints = new Set();
+    for (const e of errors) {
+        const p = (e.path || '').toLowerCase();
+        if (p.includes('option') || p.includes('series')) {
+            hints.add('ECharts "option" must contain at least a "series" array. For pie charts use series[0].type="pie" with encode.value and encode.itemName. For bar/line charts include xAxis, yAxis, and series[0].encode with x and y.');
+        }
+        if (p.includes('params') && e.message?.includes('requires')) {
+            hints.add('Check the endpoint field reference — some endpoints need specific parameters. If the table depends on a row click from another component, use linkedParams instead of params.');
+        }
+        if (p.includes('endpoint') && e.message?.includes('allowlist')) {
+            hints.add('Only endpoints listed in the data catalog are allowed. Use describe_available_data to see valid endpoints.');
+        }
+        if (p.includes('columnDefs') || p.includes('columns')) {
+            hints.add('Every column needs either a "field" (dot-path) or "valueFields" (array of dot-paths). Check the endpoint field reference for valid field names.');
+        }
+    }
+    return [...hints].map(h => `- ${h}`).join('\n');
+}
 
 const chatLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -46,7 +119,6 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
         historyLength: conversationHistory?.length || 0
     });
 
-    // If a proposed config was submitted directly, validate it (bypass LLM).
     if (proposedConfig) {
         const validation = validateReportConfig(proposedConfig);
 
@@ -56,7 +128,7 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
                 response: {
                     type: 'config_valid',
                     message: 'The report configuration is valid and ready to be saved.',
-                    validatedConfig: validation.data
+                    validatedConfig: injectArrayKeys(validation.data)
                 },
                 timestamp: new Date().toISOString()
             });
@@ -73,69 +145,90 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
         });
     }
 
-    // ── LLM path ───────────────────────────────────────────────
-    // Check both server-wide key and per-user key
+    // ── LLM path (function-calling) ──────────────────────────
     const { apiKey: resolvedKey } = await reportLlm.resolveApiKey(req.user.id);
 
     if (resolvedKey) {
         try {
+            const dataFetcher = buildDataFetcher(req);
             let { message: llmReply, reportConfig } = await reportLlm.chat(
-                conversationHistory, message, { userId: req.user.id }
+                conversationHistory, message, { userId: req.user.id, dataFetcher }
             );
 
             const responsePayload = {
                 type: 'assistant_message',
-                message: reportLlm.stripConfigBlock(llmReply)
+                message: llmReply
             };
 
             if (reportConfig) {
                 const validation = validateReportConfig(reportConfig);
                 if (validation.success) {
                     responsePayload.type = 'config_proposed';
-                    responsePayload.proposedConfig = validation.data;
+                    responsePayload.proposedConfig = injectArrayKeys(validation.data);
+                    if (!responsePayload.message) {
+                        responsePayload.message = '';
+                    }
                     responsePayload.message += '\n\nI\'ve generated a report configuration for you. You can see the preview on the right. If it looks good, save it — or tell me what you\'d like to change.';
                 } else {
-                    logger.warn('LLM produced invalid config, attempting auto-retry', { errors: validation.errors });
+                    const MAX_RETRIES = 2;
+                    let lastConfig = reportConfig;
+                    let lastErrors = validation.errors;
+                    let lastReply = llmReply;
+                    let resolved = false;
 
-                    const errorSummary = validation.errors
-                        .map(e => `${e.path}: ${e.message}`)
-                        .join('\n');
+                    for (let attempt = 1; attempt <= MAX_RETRIES && !resolved; attempt++) {
+                        logger.warn(`Function-call config failed Zod validation, retry ${attempt}/${MAX_RETRIES}`, {
+                            errors: lastErrors
+                        });
 
-                    const retryHistory = [
-                        ...(conversationHistory || []).map(m => ({ role: m.role, content: m.content })),
-                        { role: 'user', content: message },
-                        { role: 'assistant', content: llmReply }
-                    ];
-                    const retryMessage =
-                        `The report config you just generated failed validation with these errors:\n${errorSummary}\n\n` +
-                        'Please fix the config and produce a corrected version inside a ```report-config block. ' +
-                        'Remember: endpoint paths must exactly match the "endpoint" field in the data catalog (e.g. "/api/analytics/package-changes/by-account", NOT "/api/package-changes/by-account"). ' +
-                        'Do NOT use the catalog "id" as the endpoint.';
+                        const errorSummary = lastErrors
+                            .map(e => `${e.path}: ${e.message}`)
+                            .join('\n');
+                        const hints = buildValidationHints(lastErrors);
 
-                    try {
-                        const retry = await reportLlm.chat(retryHistory, retryMessage, { userId: req.user.id });
-                        const retryConfig = retry.reportConfig;
+                        const retryHistory = [
+                            ...(conversationHistory || []).map(m => ({ role: m.role, content: m.content })),
+                            { role: 'user', content: message },
+                            { role: 'assistant', content: lastReply || 'I generated a report configuration.' }
+                        ];
+                        const retryMessage =
+                            `The report config you generated failed validation (attempt ${attempt}).\n\n` +
+                            `Errors:\n${errorSummary}\n\n` +
+                            (hints ? `Hints:\n${hints}\n\n` : '') +
+                            `Failed config:\n${JSON.stringify(lastConfig, null, 2)}\n\n` +
+                            'Fix the issues and call generate_report_config again.';
 
-                        if (retryConfig) {
-                            const retryValidation = validateReportConfig(retryConfig);
-                            if (retryValidation.success) {
-                                responsePayload.type = 'config_proposed';
-                                responsePayload.proposedConfig = retryValidation.data;
-                                responsePayload.message = reportLlm.stripConfigBlock(retry.message);
-                                responsePayload.message += '\n\nI\'ve generated a report configuration for you. You can see the preview on the right. If it looks good, save it — or tell me what you\'d like to change.';
+                        try {
+                            const retry = await reportLlm.chat(retryHistory, retryMessage, { userId: req.user.id, dataFetcher });
+                            const retryConfig = retry.reportConfig;
+
+                            if (retryConfig) {
+                                const retryValidation = validateReportConfig(retryConfig);
+                                if (retryValidation.success) {
+                                    responsePayload.type = 'config_proposed';
+                                    responsePayload.proposedConfig = injectArrayKeys(retryValidation.data);
+                                    responsePayload.message = retry.message || '';
+                                    responsePayload.message += '\n\nI\'ve generated a report configuration for you. You can see the preview on the right. If it looks good, save it — or tell me what you\'d like to change.';
+                                    resolved = true;
+                                } else {
+                                    lastConfig = retryConfig;
+                                    lastErrors = retryValidation.errors;
+                                    lastReply = retry.message || 'I generated a revised configuration.';
+                                }
                             } else {
-                                logger.warn('LLM retry also produced invalid config', { errors: retryValidation.errors });
-                                const retryErrors = retryValidation.errors
-                                    .map(e => `- ${e.path}: ${e.message}`)
-                                    .join('\n');
-                                responsePayload.message += `\n\nI tried to generate a configuration but it still has validation issues:\n${retryErrors}\n\nPlease try rephrasing your request or simplifying the report.`;
+                                break;
                             }
-                        } else {
-                            responsePayload.message += '\n\nI generated a configuration but it had validation issues. I wasn\'t able to correct them automatically. Please try again with a simpler request.';
+                        } catch (retryErr) {
+                            logger.warn(`LLM retry ${attempt} failed`, { error: retryErr.message });
+                            break;
                         }
-                    } catch (retryErr) {
-                        logger.warn('LLM retry failed', { error: retryErr.message });
-                        responsePayload.message += '\n\nI generated a configuration but it had validation issues and I couldn\'t correct them automatically. Please try again.';
+                    }
+
+                    if (!resolved) {
+                        const finalErrors = lastErrors
+                            .map(e => `- ${e.path}: ${e.message}`)
+                            .join('\n');
+                        responsePayload.message += `\n\nI generated a configuration but it has validation issues. Let me revise it.\n${finalErrors}\n\nPlease try rephrasing your request or simplifying the report.`;
                     }
                 }
             }
@@ -157,7 +250,7 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
     }
 
     // ── Stub / no-API-key path ─────────────────────────────────
-    const catalog = customReportService.getDataCatalog({ grouped: true });
+    const catalog = getDataCatalogByCategory();
     const categoryNames = Object.keys(catalog);
     const endpointCount = Object.values(catalog).reduce((sum, arr) => sum + arr.length, 0);
 
@@ -180,11 +273,11 @@ router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
 }));
 
 /**
- * Get the agent's capabilities and context (for frontend display)
+ * Get the agent's capabilities and context
  * GET /api/report-agent/capabilities
  */
 router.get('/capabilities', asyncHandler(async (req, res) => {
-    const catalog = customReportService.getDataCatalog({ grouped: true });
+    const catalog = getDataCatalogByCategory();
     const { apiKey } = await reportLlm.resolveApiKey(req.user.id);
 
     res.json({
@@ -211,16 +304,13 @@ router.get('/capabilities', asyncHandler(async (req, res) => {
     });
 }));
 
-/**
- * Build a structured stub response when no LLM is available.
- */
 function buildStubResponse(userMessage, categories, endpointCount) {
     return [
         `I have access to ${endpointCount} data sources across ${categories.length} categories:`,
         '',
         ...categories.map(c => `- ${c}`),
         '',
-        'I can create reports with KPI Cards, Bar Charts, Line Charts, Pie Charts, and Data Tables.',
+        'I can create reports with KPI Cards, Charts (ECharts), and Data Tables (AG Grid).',
         '',
         'However, AI-driven report building is not currently enabled because no LLM API key is configured.',
         '',
@@ -236,7 +326,9 @@ function getComponentDescription(type) {
         'bar-chart': 'Vertical or horizontal bar chart for categorical data',
         'line-chart': 'Line chart for time series and trend data',
         'pie-chart': 'Pie or doughnut chart for proportional data',
-        'data-table': 'Sortable, searchable data table with configurable columns'
+        'data-table': 'Sortable, searchable data table with configurable columns',
+        'echarts': 'Full-featured chart powered by Apache ECharts',
+        'ag-grid': 'Feature-rich data table powered by AG Grid'
     };
     return descriptions[type] || type;
 }

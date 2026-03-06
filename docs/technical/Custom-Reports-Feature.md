@@ -2,7 +2,7 @@
 
 **Date:** February 27, 2026  
 **Status:** ✅ Complete (All Phases)  
-**Version:** 2.1
+**Version:** 4.1
 
 ---
 
@@ -1237,6 +1237,768 @@ Additionally, the data catalog had a parameter mismatch for the `validation-tren
 | `services/report-llm.service.js` | Added Rules 15 & 16; rewrote time-series endpoint descriptions with explicit semantics; added "Gaps" list; added transparency tip |
 | `config/report-data-catalog.js` | Fixed `validation-trend` param `days` → `months`; clarified descriptions for `validation-trend`, `request-types-week`, `completion-times` |
 | `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 3.0 – Canonical Data Schema & OpenAI Function Calling (February 27, 2026)
+
+**Version:** 3.0
+
+#### Problem
+
+The LLM report builder repeatedly generated incorrect report configurations despite multiple rounds of prompt engineering. The root cause: the data catalog was injected as unstructured text into the system prompt, and the LLM treated it as guidance rather than constraints. Additionally, the report data catalog (27 endpoints) and the MCP server tools (42 tools) were independently maintained, causing parameter mismatches, description drift, and incomplete coverage.
+
+#### Architecture Change
+
+**Before:** Two independent systems — a flat JS catalog injected as text into the LLM system prompt, and separate MCP tool files with inline inputSchema definitions. The LLM parsed text to select endpoints and could hallucinate any string as an endpoint path.
+
+**After:** A single canonical data source schema (`config/report-data-sources.js`) that generates:
+1. **OpenAI function-calling tool definitions** with enum-constrained endpoints (the LLM cannot reference non-existent endpoints)
+2. **MCP tool inputSchema + description** (imported via `getToolSchema()`)
+3. **Endpoint allowlist** for Zod validation
+4. **Data catalog** for the frontend capabilities endpoint
+
+#### Key Changes
+
+**Canonical data source schema (`config/report-data-sources.js`)**:
+- 24 data source entries with correct parameter names matching actual route handlers
+- Each entry includes: id, endpoint, category, mcpToolName, description, typed params, responseShape, dependencies, reportEligible flag
+- Exports `getToolSchema(id)` for MCP tools to import schema
+- Exports `buildOpenAITools()` generating the `generate_report_config` and `describe_available_data` function definitions
+- Exports `isEndpointAllowed()` for Zod validation (replaces old catalog's version)
+
+**OpenAI function calling (`services/report-llm.service.js`)**:
+- System prompt reduced from ~500 lines to ~100 lines (catalog no longer embedded as text)
+- LLM receives two tools: `generate_report_config` (with endpoint enum) and `describe_available_data` (catalog exploration)
+- Multi-turn tool call loop: LLM can call `describe_available_data` to explore, then `generate_report_config` to produce the config
+- Endpoint paths are enum-constrained — invalid endpoints are structurally impossible
+
+**MCP tool alignment**:
+- 21 MCP tool files refactored to import `inputSchema` and `description` from the canonical schema via `getToolSchema()`
+- Execute functions updated to use correct parameter names matching route handlers
+- Fixed parameter mismatches: `days`→`months` (validation-trend), `includeReviewed`→`isReviewed` (ghost-accounts), `since`→`daysBack` (deprovisioned), `accountName`→`account` (customer-products), `query`→`q` (search endpoints), and more
+
+**Ongoing alignment**:
+- Validation script (`scripts/validate-data-alignment.js`) checks canonical→MCP mapping completeness and schema import verification
+- Cursor rule (`.cursor/rules/data-source-alignment.mdc`) instructs the AI agent to update all three layers when data sources change
+
+#### Files Created
+
+| File | Purpose |
+|------|---------|
+| `config/report-data-sources.js` | Canonical data source schema — single source of truth |
+| `scripts/validate-data-alignment.js` | CI validation script for canonical↔MCP alignment |
+| `.cursor/rules/data-source-alignment.mdc` | Always-apply Cursor rule for ongoing alignment |
+
+#### Files Modified
+
+| File | Change |
+|------|--------|
+| `services/report-llm.service.js` | Rewritten: function calling instead of text catalog; shorter system prompt |
+| `routes/report-agent.routes.js` | Updated to handle function-call configs; imports from canonical schema |
+| `config/report-config-schema.js` | Now imports `isEndpointAllowed` from canonical schema |
+| `services/custom-report.service.js` | Now imports from canonical schema |
+| `routes/custom-reports.routes.js` | Removed `forPrompt` option (no longer needed) |
+| `config/report-data-catalog.js` | Superseded by canonical schema (kept for reference) |
+| `mcp-server/tools/analytics/*.js` (6 files) | Import schema from canonical source; fixed param names |
+| `mcp-server/tools/provisioning/*.js` (4 files) | Import schema from canonical source; fixed param names |
+| `mcp-server/tools/expiration/*.js` (3 files) | Import schema from canonical source; fixed param names |
+| `mcp-server/tools/accounts/*.js` (2 files) | Import schema from canonical source; fixed param names |
+| `mcp-server/tools/customer-products/*.js` (2 files) | Import schema from canonical source; fixed param names |
+| `mcp-server/tools/packages/*.js` (2 files) | Import schema from canonical source |
+| `mcp-server/tools/audit-trail/*.js` (2 files) | Import schema from canonical source; fixed param names |
+
+---
+
+### Version 4.0 – Origin-Based Data Source Reorganization (February 27, 2026)
+
+**Version:** 4.0
+
+#### Problem
+
+The canonical data catalog (`config/report-data-sources.js`) was organized by **app feature/page**: Analytics, Package Changes, Provisioning, Expiration, Ghost Accounts, etc. These categories were essentially pre-built reports — compilations of data from multiple sources. This created:
+
+- **Overlap**: Multiple endpoints queried the same Salesforce object (`Prof_Services_Request__c`) but were categorized separately (e.g., "Analytics" and "Provisioning" both come from the same source)
+- **Hidden lineage**: The LLM couldn't see that `validation-trend` and `request-types-week` both derive from the same primary data source
+- **Fragile extensibility**: Adding a new data source (e.g., a new external API) had no clear place in the category structure
+
+#### Architecture Change
+
+**Before (v3.0):** Page-oriented categories — `Analytics`, `Package Changes`, `Provisioning`, `Expiration`, `Ghost Accounts`, `Customer Products`, `Tenant Entitlements`, `Packages`, `Audit Trail`.
+
+**After (v4.0):** Origin-based categories organized into three tiers:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  PRIMARY SOURCES                                         │
+│  (Direct from external systems)                          │
+├─────────────────────────────────────────────────────────┤
+│  Primary: Salesforce      5 endpoints                    │
+│  Primary: SML             2 endpoints                    │
+│  Primary: Packages        2 endpoints                    │
+└─────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  DERIVED DATA                                            │
+│  (Computed from primary sources, cached locally)         │
+├─────────────────────────────────────────────────────────┤
+│  Derived: Provisioning Analytics   3 endpoints           │
+│  Derived: Package Changes          4 endpoints           │
+│  Derived: Expiration               3 endpoints           │
+│  Derived: Ghost Accounts           2 endpoints           │
+│  Derived: Current Accounts         1 endpoint            │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│  PRESERVED DATA                                          │
+│  (Captured because ephemeral in source)                  │
+├─────────────────────────────────────────────────────────┤
+│  Preserved: Audit Trail            2 endpoints           │
+│  Preserved: Product Updates        1 endpoint            │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### New Schema Fields
+
+Every entry in `DATA_SOURCES` now includes:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `sourceType` | `'primary' \| 'derived' \| 'preserved'` | Data origin tier |
+| `sourceRef` | `string` | Which primary system the data comes from (e.g., `'salesforce'`, `'sml'`, `'salesforce.provisioning'`) |
+| `primarySource` | `string` | Specific source object/table (e.g., `'Prof_Services_Request__c'`, `'ps_audit_trail table'`) |
+
+Example entry:
+
+```javascript
+{
+    id: 'derived.package-changes.summary',
+    endpoint: '/api/analytics/package-changes/summary',
+    category: 'Derived: Package Changes',
+    sourceType: 'derived',
+    sourceRef: 'salesforce.provisioning',
+    primarySource: 'Prof_Services_Request__c (Payload_Data__c → package_change_analysis)',
+    // ...existing fields...
+}
+```
+
+#### Canonical ID Naming Convention (Option A — Flat with Prefix)
+
+IDs now follow the pattern `<sourceType>.<sourceGroup>.<name>`:
+
+| Old ID | New ID |
+|--------|--------|
+| `analytics.request-types-week` | `derived.provisioning-analytics.request-types` |
+| `analytics.validation-trend` | `derived.provisioning-analytics.validation-trend` |
+| `analytics.completion-times` | `derived.provisioning-analytics.completion-times` |
+| `package-changes.summary` | `derived.package-changes.summary` |
+| `package-changes.by-product` | `derived.package-changes.by-product` |
+| `package-changes.by-account` | `derived.package-changes.by-account` |
+| `package-changes.recent` | `derived.package-changes.recent` |
+| `provisioning.list` | `primary.salesforce.provisioning-list` |
+| `provisioning.search` | `primary.salesforce.provisioning-search` |
+| `provisioning.validation-errors` | `primary.salesforce.validation-errors` |
+| `provisioning.removals` | `primary.salesforce.provisioning-removals` |
+| `customer-products.list` | `primary.salesforce.customer-products` |
+| `tenant-entitlements.list` | `primary.sml.entitlements` |
+| `tenant-entitlements.suggest` | `primary.sml.entitlements-suggest` |
+| `packages.list` | `primary.packages.list` |
+| `packages.stats` | `primary.packages.stats` |
+| `expiration.monitor` | `derived.expiration.monitor` |
+| `expiration.status` | `derived.expiration.status` |
+| `expiration.expired-products` | `derived.expiration.expired-products` |
+| `ghost-accounts.list` | `derived.ghost-accounts.list` |
+| `ghost-accounts.deprovisioned` | `derived.ghost-accounts.deprovisioned` |
+| `audit-trail.stats` | `preserved.audit-trail.stats` |
+| `audit-trail.search` | `preserved.audit-trail.search` |
+| `customer-products.update-requests` | `preserved.product-updates.list` |
+
+A `LEGACY_ID_MAP` in the schema provides backward compatibility — `getToolSchema()` and `getById()` accept both old and new IDs.
+
+#### New Data Source Added
+
+`GET /api/current-accounts` — enriched tenant account data combining SML tenant info with Salesforce provisioning records. Added as `derived.current-accounts.list` (sourceRef: `sml+salesforce`).
+
+#### OpenAI Tool Updates
+
+- `describe_available_data` now accepts an optional `sourceType` parameter (`"primary"`, `"derived"`, `"preserved"`) in addition to `category`
+- Endpoint descriptions in `generate_report_config` now include source lineage tags (e.g., `[PRIMARY: salesforce]`, `[DERIVED from salesforce.provisioning]`)
+- `handleDescribeData()` returns `sourceType`, `sourceRef`, and `primarySource` fields in its response
+
+#### What This Enables
+
+- **For the LLM**: It can see that 12 endpoints are derived from Salesforce PS records, and understand that if the user asks about "upgrades," the relevant data comes from the package-changes derivation, not the validation-trend derivation
+- **For new sources**: Adding a new primary source (e.g., a CRM API) means adding a new category under "Primary," and any derived analytics from it go under "Derived"
+- **For debugging**: If a "derived" endpoint returns no data, the user/LLM knows to check whether the primary source has been synced/analyzed
+
+#### Files Modified
+
+| File | Change |
+|------|--------|
+| `config/report-data-sources.js` | Full restructure: origin-based categories, new `sourceType`/`sourceRef`/`primarySource` fields, new IDs with `LEGACY_ID_MAP`, new `getBySourceType()`/`getBySourceRef()` helpers, updated OpenAI tool definitions with source lineage |
+| `mcp-server/tools/analytics/*.js` (6 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `mcp-server/tools/provisioning/*.js` (4 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `mcp-server/tools/expiration/*.js` (3 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `mcp-server/tools/accounts/*.js` (2 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `mcp-server/tools/customer-products/*.js` (2 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `mcp-server/tools/packages/*.js` (2 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `mcp-server/tools/audit-trail/*.js` (2 files) | Updated `getToolSchema()` calls to new canonical IDs |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+| `docs/technical/Technical Documentation/11-MCP-Integration/MCP-Server-Implementation.md` | Updated canonical alignment section |
+
+---
+
+### Version 4.1 – Data-Aware Report Building (February 27, 2026)
+
+**Version:** 4.1
+
+#### Problem
+
+The LLM operates in "blind design" mode — it knows endpoint schemas from the canonical catalog but never sees actual data. This causes:
+
+- Wrong endpoint choices (e.g., using validation-trend data to represent upgrade trends)
+- Incorrect record counts (showing 9 accounts when there are 47 with a wider parameter window)
+- Inability to verify that data exists before building a widget
+- No way to explain data gaps or staleness to the user
+
+The LLM generates static JSON configurations; it cannot query, filter, or aggregate data at design time.
+
+#### Solution
+
+Added a third OpenAI function-calling tool — `fetch_endpoint_data` — that gives the LLM live data access during the conversation. The LLM can now query actual API endpoints, inspect real records, and make data-informed decisions before generating report configurations.
+
+**Flow:**
+1. User requests a report
+2. LLM calls `describe_available_data` to understand available endpoints
+3. LLM calls `fetch_endpoint_data` to query live data from candidate endpoints
+4. LLM receives a summarized preview (record count, sample records, field types, summary stats)
+5. LLM uses the real data to build an accurate report configuration via `generate_report_config`
+6. LLM reports actual findings to the user (e.g., "Found 47 accounts with products expiring within 90 days")
+
+**Data summarization:** Raw API responses are summarized to stay within token limits (~2000 tokens per fetch):
+- `totalRecords` — actual count from the data array
+- `sampleRecords` — first 5 records for field inspection
+- `summary` — summary/stats object if the endpoint provides one
+- `fieldTypes` — inferred types for each field (including nested object fields)
+- `responseKeys` — top-level keys in the response
+
+**Authentication:** The data fetcher uses the same user credentials (cookies/Authorization header) that the chat request arrives with, maintaining the existing security boundaries. Calls go to `http://localhost:{PORT}` — the same Express server.
+
+**Endpoint restriction:** Only endpoints in `DATA_SOURCES` with `reportEligible: true` can be queried. The endpoint parameter uses the same enum constraint as `generate_report_config`.
+
+#### Changes
+
+**Tool definition (`config/report-data-sources.js`)**:
+- Added `fetch_endpoint_data` tool to `buildOpenAITools()` with enum-constrained endpoint and optional params
+- Added `summarizeEndpointData(rawResponse, endpoint)` helper that extracts totalRecords, sample, summary, and field types from raw API responses
+
+**LLM service (`services/report-llm.service.js`)**:
+- Accepts `options.dataFetcher` callback in `chat()`
+- Handles `fetch_endpoint_data` tool calls: validates endpoint, calls dataFetcher, summarizes response
+- Increased `MAX_TOOL_ITERATIONS` from 3 to 5 (LLM may need: describe → fetch → fetch → generate → follow-up)
+- Updated system prompt with data exploration guidance: "Always fetch data from at least the primary endpoint you plan to use BEFORE calling generate_report_config"
+
+**Route handler (`routes/report-agent.routes.js`)**:
+- Added `buildDataFetcher(req)` that creates an axios-based callback forwarding the user's auth credentials
+- Passes `dataFetcher` to `reportLlm.chat()` for both initial and retry calls
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `config/report-data-sources.js` | Added `fetch_endpoint_data` tool definition and `summarizeEndpointData` helper |
+| `services/report-llm.service.js` | Handle `fetch_endpoint_data` tool calls; accept `dataFetcher`; `MAX_TOOL_ITERATIONS` 3→5; updated system prompt |
+| `routes/report-agent.routes.js` | Added `buildDataFetcher(req)` and `axios` import; pass `dataFetcher` to chat calls |
+| `package.json` | Added `axios` dependency |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 4.2 – Nested & Multi-Field Column Support (February 27, 2026)
+
+**Version:** 4.2
+
+#### Problem
+
+When API data contains values spread across multiple nested paths — for example, expiring product codes stored under `expiringProducts.models`, `expiringProducts.data`, and `expiringProducts.apps` — the table widgets (AG Grid and data-table) could not display them in a single column. The LLM could *see* these nested values via `fetch_endpoint_data`, but had no way to configure a column that merges and displays them.
+
+Additionally, when a simple dot-path field resolved to an array (e.g., `expiringProducts.apps` returning `["RI-EXPOSUREIQ"]`), the renderer displayed the raw array object instead of a readable string. More critically, when the arrays contain **objects** (e.g., `{ productCode: "RI-EXPOSUREIQ", productName: "Exposure IQ", ... }`), the renderer displayed `[object Object]` since it had no mechanism to extract a display-friendly property from each object.
+
+#### Solution
+
+Added `valueFields`, `separator`, and `displayField` options to column definitions for both AG Grid and data-table components. This allows the LLM to configure columns that:
+
+1. **Merge multiple dot-paths** — resolve each path, flatten any arrays, and join all values into a single display string
+2. **Extract from nested objects** — when arrays contain objects, use `displayField` to specify which property to display (e.g., `"productCode"`). If `displayField` is omitted, the renderer auto-detects by trying `name`, `code`, `productCode`, `label`, `id` in that order.
+3. **Auto-join arrays** — when a single `field` resolves to an array, automatically join with `", "` instead of displaying the raw array
+
+**Configuration example (arrays of objects):**
+```json
+{
+  "headerName": "Product Codes",
+  "valueFields": [
+    "expiringProducts.models",
+    "expiringProducts.data",
+    "expiringProducts.apps"
+  ],
+  "displayField": "productCode",
+  "separator": ", ",
+  "flex": 2
+}
+```
+
+**LLM guidance:** The system prompt includes a "Nested & Multi-Field Columns" section instructing the LLM to use `valueFields` with `displayField` when it observes arrays of objects in `fetch_endpoint_data` results.
+
+#### Changes
+
+**Zod schema (`config/report-config-schema.js`)**:
+- Added `valueFields` (array of dot-path strings, max 10), `separator` (string, max 10 chars), and `displayField` (string, max 100 chars) to both `agGridColumnDefSchema` and `columnSchema`
+- Updated column refinement to accept `valueFields` as an alternative to `field`
+
+**AG Grid renderer (`frontend/src/components/reports/widgets/AgGridTable.jsx`)**:
+- `valueFields` columns use a custom `valueGetter` that resolves all paths, flattens arrays of objects (using `displayField` or auto-detection), and joins with separator
+- Single dot-path fields that resolve to arrays are auto-joined with `", "`
+
+**Data-table renderer (`frontend/src/components/reports/widgets/DataTable.jsx`)**:
+- Added `extractDisplayValue()` helper for extracting display values from objects
+- Added `resolveColumnValue()` helper supporting `valueFields`, `displayField`, and array auto-join
+- Updated search, sort, and cell rendering to use `resolveColumnValue()`
+
+**OpenAI tool schema (`config/report-data-sources.js`)**:
+- Added `valueFields`, `separator`, and `displayField` properties to AG Grid and data-table column definitions in `generate_report_config` tool
+
+**LLM system prompt (`services/report-llm.service.js`)**:
+- Added "Nested & Multi-Field Columns (valueFields)" section with `displayField` guidance and example
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `config/report-config-schema.js` | Added `valueFields`/`separator`/`displayField` to AG Grid and data-table column Zod schemas |
+| `frontend/src/components/reports/widgets/AgGridTable.jsx` | Handle `valueFields` with object extraction in `columnDefs`; auto-join array field values |
+| `frontend/src/components/reports/widgets/DataTable.jsx` | Added `extractDisplayValue()` and `resolveColumnValue()`; updated search, sort, cell rendering |
+| `config/report-data-sources.js` | Added `valueFields`/`separator`/`displayField` to OpenAI tool column schemas |
+| `services/report-llm.service.js` | Added valueFields + displayField guidance to system prompt |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 4.2.1 – Tenant Summary Endpoint (February 27, 2026)
+
+**Version:** 4.2.1
+
+#### Problem
+
+The LLM could not answer overview questions about SML tenants (e.g., "How many tenants are there?") because:
+
+- `/api/tenant-entitlements` requires a `tenant` or `account` parameter — throws `BadRequestError` without one
+- `/api/tenant-entitlements/suggest` requires at least 2 characters of search input — returns empty otherwise
+
+There was no endpoint that provided aggregate tenant data without a specific lookup key.
+
+#### Solution
+
+Added a new `/api/tenant-entitlements/summary` endpoint that returns all active tenants with counts and metadata, requiring no parameters.
+
+**Response shape:**
+```json
+{
+  "success": true,
+  "tenants": [
+    { "tenantName": "...", "accountName": "...", "displayName": "...", "tenantId": "...", "lastSynced": "..." }
+  ],
+  "summary": {
+    "totalTenants": 150,
+    "uniqueAccounts": 120,
+    "lastSynced": "2026-02-27T10:00:00.000Z"
+  }
+}
+```
+
+Also updated the description of `/api/tenant-entitlements` in the canonical data sources to explicitly state it requires a parameter and to direct the LLM to use `/api/tenant-entitlements/summary` for overview queries.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `services/tenant-entitlements.service.js` | Added `getTenantsSummary()` method |
+| `routes/tenant-entitlements.routes.js` | Added `GET /summary` route |
+| `config/report-data-sources.js` | Registered `primary.sml.tenant-summary` (26th source); clarified `/api/tenant-entitlements` description |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 4.2.2 – Tenant Entitlement Analysis Endpoint (February 27, 2026)
+
+**Version:** 4.2.2
+
+#### Problem
+
+The LLM could not perform cross-tenant analysis (e.g., "find tenants where all products are expired") because:
+
+- `/api/tenant-entitlements` is a single-tenant lookup (requires `tenant` or `account` parameter)
+- `/api/tenant-entitlements/summary` provides a tenant list but no entitlement status data
+- With 500+ tenants and a 5-iteration tool limit, the LLM cannot query tenants individually
+- No endpoint existed that computed per-tenant entitlement status breakdowns
+
+#### Solution
+
+Added a new `/api/tenant-entitlements/analysis` endpoint that processes all tenants' `product_entitlements` JSONB in bulk, computing active/expiring/expired counts per tenant. Supports a `status` filter parameter for pre-filtered results.
+
+**Response shape:**
+```json
+{
+  "success": true,
+  "tenants": [
+    {
+      "tenantName": "Example Corp",
+      "accountName": "Example Corp",
+      "tenantId": "t-12345",
+      "totalEntitlements": 8,
+      "activeCount": 0,
+      "expiringCount": 0,
+      "expiredCount": 8,
+      "allExpired": true,
+      "lastSynced": "2026-02-27T10:00:00.000Z"
+    }
+  ],
+  "summary": {
+    "totalTenantsAnalyzed": 504,
+    "tenantsWithAllExpired": 5,
+    "tenantsWithSomeExpiring": 20,
+    "tenantsFullyActive": 479,
+    "tenantsReturned": 5
+  }
+}
+```
+
+**Filter values:** `?status=allExpired` | `hasExpiring` | `fullyActive` | (omit for all)
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `database.js` | Added `getAllSMLTenantEntitlements()` — bulk query returning all tenants with `product_entitlements` |
+| `services/tenant-entitlements.service.js` | Added `getTenantsEntitlementAnalysis(filters)` — per-tenant status breakdown using existing `_flattenCategory` / `_calculateStatus` |
+| `routes/tenant-entitlements.routes.js` | Added `GET /analysis` route with `status` filter parameter |
+| `config/report-data-sources.js` | Registered `primary.sml.entitlement-analysis` (27th source) |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 4.2.3 – Filter Parameter Propagation Fixes (February 27, 2026)
+
+**Version:** 4.2.3
+
+#### Problem
+
+The LLM explored data with specific filter parameters (e.g., `status=allExpired`) via `fetch_endpoint_data` but then generated report configs with empty `params: {}`, causing:
+
+1. **Unfiltered tables** — A table titled "Tenants with All Products Expired" showed ALL 504 tenants because `status=allExpired` was not passed in the report config's `dataSource.params`
+2. **Empty detail tables** — A linked table showing entitlements for an expired tenant appeared empty because `/api/tenant-entitlements` filters out expired entitlements by default (`includeExpired` defaults to `false`)
+3. **Mixed data sources** — The LLM combined data from `/api/expiration/expired-products` (Salesforce PS records) and `/api/tenant-entitlements/analysis` (SML data), which measure different things
+
+#### Solution
+
+Added stronger LLM guidance and improved data source descriptions:
+
+**System prompt rules added:**
+- **PARAMS MUST MATCH** — When the LLM explored data with specific parameters during `fetch_endpoint_data`, those same parameters must appear in the report config's `dataSource.params`
+- **INCLUDE EXPIRED DATA** — When building reports about expired products/tenants, pass `includeExpired=true` to endpoints that filter out expired records by default
+- **linkedParams guidance** — Detail table params must include required defaults (e.g., `includeExpired=true`)
+
+**Endpoint descriptions updated:**
+- `/api/tenant-entitlements` — Added warning that expired entitlements are excluded by default and `includeExpired=true` is required for expiration-related reports
+- `/api/tenant-entitlements/analysis` — Emphasized that `status` filter is required for filtered views and must be passed in report config params
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `services/report-llm.service.js` | Added PARAMS MUST MATCH and INCLUDE EXPIRED DATA rules to system prompt; added linkedParams includeExpired guidance |
+| `config/report-data-sources.js` | Updated descriptions for `/api/tenant-entitlements` and `/api/tenant-entitlements/analysis` with filter emphasis |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 4.2.4 – Include Expired Entitlements by Default (February 27, 2026)
+
+**Version:** 4.2.4
+
+#### Problem
+
+The `/api/tenant-entitlements` endpoint defaulted `includeExpired` to `false`, filtering out expired entitlements. When used in a master-detail report pattern (e.g., clicking an expired tenant to see its entitlements), the detail table showed no data because all entitlements were expired and thus excluded.
+
+#### Solution
+
+Changed the default of `includeExpired` from `false` to `true`. The endpoint now returns all entitlements (including expired) by default. Callers can pass `includeExpired=false` to explicitly exclude expired records.
+
+**Rationale:** When looking up entitlements for a specific tenant/account, the complete picture is almost always desired. The `status` field in each entitlement row allows users to filter visually via AG Grid's built-in column filters.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `routes/tenant-entitlements.routes.js` | Changed `includeExpired` default from `false` to `true` |
+| `config/report-data-sources.js` | Updated `includeExpired` param description to reflect new default |
+| `services/report-llm.service.js` | Updated system prompt rules for expired data defaults |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### Version 4.2.5 – Product Breakdown Endpoint (March 3, 2026)
+
+**Version:** 4.2.5
+
+#### Problem
+
+The LLM could not create pie charts or bar charts showing product distribution across tenants because no endpoint provided product-level aggregation. The LLM attempted to call `/api/tenant-entitlements` without parameters (to get bulk data), hitting a `BadRequestError`, and then generated an incomplete ECharts config that failed Zod validation (`option: Required`).
+
+The existing endpoints provide:
+- `/api/tenant-entitlements/analysis` — per-tenant counts (not per-product)
+- `/api/tenant-entitlements` — single-tenant lookup only
+- Neither can answer "how many tenants have RiskModeler?"
+
+#### Solution
+
+Added `/api/tenant-entitlements/product-breakdown` — a product-level aggregation endpoint that processes all tenants and returns unique products with their total counts and tenant counts. Supports filtering by tenant status (`tenantStatus=allExpired`) and product status (`productStatus=Expired`).
+
+**Response shape:**
+```json
+{
+  "products": [
+    { "productCode": "RI-RISKMODELER", "productName": "RiskModeler", "category": "apps", "count": 45, "tenantCount": 38 },
+    { "productCode": "RI-EXPOSUREIQ", "productName": "ExposureIQ", "category": "apps", "count": 23, "tenantCount": 20 }
+  ],
+  "summary": { "totalProducts": 15, "totalEntitlements": 180, "tenantsProcessed": 91 }
+}
+```
+
+This is directly usable for pie charts (`productName` as label, `count` as value) and bar charts.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `services/tenant-entitlements.service.js` | Added `getProductBreakdown(filters)` — aggregates entitlements by product across tenants |
+| `routes/tenant-entitlements.routes.js` | Added `GET /product-breakdown` route with `tenantStatus` and `productStatus` filters |
+| `config/report-data-sources.js` | Registered `primary.sml.product-breakdown` (28th source) |
+| `docs/technical/Custom-Reports-Feature.md` | This documentation update |
+
+---
+
+### v4.3 — Report Builder Reliability Enhancements
+
+This release addresses the three most common failure modes in the LLM report builder: unreliable array extraction, missing parameter validation, lack of concrete examples, and weak error recovery.
+
+#### 1. Canonical `arrayKey` — Eliminates `extractArray` Guessing
+
+**Problem:** The frontend used a hardcoded list of ~17 array keys to guess where the data array lives in API responses. Keys like `tenants` and `products` were missing, causing silent data failures where the table would render with zero rows despite the API returning data.
+
+**Solution:** Added an optional `arrayKey` field to the `dataSource` schema. When present, the renderer uses it directly instead of guessing. A server-side post-validation step (`injectArrayKeys`) auto-populates `arrayKey` from the canonical data source definitions even if the LLM omits it. The `tenants` key was also added to the fallback list as a safety net.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `config/report-config-schema.js` | Added `arrayKey` field to `dataSourceSchema` |
+| `config/report-data-sources.js` | Added `arrayKey` to `generate_report_config` OpenAI tool schema |
+| `frontend/src/components/reports/ReportRenderer.jsx` | `extractArray()` now accepts an `arrayKey` parameter; added `tenants` to fallback list |
+| `routes/report-agent.routes.js` | Added `injectArrayKeys()` helper; applied to all validation success paths |
+
+#### 2. Validated Example Configs in System Prompt
+
+**Problem:** The LLM had rules and field references but no concrete examples of correct configs. It repeatedly made the same structural mistakes — missing `series` in ECharts, empty params for filtered endpoints, wrong encode patterns.
+
+**Solution:** Added a "Validated Config Examples" section to `buildSystemPrompt()` covering the four most error-prone patterns: ECharts pie chart, ECharts bar chart, AG Grid master-detail with linkedParams, and KPI card with dot-path. Each example is minimal (~5-8 lines of JSON, ~400 additional tokens total).
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `services/report-llm.service.js` | Added validated example config snippets to `buildSystemPrompt()` |
+
+#### 3. Required Parameter Validation at Zod Level
+
+**Problem:** The LLM generated configs with `params: {}` for endpoints that require specific parameters (e.g., `/api/tenant-entitlements` without `tenant` or `account`). Zod validated the structure but not the semantic correctness, so these errors only appeared at render time when the API returned an error.
+
+**Solution:** Added a `validateEndpointParams()` helper in `report-data-sources.js` that checks required params and `requireOneOf` groups against the canonical data source definitions. Params covered by `linkedParams` (filled at render time via row clicks) are correctly excluded from the check. The helper is wired into the Zod schema via `.superRefine()` on `dataSourceSchema`, catching these errors at validation time so the LLM gets a clear error message to fix.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `config/report-data-sources.js` | Added `requireOneOf` field to tenant-entitlements source; added `validateEndpointParams()` helper; exported it |
+| `config/report-config-schema.js` | Added `.superRefine()` on `dataSourceSchema` calling `validateEndpointParams()` |
+
+#### 4. Improved Auto-Retry Mechanism
+
+**Problem:** When validation failed, the retry got a terse error message like `components.2.option: Required` with no context about what correct values look like. A single retry with poor context often failed again.
+
+**Solution:** Enhanced the retry loop in `report-agent.routes.js`:
+- **2 retries** instead of 1 — gives the LLM a second chance if the first fix is also wrong.
+- **Failed config included** — the retry message now contains the full JSON of the failed config so the LLM can see exactly what it generated.
+- **Error-path-based hints** — a `buildValidationHints()` helper maps common error paths (option/series, params, endpoint, columns) to actionable fix suggestions.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `routes/report-agent.routes.js` | Replaced single-retry block with a 2-retry loop; added `buildValidationHints()` helper; retry messages now include failed config JSON and hints |
+
+#### Expected Impact
+
+These five changes address the three most common failure modes:
+- **Silent empty data** (fixes 1 + auto-inject) — `arrayKey` eliminates guessing
+- **Wrong/missing params** (fix 3) — caught at validation, not at render time
+- **Structural mistakes** (fixes 2 + 4) — examples prevent mistakes; better retry recovers from them
+
+---
+
+### v4.4 — Navigation Restructure: Reports as Sub-Pages
+
+#### Problem
+
+Saved custom reports were displayed as cards on a dedicated "View Reports" sub-page (`/custom-reports`). Users had to navigate to this page, scan the card grid, and click a card to view a report. This added an unnecessary intermediate step and hid reports behind a single nav link.
+
+#### Solution
+
+Removed the "View Reports" list page and instead display each saved report as its own navigation link directly under the "Custom Reports" category in the sidebar.
+
+**Before:**
+- Custom Reports > Create Report
+- Custom Reports > View Reports (card grid) > click card > report view
+
+**After:**
+- Custom Reports > Create Report
+- Custom Reports > Report A (direct link)
+- Custom Reports > Report B (direct link)
+- ...
+
+#### Implementation
+
+The sidebar dynamically fetches the list of saved reports via `listReports()` from `customReportService` and renders each as a submenu link under "Custom Reports". The report list is refreshed whenever the user navigates within the `/custom-reports` path prefix (catching creates and deletes).
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `frontend/src/components/layout/Sidebar.jsx` | Added dynamic report fetching; replaced static "View Reports" submenu item with per-report links |
+| `frontend/src/App.jsx` | Removed `/custom-reports` list route and `CustomReportsList` import |
+| `frontend/src/pages/CustomReportsList.jsx` | Deleted (no longer needed) |
+| `frontend/src/pages/CustomReportView.jsx` | Updated back-navigation and post-delete redirect to `/custom-reports/create` |
+
+---
+
+### v4.5 — Server-Side Data Enrichment Proxy
+
+#### Problem
+
+Each report component fetches data from exactly one API endpoint. There is no mechanism to combine data across sources. For example, `/api/expiration/monitor` returns `account.name` but not `tenantName` — that field lives in `sml_tenant_data` (accessible via `/api/current-accounts`). Users cannot build a table showing both expiration data and tenant names without manual correlation.
+
+#### Solution
+
+Added a server-side **data proxy endpoint** that the frontend uses when a component's `dataSource` includes an `enrich` directive. The proxy fetches the primary data, performs lookups against a second endpoint using a shared key, and returns merged results.
+
+**Data flow:**
+
+```
+ReportRenderer → POST /api/report-data/fetch → server fetches primary + enrichment → joined response
+```
+
+#### `enrich` Configuration
+
+The `enrich` object is optional within `dataSource` and has the following properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `endpoint` | string | Second endpoint to fetch enrichment data from (must be in the data catalog) |
+| `params` | object? | Query parameters for the enrichment endpoint (e.g., `{ "pageSize": 1000 }` for paginated endpoints) |
+| `arrayKey` | string? | Key in the enrichment response containing the data array (auto-injected if omitted) |
+| `sourceField` | string | Dot-path field in the PRIMARY data row used as the join key (e.g., `"account.name"`) |
+| `matchField` | string | Field in the ENRICHMENT data to match against `sourceField` (e.g., `"client"`) |
+| `fields` | string[] | Fields to copy from the matched enrichment row onto each primary row |
+
+**Important:** For paginated enrichment endpoints like `/api/current-accounts` (default 50 rows), always pass `params` with a large `pageSize` to ensure all rows are available for matching.
+
+#### Example: Expiration Monitor with Tenant Names
+
+```json
+{
+  "type": "ag-grid",
+  "title": "Expiring Products with Tenant Info",
+  "gridSpan": 3,
+  "dataSource": {
+    "endpoint": "/api/expiration/monitor",
+    "params": {},
+    "arrayKey": "expirations",
+    "enrich": {
+      "endpoint": "/api/current-accounts",
+      "params": { "pageSize": 1000 },
+      "arrayKey": "accounts",
+      "sourceField": "account.name",
+      "matchField": "client",
+      "fields": ["tenant_name", "tenant_id"]
+    }
+  },
+  "columnDefs": [
+    { "field": "account.name", "headerName": "Account" },
+    { "field": "tenant_name", "headerName": "Tenant Name" },
+    { "field": "earliestExpiry", "headerName": "Expiry Date", "format": "date" },
+    { "field": "earliestDaysUntilExpiry", "headerName": "Days Left", "format": "number" }
+  ]
+}
+```
+
+The proxy fetches both endpoints, matches each expiration row's `account.name` against `current_accounts.client`, and copies `tenant_name` and `tenant_id` onto each row before returning to the frontend.
+
+#### Implementation Details
+
+- **Security:** Only allowlisted endpoints (from the data catalog) can be queried. Authentication is forwarded from the user's request.
+- **Join strategy:** Case-insensitive exact match using a `Map` lookup. First match wins; unmatched rows keep their original fields only.
+- **Auto-inject:** `injectArrayKeys()` in `report-agent.routes.js` also populates `enrich.arrayKey` from the canonical data source when omitted by the LLM.
+- **LLM guidance:** The system prompt includes a dedicated section with the enrichment pattern and a concrete example.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `config/report-config-schema.js` | Added optional `enrich` object to `dataSourceSchema` with Zod validation |
+| `config/report-data-sources.js` | Added `enrich` property to `generate_report_config` OpenAI tool schema |
+| `routes/report-data.routes.js` | **New file** — `POST /api/report-data/fetch` proxy endpoint with enrichment logic |
+| `app.js` | Registered `reportDataRoutes` at `/api/report-data` |
+| `frontend/src/components/reports/ReportRenderer.jsx` | Updated `ComponentRenderer` to POST to proxy when `enrich` is present |
+| `services/report-llm.service.js` | Added "Cross-Source Data Enrichment" section to `buildSystemPrompt()` |
+| `routes/report-agent.routes.js` | Extended `injectArrayKeys()` to also handle `enrich.arrayKey` |
+
+---
+
+### v4.5.1 — Data Catalog Browser
+
+#### Problem
+
+Users building reports through the LLM chat had no visibility into what data sources were available, what endpoints existed, or what fields each endpoint returned. This made it difficult to formulate effective report requests, leading to trial-and-error conversations with the LLM.
+
+#### Solution
+
+Added a "Data Catalog" button to the Report Builder's chat header that opens a modal displaying the full data catalog in a readable, searchable format. The catalog is organized by source category (Primary, Derived, Preserved), with expandable endpoint cards showing descriptions, parameters, and response fields.
+
+#### Features
+
+- **Grouped by category** — endpoints organized under Primary (Salesforce, SML, Packages), Derived (Analytics, Package Changes, Expiration, etc.), and Preserved (Audit Trail, Product Updates)
+- **Color-coded badges** — source type is visually distinguished (blue for Primary, amber for Derived, purple for Preserved)
+- **Full-text search** — filter across endpoint paths, descriptions, field names, and parameter names
+- **Expandable endpoint cards** — click to reveal full description, parameters with types and optionality, response fields, and array key
+- **Endpoint count** — header shows total number of available endpoints
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `routes/report-data.routes.js` | Added `GET /api/report-data/catalog` endpoint returning grouped data catalog |
+| `frontend/src/components/reports/DataCatalogModal.jsx` | **New file** — modal component with search, category grouping, and expandable endpoint cards |
+| `frontend/src/pages/CreateReport.jsx` | Added "Data Catalog" button in chat header; imported and rendered `DataCatalogModal` |
 
 ---
 

@@ -2,23 +2,26 @@
  * Report LLM Service
  *
  * Manages the OpenAI chat conversation for the report-building agent.
- * Constructs a system prompt from the data catalog and report config schema,
- * sends user messages to the LLM, and parses structured JSON configs from
- * the assistant's replies.
+ * Uses OpenAI function calling (tools) to let the LLM produce structured
+ * report configs with enum-constrained endpoints — preventing hallucinated
+ * or semantically wrong data source references.
  *
- * Supports two key sources (checked in order):
+ * Three tools are exposed to the LLM:
+ *   1. generate_report_config  — produces the JSON config (endpoint enum)
+ *   2. describe_available_data — lets the LLM explore catalog by category
+ *   3. fetch_endpoint_data     — queries live API data so the LLM can inspect
+ *                                actual records before building a report
+ *
+ * Supports two API-key sources (checked in order):
  *   1. Per-user key stored in user_settings (encrypted)
  *   2. Server-wide OPENAI_API_KEY environment variable
- *
- * When neither is available the service reports itself as unavailable
- * so callers can fall back to the stub / sample-only mode.
  */
 
 const OpenAI = require('openai');
 const config = require('../config/environment');
 const db = require('../database');
-const { getCatalogForPrompt } = require('../config/report-data-catalog');
-const { VALID_COMPONENT_TYPES, VALID_FORMATS, VALID_LAYOUTS, MAX_COMPONENTS } = require('../config/report-config-schema');
+const { buildOpenAITools, handleDescribeData, summarizeEndpointData, isEndpointAllowed, _buildEndpointFieldMap } = require('../config/report-data-sources');
+const { MAX_COMPONENTS } = require('../config/report-config-schema');
 const { decrypt } = require('../utils/encryption');
 const logger = require('../utils/logger');
 
@@ -31,20 +34,10 @@ if (config.llm.enabled) {
     logger.warn('No server-wide OPENAI_API_KEY – LLM will use per-user keys only');
 }
 
-/**
- * Check if LLM is available (server-wide key).
- * For per-user availability, use resolveApiKey().
- */
 function isAvailable() {
     return !!(config.llm.enabled && serverOpenai);
 }
 
-/**
- * Resolve the API key for a given user. Checks user_settings first, then
- * falls back to the server-wide environment variable.
- * @param {number} userId
- * @returns {Promise<{apiKey: string|null, source: string}>}
- */
 async function resolveApiKey(userId) {
     if (userId) {
         try {
@@ -69,11 +62,6 @@ async function resolveApiKey(userId) {
     return { apiKey: null, source: 'none' };
 }
 
-/**
- * Resolve the model preference for a given user.
- * @param {number} userId
- * @returns {Promise<string>}
- */
 async function resolveModel(userId) {
     if (userId) {
         try {
@@ -92,429 +80,169 @@ async function resolveModel(userId) {
     return config.llm.model;
 }
 
+// ─────────────────────────────────────────────────────────────
+//  System prompt — much shorter now that the catalog is in the
+//  tool schema instead of a text blob.
+// ─────────────────────────────────────────────────────────────
+
 function buildSystemPrompt() {
-    const catalog = getCatalogForPrompt();
+    const fieldMap = _buildEndpointFieldMap();
 
     return `You are a report-building assistant for the DeployAssist application.
-Your job is to help users create data dashboard reports by producing a JSON configuration object that the application renders into charts, KPI cards, and data tables.
+Your job is to help users create data dashboard reports by calling the generate_report_config tool with a JSON configuration that the application renders into charts, KPI cards, and data tables.
 
-## Rules
-1. ONLY use the data source endpoints listed below. Never invent endpoints.
-2. Respond conversationally while you gather requirements. When you have enough information to propose a report, include the JSON configuration inside a fenced code block tagged \`\`\`report-config.
-3. The JSON must conform exactly to the schema described below.
-4. **Report scope guidance:**
-   - For narrow, specific questions (e.g. "show me entitlements for Acme Corp"), produce a focused report with 2-4 components.
-   - For broad or analytical questions (e.g. "give me an overview of…", "what's the current state of…", "which products are growing…"), produce a **comprehensive dashboard** that tells a complete story: KPI summary cards at the top, charts for visual trends and comparisons, and detail tables for drill-down. Use multiple data sources to give different perspectives on the same question.
-   - Add as many components as needed to cover the question thoroughly — each component should contribute new information or a different perspective. Stop when adding another component would be redundant or only marginally useful.
-   - Maximum ${MAX_COMPONENTS} components.
-5. Always include a "title" and "description" in the config.
-6. **CRITICAL – Endpoint paths**: Use the \`endpoint\` value from the catalog (e.g. \`"/api/analytics/package-changes/by-account"\`), NOT the catalog \`id\` (e.g. \`"package-changes.by-account"\`). The endpoint path is always a full URL path with forward slashes. Common mistakes to avoid:
-   - WRONG: \`"/api/package-changes/by-account"\` — CORRECT: \`"/api/analytics/package-changes/by-account"\`
-   - WRONG: \`"/api/package-changes.by-account"\` — CORRECT: \`"/api/analytics/package-changes/by-account"\`
-   - WRONG: \`"/api/package-changes/summary"\` — CORRECT: \`"/api/analytics/package-changes/summary"\`
-   Copy the \`endpoint\` field exactly as shown in the catalog below.
-7. **PREFER \`echarts\` type** for all charts (bar, line, pie, scatter, radar, heatmap, funnel, gauge, treemap, etc.). Only use the legacy types (bar-chart, line-chart, pie-chart) if explicitly asked.
-8. **PREFER \`ag-grid\` type** for all tables. Only use the legacy \`data-table\` type if explicitly asked.
-9. For KPI cards, set valueField to the dot-path into the API response where the single metric lives (e.g. "summary.total_changes").
-10. **CRITICAL**: Field references MUST exactly match the field names listed in the data catalog for that endpoint. The API returns snake_case field names from the database.
-11. Pay attention to the "summary" field in the catalog responseShape – it tells you which key the data array lives under (e.g. "data", "ghostAccounts", "requests", "trendData").
-12. **NEVER include comments** (// or /* */) inside the JSON config block. JSON does not support comments and they will cause parsing errors.
-13. **NEVER include JavaScript functions** in the ECharts option object. Only use static JSON values (strings, numbers, booleans, arrays, objects).
-14. Always use \`\`\`report-config as the code fence tag, NOT \`\`\`json.
-15. **CRITICAL – Semantic correctness**: Every component must use an endpoint whose data ACTUALLY answers the question the component title implies. NEVER repurpose an unrelated endpoint to fill a component slot. For example:
-    - Do NOT use a "validation failure trend" endpoint to show "upgrade trends" — those are completely different metrics.
-    - Do NOT label a chart "Revenue Growth" if the endpoint returns provisioning request counts.
-    - The component title, the endpoint data, and the field names must all describe the SAME thing.
-16. **CRITICAL – Be transparent about gaps**: If part of the user's request cannot be fulfilled because no suitable endpoint exists in the catalog, you MUST:
-    - Tell the user explicitly which part of the request cannot be built and why (e.g. "There is no time-series endpoint for upgrade trends, so I cannot include a trend-over-time chart for upgrades").
-    - Build only the components that CAN be correctly supported by available data.
-    - NEVER silently substitute a different data source to make the report look complete. An incomplete but accurate report is far better than a complete but misleading one.
+## How It Works
+1. Chat conversationally to understand what the user wants.
+2. Use fetch_endpoint_data to query live API data and inspect actual records, counts, and field names BEFORE building any report components.
+3. When ready, call generate_report_config with a complete config based on verified data.
+4. If part of the user's request cannot be fulfilled by available endpoints, explain what is missing in your text response and build ONLY the components you CAN support correctly.
+5. If you need to explore what endpoints are available, call describe_available_data first.
 
-## Available Data Sources
-${JSON.stringify(catalog, null, 2)}
+## Data Exploration (IMPORTANT)
+You have access to fetch_endpoint_data which queries LIVE data from the application's API. Use it to:
+- **Verify data exists** before building a component. If an endpoint returns 0 records, tell the user rather than building an empty widget.
+- **Check record counts** to give accurate KPI values and set appropriate page sizes.
+- **Inspect field names** in sample records so your column/chart field references are correct.
+- **Understand response structure** (where is the data array? is there a summary object?).
+- **Explore different parameters** (e.g., try expirationWindow=90 vs. expirationWindow=30 to see how many records change).
 
-## Report Config JSON Schema
+Always fetch data from at least the primary endpoint you plan to use BEFORE calling generate_report_config. Report what you found to the user (e.g., "I found 47 accounts with expiring products within 90 days").
 
-\`\`\`
-{
-  "title": string (1-255 chars),
-  "description": string (optional, max 1000 chars),
-  "layout": ${JSON.stringify(VALID_LAYOUTS)} (default "grid"),
-  "refreshInterval": number (seconds, 0 = no auto-refresh, max 3600),
-  "filters": [                          // optional, max 5
-    {
-      "id": string,
-      "type": "select" | "text" | "typeahead" | "date-range",
-      "label": string,
-      "options": [{ "value": string, "label": string }],   // for "select" only
-      "default": string,
-      "mapsToParam": string,            // query-param name sent to data endpoints
+## Critical Rules
+- The endpoint enum in generate_report_config contains ALL valid endpoints. You cannot reference anything outside that list.
+- Every component's title MUST accurately describe the data the chosen endpoint provides. Never label a chart "Upgrade Trends" if the endpoint returns validation failure rates.
+- If no endpoint provides the data the user asked for, say so explicitly. An incomplete but accurate report is better than a complete but misleading one.
+- Maximum ${MAX_COMPONENTS} components per report.
+- Field references MUST exactly match the actual API response field names you observed via fetch_endpoint_data.
+- **PARAMS MUST MATCH**: When you explored data via fetch_endpoint_data with specific parameters (e.g., status=allExpired, expirationWindow=90), you MUST use those SAME parameters in the report config's dataSource.params. The report renderer calls the endpoint exactly as configured — if you omit a filter param, the component will show unfiltered data. For example, if you fetched from /api/tenant-entitlements/analysis with status=allExpired and found 91 tenants, the report config MUST include "params": { "status": "allExpired" }.
+- **EXPIRED DATA DEFAULTS**: /api/tenant-entitlements includes expired entitlements by default. Pass includeExpired=false only if the user specifically wants to exclude expired records.
 
-      // typeahead-specific (required when type is "typeahead"):
-      "suggestEndpoint": string,        // API endpoint to fetch suggestions from
-      "suggestParam": string,           // query param name for the search term (default "search")
-      "suggestResultKey": string,       // key in the response containing the results array
-      "suggestDisplayField": string,    // field on each result to display as primary label (default "name")
-      "suggestSecondaryField": string   // optional field to show as secondary label below the primary (e.g. "account_name")
-    }
-  ],
-  "components": [                       // 1-${MAX_COMPONENTS} items
-    // -- KPI Card (unchanged) --
-    {
-      "id": string, "type": "kpi-card", "title": string,
-      "gridSpan": 1-3,
-      "dataSource": { "endpoint": string, "params": {} },
-      "valueField": string,
-      "format": ${JSON.stringify(VALID_FORMATS)}
-    },
+## Endpoint Field Reference
+${fieldMap}
 
-    // -- ECharts (PREFERRED for all charts) --
-    {
-      "id": string, "type": "echarts", "title": string,
-      "gridSpan": 1-3,
-      "dataSource": { "endpoint": string, "params": {} },
-      "option": { <ECharts option object using dataset component> }
-    },
+## Validated Config Examples
+Copy these patterns exactly — they are the most error-prone structures.
 
-    // -- AG Grid (PREFERRED for all tables) --
-    {
-      "id": string, "type": "ag-grid", "title": string,
-      "gridSpan": 1-3,
-      "dataSource": { "endpoint": string, "params": {}, "linkedParams": { "<paramName>": "<paramId>" } },
-      "columnDefs": [
-        { "field": string, "headerName": string, "sortable": boolean, "filter": boolean, "format": "number"|"currency"|"percentage"|"date"|"text", "flex": number }
-      ],
-      "defaultColDef": { "sortable": true, "filter": true, "resizable": true },
-      "pageSize": 5-100,
-      "pagination": boolean,
-      "searchable": boolean,
-      "onRowClick": { "paramId": string, "valueField": string },
-      "conditionalFormatting": [
-        { "field": string, "operator": "equals"|"notEquals"|"contains"|"greaterThan"|"lessThan"|"greaterThanOrEqual"|"lessThanOrEqual", "value": string|number|boolean, "style": "danger"|"warning"|"success"|"info"|"muted" }
-      ]
-    },
+ECharts pie chart:
+{ "type": "echarts", "title": "Product Distribution", "gridSpan": 2, "dataSource": { "endpoint": "/api/tenant-entitlements/product-breakdown", "params": { "tenantStatus": "allExpired" }, "arrayKey": "products" }, "option": { "tooltip": { "trigger": "item" }, "series": [{ "type": "pie", "radius": ["40%", "70%"], "encode": { "value": "count", "itemName": "productName" } }] } }
 
-    // -- Legacy types (still supported but not preferred) --
-    // bar-chart: { "xField", "yField", "colors", "stacked", "horizontal" }
-    // line-chart: { "xField", "yField", "colors", "fill", "multiSeries", "seriesField" }
-    // pie-chart: { "labelField", "valueField", "colors", "doughnut" }
-    // data-table: { "columns": [{ "field", "header", "format" }], "pageSize", "searchable", "onRowClick", "conditionalFormatting" }
-  ]
+ECharts bar chart:
+{ "type": "echarts", "title": "Changes by Account", "gridSpan": 3, "dataSource": { "endpoint": "/api/analytics/package-changes/by-account", "params": { "timeFrame": "1y" }, "arrayKey": "accounts" }, "option": { "tooltip": { "trigger": "axis" }, "grid": { "containLabel": true }, "xAxis": { "type": "category" }, "yAxis": { "type": "value" }, "series": [{ "type": "bar", "encode": { "x": "account_name", "y": "total_changes" } }] } }
+
+AG Grid master-detail with linkedParams:
+Master: { "type": "ag-grid", "dataSource": { "endpoint": "/api/tenant-entitlements/analysis", "params": { "status": "allExpired" }, "arrayKey": "tenants" }, "onRowClick": { "paramId": "selectedAccount", "valueField": "accountName" }, ... }
+Detail: { "type": "ag-grid", "dataSource": { "endpoint": "/api/tenant-entitlements", "params": {}, "linkedParams": { "account": "selectedAccount" }, "arrayKey": "entitlements" }, ... }
+
+KPI card with dot-path:
+{ "type": "kpi-card", "title": "Total Expired", "gridSpan": 1, "dataSource": { "endpoint": "/api/tenant-entitlements/analysis", "params": { "status": "allExpired" } }, "valueField": "summary.tenantsReturned", "format": "number" }
+
+## Component Guidance
+
+### ECharts (PREFERRED for all charts)
+Use the dataset + encode pattern. The renderer sets option.dataset.source to the fetched API data array at runtime.
+- Use encode with field names from the endpoint (NOT positional indices).
+- Always include tooltip.
+- NEVER include JavaScript functions — only static JSON values.
+- Include legend for multi-series charts.
+- Include grid with containLabel: true.
+- Use axisLabel.rotate on xAxis when category labels are long.
+- For doughnut: radius: ["40%", "70%"].
+
+### AG Grid (PREFERRED for all tables)
+- columnDefs: each column needs field (data field name) and headerName (display header).
+- Use flex for proportional column widths.
+- Use format: "date" for date fields, "number" for numeric fields.
+- Use conditionalFormatting to highlight rows: danger (red), warning (amber), success (green), info (blue), muted (gray).
+- Operators: equals, notEquals, contains, greaterThan, lessThan, greaterThanOrEqual, lessThanOrEqual.
+
+### Nested & Multi-Field Columns (valueFields)
+When API data contains values spread across multiple nested paths (e.g. product codes under expiringProducts.models, expiringProducts.data, expiringProducts.apps), use valueFields instead of field:
+- valueFields: ["path.to.array1", "path.to.array2", ...] — resolves each path, flattens arrays, and joins all values into a single display string.
+- separator: optional join string (default ", ").
+- displayField: IMPORTANT — when the arrays contain objects (not simple strings), set displayField to the property name to extract (e.g. "productCode"). Without this, the renderer auto-tries name, code, productCode, label, id. Always check the sample records from fetch_endpoint_data to see if array items are objects or strings.
+- Works in both AG Grid columnDefs and data-table columns.
+- If a single dot-path field resolves to an array of primitives, it is auto-joined with ", " — no valueFields needed.
+- Example with objects: { "headerName": "Product Codes", "valueFields": ["expiringProducts.models", "expiringProducts.data", "expiringProducts.apps"], "displayField": "productCode", "flex": 2 }
+- Use fetch_endpoint_data to inspect the response structure first so you know exactly which paths contain the nested data and whether items are objects or primitives.
+
+### KPI Cards
+- valueField: dot-path into the API response (e.g. "summary.total_changes").
+- Use for single headline metrics. gridSpan 1 each, arrange 2-3 in a row.
+
+### Typeahead Filters
+Use for filters where the user searches by partial input (account/tenant names):
+- suggestEndpoint: the API to call for suggestions.
+- suggestParam: query param name for search term.
+- suggestResultKey: key in response containing results array.
+- suggestDisplayField: field to display as primary label.
+- suggestSecondaryField: optional secondary label.
+Preferred for entitlements: /api/tenant-entitlements/suggest with mapsToParam "tenant".
+Filters apply globally to ALL components — do NOT use linkedParams for filter-to-component connections.
+
+### Row-Click Linking (linkedParams)
+linkedParams is ONLY for master-detail patterns between components:
+1. Source table: onRowClick: { paramId, valueField }.
+2. Target component: dataSource.linkedParams: { paramName: paramId }.
+IMPORTANT: The detail component's static params MUST include any required defaults for the linked endpoint. Check the endpoint description for default behaviors.
+
+### Cross-Source Data Enrichment (enrich)
+When a table needs fields from TWO DIFFERENT endpoints (e.g., expiration data with tenant names), use the \`enrich\` directive in \`dataSource\`.
+The server fetches both endpoints and joins them by a shared key — no frontend logic needed.
+
+When to use: ONLY when the primary endpoint genuinely lacks a field that exists in another endpoint. If one endpoint already has the field, just use it directly.
+
+How it works:
+- \`sourceField\`: dot-path in each PRIMARY row used as the join key (e.g., "account.name")
+- \`matchField\`: field in the ENRICHMENT response to match against (e.g., "client")
+- \`fields\`: array of field names to copy from the matched enrichment row (e.g., ["tenant_name", "tenant_id"])
+- \`params\`: optional query params for the enrichment endpoint — CRITICAL for paginated endpoints
+
+CRITICAL: The join key MUST be a field that exists in BOTH datasets with matching values. For expiration monitor + current-accounts:
+- sourceField = "account.name" (the Salesforce Account name in the expiration data)
+- matchField = "client" (the same Account name in current-accounts)
+Do NOT use psRecord.id ↔ ps_record_id unless you specifically need PS-record-level matching.
+
+CRITICAL: For paginated enrichment endpoints (e.g., /api/current-accounts defaults to 50 rows), ALWAYS pass params with a large pageSize to get all rows:
+enrich.params = { "pageSize": 1000 }
+
+Example — expiration monitor enriched with tenant names from current-accounts:
+{ "type": "ag-grid", "title": "Expiring Products with Tenant Info", "gridSpan": 3, "dataSource": { "endpoint": "/api/expiration/monitor", "params": {}, "arrayKey": "expirations", "enrich": { "endpoint": "/api/current-accounts", "params": { "pageSize": 1000 }, "arrayKey": "accounts", "sourceField": "account.name", "matchField": "client", "fields": ["tenant_name", "tenant_id"] } }, "columnDefs": [ { "field": "account.name", "headerName": "Account" }, { "field": "tenant_name", "headerName": "Tenant Name" }, { "field": "earliestExpiry", "headerName": "Expiry Date", "format": "date" }, { "field": "earliestDaysUntilExpiry", "headerName": "Days Left", "format": "number" } ] }
+
+After enrichment, the copied fields appear as top-level properties on each primary row, so reference them directly in columnDefs (e.g., "field": "tenant_name").
+
+## Dashboard Structure Tips
+Grid is 3 columns wide. Plan rows so gridSpan values add up to 3.
+1. KPI row (top): 2-3 headline metrics.
+2. Primary chart (full width, gridSpan 3): main trend or comparison.
+3. Secondary visuals + detail table.
+4. Deep-dive tables (full width) with conditional formatting.
+
+## Data Dependencies
+Some endpoints require prior data loading:
+- /api/analytics/package-changes/* — requires package change analysis run.
+- /api/expiration/* — requires expiration analysis run.
+- /api/ghost-accounts — requires ghost account analysis.
+- /api/analytics/* (request-types, validation-trend, completion-times) — require PS audit trail data.
+- /api/provisioning/*, /api/tenant-entitlements — always available.
+
+## What Does NOT Exist
+- No time-series "upgrade trend over time" endpoint.
+- No "revenue" or "contract value" endpoint.
+- No "customer growth over time" endpoint.
+If the user requests any of these, tell them the data is not available.`;
 }
-\`\`\`
 
-## ECharts Component – How It Works
-
-The \`echarts\` component type renders any chart supported by Apache ECharts. The \`option\` property is a standard ECharts option object. **Data injection uses the ECharts \`dataset\` component**: the renderer automatically sets \`option.dataset.source\` to the fetched API data array, so ECharts' built-in dimension mapping handles the rest.
-
-### ECharts Dataset Pattern
-
-Use the \`dataset\` + \`encode\` pattern. Define an empty \`dataset\` (or omit it) and use \`encode\` on each series to map data dimensions by field name:
-
-\`\`\`
-{
-  "type": "echarts",
-  "dataSource": { "endpoint": "/api/package-changes/by-product", "params": {} },
-  "option": {
-    "dataset": { "source": [] },
-    "tooltip": { "trigger": "axis" },
-    "xAxis": { "type": "category" },
-    "yAxis": { "type": "value" },
-    "series": [
-      { "type": "bar", "encode": { "x": "product_name", "y": "change_count" } }
-    ]
-  }
-}
-\`\`\`
-
-The renderer fills \`dataset.source\` with the API response array at runtime. Use the exact field names from the data catalog in \`encode\`.
-
-### Supported ECharts Types
-
-bar, line, pie, scatter, radar, funnel, gauge, heatmap, treemap, sunburst, boxplot, candlestick, graph (network), and more. Use the standard ECharts option format for each type.
-
-### ECharts Examples
-
-**Pie/Doughnut Chart:**
-\`\`\`
-{
-  "type": "echarts",
-  "option": {
-    "dataset": { "source": [] },
-    "tooltip": { "trigger": "item" },
-    "legend": { "orient": "vertical", "left": "left" },
-    "series": [{ "type": "pie", "radius": ["40%", "70%"], "encode": { "value": "change_count", "itemName": "product_name" } }]
-  }
-}
-\`\`\`
-
-**Multi-Series Line Chart:**
-\`\`\`
-{
-  "type": "echarts",
-  "option": {
-    "dataset": { "source": [] },
-    "tooltip": { "trigger": "axis" },
-    "legend": {},
-    "xAxis": { "type": "category" },
-    "yAxis": { "type": "value" },
-    "series": [
-      { "type": "line", "encode": { "x": "week", "y": "completed" }, "name": "Completed", "smooth": true },
-      { "type": "line", "encode": { "x": "week", "y": "pending" }, "name": "Pending", "smooth": true }
-    ]
-  }
-}
-\`\`\`
-
-**Radar Chart:**
-\`\`\`
-{
-  "type": "echarts",
-  "option": {
-    "radar": { "indicator": [{ "name": "Speed", "max": 100 }, { "name": "Quality", "max": 100 }, { "name": "Volume", "max": 100 }] },
-    "series": [{ "type": "radar", "data": [{ "value": [85, 90, 70], "name": "Metrics" }] }]
-  }
-}
-\`\`\`
-
-**Gauge Chart:**
-\`\`\`
-{
-  "type": "echarts",
-  "option": {
-    "series": [{ "type": "gauge", "data": [{ "value": 72, "name": "Completion" }], "detail": { "formatter": "{value}%" } }]
-  }
-}
-\`\`\`
-
-### ECharts Rules
-- Always use \`encode\` with field names from the data catalog (NOT positional indices).
-- Always include \`tooltip\`.
-- Do NOT use JavaScript functions in formatters or callbacks – only static JSON values.
-- Include \`legend\` for multi-series charts.
-- Use \`"radius": ["40%", "70%"]\` for doughnut charts.
-- For non-dataset charts (gauge, radar with static data), omit \`dataset\`.
-
-## AG Grid Component – How It Works
-
-The \`ag-grid\` component type renders a feature-rich data table using AG Grid Community. It supports sortable and filterable columns, pagination, quick search, column resizing, and conditional formatting.
-
-### AG Grid Column Definitions
-
-Each column in \`columnDefs\` maps to an AG Grid column:
-- \`field\` – the data field name (dot-paths like "account.name" are supported)
-- \`headerName\` – display header (defaults to field name)
-- \`sortable\` – enable sorting (default true)
-- \`filter\` – enable column filter (default true)
-- \`format\` – apply formatting: "number", "currency", "percentage", "date", "text"
-- \`flex\` – proportional column width (default 1)
-
-### AG Grid Example
-
-\`\`\`
-{
-  "type": "ag-grid",
-  "dataSource": { "endpoint": "/api/tenant-entitlements", "params": { "tenant": "acme-prod" } },
-  "columnDefs": [
-    { "field": "productName", "headerName": "Product", "filter": true },
-    { "field": "category", "headerName": "Category" },
-    { "field": "status", "headerName": "Status" },
-    { "field": "endDate", "headerName": "End Date", "format": "date" },
-    { "field": "daysRemaining", "headerName": "Days Left", "format": "number" }
-  ],
-  "pageSize": 15,
-  "conditionalFormatting": [
-    { "field": "status", "operator": "equals", "value": "Expired", "style": "danger" },
-    { "field": "status", "operator": "equals", "value": "Expiring Soon", "style": "warning" },
-    { "field": "status", "operator": "equals", "value": "Active", "style": "success" }
-  ]
-}
-\`\`\`
-
-## Typeahead Filters
-
-Use \`"type": "typeahead"\` for filters where the user needs to search for a value by partial input (e.g. account names, product names). The typeahead filter shows a dropdown of suggestions as the user types, fetched from a configurable API endpoint.
-
-**When to use typeahead vs. text:**
-- Use \`typeahead\` when the filter value must match a known entity (account name, tenant name, product name) and the user may not know the exact string.
-- Use \`text\` for free-form input where any value is valid.
-
-**Required properties for typeahead filters:**
-- \`suggestEndpoint\` – the API endpoint to call for suggestions (e.g. \`"/api/provisioning/search"\`)
-- \`suggestParam\` – the query parameter name for the search term (e.g. \`"search"\`, \`"q"\`, \`"accountSearch"\`)
-- \`suggestResultKey\` – the key in the response containing the results array (e.g. \`"accounts"\`, \`"ghostAccounts"\`)
-- \`suggestDisplayField\` – which field on each result to display as the primary suggestion label (e.g. \`"name"\`, \`"tenant_name"\`)
-- \`suggestSecondaryField\` (optional) – a second field shown below the primary label for extra context (e.g. \`"account_name"\`). Useful when the primary key (tenant name) may not be familiar to the user.
-
-**Available suggestion endpoints:**
-
-| Endpoint | suggestParam | suggestResultKey | suggestDisplayField | Best for |
-|----------|-------------|-----------------|--------------------|---------| 
-| \`/api/tenant-entitlements/suggest\` | \`search\` | \`tenants\` | \`tenant_name\` | Tenant/account lookup for entitlement reports (PREFERRED) |
-| \`/api/provisioning/search\` | \`search\` | \`results.accounts\` | \`name\` | Account names (Salesforce) |
-| \`/api/ghost-accounts\` | \`accountSearch\` | \`ghostAccounts\` | \`account_name\` | Ghost account names |
-| \`/api/current-accounts\` | \`search\` | \`accounts\` | \`client\` | Current account names |
-
-**IMPORTANT for entitlement reports:** Use \`/api/tenant-entitlements/suggest\` (not \`/api/provisioning/search\`) as the suggest endpoint. It searches sml_tenant_data directly by tenant_name, account_name, and display name, ensuring the selected value will always match when fetching entitlements. Pair it with \`mapsToParam: "tenant"\` so the entitlements endpoint receives the \`tenant\` parameter.
-
-**IMPORTANT:** The provisioning search endpoint wraps results in a \`results\` object, so the key is \`results.accounts\`, not just \`accounts\`.
-
-**Example – Tenant typeahead for entitlement reports (preferred):**
-\`\`\`
-{
-  "filters": [
-    {
-      "id": "tenantFilter",
-      "type": "typeahead",
-      "label": "Tenant Name",
-      "mapsToParam": "tenant",
-      "suggestEndpoint": "/api/tenant-entitlements/suggest",
-      "suggestParam": "search",
-      "suggestResultKey": "tenants",
-      "suggestDisplayField": "tenant_name",
-      "suggestSecondaryField": "account_name"
-    }
-  ]
-}
-\`\`\`
-
-**Example – Account name typeahead (for non-entitlement reports):**
-\`\`\`
-{
-  "filters": [
-    {
-      "id": "accountFilter",
-      "type": "typeahead",
-      "label": "Account Name",
-      "mapsToParam": "account",
-      "suggestEndpoint": "/api/provisioning/search",
-      "suggestParam": "search",
-      "suggestResultKey": "results.accounts",
-      "suggestDisplayField": "name"
-    }
-  ]
-}
-\`\`\`
-
-## Filters vs. Linked Parameters
-
-**Filters** (defined in the top-level \`filters\` array) automatically apply to ALL components. When a filter with \`mapsToParam: "account"\` has a value, every component's data fetch includes \`account=<value>\` in its request params. You do NOT need \`linkedParams\` on a component's dataSource to receive filter values — filters are global.
-
-**linkedParams** is ONLY for row-click linking between components (master-detail patterns). Do NOT use \`linkedParams\` to connect a filter to a component — the filter system handles that automatically.
-
-## Cross-Component Interactivity (Row-Click Linking)
-
-Both \`ag-grid\` and \`data-table\` components can publish a value when a row is clicked, and other components can consume that value as a query parameter. This is useful for master-detail patterns.
-
-**How it works:**
-1. Add \`onRowClick\` to the source table. \`paramId\` is a unique name for the published value. \`valueField\` is the dot-path to extract from the clicked row.
-2. On the target component's \`dataSource\`, add \`linkedParams\`: an object mapping a query parameter name to the \`paramId\` from step 1. The target component will wait for a row selection before fetching data.
-3. **Important:** \`linkedParams\` should only reference \`paramId\` values from \`onRowClick\`, NOT filter IDs. Filters apply globally to all components without needing \`linkedParams\`.
-
-**Example:**
-\`\`\`
-{
-  "components": [
-    {
-      "id": "accounts-table", "type": "ag-grid",
-      "dataSource": { "endpoint": "/api/expiration/monitor", "params": { "expirationWindow": 30 } },
-      "onRowClick": { "paramId": "selectedAccount", "valueField": "account.name" },
-      "columnDefs": [
-        { "field": "account.name", "headerName": "Account" },
-        { "field": "earliestExpiry", "headerName": "Earliest Expiry", "format": "date" }
-      ]
-    },
-    {
-      "id": "entitlements-table", "type": "ag-grid",
-      "dataSource": {
-        "endpoint": "/api/tenant-entitlements",
-        "params": { "account": "" },
-        "linkedParams": { "account": "selectedAccount" }
-      },
-      "columnDefs": [
-        { "field": "productName", "headerName": "Product" },
-        { "field": "status", "headerName": "Status" },
-        { "field": "daysRemaining", "headerName": "Days Left", "format": "number" }
-      ]
-    }
-  ]
-}
-\`\`\`
-
-**Important:** For entitlement data, prefer \`/api/tenant-entitlements\` over \`/api/customer-products\`. The endpoint accepts either \`tenant=<name>\` (preferred — direct SML match by tenant_name) or \`account=<name>\` (legacy — mapped account name). When using a typeahead filter for entitlements, use \`/api/tenant-entitlements/suggest\` as the suggest endpoint with \`mapsToParam: "tenant"\` for reliable matching. The endpoint returns a flat array with fields: tenantName, tenantId, category, productCode, productName, packageName, quantity, startDate, endDate, status, daysRemaining.
-
-## Conditional Formatting (Row Highlighting)
-
-Both \`ag-grid\` and \`data-table\` support \`conditionalFormatting\`. Rules are evaluated in order; the first matching rule determines the row style.
-
-**Styles:** \`danger\` (red), \`warning\` (amber), \`success\` (green), \`info\` (blue), \`muted\` (gray)
-**Operators:** \`equals\`, \`notEquals\`, \`contains\`, \`greaterThan\`, \`lessThan\`, \`greaterThanOrEqual\`, \`lessThanOrEqual\`
-
-## Data Source Reliability & Dependencies
-
-Some endpoints require prior data loading before they return results. If an endpoint has no data, it may return an error (HTTP 500). Keep this in mind when choosing data sources:
-
-**Always available (no prior setup needed):**
-- \`/api/provisioning/requests\` – reads directly from Salesforce
-- \`/api/provisioning/search\` – reads directly from Salesforce
-- \`/api/validation/errors\` – reads directly from Salesforce
-- \`/api/tenant-entitlements\` – reads from sml_tenant_data (populated by Current Accounts sync)
-
-**Require prior analysis/sync to be run first:**
-- \`/api/analytics/package-changes/*\` – requires package change analysis to have been run (POST /api/analytics/package-changes/refresh)
-- \`/api/expiration/*\` – requires expiration analysis to have been run
-- \`/api/ghost-accounts\` – requires ghost account analysis
-- \`/api/analytics/*\` (request-types-week, validation-trend, completion-times) – require PS audit trail data
-
-**Time-series endpoints and what they ACTUALLY measure:**
-- \`/api/analytics/package-changes/recent\` – individual upgrade/downgrade records with \`ps_created_date\`. NOT aggregated by time period. Can be used for a detail table of recent changes sorted by date. Fields: account_name, product_name, change_type, previous_package, new_package, ps_created_date.
-- \`/api/analytics/request-types-week\` – weekly counts of provisioning REQUEST TYPES (New License, Product Update, Deprovision). This measures how many provisioning requests were submitted each week, NOT product upgrades/downgrades. Fields: requestType, count, validationFailures, validationFailureRate, percentage.
-- \`/api/analytics/completion-times\` – weekly provisioning COMPLETION TIME statistics (how long requests take to complete). Fields: weekStart, weekLabel, avgHours, completedCount, minHours, maxHours, medianHours.
-- \`/api/analytics/validation-trend\` – daily VALIDATION FAILURE rates (how many provisioning requests failed automated rule checks). This has NOTHING to do with product upgrades. Fields: date, displayDate, updateFailures, newFailures, deprovisionFailures, failurePercentage.
-
-**Gaps – data that does NOT exist in any endpoint:**
-- There is NO time-series "upgrade trend over time" endpoint. You cannot build a line chart showing upgrade counts by week/month.
-- There is NO "revenue" or "contract value" endpoint.
-- There is NO "customer growth over time" endpoint.
-
-If the user requests any of these, tell them the data is not available and suggest what IS available instead. Do NOT substitute a different endpoint to make the chart look like it answers the question.
-
-## Building Comprehensive Dashboards
-
-When a user asks a broad analytical question, think about what data perspectives would fully answer it. A well-designed dashboard typically follows this structure:
-
-1. **KPI row (top)** – 2-3 headline metrics as kpi-card components (gridSpan 1 each) that give the user an instant summary. If the data has a natural positive/negative split (e.g. upgrades vs downgrades, active vs expired), show both sides.
-2. **Primary chart (full width)** – An echarts component (gridSpan 3) that visualises the main trend or comparison. Use grouped bars for comparing categories, lines for time series, stacked bars for composition.
-3. **Secondary visuals + detail table** – A supporting chart (gridSpan 1, e.g. pie/doughnut for proportional share) paired with a detail table (gridSpan 2) on the same row, or two complementary tables.
-4. **Deep-dive tables (full width)** – AG Grid tables (gridSpan 3) for drill-down data with sorting, filtering, conditional formatting, and pagination.
-5. **Risk/attention section** – If relevant data sources exist, add a table highlighting items that need attention (expiring products, validation errors, ghost accounts) with conditional formatting to color-code severity.
-
-**Layout tips:**
-- Grid is 3 columns wide. Plan rows so gridSpan values add up to 3.
-- Use \`flex\` on AG Grid columnDefs for proportional column widths (e.g. flex: 2 for the primary column, flex: 1 for metrics).
-- Add explicit ECharts colors (\`itemStyle.color\`) for positive/negative series (e.g. green for upgrades, red for downgrades).
-- Include \`axisLabel.rotate\` on xAxis when category labels are long.
-- Include \`tooltip\`, \`legend\`, and \`grid\` with \`containLabel: true\` on most ECharts charts.
-- Always add a time frame or date range filter when the data supports it, so the user can adjust the lookback period.
-- Use conditional formatting on tables to highlight important states (danger for critical, warning for attention, success for healthy).
-
-## Tips for the user
-- Ask clarifying questions to refine scope, but don't hold back the first report draft — it's fine to produce a comprehensive report and then refine based on feedback.
-- Suggest relevant data sources from the catalog.
-- After producing a config, tell the user they can preview it and then save it.
-- If the user wants changes, produce a new complete config block.
-- Suggest appropriate chart types: bar for comparisons, line for trends, pie for proportions, gauge for single metrics, radar for multi-dimension comparison, funnel for pipeline stages, heatmap for density/correlation.
-- For simple metrics, KPI cards are still the best choice.
-- **When you cannot fulfill part of a request**, clearly explain what is missing and why. For example: "I've built the components I can support with available data. However, I was unable to include an upgrade-trend-over-time chart because no endpoint provides time-series upgrade data. The closest available data is the recent changes list, which I've included as a table instead."
-- Never produce a component with misleading data. Accuracy and transparency are more important than completeness.`;
-}
+// ─────────────────────────────────────────────────────────────
+//  Chat — uses OpenAI function calling (tools)
+// ─────────────────────────────────────────────────────────────
 
 /**
  * Send a conversation to the LLM and return the assistant reply.
+ * The LLM may respond with text, a tool call, or both.
  *
  * @param {Array<{role: string, content: string}>} conversationHistory
  * @param {string} userMessage
- * @param {{ userId?: number }} options
+ * @param {{ userId?: number, dataFetcher?: (endpoint: string, params: object) => Promise<object> }} options
  * @returns {Promise<{message: string, reportConfig: object|null}>}
  */
 async function chat(conversationHistory, userMessage, options = {}) {
@@ -529,6 +257,7 @@ async function chat(conversationHistory, userMessage, options = {}) {
         : new OpenAI({ apiKey });
 
     const model = await resolveModel(options.userId);
+    const tools = buildOpenAITools();
 
     const messages = [
         { role: 'system', content: buildSystemPrompt() },
@@ -536,46 +265,160 @@ async function chat(conversationHistory, userMessage, options = {}) {
         { role: 'user', content: userMessage }
     ];
 
-    logger.debug('Sending report-agent request to LLM', {
+    logger.debug('Sending report-agent request to LLM (function-calling mode)', {
         model,
-        keySource: source
+        keySource: source,
+        toolCount: tools.length
     });
 
-    const completion = await client.chat.completions.create({
-        model,
-        messages,
-        max_tokens: config.llm.maxTokens,
-        temperature: config.llm.temperature
-    });
+    let reportConfig = null;
+    let textMessage = '';
+    let iterationCount = 0;
+    const MAX_TOOL_ITERATIONS = 5;
 
-    const reply = completion.choices?.[0]?.message?.content || '';
+    while (iterationCount < MAX_TOOL_ITERATIONS) {
+        iterationCount++;
 
-    logger.debug('LLM response received', {
-        replyLength: reply.length,
-        finishReason: completion.choices?.[0]?.finish_reason
-    });
+        const completion = await client.chat.completions.create({
+            model,
+            messages,
+            tools,
+            tool_choice: 'auto',
+            max_tokens: config.llm.maxTokens,
+            temperature: config.llm.temperature
+        });
 
-    const reportConfig = extractReportConfig(reply);
+        const choice = completion.choices?.[0];
 
-    return { message: reply, reportConfig };
+        if (!choice) {
+            logger.warn('LLM returned no choices');
+            break;
+        }
+
+        logger.debug('LLM response received', {
+            finishReason: choice.finish_reason,
+            hasToolCalls: !!(choice.message.tool_calls && choice.message.tool_calls.length),
+            contentLength: choice.message.content?.length || 0,
+            iteration: iterationCount
+        });
+
+        if (choice.message.content) {
+            textMessage += (textMessage ? '\n\n' : '') + choice.message.content;
+        }
+
+        if (!choice.message.tool_calls || choice.message.tool_calls.length === 0) {
+            break;
+        }
+
+        messages.push(choice.message);
+
+        for (const toolCall of choice.message.tool_calls) {
+            const fnName = toolCall.function.name;
+            let fnArgs;
+            try {
+                fnArgs = JSON.parse(toolCall.function.arguments);
+            } catch (parseErr) {
+                logger.warn('Failed to parse tool call arguments', { fnName, error: parseErr.message });
+                messages.push({
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify({ error: 'Failed to parse arguments' })
+                });
+                continue;
+            }
+
+            if (fnName === 'generate_report_config') {
+                reportConfig = fnArgs;
+                messages.push({
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify({ success: true, message: 'Report config received. It will be validated and previewed for the user.' })
+                });
+            } else if (fnName === 'describe_available_data') {
+                const catalogInfo = handleDescribeData(fnArgs);
+                messages.push({
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(catalogInfo)
+                });
+            } else if (fnName === 'fetch_endpoint_data') {
+                if (!options.dataFetcher) {
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify({ error: 'Data fetching is not available in this context.' })
+                    });
+                    continue;
+                }
+                if (!fnArgs.endpoint || !isEndpointAllowed(fnArgs.endpoint)) {
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify({ error: `Endpoint not allowed: ${fnArgs.endpoint}` })
+                    });
+                    continue;
+                }
+                try {
+                    logger.debug('LLM fetching live data', { endpoint: fnArgs.endpoint, params: fnArgs.params });
+                    const rawData = await options.dataFetcher(fnArgs.endpoint, fnArgs.params || {});
+                    const preview = summarizeEndpointData(rawData, fnArgs.endpoint);
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify(preview)
+                    });
+                } catch (fetchErr) {
+                    logger.warn('LLM data fetch failed', { endpoint: fnArgs.endpoint, error: fetchErr.message });
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify({
+                            error: `Failed to fetch data from ${fnArgs.endpoint}: ${fetchErr.message}`,
+                            hint: 'The endpoint may require prior data loading (e.g., running an analysis) or the parameters may be invalid.'
+                        })
+                    });
+                }
+            } else {
+                messages.push({
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify({ error: `Unknown function: ${fnName}` })
+                });
+            }
+        }
+
+        if (reportConfig) {
+            if (choice.finish_reason === 'tool_calls' && !choice.message.content) {
+                const followUp = await client.chat.completions.create({
+                    model,
+                    messages: [
+                        ...messages,
+                        { role: 'user', content: 'The report configuration has been received. Please provide a brief summary of what you built and any limitations or gaps.' }
+                    ],
+                    max_tokens: 500,
+                    temperature: config.llm.temperature
+                });
+                const followUpText = followUp.choices?.[0]?.message?.content;
+                if (followUpText) {
+                    textMessage += (textMessage ? '\n\n' : '') + followUpText;
+                }
+            }
+            break;
+        }
+    }
+
+    return { message: textMessage, reportConfig };
 }
 
-/**
- * Strip single-line JS/C-style comments from a JSON string so that
- * LLM-generated JSON with inline comments can still be parsed.
- */
+// ─────────────────────────────────────────────────────────────
+//  Legacy helpers — kept for backward compatibility with
+//  any code that still parses fenced code blocks.
+// ─────────────────────────────────────────────────────────────
+
 function stripJsonComments(jsonStr) {
     return jsonStr.replace(/\/\/.*$/gm, '');
 }
 
-/**
- * Try to extract a JSON report config from the LLM reply.
- * Checks fenced blocks in priority order:
- *   1. ```report-config  (preferred / instructed)
- *   2. ```json            (common LLM fallback)
- *   3. Any ``` block that parses as JSON with title+components
- * Returns null if no valid block found.
- */
 function extractReportConfig(text) {
     const patterns = [
         /```report-config\s*\n([\s\S]*?)```/,
@@ -601,12 +444,6 @@ function extractReportConfig(text) {
     return null;
 }
 
-/**
- * Strip fenced code blocks that contain a report config from the assistant
- * message so the frontend can show clean conversational text alongside
- * the parsed config. Removes ```report-config, ```json, and bare ``` blocks
- * that look like report configs (contain "title" and "components").
- */
 function stripConfigBlock(text) {
     let stripped = text.replace(/```report-config\s*\n[\s\S]*?```/g, '');
 

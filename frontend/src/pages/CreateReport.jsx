@@ -10,9 +10,11 @@ import {
   ExclamationTriangleIcon,
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
+  CircleStackIcon,
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ReportRenderer from '../components/reports/ReportRenderer';
+import DataCatalogModal from '../components/reports/DataCatalogModal';
 import { sendMessage, getCapabilities } from '../services/reportAgentService';
 import { createReport, updateReport, getReport } from '../services/customReportService';
 
@@ -40,6 +42,7 @@ const CreateReport = () => {
 
   const [editReportId, setEditReportId] = useState(null);
   const [editLoading, setEditLoading] = useState(isEditMode);
+  const [showCatalog, setShowCatalog] = useState(false);
 
   const llmAvailable = capabilities?.llmAvailable ?? false;
 
@@ -406,6 +409,14 @@ const CreateReport = () => {
               className="hidden"
             />
             <button
+              onClick={() => setShowCatalog(true)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
+              title="Browse available data sources"
+            >
+              <CircleStackIcon className="h-3.5 w-3.5" />
+              Data Catalog
+            </button>
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
               title="Import a report configuration JSON file"
@@ -547,6 +558,9 @@ const CreateReport = () => {
           )}
         </div>
       </div>
+
+      {/* Data Catalog Modal */}
+      <DataCatalogModal isOpen={showCatalog} onClose={() => setShowCatalog(false)} />
 
       {/* Save / Update Modal */}
       {showSaveForm && (

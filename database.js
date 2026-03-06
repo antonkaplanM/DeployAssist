@@ -1530,6 +1530,29 @@ async function clearSMLTenants() {
  * @param {boolean} options.includeDeleted - Include deleted tenants (default: false)
  * @returns {Promise<Object>} Tenants with entitlements
  */
+/**
+ * Get all non-deleted SML tenants with their product_entitlements JSONB.
+ * Used for bulk analysis (e.g., finding tenants with all-expired entitlements).
+ */
+async function getAllSMLTenantEntitlements() {
+    try {
+        const query = `
+            SELECT
+                tenant_id, tenant_name, account_name, tenant_display_name,
+                product_entitlements, last_synced
+            FROM sml_tenant_data
+            WHERE is_deleted = false
+            AND product_entitlements IS NOT NULL
+            ORDER BY tenant_name ASC
+        `;
+        const result = await pool.query(query);
+        return { success: true, tenants: result.rows, count: result.rowCount };
+    } catch (error) {
+        console.error('❌ Error getting all SML tenant entitlements:', error.message);
+        return { success: false, error: error.message, tenants: [], count: 0 };
+    }
+}
+
 async function getSMLTenantEntitlementsByAccount(accountName) {
     try {
         const selectFields = `
@@ -2084,6 +2107,7 @@ module.exports = {
     upsertSMLTenant,
     getSMLTenants,
     getSMLTenantById,
+    getAllSMLTenantEntitlements,
     getSMLTenantEntitlementsByAccount,
     getSMLTenantEntitlementsByTenantName,
     searchSMLTenantsForSuggest,

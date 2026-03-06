@@ -7,7 +7,23 @@
  */
 
 const { z } = require('zod');
-const { isEndpointAllowed } = require('./report-data-catalog');
+
+// Lazy require to break circular dependency with report-data-sources.js
+let _isEndpointAllowed;
+function isEndpointAllowed(endpoint) {
+    if (!_isEndpointAllowed) {
+        _isEndpointAllowed = require('./report-data-sources').isEndpointAllowed;
+    }
+    return _isEndpointAllowed(endpoint);
+}
+
+let _validateEndpointParams;
+function validateEndpointParams(endpoint, params, linkedParams) {
+    if (!_validateEndpointParams) {
+        _validateEndpointParams = require('./report-data-sources').validateEndpointParams;
+    }
+    return _validateEndpointParams(endpoint, params, linkedParams);
+}
 
 const VALID_COMPONENT_TYPES = ['kpi-card', 'bar-chart', 'line-chart', 'pie-chart', 'data-table', 'echarts', 'ag-grid'];
 const VALID_FORMATS = ['number', 'currency', 'percentage', 'date', 'text'];
@@ -36,6 +52,18 @@ const safeFieldPath = z.string().min(1).max(200).regex(
     'Field paths may only contain letters, numbers, dots, and underscores'
 );
 
+const enrichSchema = z.object({
+    endpoint: z.string().refine(
+        (val) => isEndpointAllowed(val),
+        { message: 'Enrichment endpoint is not in the allowlisted data catalog' }
+    ),
+    params: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
+    arrayKey: z.string().max(50).regex(/^[a-zA-Z0-9_]+$/).optional(),
+    sourceField: safeFieldPath,
+    matchField: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_.]+$/),
+    fields: z.array(z.string().min(1).max(100).regex(/^[a-zA-Z0-9_.]+$/)).min(1).max(20)
+}).optional();
+
 const dataSourceSchema = z.object({
     endpoint: z.string().refine(
         (val) => isEndpointAllowed(val),
@@ -43,7 +71,14 @@ const dataSourceSchema = z.object({
     ),
     params: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
     transform: z.enum(['count', 'sum', 'average', 'first', 'last', 'raw']).optional(),
-    linkedParams: z.record(safeId).optional()
+    linkedParams: z.record(safeId).optional(),
+    arrayKey: z.string().max(50).regex(/^[a-zA-Z0-9_]+$/).optional(),
+    enrich: enrichSchema
+}).superRefine((data, ctx) => {
+    const errors = validateEndpointParams(data.endpoint, data.params, data.linkedParams || {});
+    for (const msg of errors) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ['params'] });
+    }
 });
 
 const filterOptionSchema = z.object({
@@ -66,12 +101,18 @@ const filterSchema = z.object({
 });
 
 const columnSchema = z.object({
-    field: safeFieldPath,
+    field: safeFieldPath.optional(),
     header: z.string().min(1).max(100).transform(sanitizeString),
     format: z.enum(VALID_FORMATS).optional(),
     sortable: z.boolean().optional().default(true),
-    width: z.string().max(20).optional()
-});
+    width: z.string().max(20).optional(),
+    valueFields: z.array(z.string().max(200).regex(/^[a-zA-Z0-9_.]+$/)).max(10).optional(),
+    separator: z.string().max(10).optional(),
+    displayField: z.string().max(100).regex(/^[a-zA-Z0-9_]+$/).optional()
+}).refine(
+    (col) => col.field || (col.valueFields && col.valueFields.length > 0),
+    { message: 'Column must have a "field" or "valueFields"' }
+);
 
 const baseComponentSchema = z.object({
     id: safeId,
@@ -184,10 +225,13 @@ const agGridColumnDefSchema = z.object({
     width: z.union([z.string().max(20), z.number()]).optional(),
     minWidth: z.number().optional(),
     format: z.enum(VALID_FORMATS).optional(),
-    valueGetter: z.boolean().optional()
+    valueGetter: z.boolean().optional(),
+    valueFields: z.array(z.string().max(200).regex(/^[a-zA-Z0-9_.]+$/)).max(10).optional(),
+    separator: z.string().max(10).optional(),
+    displayField: z.string().max(100).regex(/^[a-zA-Z0-9_]+$/).optional()
 }).refine(
-    (col) => col.field || col.headerName || col.header,
-    { message: 'Column must have at least a "field" or "headerName"' }
+    (col) => col.field || col.headerName || col.header || (col.valueFields && col.valueFields.length > 0),
+    { message: 'Column must have at least a "field", "headerName", or "valueFields"' }
 );
 
 const agGridSchema = baseComponentSchema.extend({

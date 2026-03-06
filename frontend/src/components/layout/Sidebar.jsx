@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
@@ -16,6 +16,7 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
+import { listReports } from '../../services/customReportService';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -25,29 +26,42 @@ const Sidebar = () => {
   const [customerProductsOpen, setCustomerProductsOpen] = useState(false);
   const [experimentalOpen, setExperimentalOpen] = useState(false);
   const [customReportsOpen, setCustomReportsOpen] = useState(false);
+  const [savedReports, setSavedReports] = useState([]);
 
   const isActive = (path) => location.pathname === path;
+
+  const fetchSavedReports = useCallback(async () => {
+    try {
+      const result = await listReports(100, 0);
+      setSavedReports(result.reports || []);
+    } catch {
+      setSavedReports([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (hasPageAccess('custom_reports.view')) {
+      fetchSavedReports();
+    }
+  }, [fetchSavedReports, hasPageAccess]);
+
+  // Re-fetch saved reports when navigating within custom-reports (catches create/delete)
+  useEffect(() => {
+    if (location.pathname.startsWith('/custom-reports') && hasPageAccess('custom_reports.view')) {
+      fetchSavedReports();
+    }
+  }, [location.pathname, fetchSavedReports, hasPageAccess]);
 
   // Auto-expand/collapse sections based on current route
   useEffect(() => {
     const path = location.pathname;
     
-    // Check if current path belongs to Analytics section
     const isAnalyticsPath = path.startsWith('/analytics');
-    
-    // Check if current path belongs to Provisioning section
     const isProvisioningPath = path.startsWith('/provisioning');
-    
-    // Check if current path belongs to Customer Products section
     const isCustomerProductsPath = path.startsWith('/customer-products') || path.startsWith('/pending-product-requests');
-    
-    // Check if current path belongs to Experimental section
     const isExperimentalPath = path.startsWith('/experimental');
-    
-    // Check if current path belongs to Custom Reports section
     const isCustomReportsPath = path.startsWith('/custom-reports');
     
-    // Update states accordingly
     setAnalyticsOpen(isAnalyticsPath);
     setProvisioningOpen(isProvisioningPath);
     setCustomerProductsOpen(isCustomerProductsPath);
@@ -153,6 +167,7 @@ const Sidebar = () => {
       icon: DocumentChartBarIcon,
       id: 'nav-custom-reports',
       pageName: 'custom_reports',
+      dynamic: true,
       submenu: [
         {
           name: 'Create Report',
@@ -160,12 +175,12 @@ const Sidebar = () => {
           id: 'nav-custom-reports-create',
           pageName: 'custom_reports.create'
         },
-        {
-          name: 'View Reports',
-          path: '/custom-reports',
-          id: 'nav-custom-reports-view',
+        ...savedReports.map(report => ({
+          name: report.report_config?.title || report.name,
+          path: `/custom-reports/${report.slug}`,
+          id: `nav-custom-report-${report.slug}`,
           pageName: 'custom_reports.view'
-        }
+        }))
       ]
     },
     {
@@ -238,7 +253,7 @@ const Sidebar = () => {
         return hasPageAccess(item.pageName) ? item : null;
       })
       .filter(Boolean); // Remove null items
-  }, [hasPageAccess]);
+  }, [hasPageAccess, savedReports]);
 
   return (
     <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex flex-col h-screen transition-colors duration-200">

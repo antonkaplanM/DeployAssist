@@ -486,7 +486,55 @@ For issues:
 **Lines of Code:** ~1500 (excluding documentation)  
 **Documentation Pages:** ~50
 
-**Ready to enable AI-assisted access to DeployAssist! 🚀**
+**Ready to enable AI-assisted access to DeployAssist!**
+
+---
+
+## Canonical Data Source Alignment (v4.0 — Origin-Based)
+
+As of Version 4.0, the canonical data source schema at `config/report-data-sources.js` is organized by **data origin** rather than app page/feature. MCP tool definitions, the Custom Report Builder, and the Express API routes all share this single source of truth for endpoint metadata.
+
+### Data Origin Categories
+
+| Category | Description | Example |
+|----------|-------------|---------|
+| **Primary** | Data read directly from external systems | Salesforce PS records, SML tenant data, Package repository |
+| **Derived** | Data computed/cached locally from primary sources | Package change analysis, expiration monitoring, ghost accounts |
+| **Preserved** | Data captured because it is ephemeral in the source | PS audit trail snapshots, product update requests |
+
+### How It Works
+
+MCP tool files import their `name`, `description`, and `inputSchema` from the canonical schema using origin-based IDs:
+
+```javascript
+const { getToolSchema } = require('../../../config/report-data-sources');
+module.exports = {
+  ...getToolSchema('derived.provisioning-analytics.validation-trend'),
+  async execute(args, context) { /* hand-written API call logic */ }
+};
+```
+
+Each canonical entry now includes `sourceType`, `sourceRef`, and `primarySource` fields so both the LLM and developers can trace every data point back to its origin.
+
+### Canonical ID Convention
+
+IDs follow the pattern `<sourceType>.<sourceGroup>.<name>`:
+- `primary.salesforce.provisioning-list` — direct from Salesforce
+- `derived.package-changes.summary` — computed from SF PS records
+- `preserved.audit-trail.stats` — captured PS record snapshots
+
+A `LEGACY_ID_MAP` provides backward compatibility — `getToolSchema()` accepts both old IDs (e.g., `'analytics.validation-trend'`) and new IDs (e.g., `'derived.provisioning-analytics.validation-trend'`).
+
+### Alignment Validation
+
+Run `node scripts/validate-data-alignment.js` to verify that:
+- Every canonical entry with an `mcpToolName` has a corresponding MCP tool
+- MCP tool files import from the canonical schema
+- No inline `inputSchema` definitions exist in aligned tools
+
+### Adding a New Data Source
+
+See the Cursor rule at `.cursor/rules/data-source-alignment.mdc` for the complete checklist. When adding a new source, determine its origin category (primary, derived, or preserved) and set `sourceRef` to trace it back to the primary system.
 
 
 

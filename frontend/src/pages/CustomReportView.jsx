@@ -59,7 +59,7 @@ const CustomReportView = () => {
     setDeleting(true);
     try {
       await deleteReport(report.id);
-      navigate('/custom-reports');
+      navigate('/custom-reports/create');
     } catch {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -79,11 +79,11 @@ const CustomReportView = () => {
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-gray-500 dark:text-gray-400">{error}</p>
         <Link
-          to="/custom-reports"
+          to="/custom-reports/create"
           className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
         >
           <ArrowLeftIcon className="h-4 w-4" />
-          Back to Reports
+          Create Report
         </Link>
       </div>
     );
@@ -97,7 +97,7 @@ const CustomReportView = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link
-            to="/custom-reports"
+            to="/custom-reports/create"
             className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <ArrowLeftIcon className="h-5 w-5" />

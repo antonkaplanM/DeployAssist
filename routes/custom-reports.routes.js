@@ -42,9 +42,8 @@ router.get('/', asyncHandler(async (req, res) => {
  */
 router.get('/data-catalog', asyncHandler(async (req, res) => {
     const grouped = req.query.grouped === 'true';
-    const forPrompt = req.query.forPrompt === 'true';
 
-    const catalog = customReportService.getDataCatalog({ grouped, forPrompt });
+    const catalog = customReportService.getDataCatalog({ grouped });
 
     res.json({
         success: true,

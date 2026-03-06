@@ -135,6 +135,191 @@ class TenantEntitlementsService {
     }
 
     /**
+     * Get an aggregate summary of all tenants and their entitlements.
+     * Answers questions like "how many tenants are in SML?" without needing a specific name.
+     */
+    async getTenantsSummary() {
+        const result = await db.getSMLTenants({ isDeleted: false });
+
+        if (!result.success) {
+            throw new InternalServerError(result.error || 'Failed to query tenants');
+        }
+
+        const tenants = result.tenants;
+        const uniqueAccounts = new Set(tenants.map(t => t.account_name).filter(Boolean));
+
+        const tenantList = tenants.map(t => ({
+            tenantName: t.tenant_name,
+            accountName: t.account_name || null,
+            displayName: t.tenant_display_name || null,
+            tenantId: t.tenant_id,
+            lastSynced: t.last_synced
+        }));
+
+        return {
+            tenants: tenantList,
+            summary: {
+                totalTenants: tenants.length,
+                uniqueAccounts: uniqueAccounts.size,
+                lastSynced: tenants.length > 0
+                    ? tenants.reduce((latest, t) => {
+                        const d = t.last_synced ? new Date(t.last_synced) : new Date(0);
+                        return d > latest ? d : latest;
+                    }, new Date(0)).toISOString()
+                    : null
+            }
+        };
+    }
+
+    /**
+     * Analyze entitlement status across all tenants.
+     * Returns per-tenant breakdown of active/expiring/expired counts.
+     * Supports filtering to specific statuses (e.g., only tenants where all products expired).
+     */
+    async getTenantsEntitlementAnalysis(filters = {}) {
+        const result = await db.getAllSMLTenantEntitlements();
+
+        if (!result.success) {
+            throw new InternalServerError(result.error || 'Failed to query tenant entitlements');
+        }
+
+        const now = new Date();
+        const tenantRows = [];
+        let tenantsWithAllExpired = 0;
+        let tenantsWithSomeExpiring = 0;
+        let tenantsFullyActive = 0;
+
+        for (const tenant of result.tenants) {
+            const pe = tenant.product_entitlements;
+            if (!pe) continue;
+
+            const entitlements = [];
+            this._flattenCategory(entitlements, tenant, pe.appEntitlements, 'apps', now);
+            this._flattenCategory(entitlements, tenant, pe.modelEntitlements, 'models', now);
+            this._flattenCategory(entitlements, tenant, pe.dataEntitlements, 'data', now);
+
+            if (entitlements.length === 0) continue;
+
+            const activeCount = entitlements.filter(e => e.status === 'Active').length;
+            const expiringCount = entitlements.filter(e => e.status === 'Expiring Soon').length;
+            const expiredCount = entitlements.filter(e => e.status === 'Expired').length;
+            const allExpired = expiredCount === entitlements.length;
+
+            if (allExpired) tenantsWithAllExpired++;
+            else if (expiringCount > 0) tenantsWithSomeExpiring++;
+            else tenantsFullyActive++;
+
+            const row = {
+                tenantName: tenant.tenant_name,
+                accountName: tenant.account_name || null,
+                tenantId: tenant.tenant_id,
+                totalEntitlements: entitlements.length,
+                activeCount,
+                expiringCount,
+                expiredCount,
+                allExpired,
+                lastSynced: tenant.last_synced
+            };
+
+            if (filters.status === 'allExpired' && !allExpired) continue;
+            if (filters.status === 'hasExpiring' && expiringCount === 0) continue;
+            if (filters.status === 'fullyActive' && (expiredCount > 0 || expiringCount > 0)) continue;
+
+            tenantRows.push(row);
+        }
+
+        return {
+            tenants: tenantRows,
+            summary: {
+                totalTenantsAnalyzed: result.count,
+                tenantsWithAllExpired,
+                tenantsWithSomeExpiring,
+                tenantsFullyActive,
+                tenantsReturned: tenantRows.length
+            }
+        };
+    }
+
+    /**
+     * Aggregate entitlements by product across tenants.
+     * Returns product-level counts suitable for pie charts and bar charts.
+     * Supports filtering by tenant status (e.g., only products from all-expired tenants).
+     */
+    async getProductBreakdown(filters = {}) {
+        const result = await db.getAllSMLTenantEntitlements();
+
+        if (!result.success) {
+            throw new InternalServerError(result.error || 'Failed to query tenant entitlements');
+        }
+
+        const now = new Date();
+        const productCounts = new Map();
+        let tenantsProcessed = 0;
+
+        for (const tenant of result.tenants) {
+            const pe = tenant.product_entitlements;
+            if (!pe) continue;
+
+            const entitlements = [];
+            this._flattenCategory(entitlements, tenant, pe.appEntitlements, 'apps', now);
+            this._flattenCategory(entitlements, tenant, pe.modelEntitlements, 'models', now);
+            this._flattenCategory(entitlements, tenant, pe.dataEntitlements, 'data', now);
+
+            if (entitlements.length === 0) continue;
+
+            const activeCount = entitlements.filter(e => e.status === 'Active').length;
+            const expiringCount = entitlements.filter(e => e.status === 'Expiring Soon').length;
+            const expiredCount = entitlements.filter(e => e.status === 'Expired').length;
+            const allExpired = expiredCount === entitlements.length;
+
+            if (filters.tenantStatus === 'allExpired' && !allExpired) continue;
+            if (filters.tenantStatus === 'hasExpiring' && expiringCount === 0) continue;
+            if (filters.tenantStatus === 'fullyActive' && (expiredCount > 0 || expiringCount > 0)) continue;
+
+            tenantsProcessed++;
+
+            const statusFilter = filters.productStatus;
+            for (const e of entitlements) {
+                if (statusFilter && e.status !== statusFilter) continue;
+
+                const key = e.productCode || e.productName || 'Unknown';
+                const existing = productCounts.get(key);
+                if (existing) {
+                    existing.count++;
+                    existing.tenantCount.add(tenant.tenant_name);
+                } else {
+                    productCounts.set(key, {
+                        productCode: e.productCode || '',
+                        productName: e.productName || key,
+                        category: e.category,
+                        count: 1,
+                        tenantCount: new Set([tenant.tenant_name])
+                    });
+                }
+            }
+        }
+
+        const products = Array.from(productCounts.values())
+            .map(p => ({
+                productCode: p.productCode,
+                productName: p.productName,
+                category: p.category,
+                count: p.count,
+                tenantCount: p.tenantCount.size
+            }))
+            .sort((a, b) => b.count - a.count);
+
+        return {
+            products,
+            summary: {
+                totalProducts: products.length,
+                totalEntitlements: products.reduce((sum, p) => sum + p.count, 0),
+                tenantsProcessed
+            }
+        };
+    }
+
+    /**
      * Search sml_tenant_data for typeahead suggestions.
      * Searches across tenant_name, account_name, and tenant_display_name.
      */

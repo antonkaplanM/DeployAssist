@@ -1,0 +1,24 @@
+---
+description: Keep data sources, MCP tools, and report builder aligned when API endpoints change
+alwaysApply: true
+---
+
+# Data Source Alignment Rule
+
+When adding, modifying, or removing any API data source endpoint, you MUST update all three layers:
+
+## 1. Canonical Schema (`config/report-data-sources.js`)
+- Add/update the entry with id, endpoint, category, mcpToolName, description, params, responseShape, and dependencies.
+- The `params` array must use the EXACT parameter names the Express route handler reads from `req.query`.
+- **Origin fields (required)**: Every entry must include `sourceType` (`'primary'`, `'derived'`, or `'preserved'`), `sourceRef` (which primary system it comes from), and `primarySource` (specific source object/table).
+- **ID convention**: Use `<sourceType>.<sourceGroup>.<name>` (e.g., `primary.salesforce.provisioning-list`, `derived.package-changes.summary`, `preserved.audit-trail.stats`).
+- **Category convention**: Use `<SourceType>: <Group>` (e.g., `'Primary: Salesforce'`, `'Derived: Package Changes'`, `'Preserved: Audit Trail'`).
+
+## 2. MCP Tool (`mcp-server/tools/<category>/<tool-name>.js`)
+- **New endpoint**: Create the tool file. Import schema with `getToolSchema('<canonical-id>')` and spread it. Write the `execute` function that calls the Express API via `context.apiClient`.
+- **Modified endpoint**: The `inputSchema` and `description` auto-derive from the canonical schema. Review the `execute` function to ensure it handles updated params/response correctly.
+- **Removed endpoint**: Delete the tool file and remove it from `mcp-server/config/tool-registry.js`.
+- If the MCP tool needs extra params beyond the canonical schema, extend `inputSchema.properties` after spreading.
+
+## 3. Validation
+Run `node scripts/validate-data-alignment.js` to confirm alignment between canonical schema and MCP tool registry.

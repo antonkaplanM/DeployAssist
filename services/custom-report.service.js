@@ -5,7 +5,7 @@
 
 const customReportRepository = require('../repositories/custom-report.repository');
 const { validateReportConfig } = require('../config/report-config-schema');
-const { getDataCatalog, getDataCatalogByCategory, getCatalogForPrompt } = require('../config/report-data-catalog');
+const { getDataCatalog, getDataCatalogByCategory } = require('../config/report-data-sources');
 const logger = require('../utils/logger');
 
 class CustomReportService {
@@ -161,9 +161,6 @@ class CustomReportService {
      * @returns {Object|Array}
      */
     getDataCatalog(options = {}) {
-        if (options.forPrompt) {
-            return getCatalogForPrompt();
-        }
         if (options.grouped) {
             return getDataCatalogByCategory();
         }

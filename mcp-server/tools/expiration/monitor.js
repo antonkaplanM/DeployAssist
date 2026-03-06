@@ -1,24 +1,16 @@
+const { getToolSchema } = require('../../../config/report-data-sources');
 const ResponseFormatter = require('../../utils/response-formatter');
 const InputValidator = require('../../middleware/validation');
 
-/**
- * Get Expiration Monitor Tool
- * Get products/entitlements expiring within a specified timeframe
- */
+const baseSchema = getToolSchema('derived.expiration.monitor');
+
 module.exports = {
-  name: 'get_expiration_monitor',
-  description: 'Get products and entitlements that are expiring within a specified timeframe (7-90 days). Useful for proactive customer outreach and renewal planning. Can filter by region and account.',
-  
+  ...baseSchema,
   inputSchema: {
-    type: 'object',
+    ...baseSchema.inputSchema,
     properties: {
-      days: {
-        type: 'number',
-        description: 'Number of days to look ahead for expirations (default: 30, min: 7, max: 90)',
-        default: 30,
-        minimum: 7,
-        maximum: 90,
-      },
+      ...baseSchema.inputSchema.properties,
+      // Extra MCP-only params not in the canonical schema
       region: {
         type: 'string',
         description: 'Filter by region (optional)',
@@ -42,53 +34,45 @@ module.exports = {
       },
     },
   },
-  
   async execute(args, context) {
     const formatter = new ResponseFormatter();
     const validator = new InputValidator();
-    
+
     try {
       // Validate inputs
       validator.validate(args, this.inputSchema);
-      
+
       // Sanitize inputs
       const sanitizedArgs = validator.sanitizeInputs(args);
-      
-      // Build query parameters
+
+      // Build query parameters - route handler uses expirationWindow (default 30), NOT days
       const params = {
-        days: sanitizedArgs.days || 30,
+        expirationWindow: sanitizedArgs.expirationWindow ?? 30,
         region: sanitizedArgs.region,
         accountName: sanitizedArgs.accountName,
         productName: sanitizedArgs.productName,
         sortBy: sanitizedArgs.sortBy || 'expirationDate',
       };
-      
+
       // Remove undefined values
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-      
+
       // Call API
       const response = await context.apiClient.get('/api/expiration/monitor', {
         params: params,
       });
-      
+
       // Format response
       const expirations = response.data.expirations || response.data;
-      
+
       return formatter.success(expirations, {
         executionTime: response.duration,
         count: Array.isArray(expirations) ? expirations.length : 0,
-        daysAhead: params.days,
+        daysAhead: params.expirationWindow,
         filters: params,
       });
-      
     } catch (error) {
       throw error;
     }
   },
 };
-
-
-
-
-
-

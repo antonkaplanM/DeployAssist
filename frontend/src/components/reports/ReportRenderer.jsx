@@ -34,17 +34,21 @@ const resolveField = (obj, path) => {
   return path.split('.').reduce((acc, key) => acc?.[key], obj);
 };
 
-const extractArray = (responseData) => {
+const extractArray = (responseData, arrayKey) => {
   if (!responseData) return [];
   if (Array.isArray(responseData)) return responseData;
 
-  const arrayKeys = [
+  if (arrayKey && Array.isArray(responseData[arrayKey])) {
+    return responseData[arrayKey];
+  }
+
+  const fallbackKeys = [
     'data', 'reports', 'ghostAccounts', 'packages', 'deprovisionedAccounts',
     'changes', 'errors', 'products', 'entitlements', 'records', 'results', 'items',
     'trendData', 'requests', 'expirations', 'accounts', 'weeklyData',
-    'technicalRequests',
+    'technicalRequests', 'tenants',
   ];
-  for (const key of arrayKeys) {
+  for (const key of fallbackKeys) {
     if (Array.isArray(responseData[key])) return responseData[key];
   }
 
@@ -117,6 +121,8 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
     paramId => componentParams?.[paramId] || filterValues?.[paramId]?.value
   );
 
+  const enrichConfig = component.dataSource.enrich || null;
+
   const fetchKey = useMemo(() => {
     const params = { ...component.dataSource.params };
     if (filterValues) {
@@ -135,8 +141,8 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
         }
       });
     }
-    return JSON.stringify({ endpoint: component.dataSource.endpoint, params });
-  }, [component.dataSource.endpoint, component.dataSource.params, filterValues, linkedParams, componentParams]);
+    return JSON.stringify({ endpoint: component.dataSource.endpoint, params, enrich: enrichConfig || undefined });
+  }, [component.dataSource.endpoint, component.dataSource.params, filterValues, linkedParams, componentParams, enrichConfig]);
 
   useEffect(() => {
     if (!linkedReady) {
@@ -152,7 +158,16 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
     const parsed = JSON.parse(fetchKey);
     const endpoint = parsed.endpoint.replace(/^\/api\//, '/');
 
-    fetchWithDedup(endpoint, parsed.params)
+    const fetchPromise = parsed.enrich
+      ? api.post('/report-data/fetch', {
+          endpoint: parsed.endpoint,
+          params: parsed.params,
+          arrayKey: component.dataSource.arrayKey,
+          enrich: parsed.enrich
+        })
+      : fetchWithDedup(endpoint, parsed.params);
+
+    fetchPromise
       .then(response => {
         if (fetchIdRef.current === id) {
           setData(response.data);
@@ -176,7 +191,7 @@ const ComponentRenderer = ({ component, filterValues, componentParams, onLinkedR
     );
   }
 
-  const rawArray = extractArray(data);
+  const rawArray = extractArray(data, component.dataSource?.arrayKey);
   const errorDetail = error?.detail || null;
 
   switch (component.type) {

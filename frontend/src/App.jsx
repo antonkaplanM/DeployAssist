@@ -28,7 +28,6 @@ import Catalogue from './pages/Catalogue';
 import Staging from './pages/Staging';
 import CurrentAccounts from './pages/CurrentAccounts';
 import CreateReport from './pages/CreateReport';
-import CustomReportsList from './pages/CustomReportsList';
 import CustomReportView from './pages/CustomReportView';
 
 function App() {
@@ -182,14 +181,6 @@ function App() {
               />
 
               {/* Custom Reports */}
-              <Route 
-                path="custom-reports" 
-                element={
-                  <ProtectedRoute pageName="custom_reports.view">
-                    <CustomReportsList />
-                  </ProtectedRoute>
-                } 
-              />
               <Route 
                 path="custom-reports/create" 
                 element={

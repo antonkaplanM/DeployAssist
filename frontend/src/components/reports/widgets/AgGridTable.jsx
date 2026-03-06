@@ -113,14 +113,48 @@ const AgGridTable = ({
         def.valueFormatter = (params) => formatCellValue(params.value, col.format);
       }
 
-      if (col.valueGetter) {
+      if (col.valueFields && col.valueFields.length > 0) {
+        const paths = col.valueFields;
+        const sep = col.separator || ', ';
+        const displayKey = col.displayField;
+        def.valueGetter = (params) => {
+          if (!params.data) return '';
+          const values = [];
+          for (const path of paths) {
+            const val = resolveField(params.data, path);
+            if (Array.isArray(val)) {
+              for (const item of val) {
+                if (item == null) continue;
+                if (displayKey && typeof item === 'object') {
+                  const extracted = item[displayKey];
+                  if (extracted != null) values.push(extracted);
+                } else if (typeof item === 'object') {
+                  const fallback = item.name || item.code || item.productCode || item.label || item.id;
+                  values.push(fallback != null ? fallback : JSON.stringify(item));
+                } else {
+                  values.push(item);
+                }
+              }
+            } else if (val != null && val !== '') {
+              values.push(typeof val === 'object' ? JSON.stringify(val) : val);
+            }
+          }
+          return values.join(sep);
+        };
+      } else if (col.field && col.field.includes('.')) {
         const fieldPath = col.field;
-        def.valueGetter = (params) => resolveField(params.data, fieldPath);
-      }
-
-      if (col.field && col.field.includes('.')) {
+        def.valueGetter = (params) => {
+          const val = resolveField(params.data, fieldPath);
+          if (Array.isArray(val)) return val.join(', ');
+          return val;
+        };
+      } else if (col.valueGetter) {
         const fieldPath = col.field;
-        def.valueGetter = (params) => resolveField(params.data, fieldPath);
+        def.valueGetter = (params) => {
+          const val = resolveField(params.data, fieldPath);
+          if (Array.isArray(val)) return val.join(', ');
+          return val;
+        };
       }
 
       return def;
