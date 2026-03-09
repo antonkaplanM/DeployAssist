@@ -499,6 +499,7 @@ class CurrentAccountsService {
      * - CSM/Owner (csmOwner) → CreatedBy.Name  
      * - Provisioning Status (status) → Status__c
      * - Completion Date → CreatedDate (from "New" completed record)
+     * - Region → Payload_Data__c (parsed JSON), fallback to DataCenterRegion_RI__c
      * 
      * @private
      */
@@ -525,7 +526,7 @@ class CurrentAccountsService {
             const newRecordSoql = `
                 SELECT Id, Name, Account__c, Account_Site__c, Status__c, 
                        TenantRequestAction__c, CreatedDate, CreatedBy.Name,
-                       Payload_Data__c
+                       Payload_Data__c, DataCenterRegion_RI__c
                 FROM Prof_Services_Request__c 
                 WHERE Tenant_Name__c = '${escapedTenantName}'
                   AND TenantRequestAction__c = 'New'
@@ -549,13 +550,18 @@ class CurrentAccountsService {
 
                 // Parse payload for additional data (region, admin username)
                 this._parsePayloadData(psRecord.Payload_Data__c, enrichment);
+
+                // Fallback: if payload didn't provide region, use Salesforce Data Center Region field
+                if (!enrichment.region && psRecord.DataCenterRegion_RI__c) {
+                    enrichment.region = psRecord.DataCenterRegion_RI__c;
+                }
             } else {
                 // Step 2: No "New" completed record - get Client/CSM/Status from any PS record
                 // (but don't set completion date since we don't have the original provisioning record)
                 const anyRecordSoql = `
                     SELECT Id, Name, Account__c, Account_Site__c, Status__c, 
                            TenantRequestAction__c, CreatedDate, CreatedBy.Name,
-                           Payload_Data__c
+                           Payload_Data__c, DataCenterRegion_RI__c
                     FROM Prof_Services_Request__c 
                     WHERE Tenant_Name__c = '${escapedTenantName}'
                     ORDER BY CreatedDate DESC
@@ -576,6 +582,11 @@ class CurrentAccountsService {
 
                     // Parse payload for additional data (region, admin username)
                     this._parsePayloadData(psRecord.Payload_Data__c, enrichment);
+
+                    // Fallback: if payload didn't provide region, use Salesforce Data Center Region field
+                    if (!enrichment.region && psRecord.DataCenterRegion_RI__c) {
+                        enrichment.region = psRecord.DataCenterRegion_RI__c;
+                    }
                 }
             }
             

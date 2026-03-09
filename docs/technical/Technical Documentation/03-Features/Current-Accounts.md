@@ -32,7 +32,7 @@ The Current Accounts page is a sub-page under the Analytics section that provide
 | `provisioning_status` | VARCHAR(100) | Status from Provisioning Monitor |
 | `completion_date` | TIMESTAMP | CreatedDate from Provisioning Monitor |
 | `size` | VARCHAR(255) | Package name of the app |
-| `region` | VARCHAR(100) | From PS record payload "region" field |
+| `region` | VARCHAR(100) | From PS record payload "region" field; falls back to DataCenterRegion_RI__c when payload is missing |
 | `tenant_name` | VARCHAR(255) | Extracted from SML payload |
 | `tenant_url` | VARCHAR(500) | Derived: https://{tenant_name}.rms.com |
 | `tenant_id` | VARCHAR(255) | From SML integration |
@@ -218,7 +218,7 @@ This means an account with 5 different apps will have 5 rows in the table.
 | Provisioning Status | Salesforce PS | Status__c |
 | Completion Date | Salesforce PS | CreatedDate from "New" PS record (Active tenants) or Deprovision PS record (Deprovisioned tenants) |
 | Size | SML (direct) | extensionData.appEntitlements.packageName |
-| Region | Salesforce PS Payload | payload.region |
+| Region | Salesforce PS Payload (primary), Salesforce PS field (fallback) | payload.region → payload.properties.region → provisioningDetail.region → DataCenterRegion_RI__c |
 | Tenant Name | SML (direct) | tenant.tenantName |
 | Tenant URL | Derived | https://{tenant_name}.rms.com |
 | Tenant ID | SML (direct) | tenant.tenantId |

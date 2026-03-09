@@ -188,4 +188,139 @@ router.post('/llm/test', llmTestLimiter, asyncHandler(async (req, res) => {
     }
 }));
 
+// ═══════════════════════════════════════════════════════════
+//  Mixpanel Settings
+// ═══════════════════════════════════════════════════════════
+
+const mixpanelTestLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { success: false, message: 'Too many test requests – please wait a minute.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+/**
+ * GET /api/user-settings/mixpanel
+ * Returns current Mixpanel configuration for the authenticated user.
+ * Secrets are masked.
+ */
+router.get('/mixpanel', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const result = await db.query(
+        `SELECT setting_key, setting_value, is_encrypted
+         FROM user_settings
+         WHERE user_id = $1 AND setting_key IN ('mixpanel_username', 'mixpanel_secret', 'mixpanel_project_id')`,
+        [userId]
+    );
+
+    const settings = {};
+    for (const row of result.rows) {
+        if (row.is_encrypted && row.setting_value) {
+            try {
+                const decrypted = decrypt(row.setting_value);
+                settings[row.setting_key] = { value: mask(decrypted), isSet: true };
+            } catch {
+                settings[row.setting_key] = { value: '', isSet: false };
+            }
+        } else {
+            settings[row.setting_key] = { value: row.setting_value || '', isSet: !!row.setting_value };
+        }
+    }
+
+    const hasEnvFallback = !!(process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME && process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET);
+
+    res.json({
+        success: true,
+        settings: {
+            username: settings.mixpanel_username || { value: '', isSet: false },
+            secret: settings.mixpanel_secret || { value: '', isSet: false },
+            projectId: settings.mixpanel_project_id || { value: '', isSet: false },
+        },
+        hasEnvFallback,
+    });
+}));
+
+/**
+ * PUT /api/user-settings/mixpanel
+ * Save or update Mixpanel credentials for the authenticated user.
+ * Body: { username?: string, secret?: string, projectId?: string }
+ */
+router.put('/mixpanel', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { username, secret, projectId } = req.body;
+
+    const upsert = async (key, value, encrypted) => {
+        if (value === '') {
+            await db.query(`DELETE FROM user_settings WHERE user_id = $1 AND setting_key = $2`, [userId, key]);
+        } else {
+            const stored = encrypted ? encrypt(value) : value;
+            await db.query(
+                `INSERT INTO user_settings (user_id, setting_key, setting_value, is_encrypted, updated_at)
+                 VALUES ($1, $2, $3, $4, NOW())
+                 ON CONFLICT (user_id, setting_key)
+                 DO UPDATE SET setting_value = $3, is_encrypted = $4, updated_at = NOW()`,
+                [userId, key, stored, encrypted]
+            );
+        }
+    };
+
+    if (username !== undefined) await upsert('mixpanel_username', username, true);
+    if (secret !== undefined) await upsert('mixpanel_secret', secret, true);
+    if (projectId !== undefined) await upsert('mixpanel_project_id', projectId, false);
+
+    logger.info('User saved Mixpanel settings', { userId });
+
+    res.json({ success: true, message: 'Mixpanel settings saved successfully' });
+}));
+
+/**
+ * DELETE /api/user-settings/mixpanel
+ * Remove all Mixpanel settings for the authenticated user.
+ */
+router.delete('/mixpanel', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    await db.query(
+        `DELETE FROM user_settings WHERE user_id = $1 AND setting_key IN ('mixpanel_username', 'mixpanel_secret', 'mixpanel_project_id')`,
+        [userId]
+    );
+
+    logger.info('User removed Mixpanel settings', { userId });
+    res.json({ success: true, message: 'Mixpanel settings removed' });
+}));
+
+/**
+ * POST /api/user-settings/mixpanel/test
+ * Test connectivity using stored Mixpanel credentials.
+ */
+router.post('/mixpanel/test', mixpanelTestLimiter, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const mixpanelService = require('../services/mixpanel.service');
+
+    const rows = await db.query(
+        `SELECT setting_key, setting_value, is_encrypted
+         FROM user_settings
+         WHERE user_id = $1 AND setting_key IN ('mixpanel_username', 'mixpanel_secret', 'mixpanel_project_id')`,
+        [userId]
+    );
+
+    const creds = {};
+    for (const row of rows.rows) {
+        creds[row.setting_key] = row.is_encrypted ? decrypt(row.setting_value) : row.setting_value;
+    }
+
+    const username = creds.mixpanel_username || process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME;
+    const secret = creds.mixpanel_secret || process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET;
+    const projectId = creds.mixpanel_project_id || process.env.MIXPANEL_PROJECT_ID;
+
+    if (!username || !secret) {
+        return res.json({ success: false, message: 'No Mixpanel credentials configured. Save credentials first.' });
+    }
+
+    const result = await mixpanelService.testConnection({ username, secret, projectId });
+    res.json(result);
+}));
+
 module.exports = router;

@@ -181,6 +181,43 @@ const settingsService = {
     }
   },
 
+  // Mixpanel Configuration (stored encrypted on the server)
+  getMixpanelSettings: async () => {
+    try {
+      const response = await api.get('/user-settings/mixpanel');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  saveMixpanelSettings: async ({ username, secret, projectId }) => {
+    try {
+      const response = await api.put('/user-settings/mixpanel', { username, secret, projectId });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteMixpanelSettings: async () => {
+    try {
+      const response = await api.delete('/user-settings/mixpanel');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  testMixpanelConnection: async () => {
+    try {
+      const response = await api.post('/user-settings/mixpanel/test');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Application Settings (stored in localStorage)
   getAppSettings: () => {
     const defaults = {

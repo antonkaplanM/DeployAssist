@@ -42,6 +42,9 @@ const customReportsRoutes = require('./routes/custom-reports.routes');
 const reportAgentRoutes = require('./routes/report-agent.routes');
 const reportDataRoutes = require('./routes/report-data.routes');
 const userSettingsRoutes = require('./routes/user-settings.routes');
+const mixpanelRoutes = require('./routes/mixpanel.routes');
+const mixpanelUsageRoutes = require('./routes/mixpanel-usage.routes');
+const dailyExceedancesRoutes = require('./routes/daily-exceedances.routes');
 
 // Authentication modules
 const AuthService = require('./services/auth.service');
@@ -246,6 +249,11 @@ app.use('/api/custom-reports', authenticate, customReportsRoutes);
 app.use('/api/report-agent', authenticate, reportAgentRoutes);
 app.use('/api/report-data', authenticate, reportDataRoutes);
 app.use('/api/user-settings', authenticate, userSettingsRoutes);
+
+// Mixpanel Analytics endpoints (requires authentication)
+app.use('/api/mixpanel', authenticate, mixpanelRoutes);
+app.use('/api/mixpanel/usage-limits', authenticate, mixpanelUsageRoutes);
+app.use('/api/mixpanel/daily-exceedances', authenticate, dailyExceedancesRoutes);
 
 console.log('✅ All extracted route modules mounted successfully');
 

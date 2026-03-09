@@ -206,6 +206,18 @@ const Sidebar = () => {
           path: '/experimental/staging', 
           id: 'nav-experimental-staging',
           pageName: 'experimental.staging'
+        },
+        { 
+          name: 'Usage Limits', 
+          path: '/experimental/usage-limits', 
+          id: 'nav-experimental-usage-limits',
+          pageName: 'experimental.usage-limits'
+        },
+        { 
+          name: 'Daily Exceedances', 
+          path: '/experimental/daily-exceedances', 
+          id: 'nav-experimental-daily-exceedances',
+          pageName: 'experimental.daily-exceedances'
         }
       ]
     },

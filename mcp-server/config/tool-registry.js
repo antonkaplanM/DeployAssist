@@ -56,6 +56,16 @@ const listPackages = require('../tools/packages/list-packages');
 const getPackage = require('../tools/packages/get-package');
 const getPackageStats = require('../tools/packages/stats');
 
+// ===== Mixpanel Tools =====
+const exportMixpanelEvents = require('../tools/mixpanel/export-events');
+const queryMixpanelInsights = require('../tools/mixpanel/query-insights');
+const queryMixpanelFunnels = require('../tools/mixpanel/query-funnels');
+const queryMixpanelRetention = require('../tools/mixpanel/query-retention');
+const queryMixpanelProfiles = require('../tools/mixpanel/query-profiles');
+const listMixpanelEventNames = require('../tools/mixpanel/list-event-names');
+const getMixpanelUsageLimits = require('../tools/mixpanel/usage-limits');
+const getMixpanelDailyExceedances = require('../tools/mixpanel/daily-exceedances');
+
 // ===== Integration Tools =====
 const testSalesforceConnection = require('../tools/integrations/test-salesforce');
 const querySalesforce = require('../tools/integrations/query-salesforce');
@@ -119,6 +129,16 @@ const tools = [
   getPackage,
   getPackageStats,
   
+  // Mixpanel Tools (8 tools)
+  exportMixpanelEvents,
+  queryMixpanelInsights,
+  queryMixpanelFunnels,
+  queryMixpanelRetention,
+  queryMixpanelProfiles,
+  listMixpanelEventNames,
+  getMixpanelUsageLimits,
+  getMixpanelDailyExceedances,
+
   // Integration Tools (3 tools)
   testSalesforceConnection,
   querySalesforce,
@@ -169,7 +189,8 @@ function getToolsByCategory() {
     expiration: tools.slice(27, 31),
     accounts: tools.slice(31, 36),
     packages: tools.slice(36, 39),
-    integrations: tools.slice(39, 42),
+    mixpanel: tools.slice(39, 47),
+    integrations: tools.slice(47, 50),
   };
 }
 
@@ -187,6 +208,7 @@ function getToolCount() {
       expiration: 4,
       accounts: 5,
       packages: 3,
+      mixpanel: 8,
       integrations: 3,
     },
   };

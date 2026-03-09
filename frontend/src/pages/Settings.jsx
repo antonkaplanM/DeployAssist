@@ -20,6 +20,7 @@ import {
   CircleStackIcon,
   LinkIcon,
   ArrowTopRightOnSquareIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import settingsService from '../services/settingsService';
 import validationService from '../services/validationService';
@@ -82,10 +83,24 @@ const Settings = () => {
   const [sfPreference, setSfPreference] = useState('personal');
   const [sfServiceAccountPermitted, setSfServiceAccountPermitted] = useState(false);
 
+  // Mixpanel Configuration
+  const [mpUsername, setMpUsername] = useState('');
+  const [mpSecret, setMpSecret] = useState('');
+  const [mpProjectId, setMpProjectId] = useState('');
+  const [mpUsernameIsSet, setMpUsernameIsSet] = useState(false);
+  const [mpSecretIsSet, setMpSecretIsSet] = useState(false);
+  const [mpProjectIdIsSet, setMpProjectIdIsSet] = useState(false);
+  const [mpMaskedUsername, setMpMaskedUsername] = useState('');
+  const [mpMaskedSecret, setMpMaskedSecret] = useState('');
+  const [mpSavedProjectId, setMpSavedProjectId] = useState('');
+  const [mpHasEnvFallback, setMpHasEnvFallback] = useState(false);
+  const [showMpSecret, setShowMpSecret] = useState(false);
+
   const sections = [
     { id: 'web-connectivity', name: 'Web Connectivity', icon: GlobeAltIcon },
     { id: 'data-sources', name: 'Data Sources', icon: CircleStackIcon, children: [
       { id: 'salesforce', name: 'Salesforce', icon: CloudIcon },
+      { id: 'mixpanel', name: 'Mixpanel', icon: ChartBarIcon },
       { id: 'ai-config', name: 'AI Configuration', icon: SparklesIcon },
     ]},
     { id: 'sml', name: 'SML Configuration', icon: Cog6ToothIcon },
@@ -146,6 +161,13 @@ const Settings = () => {
   useEffect(() => {
     if (activeSection === 'salesforce') {
       loadSalesforceStatus();
+    }
+  }, [activeSection]);
+
+  // Load Mixpanel settings when section is opened
+  useEffect(() => {
+    if (activeSection === 'mixpanel') {
+      loadMixpanelSettings();
     }
   }, [activeSection]);
 
@@ -683,6 +705,108 @@ const Settings = () => {
       });
     } finally {
       setLoading('salesforce', false);
+    }
+  };
+
+  // Mixpanel Configuration
+  const loadMixpanelSettings = async () => {
+    try {
+      const data = await settingsService.getMixpanelSettings();
+      if (data.settings) {
+        setMpUsernameIsSet(data.settings.username?.isSet || false);
+        setMpMaskedUsername(data.settings.username?.value || '');
+        setMpSecretIsSet(data.settings.secret?.isSet || false);
+        setMpMaskedSecret(data.settings.secret?.value || '');
+        setMpProjectIdIsSet(data.settings.projectId?.isSet || false);
+        setMpSavedProjectId(data.settings.projectId?.value || '');
+        setMpProjectId(data.settings.projectId?.value || '');
+      }
+      setMpHasEnvFallback(data.hasEnvFallback || false);
+    } catch (e) {
+      console.log('Could not load Mixpanel settings:', e);
+    }
+  };
+
+  const handleSaveMixpanelSettings = async () => {
+    setLoading('mpSave', true);
+    setTestResult('mpSave', null);
+
+    try {
+      const payload = {};
+      if (mpUsername) payload.username = mpUsername;
+      if (mpSecret) payload.secret = mpSecret;
+      if (mpProjectId !== undefined) payload.projectId = mpProjectId;
+
+      await settingsService.saveMixpanelSettings(payload);
+      setTestResult('mpSave', {
+        success: true,
+        message: 'Mixpanel settings saved successfully'
+      });
+      setMpUsername('');
+      setMpSecret('');
+      setShowMpSecret(false);
+      await loadMixpanelSettings();
+    } catch (error) {
+      setTestResult('mpSave', {
+        success: false,
+        message: 'Failed to save Mixpanel settings',
+        error: error.message
+      });
+    } finally {
+      setLoading('mpSave', false);
+    }
+  };
+
+  const handleTestMixpanelConnection = async () => {
+    setLoading('mpTest', true);
+    setTestResult('mpTest', null);
+
+    try {
+      const result = await settingsService.testMixpanelConnection();
+      setTestResult('mpTest', {
+        success: result.success,
+        message: result.message,
+        details: result.details
+      });
+    } catch (error) {
+      setTestResult('mpTest', {
+        success: false,
+        message: 'Connection test failed',
+        error: error.message
+      });
+    } finally {
+      setLoading('mpTest', false);
+    }
+  };
+
+  const handleRemoveMixpanelSettings = async () => {
+    setLoading('mpRemove', true);
+    setTestResult('mpSave', null);
+
+    try {
+      await settingsService.deleteMixpanelSettings();
+      setMpUsername('');
+      setMpSecret('');
+      setMpProjectId('');
+      setMpUsernameIsSet(false);
+      setMpSecretIsSet(false);
+      setMpProjectIdIsSet(false);
+      setMpMaskedUsername('');
+      setMpMaskedSecret('');
+      setMpSavedProjectId('');
+      setShowMpSecret(false);
+      setTestResult('mpSave', {
+        success: true,
+        message: 'Mixpanel credentials removed'
+      });
+    } catch (error) {
+      setTestResult('mpSave', {
+        success: false,
+        message: 'Failed to remove Mixpanel credentials',
+        error: error.message
+      });
+    } finally {
+      setLoading('mpRemove', false);
     }
   };
 
@@ -1680,6 +1804,177 @@ const Settings = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mixpanel Configuration */}
+            {activeSection === 'mixpanel' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Mixpanel Integration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Connect to Mixpanel to pull product usage analytics into reports. Requires a Mixpanel service account.
+                </p>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-colors">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                    <strong>How it works:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-800 dark:text-blue-300 list-disc list-inside space-y-1 ml-2">
+                    <li>Enter your Mixpanel service account username and secret below</li>
+                    <li>Credentials are encrypted and stored securely on the server</li>
+                    <li>Once configured, Mixpanel data sources appear in the report builder and are accessible via Cursor</li>
+                    <li>You can export events, query Insights/Funnels/Retention, and pull user profiles</li>
+                  </ul>
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
+                    Service accounts are created by your Mixpanel Org Owner/Admin under Organization Settings &rarr; Service Accounts
+                  </p>
+                </div>
+
+                {/* Connection Status */}
+                <div className={`rounded-lg border p-4 ${
+                  mpUsernameIsSet && mpSecretIsSet
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : mpHasEnvFallback
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                } transition-colors`}>
+                  <div className="flex items-start gap-3">
+                    {mpUsernameIsSet && mpSecretIsSet ? (
+                      <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                    ) : mpHasEnvFallback ? (
+                      <ExclamationCircleIcon className="h-5 w-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <ExclamationCircleIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${
+                        mpUsernameIsSet && mpSecretIsSet ? 'text-green-800 dark:text-green-300'
+                          : mpHasEnvFallback ? 'text-yellow-800 dark:text-yellow-300'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {mpUsernameIsSet && mpSecretIsSet
+                          ? 'Service Account Configured'
+                          : mpHasEnvFallback
+                          ? 'Using Server-Wide Credentials (env)'
+                          : 'Not Configured'}
+                      </p>
+                      {mpUsernameIsSet && mpMaskedUsername && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-mono">Username: {mpMaskedUsername}</p>
+                      )}
+                      {mpSecretIsSet && mpMaskedSecret && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-mono">Secret: {mpMaskedSecret}</p>
+                      )}
+                      {mpProjectIdIsSet && mpSavedProjectId && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-mono">Project ID: {mpSavedProjectId}</p>
+                      )}
+                    </div>
+                    {(mpUsernameIsSet && mpSecretIsSet) && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleTestMixpanelConnection}
+                          disabled={loadingStates.mpTest}
+                          className="px-3 py-1.5 bg-blue-600 dark:bg-blue-700 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
+                        >
+                          {loadingStates.mpTest ? 'Testing...' : 'Test Connection'}
+                        </button>
+                        <button
+                          onClick={handleRemoveMixpanelSettings}
+                          disabled={loadingStates.mpRemove}
+                          className="px-3 py-1.5 bg-red-600 dark:bg-red-700 text-white text-sm rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50"
+                        >
+                          {loadingStates.mpRemove ? 'Removing...' : 'Remove'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {renderTestResult('mpTest')}
+
+                <div className="pt-4 space-y-4">
+                  {/* Service Account Username */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {mpUsernameIsSet ? 'Replace Service Account Username' : 'Service Account Username'}
+                    </label>
+                    <input
+                      type="text"
+                      value={mpUsername}
+                      onChange={(e) => setMpUsername(e.target.value)}
+                      placeholder="e.g. my-service-account.abc123.mp-service-account"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                    />
+                  </div>
+
+                  {/* Service Account Secret */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {mpSecretIsSet ? 'Replace Service Account Secret' : 'Service Account Secret'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showMpSecret ? 'text' : 'password'}
+                        value={mpSecret}
+                        onChange={(e) => setMpSecret(e.target.value)}
+                        placeholder="Service account secret"
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowMpSecret(!showMpSecret)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        {showMpSecret
+                          ? <EyeSlashIcon className="h-5 w-5" />
+                          : <EyeIcon className="h-5 w-5" />
+                        }
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Credentials are encrypted before storage and never exposed in API responses
+                    </p>
+                  </div>
+
+                  {/* Project ID */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Project ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={mpProjectId}
+                      onChange={(e) => setMpProjectId(e.target.value)}
+                      placeholder="e.g. 1234567"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Found in Mixpanel &rarr; Project Settings. Required for all API calls when using service account authentication.
+                    </p>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveMixpanelSettings}
+                      disabled={loadingStates.mpSave || (!mpUsername && !mpSecret && !mpProjectId && !mpUsernameIsSet)}
+                      className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50"
+                    >
+                      {loadingStates.mpSave ? 'Saving...' : 'Save Configuration'}
+                    </button>
+                    {!mpUsernameIsSet && !mpSecretIsSet && !mpHasEnvFallback && (
+                      <button
+                        onClick={handleTestMixpanelConnection}
+                        disabled={loadingStates.mpTest || !mpUsername || !mpSecret}
+                        className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors disabled:opacity-50"
+                        title="Save first, then test"
+                      >
+                        {loadingStates.mpTest ? 'Testing...' : 'Test Connection'}
+                      </button>
+                    )}
+                  </div>
+
+                  {renderTestResult('mpSave')}
                 </div>
               </div>
             )}

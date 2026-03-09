@@ -571,6 +571,183 @@ const DATA_SOURCES = [
         reportEligible: true
     },
 
+    // ───────────── Primary: Mixpanel ─────────────
+    {
+        id: 'primary.mixpanel.events',
+        endpoint: '/api/mixpanel/events',
+        category: 'Primary: Mixpanel',
+        sourceType: 'primary',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel Raw Event Export API',
+        mcpToolName: 'export_mixpanel_events',
+        description: 'Export raw product-usage events from Mixpanel. Returns individual event records with properties and timestamps.',
+        params: [
+            { name: 'fromDate', type: 'string', description: 'Start date (YYYY-MM-DD)', required: true },
+            { name: 'toDate', type: 'string', description: 'End date (YYYY-MM-DD)', required: true },
+            { name: 'event', type: 'string', description: 'JSON-encoded array of event names to filter, e.g. \'["Login","Signup"]\'. Omit for all events.', optional: true },
+            { name: 'limit', type: 'number', description: 'Max events to return', default: 1000, optional: true }
+        ],
+        responseShape: {
+            arrayKey: 'events',
+            summary: 'Raw Mixpanel events with properties. Also includes "eventCounts" summary and "dateRange".',
+            fields: ['event', 'properties.time', 'properties.$insert_id', 'properties.mp_processing_time_ms', 'properties.distinct_id']
+        },
+        dependencies: ['mixpanel'],
+        reportEligible: true
+    },
+    {
+        id: 'primary.mixpanel.insights',
+        endpoint: '/api/mixpanel/insights',
+        category: 'Primary: Mixpanel',
+        sourceType: 'primary',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel Insights Query API',
+        mcpToolName: 'query_mixpanel_insights',
+        description: 'Query a Mixpanel Insights report. Returns aggregated analytics data (event counts, breakdowns). Requires a Growth or Enterprise plan.',
+        params: [
+            { name: 'bookmarkId', type: 'string', description: 'Saved Insights report bookmark ID', optional: true }
+        ],
+        responseShape: {
+            arrayKey: null,
+            summary: 'Aggregated insights data under the "results" key. Structure depends on the report configuration.',
+            fields: ['results', 'projectId']
+        },
+        dependencies: ['mixpanel'],
+        reportEligible: true
+    },
+    {
+        id: 'primary.mixpanel.funnels',
+        endpoint: '/api/mixpanel/funnels',
+        category: 'Primary: Mixpanel',
+        sourceType: 'primary',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel Funnels Query API',
+        mcpToolName: 'query_mixpanel_funnels',
+        description: 'Query a Mixpanel Funnels report. Returns step-by-step conversion data. Requires a Growth or Enterprise plan.',
+        params: [
+            { name: 'funnelId', type: 'string', description: 'Saved funnel report ID', optional: true }
+        ],
+        responseShape: {
+            arrayKey: null,
+            summary: 'Funnel conversion data under the "results" key. Structure depends on the funnel definition.',
+            fields: ['results', 'projectId']
+        },
+        dependencies: ['mixpanel'],
+        reportEligible: true
+    },
+    {
+        id: 'primary.mixpanel.retention',
+        endpoint: '/api/mixpanel/retention',
+        category: 'Primary: Mixpanel',
+        sourceType: 'primary',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel Retention Query API',
+        mcpToolName: 'query_mixpanel_retention',
+        description: 'Query a Mixpanel Retention report. Returns cohort-based retention rates over time. Requires a Growth or Enterprise plan.',
+        params: [
+            { name: 'bookmarkId', type: 'string', description: 'Saved retention report bookmark ID', optional: true }
+        ],
+        responseShape: {
+            arrayKey: null,
+            summary: 'Retention cohort data under the "results" key. Structure depends on the retention definition.',
+            fields: ['results', 'projectId']
+        },
+        dependencies: ['mixpanel'],
+        reportEligible: true
+    },
+    {
+        id: 'primary.mixpanel.profiles',
+        endpoint: '/api/mixpanel/profiles',
+        category: 'Primary: Mixpanel',
+        sourceType: 'primary',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel Engage (Profiles) API',
+        mcpToolName: 'query_mixpanel_profiles',
+        description: 'Query user/group profiles from Mixpanel. Returns profile properties like last seen, email, custom attributes.',
+        params: [
+            { name: 'where', type: 'string', description: 'Filter expression for profiles (Mixpanel expression syntax)', optional: true },
+            { name: 'outputProperties', type: 'string', description: 'JSON array of property names to return, e.g. \'["$email","$last_seen"]\'. Omit for all.', optional: true }
+        ],
+        responseShape: {
+            arrayKey: 'profiles',
+            summary: 'User/group profile records with properties.',
+            fields: ['$distinct_id', '$properties.$email', '$properties.$first_name', '$properties.$last_name', '$properties.$last_seen', '$properties.$created']
+        },
+        dependencies: ['mixpanel'],
+        reportEligible: true
+    },
+    {
+        id: 'primary.mixpanel.event-names',
+        endpoint: '/api/mixpanel/event-names',
+        category: 'Primary: Mixpanel',
+        sourceType: 'primary',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel Event Names API',
+        mcpToolName: 'list_mixpanel_event_names',
+        description: 'List all distinct event names tracked in the Mixpanel project. Useful for discovering available events before querying.',
+        params: [],
+        responseShape: {
+            arrayKey: 'eventNames',
+            summary: 'Array of event name strings tracked in the project.',
+            fields: ['eventNames']
+        },
+        dependencies: ['mixpanel'],
+        reportEligible: true
+    },
+
+    // ───────────── Derived: Mixpanel Usage ─────────────
+    {
+        id: 'derived.mixpanel.usage-limits',
+        endpoint: '/api/mixpanel/usage-limits',
+        category: 'Derived: Mixpanel Usage',
+        sourceType: 'derived',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel raw events (DailyJobsRun, DailyUnderwriterJobsRun, StorageStatus, etc.)',
+        mcpToolName: 'get_usage_limits',
+        description: 'Aggregated quota and storage utilization per tenant from Mixpanel. Shows which customers are at or exceeding usage limits.',
+        params: [
+            { name: 'days', type: 'number', required: false, description: 'Number of days to look back (default 7, max 365)' }
+        ],
+        responseShape: {
+            arrayKey: 'tenants',
+            summary: 'Each tenant has tenantId, overallStatus (exceeded/warning/ok), maxQuotaUtilization, quotaMetrics array, and storageMetrics array. Summary object has totalTenants, exceeded, warning, ok counts.',
+            fields: [
+                'tenantId', 'overallStatus', 'maxQuotaUtilization', 'lastSeen',
+                'quotaMetrics[].metricType', 'quotaMetrics[].currentValue', 'quotaMetrics[].limit',
+                'quotaMetrics[].utilization', 'quotaMetrics[].status', 'quotaMetrics[].serviceId',
+                'storageMetrics[].metricType', 'storageMetrics[].value',
+                'storageMetrics[].totalDiskMb', 'storageMetrics[].usedDiskMb', 'storageMetrics[].utilization'
+            ]
+        },
+        dependencies: ['mixpanel-credentials'],
+        reportEligible: true
+    },
+    {
+        id: 'derived.mixpanel.daily-exceedances',
+        endpoint: '/api/mixpanel/daily-exceedances',
+        category: 'Derived: Mixpanel Usage',
+        sourceType: 'derived',
+        sourceRef: 'mixpanel',
+        primarySource: 'Mixpanel raw quota events (DailyJobsRun, DailyUnderwriterJobsRun, etc.) aggregated per day',
+        mcpToolName: 'get_daily_exceedances',
+        description: 'Per-day quota limit exceedances by tenant. Shows which customers exceeded at least one daily quota limit and on how many days within the given period.',
+        params: [
+            { name: 'days', type: 'number', required: false, description: 'Number of days to look back (default 14, max 365)' }
+        ],
+        responseShape: {
+            arrayKey: 'tenants',
+            summary: 'Only tenants with at least one exceedance day are returned. Each tenant has totalExceedanceDays and an exceedances array with per-day metric breakdowns. Summary has totalTenantsExceeded, totalExceedanceDays, periodDays.',
+            fields: [
+                'tenantId', 'tenantName', 'accountName', 'totalExceedanceDays',
+                'exceedances[].date',
+                'exceedances[].metrics[].metricType', 'exceedances[].metrics[].value',
+                'exceedances[].metrics[].limit', 'exceedances[].metrics[].utilization'
+            ]
+        },
+        dependencies: ['mixpanel-credentials'],
+        reportEligible: true
+    },
+
     // ═══════════════════════════════════════════════════════════
     //  PRESERVED DATA — Captured because ephemeral in source
     // ═══════════════════════════════════════════════════════════

@@ -424,6 +424,66 @@ Implement all external data source connections, integration services, and the ca
 
 ---
 
+### T-02.17 — Implement Mixpanel Analytics Integration
+
+**Description:** Build the Mixpanel integration service that connects to the Mixpanel API using service account credentials (HTTP Basic Auth). Supports raw event export, Insights/Funnels/Retention Query API, and Engage (Profiles) API.
+
+**Acceptance Criteria:**
+- `MixpanelService` class with methods for: `testConnection`, `exportEvents`, `queryInsights`, `queryFunnels`, `queryRetention`, `queryProfiles`, `getEventNames`
+- Service account authentication via HTTP Basic Auth (username + secret)
+- Per-user encrypted credential storage in `user_settings` table with fallback to `MIXPANEL_*` environment variables
+- Connection test endpoint validates credentials against Mixpanel export API
+- 6 canonical data source entries in `report-data-sources.js` under `Primary: Mixpanel` category
+- 6 MCP tools registered for Cursor agent access: `export_mixpanel_events`, `query_mixpanel_insights`, `query_mixpanel_funnels`, `query_mixpanel_retention`, `query_mixpanel_profiles`, `list_mixpanel_event_names`
+- Settings page section under Data Sources → Mixpanel with credential entry, test connection, and remove functionality
+
+**Technical Details:**
+- Dependencies: native `https` module (no external packages required)
+- Environment variables: `MIXPANEL_SERVICE_ACCOUNT_USERNAME`, `MIXPANEL_SERVICE_ACCOUNT_SECRET`, `MIXPANEL_PROJECT_ID`
+- API hosts: `data.mixpanel.com` (event export), `mixpanel.com` (Query API, Engage API)
+- Rate limits: Query API is 60 requests/hour, 5 concurrent; Export API is unlimited
+- Mixpanel plan requirement: Query API (Insights/Funnels/Retention) requires Growth or Enterprise plan; Event export works on all plans
+
+---
+
+### T-02.18 — Implement Mixpanel Settings UI
+
+**Description:** Add Mixpanel configuration section to the Settings page under Data Sources for credential management.
+
+**Acceptance Criteria:**
+- `GET /api/user-settings/mixpanel` — returns masked credential status + env fallback flag
+- `PUT /api/user-settings/mixpanel` — saves encrypted username, secret, and project ID
+- `DELETE /api/user-settings/mixpanel` — removes stored Mixpanel credentials
+- `POST /api/user-settings/mixpanel/test` — tests connectivity using stored/env credentials
+- Settings UI shows connection status (configured/env fallback/not configured)
+- Username and secret inputs with show/hide toggle and encryption notice
+- Project ID field with description of where to find it
+- Test Connection and Remove buttons when credentials are configured
+
+---
+
+### T-02.20 — Implement Usage Limits Monitor
+
+**Description:** Build an aggregation endpoint and frontend page that monitors customer quota utilization from Mixpanel events, cross-referenced with SML entitlements.
+
+**Acceptance Criteria:**
+- `GET /api/mixpanel/usage-limits` endpoint that exports and aggregates quota/storage events per tenant
+- Utilization calculation: `currentValue / limit × 100%`; status classification: exceeded (≥100%), warning (≥80%), ok (<80%)
+- Tracked quota events: `DailyJobsRun`, `DailyUnderwriterJobsRun`, `DailyTreatyJobsRun`, `EntitlementUsage`, etc.
+- Tracked storage events: `StorageStatus`, `TotalDiskSpaceInMb`, `UsedDiskSpaceInMb`, etc.
+- Frontend page at `/experimental/usage-limits` with summary cards, filterable tenant table, and expandable detail rows
+- Expandable rows show quota metric breakdown and SML entitlement cross-reference
+- Canonical data source entry `derived.mixpanel.usage-limits` and MCP tool `get_usage_limits`
+- Navigation entry under Experimental Pages > Usage Limits
+
+**Technical Details:**
+- Backend: `routes/mixpanel-usage.routes.js` with credential resolution from `user_settings`
+- Frontend: `frontend/src/pages/UsageLimits.jsx`
+- Entitlements fetched via existing `/api/tenant-entitlements?tenant=<tenantId>` endpoint
+- Configurable time window (1–30 days) and event limit
+
+---
+
 ## User Stories
 
 ### US-02.01 — User Can Connect Their Salesforce Account
@@ -456,12 +516,71 @@ Implement all external data source connections, integration services, and the ca
 
 ---
 
+### US-02.04 — User Can Connect Mixpanel Analytics
+
+**As a** deployment team member, **I want to** connect my Mixpanel service account **so that** I can pull product usage analytics data into reports and the Cursor agent.
+
+**Acceptance Criteria:**
+- Settings page shows Mixpanel section under Data Sources with connection status
+- User can enter service account username, secret, and project ID
+- Credentials are encrypted before storage; secrets are masked in API responses
+- "Test Connection" button validates credentials against Mixpanel
+- "Remove" button clears all stored Mixpanel credentials
+- Once configured, 7 Mixpanel data sources appear in the report builder's Data Catalog (6 primary + 1 derived)
+- Cursor agent can invoke Mixpanel MCP tools to query events, insights, funnels, retention, profiles, and usage limits
+- If no per-user credentials, server-wide `MIXPANEL_*` environment variables are used as fallback
+- Usage Limits Monitor page available under Experimental Pages in navigation
+
+**Dependencies:** T-02.17, T-02.18, T-02.20
+
+---
+
+### US-02.05 — User Can Monitor Customer Usage Limits
+
+**As a** deployment team member, **I want to** see which customers have hit or are approaching their usage limits **so that** I can proactively address capacity issues.
+
+**Acceptance Criteria:**
+- Usage Limits page is accessible under Experimental Pages > Usage Limits in the sidebar
+- Summary cards show total tenants, exceeded count, warning count, and OK count
+- Tenant table shows each tenant with status badge, peak utilization bar, and quota metric tags
+- Clicking a summary card filters the table to that status category
+- Search bar allows filtering by tenant name
+- Time range selector allows choosing 1, 3, 7, 14, or 30 days of data
+- Expanding a tenant row shows detailed quota metrics (current value, limit, utilization, status)
+- Expanding a tenant row also shows storage metrics when available
+- Expanding a tenant row fetches and displays SML entitlements for that tenant (product name, package, quantity, status, end date)
+- Tenants are sorted by severity (exceeded first, then warning, then OK)
+
+**Dependencies:** T-02.17, T-02.20
+
+---
+
+### US-02.02b — Daily Limit Exceedances Report
+
+**As a** deployment team member, **I want to** see which customers exceeded their daily quota limits and on how many days **so that** I can identify chronic over-usage patterns and take corrective action.
+
+**Acceptance Criteria:**
+- Daily Exceedances page is accessible under Experimental Pages > Daily Exceedances in the sidebar
+- Summary cards show total customers exceeding limits, total exceedance days, and the period length
+- Report defaults to 14 days with options for 7, 14, 30, 60, or 90 days
+- Only customers with at least one daily exceedance are shown
+- Each row shows the tenant, account, exceedance day count, and a frequency bar
+- Expanding a row shows per-day breakdown with exceeded metrics, values, limits, and utilization percentages
+- Tenants are sorted by exceedance day count (highest first)
+- Search allows filtering by tenant name or account name
+- Async refresh fetches data from Mixpanel (same background job pattern as Usage Limits)
+- Canonical data source `derived.mixpanel.daily-exceedances` registered with MCP tool `get_daily_exceedances`
+
+**Dependencies:** T-02.17, T-02.20
+
+---
+
 ### US-02.03 — AI Agent Can Access Application Data via MCP
 
 **As an** AI agent (e.g., Claude in Cursor), **I want to** invoke MCP tools to query deployment data **so that** I can answer user questions about provisioning, analytics, and accounts without requiring manual UI navigation.
 
 **Acceptance Criteria:**
-- MCP server responds to `tools/list` with all 42 registered tools
+- MCP server responds to `tools/list` with all 50 registered tools (including 8 Mixpanel tools)
 - Each tool invocation returns data from the Express API
 - Tool parameters validated before execution
 - Invocations are audit-logged in `mcp_tool_invocations` table

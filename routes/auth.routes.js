@@ -35,10 +35,12 @@ function createAuthRoutes(authService, authenticate) {
             const result = await authService.login(username, password, rememberMe || false, ipAddress, userAgent);
 
             // Set HTTP-only cookies
+            // SameSite=Lax allows cookies on top-level GET navigations (e.g.
+            // OAuth redirects from Salesforce) while still blocking CSRF POSTs.
             res.cookie('accessToken', result.accessToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
+                sameSite: 'lax',
                 maxAge: 24 * 60 * 60 * 1000 // 24 hours
             });
 
@@ -46,7 +48,7 @@ function createAuthRoutes(authService, authenticate) {
                 res.cookie('refreshToken', result.refreshToken, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'strict',
+                    sameSite: 'lax',
                     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
                 });
             }

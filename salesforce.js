@@ -193,23 +193,29 @@ async function getServiceAccountConnection() {
     }
 }
 
-// Get OAuth authorization URL. When userId is provided, it is encoded in the
-// state parameter so the callback can associate tokens with the correct user.
-function getAuthUrl(userId = null) {
-    checkSalesforceEnvVars();
-    
-    const conn = new jsforce.Connection({
+// Shared OAuth2 factory -- jsforce v3 requires OAuth2 params to be passed
+// via an explicit OAuth2 instance rather than top-level Connection options.
+function createOAuth2() {
+    return new jsforce.OAuth2({
         loginUrl: SALESFORCE_LOGIN_URL,
         clientId: SALESFORCE_CLIENT_ID,
         clientSecret: SALESFORCE_CLIENT_SECRET,
         redirectUri: SALESFORCE_REDIRECT_URI
     });
+}
+
+// Get OAuth authorization URL. When userId is provided, it is encoded in the
+// state parameter so the callback can associate tokens with the correct user.
+function getAuthUrl(userId = null) {
+    checkSalesforceEnvVars();
+
+    const oauth2 = createOAuth2();
 
     const statePayload = userId
         ? Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64')
         : 'salesforce-auth';
 
-    const authUrl = conn.oauth2.getAuthorizationUrl({
+    const authUrl = oauth2.getAuthorizationUrl({
         scope: 'api refresh_token id',
         state: statePayload
     });
@@ -232,12 +238,7 @@ function decodeOAuthState(state) {
 async function handleOAuthCallback(code) {
     checkSalesforceEnvVars();
 
-    const conn = new jsforce.Connection({
-        loginUrl: SALESFORCE_LOGIN_URL,
-        clientId: SALESFORCE_CLIENT_ID,
-        clientSecret: SALESFORCE_CLIENT_SECRET,
-        redirectUri: SALESFORCE_REDIRECT_URI
-    });
+    const conn = new jsforce.Connection({ oauth2: createOAuth2() });
 
     try {
         const result = await conn.authorize(code);
@@ -279,12 +280,7 @@ async function handleOAuthCallback(code) {
 async function handlePerUserOAuthCallback(code, userId, db, encrypt) {
     checkSalesforceEnvVars();
 
-    const conn = new jsforce.Connection({
-        loginUrl: SALESFORCE_LOGIN_URL,
-        clientId: SALESFORCE_CLIENT_ID,
-        clientSecret: SALESFORCE_CLIENT_SECRET,
-        redirectUri: SALESFORCE_REDIRECT_URI
-    });
+    const conn = new jsforce.Connection({ oauth2: createOAuth2() });
 
     try {
         const result = await conn.authorize(code);
@@ -352,10 +348,7 @@ async function getConnectionForUser(userId, db, decrypt, encrypt) {
     }
 
     const conn = new jsforce.Connection({
-        loginUrl: SALESFORCE_LOGIN_URL,
-        clientId: SALESFORCE_CLIENT_ID,
-        clientSecret: SALESFORCE_CLIENT_SECRET,
-        redirectUri: SALESFORCE_REDIRECT_URI,
+        oauth2: createOAuth2(),
         accessToken: tokenMap.sf_access_token,
         instanceUrl: tokenMap.sf_instance_url,
         refreshToken: tokenMap.sf_refresh_token || undefined

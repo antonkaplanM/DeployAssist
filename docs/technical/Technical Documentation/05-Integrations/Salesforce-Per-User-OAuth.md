@@ -45,25 +45,47 @@ Per-user tokens are stored in the `user_settings` PostgreSQL table:
 
 Tokens are encrypted using AES-256-GCM via the application's `JWT_SECRET`, matching the pattern used for LLM API keys.
 
-## Salesforce Connected App Configuration
+## Salesforce External Client App Configuration
 
-A single Connected App supports both the service account (Client Credentials) and per-user (Authorization Code) flows. Both "Enable OAuth Settings" **and** "Enable Client Credentials Flow" must be enabled.
+Salesforce has replaced Connected Apps with **External Client Apps** (ECAs). A single ECA supports both the service account (Client Credentials) and per-user (Authorization Code) flows.
 
-### Required Settings (Setup > App Manager > Edit)
+### Required Settings
+
+#### Step 1: Create/Edit the External Client App (Developer Settings)
+
+Navigate to **Setup > External Client App Manager**, then click **Edit Settings** on your app:
 
 | Setting | Value |
 |---|---|
-| **Enable OAuth Settings** | Checked |
+| **Flow Enablement** | Enable Authorization Code and Credentials Flow |
 | **Callback URL** | Value of `SF_REDIRECT_URI` in `.env` (e.g., `http://localhost:5000/auth/salesforce/callback`) |
-| **Selected OAuth Scopes** | `Access the identity URL service (id)`, `Perform requests at any time (refresh_token, offline_access)`, `Manage user data via APIs (api)` |
-| **Permitted Users** | All users may self-authorize |
-| **Refresh Token Policy** | Refresh token is valid until revoked |
+| **OAuth Scopes** | `Manage user data via APIs (api)`, `Perform requests at any time (refresh_token, offline_access)`, `Access the identity URL service (id)` |
+| **Require Secret for Web Server Flow** | Checked |
+| **Require PKCE** | Unchecked (unless PKCE support is added to the app) |
 | **Enable Client Credentials Flow** | Checked (for service account) |
 | **Run As** | The designated service account user (for Client Credentials flow) |
 
-> **Troubleshooting:** If you get `invalid_client_id` when clicking "Connect to Salesforce", the Connected App likely only has "Enable Client Credentials Flow" enabled without "Enable OAuth Settings". Both must be active. Changes may take up to 10 minutes to propagate in Salesforce.
+To retrieve the Consumer Key and Secret: expand **OAuth Settings**, click **Consumer Key and Secret**, and verify your identity.
 
-The `SF_CLIENT_ID` and `SF_CLIENT_SECRET` environment variables are shared by all users (they identify the Connected App, not individual users).
+#### Step 2: Configure Policies (Admin Settings)
+
+From the External Client App Manager, click **Edit Policies** on your app:
+
+| Setting | Value |
+|---|---|
+| **Permitted Users** | All users may self-authorize |
+| **IP Relaxation** | Relax IP restrictions (for development) or configure appropriately |
+| **Refresh Token Policy** | Refresh token is valid until revoked |
+
+> **Note:** External Client Apps use a "closed by default" security model. The app must be explicitly allowed via policies before users can authorize.
+
+> **Troubleshooting:** If you get `invalid_client_id` when clicking "Connect to Salesforce", ensure the Authorization Code flow is enabled and that policies have been configured. Changes may take up to 10-15 minutes to propagate in Salesforce.
+
+The `SF_CLIENT_ID` and `SF_CLIENT_SECRET` environment variables are shared by all users (they identify the External Client App, not individual users).
+
+### jsforce Compatibility
+
+This application uses jsforce v3, which requires OAuth2 parameters (`clientId`, `clientSecret`, `redirectUri`) to be passed via an explicit `jsforce.OAuth2` instance rather than top-level `Connection` options. The shared `createOAuth2()` factory in `salesforce.js` handles this.
 
 ## Permission Model
 

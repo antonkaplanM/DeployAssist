@@ -29,6 +29,8 @@ import Staging from './pages/Staging';
 import CurrentAccounts from './pages/CurrentAccounts';
 import CreateReport from './pages/CreateReport';
 import CustomReportView from './pages/CustomReportView';
+import UsageLimits from './pages/UsageLimits';
+import DailyExceedances from './pages/DailyExceedances';
 
 function App() {
   return (
@@ -232,6 +234,26 @@ function App() {
                 element={
                   <ProtectedRoute pageName="experimental.staging">
                     <Staging />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Experimental Pages - Usage Limits */}
+              <Route 
+                path="experimental/usage-limits" 
+                element={
+                  <ProtectedRoute pageName="experimental.usage-limits">
+                    <UsageLimits />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Experimental Pages - Daily Exceedances */}
+              <Route 
+                path="experimental/daily-exceedances" 
+                element={
+                  <ProtectedRoute pageName="experimental.daily-exceedances">
+                    <DailyExceedances />
                   </ProtectedRoute>
                 } 
               />

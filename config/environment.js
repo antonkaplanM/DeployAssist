@@ -84,13 +84,22 @@ const config = {
         enabled: !!process.env.OPENAI_API_KEY
     },
 
+    // Mixpanel Configuration
+    mixpanel: {
+        serviceAccountUsername: process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME || '',
+        serviceAccountSecret: process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET || '',
+        projectId: process.env.MIXPANEL_PROJECT_ID || '',
+        enabled: !!(process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME && process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET)
+    },
+
     // Feature Flags
     features: {
         enableSML: process.env.ENABLE_SML !== 'false',
         enableJira: process.env.ENABLE_JIRA !== 'false',
         enableAuditTrail: process.env.ENABLE_AUDIT_TRAIL !== 'false',
         enableExpirationMonitor: process.env.ENABLE_EXPIRATION_MONITOR !== 'false',
-        enableReportAI: process.env.ENABLE_REPORT_AI !== 'false'
+        enableReportAI: process.env.ENABLE_REPORT_AI !== 'false',
+        enableMixpanel: process.env.ENABLE_MIXPANEL !== 'false'
     },
 
     // Logging Configuration
