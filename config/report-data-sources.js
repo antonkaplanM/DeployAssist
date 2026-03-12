@@ -42,10 +42,16 @@ const DATA_SOURCES = [
         sourceRef: 'salesforce',
         primarySource: 'Prof_Services_Request__c',
         mcpToolName: 'list_provisioning_requests',
-        description: 'List all provisioning requests (Technical Team Requests) with pagination. Returns raw Salesforce records.',
+        description: 'List all provisioning requests (Technical Team Requests) with pagination and filtering. Returns raw Salesforce records.',
         params: [
             { name: 'pageSize', type: 'number', description: 'Results per page (default 25)', default: 25 },
-            { name: 'offset', type: 'number', description: 'Offset for pagination (default 0)', default: 0 }
+            { name: 'offset', type: 'number', description: 'Offset for pagination (default 0)', default: 0 },
+            { name: 'requestType', type: 'string', description: 'Filter by request type (e.g. "New", "Update", "Deprovision")', optional: true },
+            { name: 'accountId', type: 'string', description: 'Filter by account name', optional: true },
+            { name: 'status', type: 'string', description: 'Filter by effective status (e.g. "Tenant Request Completed", "Provisioning Failed")', optional: true },
+            { name: 'startDate', type: 'string', description: 'Filter records created on or after this date (SOQL datetime, e.g. "2026-02-01T00:00:00Z")', optional: true },
+            { name: 'endDate', type: 'string', description: 'Filter records created on or before this date (SOQL datetime, e.g. "2026-03-31T23:59:59Z")', optional: true },
+            { name: 'search', type: 'string', description: 'Search in PS record name and account name', optional: true }
         ],
         responseShape: {
             arrayKey: 'records',
@@ -87,7 +93,8 @@ const DATA_SOURCES = [
         mcpToolName: 'get_validation_errors',
         description: 'Current validation errors in provisioning requests with failed rule details.',
         params: [
-            { name: 'timeFrame', type: 'string', description: 'Time frame (default "1w")', default: '1w', optional: true }
+            { name: 'timeFrame', type: 'string', description: 'Time frame (default "1w")', default: '1w', optional: true },
+            { name: 'enabledRules', type: 'string', description: 'JSON array or comma-separated list of rule IDs to check (omit for all rules)', optional: true }
         ],
         responseShape: {
             arrayKey: 'errors',
@@ -127,7 +134,8 @@ const DATA_SOURCES = [
         mcpToolName: 'list_customer_products',
         description: 'Active products for a specific customer organized by region and product category (from PS records). Requires an account name.',
         params: [
-            { name: 'account', type: 'string', description: 'Account name to look up (required)', required: true }
+            { name: 'account', type: 'string', description: 'Account name to look up (required)', required: true },
+            { name: 'includeExpired', type: 'boolean', description: 'Include expired products (default false)', default: false, optional: true }
         ],
         responseShape: {
             arrayKey: null,
@@ -260,7 +268,8 @@ const DATA_SOURCES = [
         mcpToolName: 'list_packages',
         description: 'Software packages from the package repository with resource limits and metadata.',
         params: [
-            { name: 'type', type: 'string', description: 'Filter by package type', optional: true }
+            { name: 'type', type: 'string', description: 'Filter by package type (e.g. "Base", "Expansion")', optional: true },
+            { name: 'includeDeleted', type: 'boolean', description: 'Include soft-deleted packages (default false)', default: false, optional: true }
         ],
         responseShape: {
             arrayKey: 'packages',
@@ -304,7 +313,8 @@ const DATA_SOURCES = [
         mcpToolName: 'get_request_types_week',
         description: 'Provisioning REQUEST TYPE breakdown (New License, Product Update, Deprovision) with counts and validation failure rates. Measures request volume by type — NOT product upgrade/downgrade trends.',
         params: [
-            { name: 'months', type: 'number', description: 'Months to look back (default 12)', default: 12, minimum: 1, maximum: 24 }
+            { name: 'months', type: 'number', description: 'Months to look back (default 12)', default: 12, minimum: 1, maximum: 24 },
+            { name: 'enabledRules', type: 'string', description: 'JSON array of validation rule IDs to include in failure rate calculation (omit for all rules)', optional: true }
         ],
         responseShape: {
             arrayKey: 'data',
@@ -324,7 +334,8 @@ const DATA_SOURCES = [
         mcpToolName: 'get_validation_trend',
         description: 'VALIDATION FAILURE rates over time — how many provisioning requests failed automated rule checks, by request type. Has NOTHING to do with product upgrades or downgrades.',
         params: [
-            { name: 'months', type: 'number', description: 'Months to look back (default 3)', default: 3, minimum: 1, maximum: 12 }
+            { name: 'months', type: 'number', description: 'Months to look back (default 3)', default: 3, minimum: 1, maximum: 12 },
+            { name: 'enabledRules', type: 'string', description: 'JSON array of validation rule IDs to include (omit for all rules)', optional: true }
         ],
         responseShape: {
             arrayKey: 'trendData',
@@ -447,7 +458,8 @@ const DATA_SOURCES = [
         mcpToolName: 'get_expiration_monitor',
         description: 'Products and entitlements expiring within a specified timeframe, grouped by account.',
         params: [
-            { name: 'expirationWindow', type: 'number', description: 'Days to look ahead (default 30, max 90)', default: 30, minimum: 1, maximum: 90 }
+            { name: 'expirationWindow', type: 'number', description: 'Days to look ahead (default 30, max 90)', default: 30, minimum: 1, maximum: 90 },
+            { name: 'showExtended', type: 'boolean', description: 'Include products that have been extended (default false)', default: false, optional: true }
         ],
         responseShape: {
             arrayKey: 'expirations',
@@ -487,7 +499,10 @@ const DATA_SOURCES = [
         params: [
             { name: 'category', type: 'string', description: 'Filter by product type: Model, Data, App', optional: true },
             { name: 'accountName', type: 'string', description: 'Filter by account name', optional: true },
+            { name: 'productName', type: 'string', description: 'Filter by product name (partial match)', optional: true },
             { name: 'excludeProduct', type: 'string', description: 'Exclude products containing this string', optional: true },
+            { name: 'region', type: 'string', description: 'Filter by region', optional: true },
+            { name: 'includeGhostAccountsOnly', type: 'boolean', description: 'Only show accounts flagged as ghost accounts (default false)', default: false, optional: true },
             { name: 'limit', type: 'number', description: 'Max results (default 100)', default: 100, minimum: 1, maximum: 500 },
             { name: 'groupByAccount', type: 'boolean', description: 'Group results by account (default true)', default: true, optional: true }
         ],
@@ -513,7 +528,9 @@ const DATA_SOURCES = [
         description: 'Customer accounts with expired products that may need cleanup or deprovisioning.',
         params: [
             { name: 'isReviewed', type: 'boolean', description: 'Filter by review status', optional: true },
-            { name: 'accountSearch', type: 'string', description: 'Search by account name', optional: true }
+            { name: 'accountSearch', type: 'string', description: 'Search by account name', optional: true },
+            { name: 'expiryBefore', type: 'string', description: 'Filter accounts with latest expiry before this date (ISO date string)', optional: true },
+            { name: 'expiryAfter', type: 'string', description: 'Filter accounts with latest expiry after this date (ISO date string)', optional: true }
         ],
         responseShape: {
             arrayKey: 'ghostAccounts',
@@ -779,10 +796,9 @@ const DATA_SOURCES = [
         sourceRef: 'salesforce.provisioning',
         primarySource: 'ps_audit_trail table (snapshots of Prof_Services_Request__c)',
         mcpToolName: 'search_ps_records',
-        description: 'Search PS audit records by name, account, or status.',
+        description: 'Search PS audit records by name or account. Minimum 2 characters required.',
         params: [
-            { name: 'q', type: 'string', description: 'Search text for PS record name or account' },
-            { name: 'status', type: 'string', description: 'Filter by PS record status', optional: true }
+            { name: 'q', type: 'string', description: 'Search text for PS record name, account name, or record ID (min 2 chars)' }
         ],
         responseShape: {
             arrayKey: 'results',
@@ -805,7 +821,8 @@ const DATA_SOURCES = [
         description: 'Product update requests with status tracking and approval workflow.',
         params: [
             { name: 'status', type: 'string', description: 'Filter: pending, approved, rejected, completed, cancelled', optional: true },
-            { name: 'accountName', type: 'string', description: 'Filter by account name', optional: true }
+            { name: 'accountName', type: 'string', description: 'Filter by account name', optional: true },
+            { name: 'requestedBy', type: 'string', description: 'Filter by the user who submitted the request', optional: true }
         ],
         responseShape: {
             arrayKey: 'requests',
@@ -970,9 +987,13 @@ function _buildEndpointDescription() {
             : s.sourceType === 'derived'
                 ? `[DERIVED from ${s.sourceRef}]`
                 : `[PRESERVED from ${s.sourceRef}]`;
-        return `  ${s.endpoint}: ${sourceTag} ${s.description}`;
+        const filterParams = s.params.filter(p => p.name !== 'pageSize' && p.name !== 'offset' && p.name !== 'page');
+        const paramHint = filterParams.length > 0
+            ? ` Filter params: ${filterParams.map(p => `${p.name}${p.description ? ' (' + p.description + ')' : ''}`).join('; ')}.`
+            : '';
+        return `  ${s.endpoint}: ${sourceTag} ${s.description}${paramHint}`;
     });
-    return 'API endpoint to fetch data from. Choose based on what the component ACTUALLY needs to show.\n' + lines.join('\n');
+    return 'API endpoint to fetch data from. Choose based on what the component ACTUALLY needs to show. ALWAYS pass filter params to narrow results — do NOT fetch all records and rely on client-side filtering.\n' + lines.join('\n');
 }
 
 function _buildEndpointFieldMap() {
@@ -981,7 +1002,10 @@ function _buildEndpointFieldMap() {
         const arrayInfo = s.responseShape.arrayKey
             ? `Data array key: "${s.responseShape.arrayKey}".`
             : 'Returns an object, not an array.';
-        return `  ${s.endpoint}: ${arrayInfo} Fields: ${s.responseShape.fields.join(', ')}`;
+        const paramNames = s.params.length > 0
+            ? ` Params: ${s.params.map(p => p.required ? p.name + ' (required)' : p.name).join(', ')}.`
+            : '';
+        return `  ${s.endpoint}: ${arrayInfo} Fields: ${s.responseShape.fields.join(', ')}.${paramNames}`;
     });
     return lines.join('\n');
 }
@@ -1170,9 +1194,12 @@ function summarizeEndpointData(rawResponse, endpoint) {
         endpoint,
         responseKeys: Object.keys(rawResponse || {}),
         totalRecords: null,
+        totalAvailable: null,
+        hasMore: null,
         sampleRecords: null,
         summary: null,
-        fieldTypes: null
+        fieldTypes: null,
+        paginationWarning: null
     };
 
     if (rawResponse?.summary) {
@@ -1183,6 +1210,17 @@ function summarizeEndpointData(rawResponse, endpoint) {
         const arr = rawResponse[arrayKey];
         result.totalRecords = arr.length;
         result.sampleRecords = arr.slice(0, 5);
+
+        const serverTotal = rawResponse.total ?? rawResponse.totalSize ?? rawResponse.totalCount ?? null;
+        if (serverTotal != null) {
+            result.totalAvailable = serverTotal;
+        }
+        if (rawResponse.hasMore != null) {
+            result.hasMore = rawResponse.hasMore;
+        }
+        if (result.hasMore || (serverTotal != null && serverTotal > arr.length)) {
+            result.paginationWarning = `Only ${arr.length} of ${serverTotal ?? 'more'} records returned. Set pageSize=${serverTotal || arr.length * 2} in your report config params to get all records.`;
+        }
 
         if (arr.length > 0) {
             result.fieldTypes = {};

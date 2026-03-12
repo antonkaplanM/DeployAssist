@@ -48,6 +48,7 @@ module.exports = {
       // Build query parameters - route handler uses expirationWindow (default 30), NOT days
       const params = {
         expirationWindow: sanitizedArgs.expirationWindow ?? 30,
+        showExtended: sanitizedArgs.showExtended,
         region: sanitizedArgs.region,
         accountName: sanitizedArgs.accountName,
         productName: sanitizedArgs.productName,

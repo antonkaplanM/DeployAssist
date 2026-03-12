@@ -12,6 +12,13 @@ module.exports = {
       offset: args.offset || 0,
     };
 
+    if (args.requestType) params.requestType = args.requestType;
+    if (args.accountId) params.accountId = args.accountId;
+    if (args.status) params.status = args.status;
+    if (args.startDate) params.startDate = args.startDate;
+    if (args.endDate) params.endDate = args.endDate;
+    if (args.search) params.search = args.search;
+
     const response = await context.apiClient.get('/api/provisioning/requests', { params });
 
     return formatter.paginated(response.data.records || response.data, {

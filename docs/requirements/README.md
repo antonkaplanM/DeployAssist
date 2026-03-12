@@ -40,8 +40,8 @@ Epic (Parent)
 
 | Phase | Epics | Rationale |
 |-------|-------|-----------|
-| **Phase 1 — MVP** | EPIC-01 (Infrastructure), EPIC-02 (Data Sources), EPIC-08 (User Management), EPIC-03 (Dashboard), EPIC-04 (Provisioning Monitor) | Foundation, data layer, authentication, and the two core operational pages required for the app to function and deliver immediate value |
-| **Phase 2 — Enhanced Features** | EPIC-05 (Custom Reports), EPIC-06 (Current Accounts) | AI-powered reporting and account roster management add significant value beyond core monitoring |
+| **Phase 1 — MVP** | EPIC-01 (Infrastructure), EPIC-02 (Data Sources), EPIC-08 (User Management), EPIC-04 (Provisioning Monitor) | Foundation, data layer, authentication, and the core operational page required for the app to function and deliver immediate value |
+| **Phase 2 — Enhanced Features** | EPIC-03 (Dashboard), EPIC-05 (Custom Reports), EPIC-06 (Current Accounts) | Dashboard overview, AI-powered reporting, and account roster management add significant value beyond core monitoring |
 | **Phase 3 — Complete Platform** | EPIC-07 (Help Page), EPIC-09 (Settings) | Self-service documentation and configuration that polish the platform experience |
 
 ## Jira Tracking
@@ -65,7 +65,7 @@ Epic (Parent)
 |------|-------------|
 | [Solution-Architecture.docx](./Solution-Architecture.docx) | Word document with formatted architecture diagrams |
 | [plan922-architecture.png](./plan922-architecture.png) | Architecture diagram used in PLAN-922 Jira ticket |
-| [plan922-roadmap.png](./plan922-roadmap.png) | Release roadmap diagram used in PLAN-922 Jira ticket |
+| [plan922-roadmap.png](./plan922-roadmap.png) | Release roadmap diagram used in PLAN-922 Jira ticket (regenerate with `node scripts/generate-roadmap.js`) |
 
 ## Status Definitions
 

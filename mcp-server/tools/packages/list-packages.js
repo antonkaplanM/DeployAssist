@@ -13,11 +13,6 @@ module.exports = {
     ...baseSchema.inputSchema,
     properties: {
       ...baseSchema.inputSchema.properties,
-      includeDeleted: {
-        type: 'boolean',
-        description: 'Include deleted packages (default: false)',
-        default: false,
-      },
       limit: {
         type: 'number',
         description: 'Maximum number of packages to return (default: 100, max: 500)',

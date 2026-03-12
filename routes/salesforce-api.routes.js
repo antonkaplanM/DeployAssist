@@ -294,6 +294,10 @@ function createSalesforceApiRoutes(authenticate, loadPermissions) {
         const searchTerm = req.query.q || req.query.search || req.query.searchTerm || '';
         const limit = parseInt(req.query.limit) || 20;
 
+        if (!searchTerm.trim()) {
+            return res.json({ success: true, results: { technicalRequests: [], accounts: [], tenants: [], totalCount: 0 }, timestamp: new Date().toISOString() });
+        }
+
         const results = await salesforceApiService.searchProvisioningRequests(searchTerm, limit);
         res.json({ success: true, results, timestamp: new Date().toISOString() });
     }));

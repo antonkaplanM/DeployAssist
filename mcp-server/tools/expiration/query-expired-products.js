@@ -21,7 +21,10 @@ module.exports = {
       const params = {
         category: sanitizedArgs.category,
         accountName: sanitizedArgs.accountName,
+        productName: sanitizedArgs.productName,
         excludeProduct: sanitizedArgs.excludeProduct,
+        region: sanitizedArgs.region,
+        includeGhostAccountsOnly: sanitizedArgs.includeGhostAccountsOnly,
         limit: sanitizedArgs.limit ?? 100,
         groupByAccount: sanitizedArgs.groupByAccount !== false,
       };

@@ -18,6 +18,8 @@ module.exports = {
       const params = {
         isReviewed: args.isReviewed,
         accountSearch: args.accountSearch,
+        expiryBefore: args.expiryBefore,
+        expiryAfter: args.expiryAfter,
       };
 
       // Remove undefined values

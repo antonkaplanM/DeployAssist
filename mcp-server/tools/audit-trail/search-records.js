@@ -19,7 +19,6 @@ module.exports = {
 
       const params = {
         q: sanitizedArgs.q,
-        status: sanitizedArgs.status,
       };
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 

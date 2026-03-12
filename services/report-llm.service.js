@@ -106,6 +106,8 @@ You have access to fetch_endpoint_data which queries LIVE data from the applicat
 - **Understand response structure** (where is the data array? is there a summary object?).
 - **Explore different parameters** (e.g., try expirationWindow=90 vs. expirationWindow=30 to see how many records change).
 
+**CRITICAL — USE FILTER PARAMS**: Each endpoint has filter parameters listed in the Endpoint Field Reference section. When the user asks for filtered data (e.g., "requests from February", "New tenants", "account X"), you MUST pass the corresponding filter params to fetch_endpoint_data and to the report config. NEVER fetch all records without filters and rely on client-side filtering. For example, to get "New" provisioning requests from February 2026, call fetch_endpoint_data with params: { "requestType": "New", "startDate": "2026-02-01T00:00:00Z", "endDate": "2026-02-28T23:59:59Z" }.
+
 Always fetch data from at least the primary endpoint you plan to use BEFORE calling generate_report_config. Report what you found to the user (e.g., "I found 47 accounts with expiring products within 90 days").
 
 ## Critical Rules
@@ -115,6 +117,7 @@ Always fetch data from at least the primary endpoint you plan to use BEFORE call
 - Maximum ${MAX_COMPONENTS} components per report.
 - Field references MUST exactly match the actual API response field names you observed via fetch_endpoint_data.
 - **PARAMS MUST MATCH**: When you explored data via fetch_endpoint_data with specific parameters (e.g., status=allExpired, expirationWindow=90), you MUST use those SAME parameters in the report config's dataSource.params. The report renderer calls the endpoint exactly as configured — if you omit a filter param, the component will show unfiltered data. For example, if you fetched from /api/tenant-entitlements/analysis with status=allExpired and found 91 tenants, the report config MUST include "params": { "status": "allExpired" }.
+- **PAGINATION**: Many endpoints default to 25 records per page. When fetch_endpoint_data returns a "paginationWarning" or "totalAvailable" is greater than "totalRecords", you MUST set "pageSize" in your report config params to a value >= totalAvailable so the rendered component shows ALL matching records, not just the first page. For example, if totalAvailable is 36, set "pageSize": 200 in the report config params.
 - **EXPIRED DATA DEFAULTS**: /api/tenant-entitlements includes expired entitlements by default. Pass includeExpired=false only if the user specifically wants to exclude expired records.
 
 ## Endpoint Field Reference

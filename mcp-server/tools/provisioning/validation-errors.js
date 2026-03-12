@@ -9,6 +9,7 @@ module.exports = {
 
     const params = {};
     if (args.timeFrame !== undefined) params.timeFrame = args.timeFrame;
+    if (args.enabledRules !== undefined) params.enabledRules = args.enabledRules;
 
     Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 

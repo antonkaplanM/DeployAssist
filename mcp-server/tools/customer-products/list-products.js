@@ -17,7 +17,10 @@ module.exports = {
       validator.validate(args, this.inputSchema);
       const sanitizedArgs = validator.sanitizeInputs(args);
 
-      const params = { account: sanitizedArgs.account };
+      const params = {
+        account: sanitizedArgs.account,
+        includeExpired: sanitizedArgs.includeExpired,
+      };
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 
       const response = await context.apiClient.get('/api/customer-products', {

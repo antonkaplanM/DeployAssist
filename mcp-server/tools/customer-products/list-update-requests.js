@@ -20,6 +20,7 @@ module.exports = {
       const params = {
         status: sanitizedArgs.status,
         accountName: sanitizedArgs.accountName,
+        requestedBy: sanitizedArgs.requestedBy,
       };
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 

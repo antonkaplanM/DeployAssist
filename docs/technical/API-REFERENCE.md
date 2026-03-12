@@ -1,10 +1,11 @@
 # 📡 DeployAssist API Reference
 
-**Version:** 2.1  
-**Last Updated:** November 15, 2025  
+**Version:** 2.2  
+**Last Updated:** March 10, 2026  
 **Base URL:** `http://localhost:5000/api`
 
 **Latest Changes:**
+- ✅ Provisioning list endpoint now documents all filter params (requestType, startDate, endDate, status, accountId, search)
 - ✅ Package lookup now supports RI package codes (P1-P12, X1, etc.)
 
 ---
@@ -567,6 +568,54 @@ GET /api/expiration/stats
 
 ### Provisioning
 
+#### List Provisioning Requests
+
+```http
+GET /api/provisioning/requests
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `pageSize` | number | No | 25 | Results per page |
+| `offset` | number | No | 0 | Offset for pagination |
+| `requestType` | string | No | — | Filter by type: `"New"`, `"Update"`, `"Deprovision"` |
+| `accountId` | string | No | — | Filter by account name |
+| `status` | string | No | — | Filter by effective status (e.g. `"Tenant Request Completed"`, `"Provisioning Failed"`) |
+| `startDate` | string | No | — | Created on or after (SOQL datetime, e.g. `"2026-02-01T00:00:00Z"`) |
+| `endDate` | string | No | — | Created on or before (SOQL datetime, e.g. `"2026-03-31T23:59:59Z"`) |
+| `search` | string | No | — | Search in PS record name and account name |
+
+**Example:**
+
+```http
+GET /api/provisioning/requests?requestType=New&startDate=2026-02-01T00:00:00Z&endDate=2026-03-31T23:59:59Z&pageSize=100
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "records": [
+        {
+            "Id": "a1B...",
+            "Name": "PS-5198",
+            "Account__c": "Acme Corp",
+            "Status__c": "Tenant Request Completed",
+            "TenantRequestAction__c": "New",
+            "Tenant_Name__c": "acme-prod",
+            "CreatedDate": "2026-02-15T14:30:00.000Z",
+            "LastModifiedDate": "2026-02-16T09:00:00.000Z"
+        }
+    ],
+    "total": 12,
+    "hasMore": false,
+    "timestamp": "2026-03-10T12:00:00.000Z"
+}
+```
+
 #### Search Provisioning Requests
 
 ```http
@@ -574,49 +623,38 @@ GET /api/provisioning/search
 ```
 
 **Query Parameters:**
-- `query` (string) - Search term
-- `status` (string) - Filter by status
-- `page` (number) - Page number
-- `limit` (number) - Items per page
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `q` | string | No | `""` | Search term (also accepts `search` or `searchTerm` as aliases) |
+| `limit` | number | No | 20 | Max results |
 
 **Response:**
+
 ```json
 {
     "success": true,
-    "data": [
-        {
-            "request_id": "PS-12345",
-            "account_name": "Acme Corp",
-            "request_type": "New License",
-            "status": "pending",
-            "created_date": "2025-11-01",
-            "product_name": "Flood Risk Model"
-        }
-    ],
-    "meta": { ... }
+    "results": {
+        "technicalRequests": [
+            {
+                "id": "a1B...",
+                "name": "PS-12345",
+                "account": "Acme Corp",
+                "status": "Tenant Request Completed",
+                "requestType": "New"
+            }
+        ],
+        "accounts": [],
+        "tenants": []
+    },
+    "timestamp": "2026-03-10T12:00:00.000Z"
 }
 ```
 
-#### Get Provisioning Request
+#### Get Provisioning Request by ID
 
 ```http
-GET /api/provisioning/:id
-```
-
-**Response:**
-```json
-{
-    "success": true,
-    "data": {
-        "request_id": "PS-12345",
-        "account_name": "Acme Corp",
-        "request_type": "New License",
-        "status": "pending",
-        "products": [...],
-        "history": [...]
-    },
-    "meta": { ... }
-}
+GET /api/provisioning/requests/:id
 ```
 
 ---
@@ -884,8 +922,8 @@ const response = await fetch('http://localhost:5000/api/bundles', {
 
 ---
 
-**Last Updated:** November 11, 2025  
-**API Version:** 2.0  
+**Last Updated:** March 10, 2026  
+**API Version:** 2.2  
 **Status:** ✅ Complete
 
 
